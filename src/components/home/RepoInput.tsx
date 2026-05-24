@@ -69,7 +69,7 @@ export function RepoInput({ initialUrl = '' }: RepoInputProps) {
           <span className="text-xs text-zinc-500 font-medium">Try templates:</span>
           {[
             { label: 'React', repo: 'facebook/react' },
-            { label: 'FastAPI', repo: 'fastapi/fastapi' },
+            { label: 'Gemini CLI', repo: 'google-gemini/gemini-cli' },
             { label: 'PIA Scrap', repo: 'bayue48/pia-scrap' },
             { label: 'keking', repo: 'bayue48/keking' },
             { label: 'GitSdm (This)', repo: 'bayue48/gitSdm' },

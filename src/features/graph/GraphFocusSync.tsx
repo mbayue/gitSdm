@@ -7,7 +7,7 @@ export function GraphFocusSync() {
   const focusedFilePath = useVizStore((s) => s.focusedFilePath);
   const setSelectedNodeId = useVizStore((s) => s.setSelectedNodeId);
   const setHighlightedNodeIds = useVizStore((s) => s.setHighlightedNodeIds);
-  const { fitView, getNode, getEdges } = useReactFlow();
+  const { getNode, getEdges, getZoom, setCenter } = useReactFlow();
 
   useEffect(() => {
     if (!focusedFilePath) return;
@@ -41,20 +41,21 @@ export function GraphFocusSync() {
     setHighlightedNodeIds(ids);
 
     const timer = window.setTimeout(() => {
-      fitView({
-        nodes: [target],
+      const width = typeof target.measured?.width === 'number' ? target.measured.width : target.width ?? 0;
+      const height = typeof target.measured?.height === 'number' ? target.measured.height : target.height ?? 0;
+      setCenter(target.position.x + width / 2, target.position.y + height / 2, {
         duration: 480,
-        padding: 0.65,
-        maxZoom: 1.35,
+        zoom: getZoom(),
       });
     }, 50);
 
     return () => window.clearTimeout(timer);
   }, [
     focusedFilePath,
-    fitView,
     getNode,
     getEdges,
+    getZoom,
+    setCenter,
     setSelectedNodeId,
     setHighlightedNodeIds,
   ]);
