@@ -1,0 +1,479 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-base: #09090b;
+  --bg-glow-violet: rgba(139, 92, 246, 0.12);
+  --bg-glow-cyan: rgba(34, 211, 238, 0.08);
+  --glass-bg: rgba(24, 24, 27, 0.45);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --accent-from: #8b5cf6;
+  --accent-to: #22d3ee;
+  --canvas-bg: #050508;
+
+  /* Tailwind CSS variables - Dark Theme (Default) */
+  --white-rgb: 255, 255, 255;
+  --black-rgb: 0, 0, 0;
+
+  --zinc-50-rgb: 250, 250, 250;
+  --zinc-100-rgb: 244, 244, 245;
+  --zinc-200-rgb: 228, 228, 231;
+  --zinc-300-rgb: 212, 212, 216;
+  --zinc-400-rgb: 161, 161, 170;
+  --zinc-500-rgb: 113, 113, 122;
+  --zinc-600-rgb: 82, 82, 91;
+  --zinc-700-rgb: 63, 63, 70;
+  --zinc-800-rgb: 39, 39, 42;
+  --zinc-900-rgb: 24, 24, 27;
+  --zinc-950-rgb: 9, 9, 11;
+
+  --neutral-300-rgb: 212, 212, 212;
+  --neutral-400-rgb: 163, 163, 163;
+  --neutral-500-rgb: 115, 115, 115;
+}
+
+.light {
+  --bg-base: #f9fafb;
+  --bg-glow-violet: rgba(139, 92, 246, 0.04);
+  --bg-glow-cyan: rgba(34, 211, 238, 0.03);
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --accent-from: #6d28d9;
+  --accent-to: #0891b2;
+  --canvas-bg: #f9fafb;
+
+  /* Tailwind CSS variables - Light Theme */
+  --white-rgb: 9, 9, 11;
+  --black-rgb: 255, 255, 255;
+
+  --zinc-50-rgb: 9, 9, 11;
+  --zinc-100-rgb: 24, 24, 27;
+  --zinc-200-rgb: 39, 39, 42;
+  --zinc-300-rgb: 63, 63, 70;
+  --zinc-400-rgb: 82, 82, 91;
+  --zinc-500-rgb: 113, 113, 122;
+  --zinc-600-rgb: 161, 161, 170;
+  --zinc-700-rgb: 212, 212, 216;
+  --zinc-800-rgb: 228, 228, 231;
+  --zinc-900-rgb: 244, 244, 245;
+  --zinc-950-rgb: 255, 255, 255;
+
+  --neutral-300-rgb: 64, 64, 64;
+  --neutral-400-rgb: 82, 82, 82;
+  --neutral-500-rgb: 115, 115, 115;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg-base);
+  color: rgba(var(--white-rgb), 0.9);
+  font-family: Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.mesh-bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, var(--bg-glow-violet), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%, var(--bg-glow-cyan), transparent),
+    radial-gradient(ellipse 50% 30% at 0% 100%, rgba(139, 92, 246, 0.06), transparent),
+    var(--bg-base);
+}
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Logo background uses theme accent variables for consistent contrast */
+.logo-bg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+  /* prevent gradient painting under borders to avoid colored seams */
+  -webkit-background-clip: padding-box;
+  background-clip: padding-box;
+  overflow: hidden;
+}
+
+/* Improve contrast in light theme for body text and logo */
+.light body {
+  color: rgba(var(--white-rgb), 0.95);
+}
+
+.light .logo-bg {
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.06);
+  /* use a subtle light border to blend with pale backgrounds and hide gradient seam */
+  border: 1px solid rgba(var(--white-rgb), 0.06);
+}
+
+/* Hero badge adjustments for light theme */
+.hero-badge {
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+}
+.light .hero-badge {
+  background: rgba(109,40,217,0.06); /* slightly stronger violet */
+  border-color: rgba(109,40,217,0.12);
+  color: #6d28d9; /* accent-from dark */
+}
+
+/* Make the badge icon inherit the badge text color in all themes */
+.hero-badge svg {
+  color: currentColor;
+  stroke-width: 2px;
+}
+
+/* Feature icons: in light theme, show dark strokes/fill to match text color */
+.feature-icon svg {
+  color: currentColor;
+  stroke: currentColor;
+  fill: none;
+}
+.light .feature-icon svg {
+  color: currentColor;
+  stroke: black;
+  fill: none;
+}
+
+/* Glow (primary) button tweaks for light mode to improve contrast */
+.glow-btn {
+  transition: box-shadow 200ms ease, transform 120ms ease, filter 200ms ease;
+  /* ensure rounded gradient buttons don't show colored seams at corners */
+  -webkit-background-clip: padding-box;
+  background-clip: padding-box;
+  overflow: hidden;
+}
+.light .glow-btn {
+  box-shadow: 0 8px 24px rgba(99,102,241,0.12), 0 2px 6px rgba(7,89,133,0.06);
+
+}
+.light .glow-btn:hover {
+  box-shadow: 0 10px 30px rgba(99,102,241,0.16), 0 4px 10px rgba(7,89,133,0.08);
+}
+
+/* Make sure icons inside gradient buttons are visible */
+.glow-btn svg {
+  color: rgba(var(--white-rgb), 1);
+}
+.light .glow-btn svg {
+  color: rgba(var(--black-rgb), 1);
+}
+
+.light .glow-btn {
+  color: rgba(var(--black-rgb), 1);
+}
+
+/* Make gradient-text slightly bolder in light mode for readability */
+.light .gradient-text {
+  font-weight: 700;
+  -webkit-text-stroke: 0.2px rgba(var(--white-rgb), 0.02);
+}
+
+/* Reusable helper to ensure SVG icons inside gradient tiles have good contrast */
+.logo-icon {
+  color: rgba(var(--white-rgb), 1);
+}
+
+.logo-icon svg {
+  stroke-width: 1.6px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.light .logo-icon {
+  /* In light theme, icons on gradient tiles should be dark for legibility */
+  color: rgba(var(--black-rgb), 1);
+}
+
+.light .logo-icon svg {
+  stroke-width: 2px;
+}
+
+.logo-bg svg {
+  color: rgba(var(--white-rgb), 1);
+  stroke-width: 1.6px;
+}
+
+.light .logo-bg svg {
+  /* Make navbar/logo icon strokes dark on light backgrounds */
+  color: rgba(var(--black-rgb), 1);
+  stroke-width: 2px;
+}
+
+/* Ensure SVGs don't receive unwanted fills */
+svg {
+  fill: none;
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+.graph-canvas-host .react-flow {
+  background:
+    radial-gradient(circle at center, rgba(139, 92, 246, 0.04) 0%, transparent 70%),
+    radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.02) 0%, transparent 50%),
+    var(--canvas-bg) !important;
+  color: rgba(var(--white-rgb), 0.9);
+}
+
+.graph-canvas-host .react-flow__renderer,
+.graph-canvas-host .react-flow__pane,
+.graph-canvas-host .react-flow__viewport {
+  background: transparent !important;
+}
+
+.graph-canvas-host .react-flow__background {
+  display: block;
+}
+
+.graph-canvas-host .react-flow__node {
+  transition: opacity 0.2s ease;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.graph-canvas-host .react-flow__node.dimmed {
+  opacity: 0.2;
+}
+
+.graph-canvas-host .react-flow__edge-path {
+  stroke: rgba(var(--white-rgb), 0.24);
+  stroke-width: 1;
+}
+
+.graph-canvas-host .react-flow__controls.graph-controls {
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--glass-bg);
+}
+
+.graph-canvas-host .react-flow__controls.graph-controls button {
+  background: transparent;
+  border-bottom: 1px solid var(--glass-border);
+  color: rgba(var(--white-rgb), 0.6);
+  width: 26px;
+  height: 26px;
+}
+
+.graph-canvas-host .react-flow__controls.graph-controls button:hover {
+  background: rgba(var(--white-rgb), 0.08);
+  color: rgb(var(--white-rgb));
+}
+
+.graph-canvas-host .react-flow__minimap.graph-minimap,
+.graph-canvas-host .react-flow__minimap.graph-minimap svg {
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.light .filter-pill-active,
+.light .ai-sidebar-tab-active {
+  border-color: rgba(124, 58, 237, 0.28);
+  background: rgba(124, 58, 237, 0.16);
+  color: #6d28d9;
+}
+
+.light .filter-pill-inactive {
+  background: rgba(124, 58, 237, 0.08);
+  color: #7c3aed;
+}
+
+.light .filter-pill-inactive:hover {
+  background: rgba(124, 58, 237, 0.13);
+  color: #5b21b6;
+}
+
+.light .ai-sidebar-tab-inactive {
+  color: #52525b;
+}
+
+.light .ai-sidebar-tab-inactive:hover {
+  background: rgba(124, 58, 237, 0.07);
+  color: #6d28d9;
+}
+
+.light .ai-sidebar-tab-active svg {
+  color: #7c3aed;
+}
+
+.light .ai-explain-loading {
+  border-color: rgba(124, 58, 237, 0.28);
+  background: rgba(124, 58, 237, 0.10);
+  color: #6d28d9;
+}
+
+.light .ai-explain-loading-spinner {
+  border-color: #8b5cf6;
+  border-top-color: transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(var(--white-rgb), 0.15);
+  border-radius: 3px;
+}
+
+/* VS Code–style code inspector (highlight.js) */
+.code-inspector-font {
+  font-family: 'Cascadia Code', 'Consolas', 'Geist Mono', ui-monospace, monospace;
+}
+
+.code-inspector-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.code-inspector-scroll::-webkit-scrollbar-thumb {
+  background: rgba(var(--white-rgb), 0.2);
+  border-radius: 0;
+}
+
+.code-inspector-scroll .hljs {
+  background: transparent;
+  color: #d4d4d4;
+  padding: 0;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in,
+.hljs-name {
+  color: #c586c0;
+}
+
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet {
+  color: #ce9178;
+}
+
+.hljs-title,
+.hljs-section,
+.hljs-type,
+.hljs-class .hljs-title {
+  color: #4ec9b0;
+}
+
+.hljs-function .hljs-title,
+.hljs-title.function_ {
+  color: #dcdcaa;
+}
+
+.hljs-number,
+.hljs-literal {
+  color: #b5cea8;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #6a9955;
+  font-style: italic;
+}
+
+.hljs-variable,
+.hljs-template-variable,
+.hljs-attr {
+  color: #9cdcfe;
+}
+
+.hljs-params,
+.hljs-attribute {
+  color: #9cdcfe;
+}
+
+.hljs-meta,
+.hljs-regexp {
+  color: #d16969;
+}
+
+.hljs-punctuation {
+  color: #d4d4d4;
+}
+
+/* Light theme code syntax colors (GitHub Light Style) */
+.light .code-inspector-scroll .hljs {
+  color: #24292e;
+}
+.light .hljs-keyword,
+.light .hljs-selector-tag,
+.light .hljs-built_in,
+.light .hljs-name {
+  color: #d73a49;
+}
+.light .hljs-string,
+.light .hljs-symbol,
+.light .hljs-bullet {
+  color: #032f62;
+}
+.light .hljs-title,
+.light .hljs-section,
+.light .hljs-type,
+.light .hljs-class .hljs-title {
+  color: #6f42c1;
+}
+.light .hljs-function .hljs-title,
+.light .hljs-title.function_ {
+  color: #6f42c1;
+}
+.light .hljs-number,
+.light .hljs-literal {
+  color: #005cc5;
+}
+.light .hljs-comment,
+.light .hljs-quote {
+  color: #6a737d;
+}
+.light .hljs-variable,
+.light .hljs-template-variable,
+.light .hljs-attr {
+  color: #e36209;
+}
+.light .hljs-params,
+.light .hljs-attribute {
+  color: #24292e;
+}
+.light .hljs-punctuation {
+  color: #24292e;
+}

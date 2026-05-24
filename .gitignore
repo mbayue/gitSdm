@@ -141,3 +141,18 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Production build output
+dist-server/
+
+# Local deployment/tooling state
+.vercel/
+.netlify/
+.turbo/
+
+# Graphify generated analysis output
+graphify-out/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db

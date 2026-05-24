@@ -1,0 +1,257 @@
+import { getOctokit, handleOctokitError } from './client';
+import type { TreeNode } from '../../src/types';
+
+const MAX_TREE_ITEMS = 2000;
+
+export interface RepoInfo {
+  owner: string;
+  repo: string;
+  defaultBranch: string;
+  sha: string;
+  description: string | null;
+  stars: number;
+  forks: number;
+  language: string | null;
+  topics: string[];
+  license: string | null;
+  createdAt: string;
+  updatedAt: string;
+  fullName: string;
+  url: string;
+}
+
+export interface FlatTreeItem {
+  path: string;
+  type: 'blob' | 'tree';
+  sha: string;
+  size?: number;
+}
+
+export async function fetchRepoInfo(owner: string, repo: string): Promise<RepoInfo> {
+  const octokit = getOctokit();
+  try {
+    const { data } = await octokit.repos.get({ owner, repo });
+    const { data: branch } = await octokit.repos.getBranch({
+      owner,
+      repo,
+      branch: data.default_branch,
+    });
+
+    return {
+      owner,
+      repo,
+      fullName: data.full_name,
+      url: data.html_url,
+      description: data.description,
+      stars: data.stargazers_count,
+      forks: data.forks_count,
+      language: data.language,
+      defaultBranch: data.default_branch,
+      sha: branch.commit.sha,
+      topics: data.topics ?? [],
+      license: data.license?.spdx_id ?? null,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
+  } catch (e) {
+    handleOctokitError(e);
+  }
+}
+
+export async function fetchFlatTree(
+  owner: string,
+  repo: string,
+  sha: string,
+): Promise<{ items: FlatTreeItem[]; truncated: boolean }> {
+  const octokit = getOctokit();
+  try {
+    const { data } = await octokit.git.getTree({
+      owner,
+      repo,
+      tree_sha: sha,
+      recursive: '1',
+    });
+
+    const blobs = (data.tree ?? [])
+      .filter((item) => item.path && item.type === 'blob')
+      .slice(0, MAX_TREE_ITEMS)
+      .map((item) => ({
+        path: item.path!,
+        type: 'blob' as const,
+        sha: item.sha!,
+        size: item.size,
+      }));
+
+    const truncated = (data.tree?.length ?? 0) > MAX_TREE_ITEMS || data.truncated === true;
+
+    return { items: blobs, truncated };
+  } catch (e) {
+    handleOctokitError(e);
+  }
+}
+
+export function buildTreeFromPaths(items: FlatTreeItem[]): TreeNode[] {
+  const root: TreeNode[] = [];
+
+  for (const item of items) {
+    const parts = item.path.split('/');
+    let current = root;
+
+    for (let i = 0; i < parts.length; i++) {
+      const name = parts[i];
+      const isFile = i === parts.length - 1;
+      const path = parts.slice(0, i + 1).join('/');
+
+      let existing = current.find((n) => n.name === name);
+      if (!existing) {
+        existing = {
+          path,
+          name,
+          type: isFile ? 'file' : 'dir',
+          children: isFile ? undefined : [],
+          size: isFile ? item.size : undefined,
+          sha: isFile ? item.sha : undefined,
+        };
+        current.push(existing);
+      }
+
+      if (!isFile && existing.children) {
+        current = existing.children;
+      }
+    }
+  }
+
+  return sortTree(root);
+}
+
+function sortTree(nodes: TreeNode[]): TreeNode[] {
+  return nodes
+    .sort((a, b) => {
+      if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    })
+    .map((n) => ({
+      ...n,
+      children: n.children ? sortTree(n.children) : undefined,
+    }));
+}
+
+const MANIFEST_PATHS = [
+  'package.json',
+  'requirements.txt',
+  'pyproject.toml',
+  'Pipfile',
+  'Cargo.toml',
+  'go.mod',
+  'pom.xml',
+  'build.gradle',
+  'Dockerfile',
+];
+
+export function findManifestPaths(items: FlatTreeItem[]): string[] {
+  return items
+    .map((i) => i.path)
+    .filter((path) => {
+      const base = path.split('/').pop() ?? '';
+      return MANIFEST_PATHS.includes(base) || base === 'package.json';
+    })
+    .slice(0, 20);
+}
+
+export async function fetchFileContents(
+  owner: string,
+  repo: string,
+  paths: string[],
+  ref: string,
+): Promise<Record<string, string>> {
+  const octokit = getOctokit();
+  const result: Record<string, string> = {};
+
+  await Promise.all(
+    paths.map(async (path) => {
+      try {
+        const { data } = await octokit.repos.getContent({
+          owner,
+          repo,
+          path,
+          ref,
+        });
+        if (!Array.isArray(data) && data.type === 'file' && 'content' in data && data.content) {
+          result[path] = Buffer.from(data.content, 'base64').toString('utf-8').slice(0, 50000);
+        }
+      } catch {
+        // skip unreadable files
+      }
+    }),
+  );
+
+  return result;
+}
+
+export async function fetchContributors(
+  owner: string,
+  repo: string,
+): Promise<{ login: string; avatarUrl: string; contributions: number }[]> {
+  const octokit = getOctokit();
+  try {
+    const { data } = await octokit.repos.listContributors({
+      owner,
+      repo,
+      per_page: 15,
+    });
+    return data
+      .filter((c) => c.login)
+      .map((c) => ({
+        login: c.login!,
+        avatarUrl: c.avatar_url ?? '',
+        contributions: c.contributions ?? 0,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchTimeline(
+  owner: string,
+  repo: string,
+): Promise<{ week: string; count: number; commits: { sha: string; message: string; date: string }[] }[]> {
+  const octokit = getOctokit();
+  try {
+    const since = new Date();
+    since.setDate(since.getDate() - 90);
+
+    const { data } = await octokit.repos.listCommits({
+      owner,
+      repo,
+      since: since.toISOString(),
+      per_page: 100,
+    });
+
+    const weeks = new Map<string, { count: number; commits: { sha: string; message: string; date: string }[] }>();
+
+    for (const commit of data) {
+      if (!commit.commit?.author?.date) continue;
+      const date = new Date(commit.commit.author.date);
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - date.getDay());
+      const weekKey = weekStart.toISOString().slice(0, 10);
+
+      const entry = weeks.get(weekKey) ?? { count: 0, commits: [] };
+      entry.count++;
+      if (entry.commits.length < 5) {
+        entry.commits.push({
+          sha: commit.sha.slice(0, 7),
+          message: (commit.commit.message ?? '').split('\n')[0].slice(0, 80),
+          date: commit.commit.author.date,
+        });
+      }
+      weeks.set(weekKey, entry);
+    }
+
+    return Array.from(weeks.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([week, v]) => ({ week, ...v }));
+  } catch {
+    return [];
+  }
+}
