@@ -64,6 +64,29 @@ export function RepoInput({ initialUrl = '' }: RepoInputProps) {
           </GlowButton>
         </form>
         {error && <p className="mt-2 px-2 text-sm text-red-400">{error}</p>}
+
+        <div className="mt-4 border-t border-white/5 pt-3 flex flex-wrap items-center gap-2 px-2">
+          <span className="text-xs text-zinc-500 font-medium">Try templates:</span>
+          {[
+            { label: 'React', repo: 'facebook/react' },
+            { label: 'FastAPI', repo: 'fastapi/fastapi' },
+            { label: 'Antigravity CLI', repo: 'google-antigravity/antigravity-cli' },
+            { label: 'PIA Scrap', repo: 'bayue48/pia-scrap' },
+            { label: 'GitSdm (This)', repo: 'bayue48/gitSdm' },
+          ].map((item) => (
+            <button
+              key={item.repo}
+              type="button"
+              onClick={() => {
+                setUrl(`https://github.com/${item.repo}`);
+                setError('');
+              }}
+              className="rounded-lg border border-white/5 bg-white/5 px-2.5 py-1 text-xs text-zinc-400 hover:border-violet-500/30 hover:bg-violet-500/10 hover:text-violet-700 dark:hover:text-violet-300 hover:scale-[1.03] transition-all font-mono"
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
       </GlassCard>
     </motion.div>
   );

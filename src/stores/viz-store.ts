@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { NodeType } from '@/types';
 
-export type SidebarTab = 'explain' | 'dependencies';
+export type SidebarTab = 'explain' | 'architecture' | 'health' | 'playground' | 'dependencies';
 export type LayoutType = 'TB' | 'LR' | 'force';
 
 interface VizState {

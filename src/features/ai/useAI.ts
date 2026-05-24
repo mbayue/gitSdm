@@ -4,6 +4,12 @@ import {
   aiExplain,
   aiOnboarding,
   aiSuggestFiles,
+  aiExplainNew,
+  aiRefactor,
+  aiHealth,
+  aiMermaid,
+  aiRoast,
+  aiReadmeEnhance,
 } from '@/lib/api-client';
 import type { AIExplainRequest } from '@/types';
 
@@ -31,5 +37,47 @@ export function useOnboarding() {
   return useMutation({
     mutationFn: ({ owner, repo }: { owner: string; repo: string }) =>
       aiOnboarding(owner, repo),
+  });
+}
+
+export function useExplainNew() {
+  return useMutation({
+    mutationFn: ({ owner, repo }: { owner: string; repo: string }) =>
+      aiExplainNew(owner, repo),
+  });
+}
+
+export function useRefactor() {
+  return useMutation({
+    mutationFn: ({ owner, repo }: { owner: string; repo: string }) =>
+      aiRefactor(owner, repo),
+  });
+}
+
+export function useHealth() {
+  return useMutation({
+    mutationFn: ({ owner, repo }: { owner: string; repo: string }) =>
+      aiHealth(owner, repo),
+  });
+}
+
+export function useMermaid() {
+  return useMutation({
+    mutationFn: ({ owner, repo }: { owner: string; repo: string }) =>
+      aiMermaid(owner, repo),
+  });
+}
+
+export function useRoast() {
+  return useMutation({
+    mutationFn: ({ owner, repo }: { owner: string; repo: string }) =>
+      aiRoast(owner, repo),
+  });
+}
+
+export function useReadmeEnhance() {
+  return useMutation({
+    mutationFn: ({ owner, repo }: { owner: string; repo: string }) =>
+      aiReadmeEnhance(owner, repo),
   });
 }

@@ -135,3 +135,48 @@ export interface AIOnboardingResponse {
   steps: { title: string; description: string; filePath?: string }[];
   cached: boolean;
 }
+
+export interface AIExplainNewResponse {
+  explanation: string;
+  cached: boolean;
+}
+
+export interface AIRefactorSuggestion {
+  title: string;
+  description: string;
+  category: string;
+  files: string[];
+  risk: 'high' | 'medium' | 'low';
+}
+
+export interface AIRefactorResponse {
+  suggestions: AIRefactorSuggestion[];
+  cached: boolean;
+}
+
+export interface AIHealthResponse {
+  scores: {
+    maintainability: number;
+    modularity: number;
+    readability: number;
+    architecture: number;
+    complexity: number;
+  };
+  summary: string;
+  cached: boolean;
+}
+
+export interface AIMermaidResponse {
+  diagram: string;
+  cached: boolean;
+}
+
+export interface AIRoastResponse {
+  roast: string;
+  cached: boolean;
+}
+
+export interface AIReadmeEnhanceResponse {
+  readme: string;
+  cached: boolean;
+}

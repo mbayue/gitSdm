@@ -14,7 +14,8 @@ import { ExplorerPanel } from '@/components/explorer/ExplorerPanel';
 import { CodeInspectorView } from '@/components/explorer/CodeInspectorView';
 import { FileTypeLegend } from '@/components/viz/FileTypeLegend';
 import { VizError } from '@/components/viz/VizError';
-import { Loader2, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
+import { StagedLoader } from '@/components/viz/StagedLoader';
 import type { GraphNode } from '@/types';
 import { useExplain } from '@/features/ai/useAI';
 
@@ -107,22 +108,7 @@ export function VizPage() {
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {isLoading ? (
-          <div className="flex flex-1 flex-col items-center justify-center bg-zinc-950">
-            <div className="relative flex flex-col items-center gap-4">
-              <div className="absolute -inset-4 rounded-full bg-violet-500/10 blur-xl animate-pulse" />
-              <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-cyan-500 shadow-[0_0_30px_rgba(139,92,246,0.3)] logo-icon">
-                <Loader2 className="h-6 w-6 animate-spin" />
-              </div>
-              <div className="text-center z-10">
-                <h3 className="text-sm font-medium text-white tracking-wide">
-                  Analyzing {owner}/{repo}
-                </h3>
-                <p className="text-xs text-zinc-500 mt-1.5 animate-pulse max-w-sm px-4">
-                  Extracting source files and building codebase dependency graph…
-                </p>
-              </div>
-            </div>
-          </div>
+          <StagedLoader owner={owner} repo={repo} />
         ) : data ? (
           <div className="flex min-h-0 flex-1 overflow-hidden">
             <ExplorerPanel

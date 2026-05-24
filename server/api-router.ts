@@ -7,6 +7,12 @@ import {
   explainRepo,
   generateOnboarding,
   suggestFiles,
+  explainRepoELI5,
+  generateRefactorSuggestions,
+  generateHealthReport,
+  generateMermaidDiagram,
+  generateRepoRoast,
+  generateReadmeEnhancement,
 } from './ai/summarizer';
 import { analyzeRepository } from './services/analyze-repo';
 import { getRepoFileContent } from './services/get-file';
@@ -175,6 +181,78 @@ export async function handleApiRequest(
         return true;
       }
       const result = await generateOnboarding(parsed.data.owner, parsed.data.repo);
+      sendJson(res, 200, result);
+      return true;
+    }
+
+    if (pathname === '/api/ai/explain-new' && method === 'POST') {
+      const body = await getRequestBody(req);
+      const parsed = repoQuerySchema.safeParse(body);
+      if (!parsed.success) {
+        sendError(res, 400, 'owner and repo required');
+        return true;
+      }
+      const result = await explainRepoELI5(parsed.data.owner, parsed.data.repo);
+      sendJson(res, 200, result);
+      return true;
+    }
+
+    if (pathname === '/api/ai/refactor' && method === 'POST') {
+      const body = await getRequestBody(req);
+      const parsed = repoQuerySchema.safeParse(body);
+      if (!parsed.success) {
+        sendError(res, 400, 'owner and repo required');
+        return true;
+      }
+      const result = await generateRefactorSuggestions(parsed.data.owner, parsed.data.repo);
+      sendJson(res, 200, result);
+      return true;
+    }
+
+    if (pathname === '/api/ai/health' && method === 'POST') {
+      const body = await getRequestBody(req);
+      const parsed = repoQuerySchema.safeParse(body);
+      if (!parsed.success) {
+        sendError(res, 400, 'owner and repo required');
+        return true;
+      }
+      const result = await generateHealthReport(parsed.data.owner, parsed.data.repo);
+      sendJson(res, 200, result);
+      return true;
+    }
+
+    if (pathname === '/api/ai/mermaid' && method === 'POST') {
+      const body = await getRequestBody(req);
+      const parsed = repoQuerySchema.safeParse(body);
+      if (!parsed.success) {
+        sendError(res, 400, 'owner and repo required');
+        return true;
+      }
+      const result = await generateMermaidDiagram(parsed.data.owner, parsed.data.repo);
+      sendJson(res, 200, result);
+      return true;
+    }
+
+    if (pathname === '/api/ai/roast' && method === 'POST') {
+      const body = await getRequestBody(req);
+      const parsed = repoQuerySchema.safeParse(body);
+      if (!parsed.success) {
+        sendError(res, 400, 'owner and repo required');
+        return true;
+      }
+      const result = await generateRepoRoast(parsed.data.owner, parsed.data.repo);
+      sendJson(res, 200, result);
+      return true;
+    }
+
+    if (pathname === '/api/ai/readme-enhance' && method === 'POST') {
+      const body = await getRequestBody(req);
+      const parsed = repoQuerySchema.safeParse(body);
+      if (!parsed.success) {
+        sendError(res, 400, 'owner and repo required');
+        return true;
+      }
+      const result = await generateReadmeEnhancement(parsed.data.owner, parsed.data.repo);
       sendJson(res, 200, result);
       return true;
     }
