@@ -224,7 +224,7 @@ export function VizPage() {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-zinc-950">
       <VizTopBar meta={data?.meta} />
-      <FilterBar owner={owner} repo={repo} />
+      <FilterBar owner={owner} repo={repo} analysis={data} />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {isLoading ? (

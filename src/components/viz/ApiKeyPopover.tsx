@@ -16,7 +16,7 @@ function setStoredApiKey(key: string | null) {
   try {
     if (key) localStorage.setItem(LS_KEY, key);
     else localStorage.removeItem(LS_KEY);
-  } catch {}
+  } catch { }
 }
 
 export function ApiKeyPopover() {
@@ -72,7 +72,7 @@ export function ApiKeyPopover() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        title="Set Gemini API key"
+        title="Set AI API key"
         className={cn(
           'flex h-8 w-8 items-center justify-center rounded-lg border transition-all shadow-[0_1px_2px_rgba(0,0,0,0.05)] active:scale-[0.98]',
           hasKey
@@ -92,7 +92,7 @@ export function ApiKeyPopover() {
           <div className="flex items-center justify-between border-b border-white/5 px-3 py-2">
             <div className="flex items-center gap-2">
               <KeyRound className="h-3.5 w-3.5 text-violet-400" />
-              <span className="text-xs font-semibold text-white">Gemini API Key</span>
+              <span className="text-xs font-semibold text-white">AI API Key</span>
             </div>
             <button
               type="button"
@@ -126,7 +126,7 @@ export function ApiKeyPopover() {
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="AIzaSy..."
+                placeholder="AIzaSy... / sk-... / sk-ant-..."
                 className="w-full rounded-lg border border-white/10 bg-zinc-800 py-1.5 pl-3 pr-8 font-mono text-xs text-white placeholder-zinc-600 outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-all"
               />
               <button

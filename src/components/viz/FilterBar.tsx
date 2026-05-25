@@ -4,6 +4,8 @@ import { useVizStore } from '@/stores/viz-store';
 import { ChevronsDown, ChevronsRight, Network } from 'lucide-react';
 import { MermaidModal } from './MermaidModal';
 
+import type { RepoAnalysis } from '@/types';
+
 const LAYOUTS = [
   { type: 'force', label: 'Organic Cluster', icon: Network },
   { type: 'LR', label: 'Horizontal Tree', icon: ChevronsRight },
@@ -13,9 +15,10 @@ const LAYOUTS = [
 interface FilterBarProps {
   owner: string;
   repo: string;
+  analysis?: RepoAnalysis;
 }
 
-export function FilterBar({ owner, repo }: FilterBarProps) {
+export function FilterBar({ owner, repo, analysis }: FilterBarProps) {
   const { layoutType, setLayoutType } = useVizStore();
   const [isMermaidOpen, setIsMermaidOpen] = useState(false);
 
@@ -65,6 +68,7 @@ export function FilterBar({ owner, repo }: FilterBarProps) {
         onClose={() => setIsMermaidOpen(false)}
         owner={owner}
         repo={repo}
+        analysis={analysis}
       />
     </div>
   );

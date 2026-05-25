@@ -523,7 +523,7 @@ export async function generateMermaidDiagram(
   }
 
   const analysis = await analyzeRepository({ owner, repo, branch });
-  const key = aiCacheKey('mermaid', owner, repo, analysis.meta.sha, 'v1');
+  const key = aiCacheKey('mermaid', owner, repo, analysis.meta.sha, 'v2');
 
   const cached = cache.get<string>(key);
   if (cached) return { diagram: cached, cached: true };
@@ -533,13 +533,34 @@ export async function generateMermaidDiagram(
     { role: 'system', content: SYSTEM_PROMPT },
     {
       role: 'user',
-      content: `Generate a beautiful Mermaid.js architecture flowchart for this repository. It should map out the high-level layers (e.g. entry points, controllers/routers, services, utilities, database/external api) and show their relationships.
-Output ONLY the mermaid code block wrapped in \`\`\`mermaid and \`\`\`. Do not add any text before or after.
+      content: `Generate a beautiful, clean, and highly readable Mermaid.js architecture flowchart for this repository.
+Follow these layout rules:
+1. Use Left-to-Right layout (\`graph LR\`) for better readability and structure.
+2. Group components logically into subgraphs (e.g., "Entry Points", "Controllers/Routers", "Services", "Utilities", "Database"). Keep subgraphs relatively compact.
+3. Keep the number of nodes readable (around 15-20 total nodes max). Do not list every single file; focus on the main architectural blocks and core flows.
+4. Classify nodes using these styles by adding class lines at the end of the diagram:
+   - \`class NodeId entry;\` for entrypoints/gateways
+   - \`class NodeId router;\` for routers/controllers/handlers
+   - \`class NodeId service;\` for main business logic/services
+   - \`class NodeId util;\` for utilities/helpers/parsers
+   - \`class NodeId db;\` for database, cache, or external API integrations
+   
 Example format:
 \`\`\`mermaid
-graph TD
-  A[App] --> B[Router]
+graph LR
+  subgraph EP ["Entry Points"]
+    A[index.ts]
+  end
+  subgraph SRV ["Services"]
+    B[api.ts]
+  end
+  A --> B
+  
+  class A entry;
+  class B service;
 \`\`\`
+
+Output ONLY the mermaid code block wrapped in \`\`\`mermaid and \`\`\`. Do not add any text before or after.
 
 ${buildRepoContext(analysis)}`,
     },

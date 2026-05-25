@@ -7,15 +7,48 @@ export interface AIProvider {
   complete(messages: Message[], options?: { json?: boolean }): Promise<string>;
 }
 
-export async function createProvider(overrideKey?: string): Promise<AIProvider> {
-  const provider = (process.env.AI_PROVIDER ?? 'mock').toLowerCase();
+function detectProviderType(key: string): 'gemini' | 'openai' | 'anthropic' {
+  const trimmed = key.trim();
+  if (trimmed.startsWith('sk-ant-')) {
+    return 'anthropic';
+  }
+  if (trimmed.startsWith('sk-')) {
+    return 'openai';
+  }
+  return 'gemini';
+}
 
-  // If a user key is provided, always use Gemini with that key (ignores AI_PROVIDER env)
-  if (overrideKey) {
-    return createGeminiProvider(overrideKey);
+export async function createProvider(overrideKey?: string): Promise<AIProvider> {
+  if (overrideKey && overrideKey.trim()) {
+    const type = detectProviderType(overrideKey);
+    switch (type) {
+      case 'openai':
+        return createOpenAIProvider(overrideKey);
+      case 'anthropic':
+        return createAnthropicProvider(overrideKey);
+      case 'gemini':
+      default:
+        return createGeminiProvider(overrideKey);
+    }
   }
 
-  switch (provider) {
+  // Auto-detect provider based on available environment API keys
+  let providerType: 'gemini' | 'openai' | 'anthropic' | 'mock' = 'mock';
+
+  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim()) {
+    providerType = 'gemini';
+  } else if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim()) {
+    providerType = 'openai';
+  } else if (process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.trim()) {
+    providerType = 'anthropic';
+  } else if (process.env.AI_PROVIDER) {
+    const envProvider = process.env.AI_PROVIDER.toLowerCase();
+    if (envProvider === 'gemini' || envProvider === 'openai' || envProvider === 'anthropic' || envProvider === 'mock') {
+      providerType = envProvider as any;
+    }
+  }
+
+  switch (providerType) {
     case 'openai':
       return createOpenAIProvider();
     case 'anthropic':
@@ -34,22 +67,30 @@ async function createGeminiProvider(overrideKey?: string): Promise<AIProvider> {
   const apiVersion = process.env.GEMINI_API_VERSION ?? 'v1alpha';
 
   if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is required when AI_PROVIDER=gemini');
+    throw new Error('GEMINI_API_KEY is required when using Gemini provider');
   }
 
   const ai = new GoogleGenAI({ apiKey, apiVersion });
 
   return {
-    async complete(messages) {
-      const prompt = messages
-        .map((m) => `${m.role}: ${m.content}`)
-        .join('\n\n');
+    async complete(messages, options) {
+      const systemMessage = messages.find((m) => m.role === 'system');
+      const systemInstruction = systemMessage?.content;
+
+      const contents = messages
+        .filter((m) => m.role !== 'system')
+        .map((m) => ({
+          role: (m.role === 'assistant' ? 'model' : 'user') as 'model' | 'user',
+          parts: [{ text: m.content }],
+        }));
 
       const response = await ai.models.generateContent({
         model,
-        contents: prompt,
+        contents,
         config: {
           temperature: 0.2,
+          systemInstruction,
+          responseMimeType: options?.json ? 'application/json' : undefined,
         },
       });
 
@@ -58,10 +99,13 @@ async function createGeminiProvider(overrideKey?: string): Promise<AIProvider> {
   };
 }
 
-
-async function createOpenAIProvider(): Promise<AIProvider> {
+async function createOpenAIProvider(overrideKey?: string): Promise<AIProvider> {
   const { default: OpenAI } = await import('openai');
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const apiKey = overrideKey ?? process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY is required when using OpenAI provider');
+  }
+  const client = new OpenAI({ apiKey });
   if (process.env.OPENAI_API_BASE) {
     client.baseURL = process.env.OPENAI_API_BASE;
   }
@@ -81,9 +125,13 @@ async function createOpenAIProvider(): Promise<AIProvider> {
   };
 }
 
-async function createAnthropicProvider(): Promise<AIProvider> {
+async function createAnthropicProvider(overrideKey?: string): Promise<AIProvider> {
   const Anthropic = (await import('@anthropic-ai/sdk')).default;
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const apiKey = overrideKey ?? process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error('ANTHROPIC_API_KEY is required when using Anthropic provider');
+  }
+  const client = new Anthropic({ apiKey });
   const model = process.env.ANTHROPIC_MODEL ?? 'claude-3-5-haiku-latest';
 
   return {

@@ -2,20 +2,145 @@ import { useEffect, useRef, useState } from 'react';
 import { X, Copy, Download, RefreshCw, Network, Check } from 'lucide-react';
 import mermaid from 'mermaid';
 import { useMermaid } from '@/features/ai/useAI';
+import { cn } from '@/lib/utils';
+import type { RepoAnalysis } from '@/types';
 
-// Initialize mermaid with custom dark theme variables
+// Initialize mermaid with custom dark theme variables and premium styling overrides
 mermaid.initialize({
   startOnLoad: false,
-  theme: 'dark',
+  theme: 'base',
   securityLevel: 'loose',
+  flowchart: {
+    useMaxWidth: true,
+    htmlLabels: true,
+  },
   themeVariables: {
     background: '#09090b',
     primaryColor: '#6d28d9',
-    primaryTextColor: '#fff',
+    primaryTextColor: '#f4f4f5',
     lineColor: '#3f3f46',
-    nodeBorder: '#27272a',
+    nodeBorder: '#3f3f46',
     mainBkg: '#18181b',
+    actorBkg: '#18181b',
+    actorBorder: '#3f3f46',
+    actorTextColor: '#f4f4f5',
+    signalColor: '#a1a1aa',
+    signalLineColor: '#3f3f46',
+    labelBoxBkgColor: '#18181b',
+    labelBoxBorderColor: '#3f3f46',
+    labelTextColor: '#f4f4f5',
+    loopBkgColor: '#18181b',
+    loopBorderColor: '#3f3f46',
+    noteBkgColor: '#18181b',
+    noteBorderColor: '#3f3f46',
+    noteTextColor: '#f4f4f5',
   },
+  themeCSS: `
+    /* Node general resets and premium styling */
+    .node rect, .node polygon, .node circle, .node path {
+      fill: #18181b;
+      stroke: #3f3f46;
+      stroke-width: 1.5px;
+      rx: 8px;
+      ry: 8px;
+      transition: all 0.2s ease-in-out;
+    }
+    
+    /* Interactive Hover effects */
+    .node:hover rect, .node:hover polygon, .node:hover circle, .node:hover path {
+      fill: #242427 !important;
+      stroke: #8b5cf6 !important;
+      filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.45));
+      cursor: pointer;
+    }
+
+    /* Connection Lines / Edges styling */
+    .edgePath .path {
+      stroke: #52525b !important;
+      stroke-width: 1.5px !important;
+      transition: all 0.2s ease-in-out;
+    }
+    .edgePath:hover .path {
+      stroke: #a78bfa !important;
+      stroke-width: 2px !important;
+    }
+    .edgePath .markerPath {
+      fill: #52525b !important;
+      stroke: none !important;
+      transition: all 0.2s ease-in-out;
+    }
+    .edgePath:hover .markerPath {
+      fill: #a78bfa !important;
+    }
+
+    /* Subgraph container boxes styling */
+    .cluster rect {
+      fill: rgba(24, 24, 27, 0.2) !important;
+      stroke: rgba(63, 63, 70, 0.4) !important;
+      stroke-width: 1.5px !important;
+      rx: 12px !important;
+      ry: 12px !important;
+    }
+    .cluster-label, .cluster-label text, .cluster-label span, .cluster-label div, .cluster-label p, .cluster-label a, .cluster-label a:visited, .cluster-label a:hover {
+      fill: #e4e4e7 !important;
+      color: #e4e4e7 !important;
+      font-family: 'Outfit', 'Inter', system-ui, sans-serif !important;
+      font-weight: 600 !important;
+      font-size: 11px !important;
+      letter-spacing: 0.05em !important;
+      text-transform: uppercase !important;
+      text-decoration: none !important;
+    }
+    .cluster-label {
+      translate: 0 8px !important;
+    }
+    .cluster-label foreignObject div, .cluster-label p {
+      line-height: 1.2 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    /* Node Text & HTML labels styling */
+    .node text, .node .label, .node .label text, .node .label div, .node .label span, .node span, .node div, .node a, .node a:visited, .node a:hover {
+      color: #f4f4f5 !important;
+      fill: #f4f4f5 !important;
+      font-family: 'Inter', system-ui, sans-serif !important;
+      font-size: 11px !important;
+      font-weight: 500 !important;
+      text-decoration: none !important;
+    }
+
+    /* Specific Node Type class colors */
+    .node.entry rect, .node.entry polygon {
+      fill: #1e1b4b !important;
+      stroke: #8b5cf6 !important;
+      stroke-width: 2px !important;
+    }
+    .node.router rect, .node.router polygon {
+      fill: #064e3b !important;
+      stroke: #10b981 !important;
+    }
+    .node.service rect, .node.service polygon {
+      fill: #172554 !important;
+      stroke: #3b82f6 !important;
+    }
+    .node.util rect, .node.util polygon {
+      fill: #18181b !important;
+      stroke: #71717a !important;
+    }
+    .node.db rect, .node.db polygon {
+      fill: #581c87 !important;
+      stroke: #d946ef !important;
+    }
+    .node.config rect, .node.config polygon {
+      fill: #451a03 !important;
+      stroke: #f59e0b !important;
+    }
+    .node.test rect, .node.test polygon {
+      fill: #0c4a6e !important;
+      stroke: #0284c7 !important;
+    }
+  `,
 });
 
 interface MermaidModalProps {
@@ -23,9 +148,98 @@ interface MermaidModalProps {
   onClose: () => void;
   owner: string;
   repo: string;
+  analysis?: RepoAnalysis;
 }
 
-export function MermaidModal({ isOpen, onClose, owner, repo }: MermaidModalProps) {
+function generateProgrammaticMermaid(analysis: RepoAnalysis): string {
+  const nodes = analysis.graph?.nodes?.filter((n) => n.type === 'file') || [];
+  const edges = analysis.graph?.edges || [];
+
+  // Identify the most connected files to keep the diagram readable
+  const fileConnectivity = new Map<string, { incoming: number; outgoing: number }>();
+
+  nodes.forEach((n) => {
+    fileConnectivity.set(n.id, { incoming: 0, outgoing: 0 });
+  });
+
+  edges.forEach((e) => {
+    const source = fileConnectivity.get(e.source);
+    const target = fileConnectivity.get(e.target);
+    if (source) source.outgoing++;
+    if (target) target.incoming++;
+  });
+
+  // Calculate degree for each node
+  const scoredNodes = nodes.map((n) => {
+    const conn = fileConnectivity.get(n.id) || { incoming: 0, outgoing: 0 };
+    const degree = conn.incoming + conn.outgoing;
+    let score = degree;
+    if (n.data?.fileClass === 'entry') score += 10;
+    if (analysis.importantFiles?.includes(n.data?.path || '')) score += 5;
+    return { node: n, score };
+  });
+
+  // Sort and keep top 25 files to prevent clutter
+  scoredNodes.sort((a, b) => b.score - a.score);
+  const topScored = scoredNodes.slice(0, 25);
+  const keptNodeIds = new Set(topScored.map((sn) => sn.node.id));
+  const keptNodes = topScored.map((sn) => sn.node);
+
+  // Group the kept files by their parent directory
+  const foldersMap = new Map<string, typeof keptNodes>();
+  keptNodes.forEach((node) => {
+    const path = node.data?.path || '';
+    const parts = path.split('/');
+    const folder = parts.length > 1 ? parts.slice(0, -1).join('/') : 'root';
+    if (!foldersMap.has(folder)) {
+      foldersMap.set(folder, []);
+    }
+    foldersMap.get(folder)!.push(node);
+  });
+
+  let lines: string[] = ['graph LR'];
+
+  let folderIdCounter = 0;
+  foldersMap.forEach((files, folderPath) => {
+    const folderId = `dir_${folderIdCounter++}`;
+    lines.push(`  subgraph ${folderId} ["${folderPath}"]`);
+    files.forEach((node) => {
+      const label = (node.data?.label || '').replace(/"/g, '\\"');
+      const mermaidId = node.id.replace(/[^a-zA-Z0-9_]/g, '_');
+      lines.push(`    ${mermaidId}["${label}"]`);
+    });
+    lines.push('  end');
+  });
+
+  const addedEdges = new Set<string>();
+  edges.forEach((edge) => {
+    const srcId = edge.source;
+    const tgtId = edge.target;
+    if (keptNodeIds.has(srcId) && keptNodeIds.has(tgtId)) {
+      const srcMermaidId = srcId.replace(/[^a-zA-Z0-9_]/g, '_');
+      const tgtMermaidId = tgtId.replace(/[^a-zA-Z0-9_]/g, '_');
+      const edgeKey = `${srcMermaidId}-->${tgtMermaidId}`;
+      if (!addedEdges.has(edgeKey)) {
+        lines.push(`  ${srcMermaidId} --> ${tgtMermaidId}`);
+        addedEdges.add(edgeKey);
+      }
+    }
+  });
+
+  // Apply classes to nodes for custom visual coloring
+  keptNodes.forEach((node) => {
+    const mermaidId = node.id.replace(/[^a-zA-Z0-9_]/g, '_');
+    let cls = 'service';
+    if (node.data?.fileClass === 'entry') cls = 'entry';
+    else if (node.data?.fileClass === 'config') cls = 'config';
+    else if (node.data?.fileClass === 'test') cls = 'test';
+    lines.push(`  class ${mermaidId} ${cls}`);
+  });
+
+  return lines.join('\n');
+}
+
+export function MermaidModal({ isOpen, onClose, owner, repo, analysis }: MermaidModalProps) {
   const { mutate: generate, data, isPending, isError, error, reset } = useMermaid();
   const [svg, setSvg] = useState<string>('');
   const [renderError, setRenderError] = useState<string | null>(null);
@@ -33,20 +247,29 @@ export function MermaidModal({ isOpen, onClose, owner, repo }: MermaidModalProps
   const [copiedSvg, setCopiedSvg] = useState(false);
   const svgContainerRef = useRef<HTMLDivElement>(null);
 
+  // Mode: 'code' (direct programmatic from graph) vs 'ai' (AI summary flowchart)
+  const [mode, setMode] = useState<'code' | 'ai'>('code');
+
   // Zoom and pan states
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
-  // Trigger diagram generation on open
+  // Trigger diagram generation on open or mode switch
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && mode === 'ai' && !data) {
       generate({ owner, repo });
-    } else {
-      reset();
     }
-  }, [isOpen, owner, repo, generate, reset]);
+  }, [isOpen, mode, data, owner, repo, generate]);
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      reset();
+      setMode('code');
+    }
+  }, [isOpen, reset]);
 
   // Handle ESC key to close
   useEffect(() => {
@@ -63,26 +286,33 @@ export function MermaidModal({ isOpen, onClose, owner, repo }: MermaidModalProps
     };
   }, [isOpen, onClose]);
 
-  // Render the diagram to SVG when raw data is received
+  // Render the diagram to SVG when data, analysis, or mode changes
   useEffect(() => {
-    if (!data?.diagram) return;
+    let code = '';
+    if (mode === 'code') {
+      if (!analysis) return;
+      code = generateProgrammaticMermaid(analysis);
+    } else {
+      if (!data?.diagram) return;
+      code = data.diagram.trim();
+      if (code.startsWith('```mermaid')) {
+        code = code.slice(10);
+      } else if (code.startsWith('```')) {
+        code = code.slice(3);
+      }
+      if (code.endsWith('```')) {
+        code = code.slice(0, -3);
+      }
+      code = code.trim();
+    }
+
+    if (!code) return;
+
     let active = true;
     setRenderError(null);
     setSvg('');
     setZoom(1);
     setPan({ x: 0, y: 0 });
-
-    // Clean up markdown block format
-    let code = data.diagram.trim();
-    if (code.startsWith('```mermaid')) {
-      code = code.slice(10);
-    } else if (code.startsWith('```')) {
-      code = code.slice(3);
-    }
-    if (code.endsWith('```')) {
-      code = code.slice(0, -3);
-    }
-    code = code.trim();
 
     const id = `mermaid-modal-svg-${Math.floor(Math.random() * 1000000)}`;
 
@@ -114,12 +344,13 @@ export function MermaidModal({ isOpen, onClose, owner, repo }: MermaidModalProps
     return () => {
       active = false;
     };
-  }, [data]);
+  }, [mode, data, analysis]);
 
   const handleCopyCode = async () => {
-    if (!data?.diagram) return;
+    const rawCode = mode === 'ai' ? data?.diagram : (analysis ? generateProgrammaticMermaid(analysis) : '');
+    if (!rawCode) return;
     try {
-      await navigator.clipboard.writeText(data.diagram);
+      await navigator.clipboard.writeText(rawCode);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -214,8 +445,37 @@ export function MermaidModal({ isOpen, onClose, owner, repo }: MermaidModalProps
               <p className="text-[10px] text-zinc-500 mt-1 font-mono">{owner}/{repo}</p>
             </div>
           </div>
+
+          {/* Segmented Mode Selector */}
+          <div className="flex items-center rounded-md border border-white/5 bg-zinc-950 p-0.5 ml-4">
+            <button
+              type="button"
+              onClick={() => setMode('code')}
+              className={cn(
+                'rounded px-2.5 py-1 text-[10px] font-semibold transition-all duration-150',
+                mode === 'code'
+                  ? 'bg-zinc-800 text-zinc-100 shadow'
+                  : 'text-zinc-500 hover:text-zinc-300'
+              )}
+            >
+              Code Graph
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('ai')}
+              className={cn(
+                'rounded px-2.5 py-1 text-[10px] font-semibold transition-all duration-150',
+                mode === 'ai'
+                  ? 'bg-zinc-800 text-zinc-100 shadow'
+                  : 'text-zinc-500 hover:text-zinc-300'
+              )}
+            >
+              AI Enhanced
+            </button>
+          </div>
+
           <div className="flex items-center gap-2">
-            {data && svg && (
+            {svg && (
               <>
                 <button
                   type="button"
@@ -255,23 +515,33 @@ export function MermaidModal({ isOpen, onClose, owner, repo }: MermaidModalProps
 
         {/* Content Area */}
         <div className="flex-1 overflow-auto p-6 bg-zinc-950 custom-scrollbar flex flex-col">
-          {isPending && (
+          {mode === 'code' && !analysis && (
             <div className="flex flex-col items-center justify-center h-full flex-1 space-y-4">
               <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-violet-500 border-t-transparent" />
               <div className="text-center">
-                <span className="text-xs text-zinc-400 font-semibold tracking-wider uppercase block">Analyzing Codebase Flow</span>
+                <span className="text-xs text-zinc-400 font-semibold tracking-wider uppercase block">Loading Codebase Graph</span>
+                <span className="text-[10px] text-zinc-500 block mt-1">Reading parsed AST topology...</span>
+              </div>
+            </div>
+          )}
+
+          {mode === 'ai' && isPending && (
+            <div className="flex flex-col items-center justify-center h-full flex-1 space-y-4">
+              <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-violet-500 border-t-transparent" />
+              <div className="text-center">
+                <span className="text-xs text-zinc-400 font-semibold tracking-wider uppercase block">Analyzing Codebase Flow (AI)</span>
                 <span className="text-[10px] text-zinc-500 block mt-1">Generating visual relationship graph...</span>
               </div>
             </div>
           )}
 
-          {isError && (
+          {mode === 'ai' && isError && (
             <div className="flex flex-col items-center justify-center h-full flex-1 max-w-sm mx-auto text-center space-y-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
                 <X className="h-6 w-6" />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-white">Failed to generate diagram</h4>
+                <h4 className="text-sm font-semibold text-white">Failed to generate AI diagram</h4>
                 <p className="text-xs text-zinc-500 mt-1.5 leading-relaxed max-w-md">
                   {error instanceof Error ? error.message : 'An error occurred while generating the architecture schema.'}
                 </p>
@@ -287,7 +557,8 @@ export function MermaidModal({ isOpen, onClose, owner, repo }: MermaidModalProps
             </div>
           )}
 
-          {!isPending && !isError && data && (
+          {/* Render Area */}
+          {((mode === 'code' && analysis) || (mode === 'ai' && !isPending && !isError && data)) && (
             <div className="space-y-4 h-full flex flex-col flex-1">
               {renderError ? (
                 <div className="flex flex-col items-center justify-center p-8 text-center bg-red-500/5 border border-red-500/10 rounded-xl flex-1">
@@ -356,10 +627,15 @@ export function MermaidModal({ isOpen, onClose, owner, repo }: MermaidModalProps
               )}
 
               <div className="bg-zinc-900/40 border border-zinc-800/40 rounded-xl p-3.5">
-                <h5 className="text-[11px] font-bold text-white uppercase tracking-wider mb-1">Architecture Tip</h5>
+                <h5 className="text-[11px] font-bold text-white uppercase tracking-wider mb-1">
+                  {mode === 'code' ? 'Code Graph Architecture Tip' : 'AI Enhanced Architecture Tip'}
+                </h5>
                 <p className="text-[10px] text-zinc-400 leading-relaxed">
-                  This diagram represents the parsed structure computed from module imports and codebase entry points.
-                  You can copy the raw **Mermaid Code** to paste into markdown files, or copy/download the rendered **SVG image** for diagrams, documentations, and code reviews.
+                  {mode === 'code' ? (
+                    'This diagram is programmatically built client-side by analyzing static file imports, grouped inside bounding boxes named after directory subfolders. Zoom and pan to inspect module boundaries.'
+                  ) : (
+                    'This diagram represents the logical system architecture and dependencies summarized by the Gemini LLM. You can download the rendered SVG or copy/paste the Mermaid raw markdown.'
+                  )}
                 </p>
               </div>
             </div>
