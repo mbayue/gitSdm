@@ -62,6 +62,9 @@ async function createGeminiProvider(overrideKey?: string): Promise<AIProvider> {
 async function createOpenAIProvider(): Promise<AIProvider> {
   const { default: OpenAI } = await import('openai');
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  if (process.env.OPENAI_API_BASE) {
+    client.baseURL = process.env.OPENAI_API_BASE;
+  }
   const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
 
   return {

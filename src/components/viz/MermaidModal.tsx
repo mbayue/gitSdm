@@ -33,6 +33,12 @@ export function MermaidModal({ isOpen, onClose, owner, repo }: MermaidModalProps
   const [copiedSvg, setCopiedSvg] = useState(false);
   const svgContainerRef = useRef<HTMLDivElement>(null);
 
+  // Zoom and pan states
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
   // Trigger diagram generation on open
   useEffect(() => {
     if (isOpen) {
@@ -63,6 +69,8 @@ export function MermaidModal({ isOpen, onClose, owner, repo }: MermaidModalProps
     let active = true;
     setRenderError(null);
     setSvg('');
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
 
     // Clean up markdown block format
     let code = data.diagram.trim();
@@ -86,7 +94,7 @@ export function MermaidModal({ isOpen, onClose, owner, repo }: MermaidModalProps
           if (renderedSvg.includes('width=')) {
             styled = renderedSvg
               .replace(/width="[^"]+"/, 'width="100%"')
-              .replace(/height="[^"]+"/, 'style="max-height: 550px; width: 100%;"');
+              .replace(/height="[^"]+"/, 'style="max-height: 100%; max-width: 100%; width: 100%; height: auto;"');
           }
           setSvg(styled);
         }
@@ -156,6 +164,32 @@ export function MermaidModal({ isOpen, onClose, owner, repo }: MermaidModalProps
     generate({ owner, repo });
   };
 
+  // SVG drag and zoom event handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return; // Only left click drags
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setPan({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y,
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const zoomFactor = 1.08;
+    const nextZoom = e.deltaY < 0 ? zoom * zoomFactor : zoom / zoomFactor;
+    setZoom(Math.max(0.15, Math.min(5, nextZoom)));
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -220,9 +254,9 @@ export function MermaidModal({ isOpen, onClose, owner, repo }: MermaidModalProps
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-auto p-6 bg-zinc-950 custom-scrollbar">
+        <div className="flex-1 overflow-auto p-6 bg-zinc-950 custom-scrollbar flex flex-col">
           {isPending && (
-            <div className="flex flex-col items-center justify-center h-full space-y-4">
+            <div className="flex flex-col items-center justify-center h-full flex-1 space-y-4">
               <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-violet-500 border-t-transparent" />
               <div className="text-center">
                 <span className="text-xs text-zinc-400 font-semibold tracking-wider uppercase block">Analyzing Codebase Flow</span>
@@ -232,13 +266,13 @@ export function MermaidModal({ isOpen, onClose, owner, repo }: MermaidModalProps
           )}
 
           {isError && (
-            <div className="flex flex-col items-center justify-center h-full max-w-sm mx-auto text-center space-y-4">
+            <div className="flex flex-col items-center justify-center h-full flex-1 max-w-sm mx-auto text-center space-y-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
                 <X className="h-6 w-6" />
               </div>
               <div>
                 <h4 className="text-sm font-semibold text-white">Failed to generate diagram</h4>
-                <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                <p className="text-xs text-zinc-500 mt-1.5 leading-relaxed max-w-md">
                   {error instanceof Error ? error.message : 'An error occurred while generating the architecture schema.'}
                 </p>
               </div>
@@ -254,9 +288,9 @@ export function MermaidModal({ isOpen, onClose, owner, repo }: MermaidModalProps
           )}
 
           {!isPending && !isError && data && (
-            <div className="space-y-4 h-full flex flex-col">
+            <div className="space-y-4 h-full flex flex-col flex-1">
               {renderError ? (
-                <div className="flex flex-col items-center justify-center p-8 text-center bg-red-500/5 border border-red-500/10 rounded-xl">
+                <div className="flex flex-col items-center justify-center p-8 text-center bg-red-500/5 border border-red-500/10 rounded-xl flex-1">
                   <span className="text-red-400 text-xs font-medium">{renderError}</span>
                 </div>
               ) : !svg ? (
@@ -266,10 +300,59 @@ export function MermaidModal({ isOpen, onClose, owner, repo }: MermaidModalProps
                 </div>
               ) : (
                 <div
-                  ref={svgContainerRef}
-                  className="flex-1 w-full overflow-auto flex items-center justify-center bg-zinc-900/20 border border-zinc-800/40 rounded-xl p-6 shadow-inner"
-                  dangerouslySetInnerHTML={{ __html: svg }}
-                />
+                  className="relative flex-1 w-full h-[50vh] min-h-[380px] overflow-hidden bg-zinc-900/20 border border-zinc-800/40 rounded-xl select-none cursor-grab active:cursor-grabbing"
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  onWheel={handleWheel}
+                >
+                  {/* SVG Render Container */}
+                  <div
+                    ref={svgContainerRef}
+                    className="w-full h-full flex items-center justify-center transition-transform duration-75 ease-out"
+                    style={{
+                      transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                      transformOrigin: 'center center',
+                    }}
+                    dangerouslySetInnerHTML={{ __html: svg }}
+                  />
+
+                  {/* Zoom Controls Overlay */}
+                  <div className="absolute bottom-4 right-4 flex items-center gap-1 bg-zinc-950/80 border border-zinc-800 rounded-lg p-1 shadow-lg backdrop-blur-sm z-20">
+                    <button
+                      type="button"
+                      onClick={() => setZoom(z => Math.max(0.15, z - 0.1))}
+                      className="flex h-7 w-7 items-center justify-center rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                      title="Zoom Out"
+                    >
+                      <span className="text-sm leading-none font-bold select-none">-</span>
+                    </button>
+                    <span className="text-[10px] font-mono text-zinc-500 px-1 select-none min-w-[36px] text-center">
+                      {Math.round(zoom * 100)}%
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setZoom(z => Math.min(5, z + 0.1))}
+                      className="flex h-7 w-7 items-center justify-center rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                      title="Zoom In"
+                    >
+                      <span className="text-sm leading-none font-bold select-none">+</span>
+                    </button>
+                    <div className="w-px h-4 bg-zinc-800 mx-1" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setZoom(1);
+                        setPan({ x: 0, y: 0 });
+                      }}
+                      className="flex h-7 px-2 items-center justify-center rounded hover:bg-zinc-800 text-[10px] font-semibold text-zinc-400 hover:text-white transition-colors"
+                      title="Reset view"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </div>
               )}
 
               <div className="bg-zinc-900/40 border border-zinc-800/40 rounded-xl p-3.5">
