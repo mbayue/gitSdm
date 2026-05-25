@@ -47,8 +47,12 @@ export function parsePyproject(content: string): Dependency[] {
     const lines = depSection[1].match(/"([^"]+)"/g) ?? [];
     for (const line of lines) {
       const pkg = line.replace(/"/g, '');
-      const [name, version] = pkg.split(/[=<>]/);
-      deps.push({ name: name.trim(), version: version?.trim(), type: 'prod', ecosystem: 'python' });
+      const parts = pkg.split(/[=<>~!]+/);
+      const name = parts[0]?.trim();
+      const version = parts[1]?.trim();
+      if (name) {
+        deps.push({ name, version, type: 'prod', ecosystem: 'python' });
+      }
     }
   }
   return deps;
@@ -60,10 +64,30 @@ export function parseCargoToml(content: string): Dependency[] {
   if (!section) return deps;
   const lines = section[1].split('\n');
   for (const line of lines) {
-    const match = line.match(/^([a-zA-Z0-9_-]+)\s*=\s*"?([^"\n]+)"?/);
-    if (match) {
-      deps.push({ name: match[1], version: match[2], type: 'prod', ecosystem: 'rust' });
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx === -1) continue;
+
+    const name = trimmed.substring(0, eqIdx).trim();
+    const val = trimmed.substring(eqIdx + 1).trim();
+
+    let version = '';
+    if (val.startsWith('{')) {
+      const versionMatch = val.match(/version\s*=\s*["']([^"']+)["']/);
+      if (versionMatch) {
+        version = versionMatch[1];
+      }
+    } else {
+      const versionMatch = val.match(/^["']([^"']+)["']/);
+      if (versionMatch) {
+        version = versionMatch[1];
+      } else {
+        version = val;
+      }
     }
+
+    deps.push({ name, version, type: 'prod', ecosystem: 'rust' });
   }
   return deps;
 }
