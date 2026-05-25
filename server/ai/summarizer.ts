@@ -43,6 +43,7 @@ export async function explainRepo(params: {
   filePath?: string;
   fileSnippet?: string;
   context?: string;
+  apiKey?: string;
 }): Promise<{ explanation: string; cached: boolean }> {
   if ((process.env.AI_PROVIDER ?? 'mock').toLowerCase() === 'mock') {
     const branchSuffix = params.branch ? ` on branch **${params.branch}**` : '';
@@ -63,7 +64,8 @@ export async function explainRepo(params: {
   const cached = cache.get<string>(key);
   if (cached) return { explanation: cached, cached: true };
 
-  const provider = await getAIProvider();
+  const apiKey = params.apiKey;
+  const provider = await getAIProvider(apiKey);
   let userPrompt = buildRepoContext(analysis);
 
   if (params.scope === 'node' && params.nodeId) {
@@ -100,6 +102,7 @@ export async function explainArchitecture(
   owner: string,
   repo: string,
   branch?: string,
+  apiKey?: string,
 ): Promise<{ overview: string; layers: { name: string; description: string }[]; cached: boolean }> {
   if ((process.env.AI_PROVIDER ?? 'mock').toLowerCase() === 'mock') {
     const branchSuffix = branch ? ` (branch: ${branch})` : '';
@@ -120,7 +123,7 @@ export async function explainArchitecture(
   const cached = cache.get<{ overview: string; layers: { name: string; description: string }[] }>(key);
   if (cached) return { ...cached, cached: true };
 
-  const provider = await getAIProvider();
+  const provider = await getAIProvider(apiKey);
   const raw = await provider.complete(
     [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -160,6 +163,7 @@ export async function suggestFiles(
   owner: string,
   repo: string,
   branch?: string,
+  apiKey?: string,
 ): Promise<{
   files: { path: string; reason: string; priority: 'high' | 'medium' | 'low' }[];
   cached: boolean;
@@ -182,7 +186,7 @@ export async function suggestFiles(
   const cached = cache.get<{ files: { path: string; reason: string; priority: 'high' | 'medium' | 'low' }[] }>(key);
   if (cached) return { files: cached.files, cached: true };
 
-  const provider = await getAIProvider();
+  const provider = await getAIProvider(apiKey);
   const raw = await provider.complete(
     [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -225,6 +229,7 @@ export async function generateOnboarding(
   owner: string,
   repo: string,
   branch?: string,
+  apiKey?: string,
 ): Promise<{ steps: { title: string; description: string; filePath?: string }[]; cached: boolean }> {
   if ((process.env.AI_PROVIDER ?? 'mock').toLowerCase() === 'mock') {
     const branchSuffix = branch ? ` on branch ${branch}` : '';
@@ -244,7 +249,7 @@ export async function generateOnboarding(
   const cached = cache.get<{ steps: { title: string; description: string; filePath?: string }[] }>(key);
   if (cached) return { steps: cached.steps, cached: true };
 
-  const provider = await getAIProvider();
+  const provider = await getAIProvider(apiKey);
   const raw = await provider.complete(
     [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -294,6 +299,7 @@ export async function explainRepoELI5(
   owner: string,
   repo: string,
   branch?: string,
+  apiKey?: string,
 ): Promise<{ explanation: string; cached: boolean }> {
   if ((process.env.AI_PROVIDER ?? 'mock').toLowerCase() === 'mock') {
     const branchSuffix = branch ? ` (reading branch: **${branch}**)` : '';
@@ -309,7 +315,7 @@ export async function explainRepoELI5(
   const cached = cache.get<string>(key);
   if (cached) return { explanation: cached, cached: true };
 
-  const provider = await getAIProvider();
+  const provider = await getAIProvider(apiKey);
   const explanation = await provider.complete([
     { role: 'system', content: SYSTEM_PROMPT },
     {
@@ -344,6 +350,7 @@ export async function generateRefactorSuggestions(
   owner: string,
   repo: string,
   branch?: string,
+  apiKey?: string,
 ): Promise<{
   suggestions: { title: string; description: string; category: string; files: string[]; risk: 'high' | 'medium' | 'low' }[];
   cached: boolean;
@@ -384,7 +391,7 @@ export async function generateRefactorSuggestions(
   const cached = cache.get<any>(key);
   if (cached) return { suggestions: cached.suggestions, cached: true };
 
-  const provider = await getAIProvider();
+  const provider = await getAIProvider(apiKey);
   const raw = await provider.complete([
     { role: 'system', content: SYSTEM_PROMPT },
     {
@@ -436,6 +443,7 @@ export async function generateHealthReport(
   owner: string,
   repo: string,
   branch?: string,
+  apiKey?: string,
 ): Promise<{
   scores: { maintainability: number; modularity: number; readability: number; architecture: number; complexity: number };
   summary: string;
@@ -462,7 +470,7 @@ export async function generateHealthReport(
   const cached = cache.get<any>(key);
   if (cached) return { scores: cached.scores, summary: cached.summary, cached: true };
 
-  const provider = await getAIProvider();
+  const provider = await getAIProvider(apiKey);
   const raw = await provider.complete([
     { role: 'system', content: SYSTEM_PROMPT },
     {
@@ -504,6 +512,7 @@ export async function generateMermaidDiagram(
   owner: string,
   repo: string,
   branch?: string,
+  apiKey?: string,
 ): Promise<{ diagram: string; cached: boolean }> {
   if ((process.env.AI_PROVIDER ?? 'mock').toLowerCase() === 'mock') {
     const branchSuffix = branch ? ` (rendering branch: ${branch})` : '';
@@ -519,7 +528,7 @@ export async function generateMermaidDiagram(
   const cached = cache.get<string>(key);
   if (cached) return { diagram: cached, cached: true };
 
-  const provider = await getAIProvider();
+  const provider = await getAIProvider(apiKey);
   const diagram = await provider.complete([
     { role: 'system', content: SYSTEM_PROMPT },
     {
@@ -544,6 +553,7 @@ export async function generateRepoRoast(
   owner: string,
   repo: string,
   branch?: string,
+  apiKey?: string,
 ): Promise<{ roast: string; cached: boolean }> {
   if ((process.env.AI_PROVIDER ?? 'mock').toLowerCase() === 'mock') {
     const branchSuffix = branch ? ` on branch \`${branch}\`` : '';
@@ -559,7 +569,7 @@ export async function generateRepoRoast(
   const cached = cache.get<string>(key);
   if (cached) return { roast: cached, cached: true };
 
-  const provider = await getAIProvider();
+  const provider = await getAIProvider(apiKey);
   const roast = await provider.complete([
     { role: 'system', content: SYSTEM_PROMPT },
     {
@@ -591,6 +601,7 @@ export async function generateReadmeEnhancement(
   owner: string,
   repo: string,
   branch?: string,
+  apiKey?: string,
 ): Promise<{ readme: string; cached: boolean }> {
   if ((process.env.AI_PROVIDER ?? 'mock').toLowerCase() === 'mock') {
     const branchSuffix = branch ? ` (branch: ${branch})` : '';
@@ -606,7 +617,7 @@ export async function generateReadmeEnhancement(
   const cached = cache.get<string>(key);
   if (cached) return { readme: cached, cached: true };
 
-  const provider = await getAIProvider();
+  const provider = await getAIProvider(apiKey);
   const readme = await provider.complete([
     { role: 'system', content: SYSTEM_PROMPT },
     {
@@ -631,6 +642,7 @@ export async function generateLearningPath(
   owner: string,
   repo: string,
   branch?: string,
+  apiKey?: string,
 ): Promise<{
   mentalModel: {
     type: string;
@@ -712,7 +724,7 @@ export async function generateLearningPath(
   const cached = cache.get<any>(key);
   if (cached) return { ...cached, cached: true };
 
-  const provider = await getAIProvider();
+  const provider = await getAIProvider(apiKey);
   const raw = await provider.complete(
     [
       { role: 'system', content: SYSTEM_PROMPT },

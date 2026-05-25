@@ -139,12 +139,20 @@ gcloud run deploy gitsdm \
 
 ## Features
 
-- Repository structure graph (folders, files, packages, contributors)
-- Multi-ecosystem dependency parsing (npm, Python, Rust, Go, Docker, Java)
-- AI: explain repo/node and/or architecture overview
-- Smart file explorer with entry/config/test badges and interactive Code Inspector (featuring a custom tokenized syntax-highlighted skeleton loader)
-- Contributor bar chart and 90-day commit timeline
-- In-memory LRU cache (per serverless instance; best-effort on cold starts)
+- **Interactive Repository Structure Graph**: Custom canvas nodes displaying folders, files, configuration files, and direct contributors. Supports three layout modes: Organic Cluster, Horizontal Tree, and Vertical Tree.
+- **Interactive Canvas Legend & Filters**: A top-right floating legend panel that allows users to dynamically toggle the visibility of specific node types (Repository, Directory, Code/Assets) and diff change statuses (+ Added, ~ Modified, - Deleted) with smart parent directory structure preservation.
+- **Smart File Explorer**: Nested filesystem tree navigation featuring distinct custom badges highlighting entry points, configurations, and tests.
+- **Premium Code Inspector**: Instant, interactive code previewer featuring a custom tokenized syntax-highlighted skeleton loading state for rich user experiences.
+- **Multi-Ecosystem Dependency Parsing**: Automatic extraction and mapping of package dependencies across npm (`package.json`), Python (`requirements.txt` / `pyproject.toml`), Rust (`Cargo.toml`), Go (`go.mod`), Java (`pom.xml`), and Docker (`Dockerfile`).
+- **AI-Powered Codebase Intelligence**:
+  - *Explain Node/Repo*: Comprehensive file and folder breakdowns (Standard and ELI5 modes).
+  - *Architecture overview*: Automatic architectural diagram generation and module relationships.
+  - *Health & Maintainability*: Automated analysis reports highlighting complexity, maintainability scores, and refactoring recommendations.
+  - *Intelligence Playground*: README Enhancers, Repository Roast generator, and customized learning path recommendations.
+- **Branch Selection & Diff Comparison**: Switch between any branch/tag in real time or compare branch differences directly inside the visualization.
+- **Robust AI Error Handling**: Gorgeous glassmorphic error card components with automatic retry actions to gracefully handle rate limit throttling or transient serverless API issues.
+- **Contributor Insights**: Bar chart breakdown of authors and commit timelines spanning the last 90 days.
+- **High-Performance Caching**: Intelligent server-side LRU cache to reduce latency and GitHub API rate limits.
 
 ### Premium Code Inspector Loading State
 ![Code Inspector Skeleton Loader](assets/skeleton.png)

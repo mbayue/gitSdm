@@ -64,6 +64,7 @@ export async function handleApiRequest(
   const start = Date.now();
   const method = req.method ?? 'GET';
   const query = parseQuery(req.url ?? '');
+  const userKey = (req.headers['x-gemini-api-key'] as string | undefined) || undefined;
 
   try {
     if (pathname === '/api/trending' && method === 'GET') {
@@ -161,7 +162,7 @@ export async function handleApiRequest(
         sendError(res, 400, 'Invalid request', parsed.error.flatten());
         return true;
       }
-      const result = await explainRepo(parsed.data);
+      const result = await explainRepo({ ...parsed.data, apiKey: userKey });
       sendJson(res, 200, result);
       return true;
     }
@@ -173,7 +174,7 @@ export async function handleApiRequest(
         sendError(res, 400, 'owner and repo required');
         return true;
       }
-      const result = await explainArchitecture(parsed.data.owner, parsed.data.repo, parsed.data.branch);
+      const result = await explainArchitecture(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey);
       sendJson(res, 200, result);
       return true;
     }
@@ -185,7 +186,7 @@ export async function handleApiRequest(
         sendError(res, 400, 'owner and repo required');
         return true;
       }
-      const result = await suggestFiles(parsed.data.owner, parsed.data.repo, parsed.data.branch);
+      const result = await suggestFiles(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey);
       sendJson(res, 200, result);
       return true;
     }
@@ -197,7 +198,7 @@ export async function handleApiRequest(
         sendError(res, 400, 'owner and repo required');
         return true;
       }
-      const result = await generateOnboarding(parsed.data.owner, parsed.data.repo, parsed.data.branch);
+      const result = await generateOnboarding(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey);
       sendJson(res, 200, result);
       return true;
     }
@@ -209,7 +210,7 @@ export async function handleApiRequest(
         sendError(res, 400, 'owner and repo required');
         return true;
       }
-      const result = await generateLearningPath(parsed.data.owner, parsed.data.repo, parsed.data.branch);
+      const result = await generateLearningPath(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey);
       sendJson(res, 200, result);
       return true;
     }
@@ -221,7 +222,7 @@ export async function handleApiRequest(
         sendError(res, 400, 'owner and repo required');
         return true;
       }
-      const result = await explainRepoELI5(parsed.data.owner, parsed.data.repo, parsed.data.branch);
+      const result = await explainRepoELI5(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey);
       sendJson(res, 200, result);
       return true;
     }
@@ -233,7 +234,7 @@ export async function handleApiRequest(
         sendError(res, 400, 'owner and repo required');
         return true;
       }
-      const result = await generateRefactorSuggestions(parsed.data.owner, parsed.data.repo, parsed.data.branch);
+      const result = await generateRefactorSuggestions(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey);
       sendJson(res, 200, result);
       return true;
     }
@@ -245,7 +246,7 @@ export async function handleApiRequest(
         sendError(res, 400, 'owner and repo required');
         return true;
       }
-      const result = await generateHealthReport(parsed.data.owner, parsed.data.repo, parsed.data.branch);
+      const result = await generateHealthReport(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey);
       sendJson(res, 200, result);
       return true;
     }
@@ -257,7 +258,7 @@ export async function handleApiRequest(
         sendError(res, 400, 'owner and repo required');
         return true;
       }
-      const result = await generateMermaidDiagram(parsed.data.owner, parsed.data.repo, parsed.data.branch);
+      const result = await generateMermaidDiagram(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey);
       sendJson(res, 200, result);
       return true;
     }
@@ -269,7 +270,7 @@ export async function handleApiRequest(
         sendError(res, 400, 'owner and repo required');
         return true;
       }
-      const result = await generateRepoRoast(parsed.data.owner, parsed.data.repo, parsed.data.branch);
+      const result = await generateRepoRoast(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey);
       sendJson(res, 200, result);
       return true;
     }
@@ -281,7 +282,7 @@ export async function handleApiRequest(
         sendError(res, 400, 'owner and repo required');
         return true;
       }
-      const result = await generateReadmeEnhancement(parsed.data.owner, parsed.data.repo, parsed.data.branch);
+      const result = await generateReadmeEnhancement(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey);
       sendJson(res, 200, result);
       return true;
     }

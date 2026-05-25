@@ -7,8 +7,14 @@ export interface AIProvider {
   complete(messages: Message[], options?: { json?: boolean }): Promise<string>;
 }
 
-export async function createProvider(): Promise<AIProvider> {
+export async function createProvider(overrideKey?: string): Promise<AIProvider> {
   const provider = (process.env.AI_PROVIDER ?? 'mock').toLowerCase();
+
+  // If a user key is provided, always use Gemini with that key (ignores AI_PROVIDER env)
+  if (overrideKey) {
+    return createGeminiProvider(overrideKey);
+  }
+
   switch (provider) {
     case 'openai':
       return createOpenAIProvider();
@@ -21,9 +27,9 @@ export async function createProvider(): Promise<AIProvider> {
   }
 }
 
-async function createGeminiProvider(): Promise<AIProvider> {
+async function createGeminiProvider(overrideKey?: string): Promise<AIProvider> {
   const { GoogleGenAI } = await import('@google/genai');
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = overrideKey ?? process.env.GEMINI_API_KEY;
   const model = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
   const apiVersion = process.env.GEMINI_API_VERSION ?? 'v1alpha';
 
@@ -44,7 +50,6 @@ async function createGeminiProvider(): Promise<AIProvider> {
         contents: prompt,
         config: {
           temperature: 0.2,
-          // maxOutputTokens: 2048,
         },
       });
 
@@ -52,6 +57,7 @@ async function createGeminiProvider(): Promise<AIProvider> {
     },
   };
 }
+
 
 async function createOpenAIProvider(): Promise<AIProvider> {
   const { default: OpenAI } = await import('openai');
@@ -246,7 +252,11 @@ Let's look at the structure:
 
 let providerInstance: AIProvider | null = null;
 
-export async function getAIProvider(): Promise<AIProvider> {
+export async function getAIProvider(overrideKey?: string): Promise<AIProvider> {
+  // User-provided key: always create a fresh instance (no caching across users)
+  if (overrideKey) {
+    return createProvider(overrideKey);
+  }
   if (!providerInstance) {
     providerInstance = await createProvider();
   }

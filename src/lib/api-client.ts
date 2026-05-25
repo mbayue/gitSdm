@@ -15,11 +15,22 @@ import type {
   AILearningPathResponse,
 } from '@/types';
 
+function getApiKeyHeader(): Record<string, string> {
+  try {
+    const key = localStorage.getItem('gitsdm_gemini_api_key');
+    return key ? { 'X-Gemini-API-Key': key } : {};
+  } catch {
+    return {};
+  }
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const isAiRoute = path.startsWith('/api/ai');
   const res = await fetch(path, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(isAiRoute ? getApiKeyHeader() : {}),
       ...options?.headers,
     },
   });
@@ -30,6 +41,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   }
   return data as T;
 }
+
 
 export async function analyzeRepo(url: string, branch?: string): Promise<RepoAnalysis> {
   return request<RepoAnalysis>('/api/repo/analyze', {

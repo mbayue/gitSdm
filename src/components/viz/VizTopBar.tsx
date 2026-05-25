@@ -5,6 +5,7 @@ import { formatStars } from '@/lib/utils';
 import { useState } from 'react';
 import { useVizStore } from '@/stores/viz-store';
 import { BranchSelector } from './BranchSelector';
+import { ApiKeyPopover } from './ApiKeyPopover';
 
 interface VizTopBarProps {
   meta?: RepoMeta;
@@ -62,6 +63,7 @@ export function VizTopBar({ meta }: VizTopBarProps) {
         );
       })()}
       <div className="ml-auto flex items-center gap-2">
+        {/* Theme toggle disabled/hidden for now
         <button
           type="button"
           onClick={toggleTheme}
@@ -70,6 +72,8 @@ export function VizTopBar({ meta }: VizTopBarProps) {
         >
           {theme === 'dark' ? <Sun className="h-4 w-4 text-zinc-400" /> : <Moon className="h-4 w-4 text-zinc-400" />}
         </button>
+        */}
+        <ApiKeyPopover />
         <button
           type="button"
           onClick={handleShare}

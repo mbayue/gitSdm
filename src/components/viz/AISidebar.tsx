@@ -14,6 +14,7 @@ import type { RepoAnalysis } from '@/types';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 import { LearningPathTab } from './LearningPathTab';
+import { AIErrorCard } from './AIErrorCard';
 
 const tabs = [
   { id: 'start' as SidebarTab, label: 'Onboarding', icon: Sparkles },
@@ -127,6 +128,23 @@ export function AISidebar({ analysis }: AISidebarProps) {
   const isExplainLoading = eli5Mode && !selectedNodeId ? explainNew.isPending : explain.isPending;
   const currentExplanation = eli5Mode && !selectedNodeId ? explainNew.data?.explanation : explain.data?.explanation;
 
+  const isExplainError = eli5Mode && !selectedNodeId ? explainNew.isError : explain.isError;
+  const explainErrorMsg = eli5Mode && !selectedNodeId
+    ? (explainNew.error instanceof Error ? explainNew.error.message : String(explainNew.error))
+    : (explain.error instanceof Error ? explain.error.message : String(explain.error));
+  const explainRetry = () => {
+    if (eli5Mode && !selectedNodeId) {
+      explainNew.mutate({ owner, repo });
+    } else {
+      explain.mutate({
+        owner,
+        repo,
+        scope: selectedNodeId ? 'node' : 'repo',
+        nodeId: selectedNodeId ?? undefined,
+      });
+    }
+  };
+
   return (
     <aside className="flex h-full w-full flex-col border-l border-white/5 bg-zinc-950/60 shadow-2xl backdrop-blur-xl">
       {/* Sidebar Navigation Tabs */}
@@ -218,7 +236,13 @@ export function AISidebar({ analysis }: AISidebarProps) {
               )}
 
               {/* Explaining Text */}
-              {isExplainLoading ? (
+              {isExplainError ? (
+                <AIErrorCard
+                  title="Failed to generate explanation"
+                  message={explainErrorMsg}
+                  onRetry={explainRetry}
+                />
+              ) : isExplainLoading ? (
                 <div className="space-y-4">
                   <div className="ai-explain-loading rounded-lg border border-violet-500/20 bg-violet-500/10 p-3 text-[11px] uppercase tracking-[0.24em] dark:text-violet-200 text-violet-700">
                     <div className="flex items-center gap-2">
@@ -263,7 +287,13 @@ export function AISidebar({ analysis }: AISidebarProps) {
               </div>
 
               {activeArchitecture === 'layers' ? (
-                architecture.isPending ? (
+                architecture.isError ? (
+                  <AIErrorCard
+                    title="Failed to load system architecture"
+                    message={architecture.error instanceof Error ? architecture.error.message : String(architecture.error)}
+                    onRetry={() => architecture.mutate({ owner, repo })}
+                  />
+                ) : architecture.isPending ? (
                   <LoadingBlocks />
                 ) : (
                   <div className="space-y-4">
@@ -290,7 +320,13 @@ export function AISidebar({ analysis }: AISidebarProps) {
                 )
               ) : (
                 <div className="space-y-4">
-                  {!mermaid.data && !mermaid.isPending ? (
+                  {mermaid.isError ? (
+                    <AIErrorCard
+                      title="Failed to generate flowchart"
+                      message={mermaid.error instanceof Error ? mermaid.error.message : String(mermaid.error)}
+                      onRetry={handleGenerateMermaid}
+                    />
+                  ) : !mermaid.data && !mermaid.isPending ? (
                     <div className="flex flex-col items-center justify-center rounded-xl border border-white/5 bg-zinc-900/20 p-8 text-center">
                       <Map className="h-10 w-10 text-zinc-600 mb-2" />
                       <h4 className="text-sm font-semibold text-white">Generate Code Flowchart</h4>
@@ -360,7 +396,24 @@ export function AISidebar({ analysis }: AISidebarProps) {
           {/* TAB 3: HEALTH & QUALITY */}
           {sidebarTab === 'health' && (
             <TabPanel key="health">
-              {health.isPending || refactor.isPending ? (
+              {health.isError || refactor.isError ? (
+                <div className="space-y-4">
+                  {health.isError && (
+                    <AIErrorCard
+                      title="Failed to load health scores"
+                      message={health.error instanceof Error ? health.error.message : String(health.error)}
+                      onRetry={() => health.mutate({ owner, repo })}
+                    />
+                  )}
+                  {refactor.isError && (
+                    <AIErrorCard
+                      title="Failed to load refactoring suggestions"
+                      message={refactor.error instanceof Error ? refactor.error.message : String(refactor.error)}
+                      onRetry={() => refactor.mutate({ owner, repo })}
+                    />
+                  )}
+                </div>
+              ) : health.isPending || refactor.isPending ? (
                 <div className="space-y-4">
                   <div className="ai-explain-loading rounded-lg border border-violet-500/20 bg-violet-500/10 p-3 text-[11px] uppercase tracking-[0.24em] dark:text-violet-200 text-violet-700">
                     <div className="flex items-center gap-2">
@@ -487,7 +540,13 @@ export function AISidebar({ analysis }: AISidebarProps) {
               </div>
 
               {activePlayground === 'roast' ? (
-                roast.isPending ? (
+                roast.isError ? (
+                  <AIErrorCard
+                    title="Failed to ignite roast"
+                    message={roast.error instanceof Error ? roast.error.message : String(roast.error)}
+                    onRetry={() => roast.mutate({ owner, repo })}
+                  />
+                ) : roast.isPending ? (
                   <div className="space-y-4">
                     <div className="ai-explain-loading rounded-lg border-rose-500/20 bg-rose-500/10 p-3 text-[11px] uppercase tracking-[0.24em] dark:text-rose-300 text-rose-700">
                       <div className="flex items-center gap-2">
@@ -516,7 +575,13 @@ export function AISidebar({ analysis }: AISidebarProps) {
                   </div>
                 )
               ) : (
-                readmeEnhance.isPending ? (
+                readmeEnhance.isError ? (
+                  <AIErrorCard
+                    title="Failed to generate README improvements"
+                    message={readmeEnhance.error instanceof Error ? readmeEnhance.error.message : String(readmeEnhance.error)}
+                    onRetry={() => readmeEnhance.mutate({ owner, repo })}
+                  />
+                ) : readmeEnhance.isPending ? (
                   <div className="space-y-4">
                     <div className="ai-explain-loading rounded-lg border-violet-500/20 bg-violet-500/10 p-3 text-[11px] uppercase tracking-[0.24em] dark:text-violet-300 text-violet-700">
                       <div className="flex items-center gap-2">

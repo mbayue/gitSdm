@@ -9,6 +9,8 @@ import {
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
+import { AIErrorCard } from './AIErrorCard';
+
 export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
   const { owner, repo } = analysis.meta;
   const selectedBranch = useVizStore((s) => s.selectedBranch);
@@ -111,20 +113,32 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
     );
   }
 
-  if (lp.isError || !data) {
+  if (lp.isError) {
+    return (
+      <div className="p-4">
+        <AIErrorCard
+          title="Failed to build learning path"
+          message={lp.error instanceof Error ? lp.error.message : String(lp.error)}
+          onRetry={handleRefresh}
+        />
+      </div>
+    );
+  }
+
+  if (!data) {
     return (
       <div className="flex flex-col items-center justify-center p-6 text-center">
         <ShieldAlert className="h-10 w-10 text-red-500/80 mb-3" />
-        <h4 className="text-sm font-medium text-white mb-1">Failed to build learning path</h4>
+        <h4 className="text-sm font-medium text-white mb-1">No learning path data available</h4>
         <p className="text-xs text-zinc-500 max-w-[240px] mb-4">
-          There was an error generating AI onboarding paths for this repository.
+          Try clicking retry to generate AI onboarding paths for this repository.
         </p>
         <button
           onClick={handleRefresh}
           className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/5 transition-all"
         >
           <RefreshCw className="h-3.5 w-3.5" />
-          Retry Analysis
+          Generate Path
         </button>
       </div>
     );
@@ -163,7 +177,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
           <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
             Smart Focus Layers
           </h4>
-          <span className="text-[10px] text-zinc-600 font-mono">Isolates graph modules</span>
+          <span className="text-[10px] text-zinc-400 font-mono">Isolates graph modules</span>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {focusLayers.map((layer) => {
@@ -196,7 +210,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
             <Sparkles className="h-3 w-3" /> AI Roadmap
           </span>
         </div>
-        
+
         <div className="space-y-2.5">
           {data.recommendedPath?.map((item, idx) => (
             <motion.div

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, type CSSProperties } from 'rea
 import {
   ReactFlow,
   Controls,
-  MiniMap,
+  Panel,
   Background,
   BackgroundVariant,
   useEdgesState,
@@ -12,11 +12,12 @@ import {
   type Edge,
   type DefaultEdgeOptions,
 } from '@xyflow/react';
+import { FolderGit2, Folder, FileCode } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import '@xyflow/react/dist/style.css';
 import { nodeTypes } from './nodes';
 import type { GraphData, GraphNode } from '@/types';
 import { useVizStore } from '@/stores/viz-store';
-import { getNodeCircleColor } from './node-colors';
 import { getLayoutedElements } from './layout-client';
 
 interface GraphCanvasProps {
@@ -28,6 +29,9 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
   const {
     searchQuery,
     nodeTypeFilters,
+    toggleNodeTypeFilter,
+    diffStatusFilters,
+    toggleDiffStatusFilter,
     selectedNodeId,
     highlightedNodeIds,
     setSelectedNodeId,
@@ -42,12 +46,8 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
 
   const { fitView, setCenter } = useReactFlow();
   const isDark = theme === 'dark';
-  const showMiniMap = !readOnly && graph.nodes.length <= 350;
 
   const flowStyle = useMemo(() => ({
-    background: isDark
-      ? 'radial-gradient(circle at 50% 28%, rgba(139, 92, 246, 0.10) 0%, rgba(139, 92, 246, 0.035) 26%, transparent 58%), radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.08) 0%, transparent 42%), #050508'
-      : 'radial-gradient(circle at 50% 28%, rgba(139, 92, 246, 0.045) 0%, transparent 58%), radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.035) 0%, transparent 42%), #f9fafb',
     '--xy-background-color': isDark ? '#050508' : '#f9fafb',
     '--xy-controls-button-background-color': isDark ? 'rgba(24, 24, 27, 0.72)' : 'rgba(255, 255, 255, 0.86)',
     '--xy-controls-button-background-color-hover': isDark ? 'rgba(39, 39, 42, 0.95)' : 'rgba(244, 244, 245, 0.95)',
@@ -68,13 +68,42 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
     const q = searchQuery.toLowerCase();
     const activeFilters = nodeTypeFilters;
 
-    let nodes = graph.nodes.filter((n) => {
-      if (!activeFilters.has(n.type)) return false;
-      if (!q) return true;
-      const label = n.data.label ? String(n.data.label).toLowerCase() : '';
-      const path = n.data.path ? String(n.data.path).toLowerCase() : '';
-      return label.includes(q) || path.includes(q);
-    });
+    let nodes = graph.nodes.filter((n) => activeFilters.has(n.type));
+
+    // Apply diff status filters if any are active
+    if (diffStatusFilters.size > 0) {
+      const matchingFilePaths = new Set(
+        graph.nodes
+          .filter((n) => n.type === 'file' && n.data.diffStatus && diffStatusFilters.has(n.data.diffStatus))
+          .map((n) => n.data.path)
+      );
+
+      nodes = nodes.filter((n) => {
+        if (n.type === 'file') {
+          return n.data.diffStatus && diffStatusFilters.has(n.data.diffStatus);
+        }
+        if (n.type === 'folder' || n.type === 'repo') {
+          const folderPath = n.data.path;
+          if (!folderPath) return true; // root repository node
+          for (const filePath of matchingFilePaths) {
+            if (filePath && (filePath === folderPath || filePath.startsWith(folderPath + '/'))) {
+              return true;
+            }
+          }
+          return false;
+        }
+        return true;
+      });
+    }
+
+    // Apply search query filter
+    if (q) {
+      nodes = nodes.filter((n) => {
+        const label = n.data.label ? String(n.data.label).toLowerCase() : '';
+        const path = n.data.path ? String(n.data.path).toLowerCase() : '';
+        return label.includes(q) || path.includes(q);
+      });
+    }
 
     // Apply Focus Layer filters dynamically
     if (activeFocusLayer && activeFocusLayer !== 'all') {
@@ -103,7 +132,7 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
     const edges = graph.edges.filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target));
 
     return { nodes, edges };
-  }, [graph, searchQuery, nodeTypeFilters, readOnly, activeFocusLayer]);
+  }, [graph, searchQuery, nodeTypeFilters, diffStatusFilters, readOnly, activeFocusLayer]);
 
   const layouted = useMemo(() => {
     return getLayoutedElements(filtered.nodes as Node[], filtered.edges as Edge[], layoutType);
@@ -214,6 +243,7 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
   return (
     <div className="graph-canvas-host h-full w-full">
       <ReactFlow
+        className="canvas-flow-bg"
         colorMode={theme}
         nodes={nodes}
         edges={edges}
@@ -250,29 +280,103 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
               showInteractive={false}
               className="graph-controls !shadow-none"
             />
-            {showMiniMap && (
-              <MiniMap
-                position="top-right"
-                className="graph-minimap !rounded-md !shadow-none"
-                style={{
-                  width: 100,
-                  height: 64,
-                  backgroundColor: isDark ? 'rgba(9, 9, 11, 0.88)' : 'rgba(255, 255, 255, 0.88)',
-                  border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(39, 39, 42, 0.16)'}`,
-                }}
-                bgColor={isDark ? '#111113' : '#ffffff'}
-                nodeColor={(n) => {
-                  const d = n.data as { nodeColor?: string; extension?: string; label?: string };
-                  if (d.nodeColor) return d.nodeColor;
-                  const ext = d.extension ?? '';
-                  const name = (d.label as string) ?? '';
-                  if (n.type === 'folder') return getNodeCircleColor('folder', name, ext);
-                  if (n.type === 'file') return getNodeCircleColor('file', name, ext);
-                  return '#ffffff';
-                }}
-                maskColor={isDark ? 'rgba(0, 0, 0, 0.82)' : 'rgba(255, 255, 255, 0.72)'}
-              />
-            )}
+            <Panel
+              position="top-right"
+              className="mr-3 mt-3 flex flex-col gap-2.5 rounded-xl border border-white/5 bg-zinc-950/80 p-3.5 text-xs text-zinc-300 shadow-2xl backdrop-blur-md max-w-[220px]"
+            >
+              <div className="flex items-center gap-1.5 border-b border-white/5 pb-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
+                Canvas Legend
+              </div>
+
+              {/* Node Types Section */}
+              <div className="space-y-1">
+                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider block mb-0.5 select-none">Node Types</span>
+                <button
+                  type="button"
+                  onClick={() => toggleNodeTypeFilter('repo')}
+                  title="Toggle Repository Root filter"
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
+                    !nodeTypeFilters.has('repo') && "opacity-40 line-through decoration-zinc-500"
+                  )}
+                >
+                  <div className="flex h-5 w-5 items-center justify-center rounded bg-violet-500/10 border border-violet-500/20 text-violet-400 shrink-0">
+                    <FolderGit2 className="h-3 w-3" />
+                  </div>
+                  <span className="text-[11px] font-medium text-zinc-300">Repository Root</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleNodeTypeFilter('folder')}
+                  title="Toggle Directories filter"
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
+                    !nodeTypeFilters.has('folder') && "opacity-40 line-through decoration-zinc-500"
+                  )}
+                >
+                  <div className="flex h-5 w-5 items-center justify-center rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 shrink-0">
+                    <Folder className="h-3 w-3 fill-amber-400/10" />
+                  </div>
+                  <span className="text-[11px] font-medium text-zinc-300">Directory</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleNodeTypeFilter('file')}
+                  title="Toggle Code Files filter"
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
+                    !nodeTypeFilters.has('file') && "opacity-40 line-through decoration-zinc-500"
+                  )}
+                >
+                  <div className="flex h-5 w-5 items-center justify-center rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 shrink-0">
+                    <FileCode className="h-3 w-3" />
+                  </div>
+                  <span className="text-[11px] font-medium text-zinc-300">Code / Assets</span>
+                </button>
+              </div>
+
+              {/* Diff status section */}
+              <div className="space-y-1 pt-1.5 border-t border-white/5">
+                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider block mb-0.5 select-none">Change Status</span>
+                <button
+                  type="button"
+                  onClick={() => toggleDiffStatusFilter('added')}
+                  title="Filter by Added Files"
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
+                    diffStatusFilters.size > 0 && !diffStatusFilters.has('added') && "opacity-40"
+                  )}
+                >
+                  <span className="flex h-4 w-4 items-center justify-center text-xs font-bold text-emerald-500 select-none bg-emerald-500/10 border border-emerald-500/20 rounded font-mono shrink-0">+</span>
+                  <span className="text-[11px] font-medium text-zinc-300">Added File</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleDiffStatusFilter('modified')}
+                  title="Filter by Modified Files"
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
+                    diffStatusFilters.size > 0 && !diffStatusFilters.has('modified') && "opacity-40"
+                  )}
+                >
+                  <span className="flex h-4 w-4 items-center justify-center text-xs font-bold text-amber-500 select-none bg-amber-500/10 border border-amber-500/20 rounded font-mono shrink-0">~</span>
+                  <span className="text-[11px] font-medium text-zinc-300">Modified File</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleDiffStatusFilter('deleted')}
+                  title="Filter by Deleted Files"
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
+                    diffStatusFilters.size > 0 && !diffStatusFilters.has('deleted') && "opacity-40"
+                  )}
+                >
+                  <span className="flex h-4 w-4 items-center justify-center text-xs font-bold text-red-500 select-none bg-red-500/10 border border-red-500/20 rounded font-mono shrink-0">-</span>
+                  <span className="text-[11px] font-medium text-zinc-300">Deleted File</span>
+                </button>
+              </div>
+            </Panel>
           </>
         )}
       </ReactFlow>

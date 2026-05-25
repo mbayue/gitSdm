@@ -29,7 +29,9 @@ interface VizState {
   executionFlowStep: number;
   executionFlowPaths: string[];
   activeFocusLayer: 'all' | 'api' | 'ui' | 'core' | 'config';
+  diffStatusFilters: Set<'added' | 'modified' | 'deleted'>;
 
+  toggleDiffStatusFilter: (status: 'added' | 'modified' | 'deleted') => void;
   setSelectedBranch: (branch: string | null) => void;
   setCompareBranch: (branch: string | null) => void;
   setAvailableBranches: (branches: string[]) => void;
@@ -84,7 +86,15 @@ export const useVizStore = create<VizState>((set) => ({
   executionFlowStep: 0,
   executionFlowPaths: [],
   activeFocusLayer: 'all',
+  diffStatusFilters: new Set(),
 
+  toggleDiffStatusFilter: (status) =>
+    set((s) => {
+      const next = new Set(s.diffStatusFilters);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      return { diffStatusFilters: next };
+    }),
   setSelectedBranch: (selectedBranch) => set({ selectedBranch }),
   setCompareBranch: (compareBranch) => set({ compareBranch }),
   setAvailableBranches: (availableBranches) => set({ availableBranches }),
@@ -146,6 +156,7 @@ export const useVizStore = create<VizState>((set) => ({
       executionFlowStep: 0,
       executionFlowPaths: [],
       activeFocusLayer: 'all',
+      diffStatusFilters: new Set(),
     }),
 }));
 

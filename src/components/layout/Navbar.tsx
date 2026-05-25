@@ -40,6 +40,7 @@ export function Navbar() {
           </span>
         </Link>
         <div className="flex items-center gap-3">
+          {/* Theme toggle disabled/hidden for now
           <button
             type="button"
             onClick={toggleTheme}
@@ -48,6 +49,7 @@ export function Navbar() {
           >
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
+          */}
           <a
             href="https://github.com/bayue48/gitsdm"
             target="_blank"

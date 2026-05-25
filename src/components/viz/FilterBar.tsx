@@ -1,12 +1,6 @@
 import { cn } from '@/lib/utils';
 import { useVizStore } from '@/stores/viz-store';
-import type { NodeType } from '@/types';
 import { ChevronsDown, ChevronsRight, Network } from 'lucide-react';
-
-const FILTERS: { type: NodeType; label: string }[] = [
-  { type: 'folder', label: 'Folders' },
-  { type: 'file', label: 'Files' },
-];
 
 const LAYOUTS = [
   { type: 'force', label: 'Organic Cluster', icon: Network },
@@ -15,32 +9,10 @@ const LAYOUTS = [
 ] as const;
 
 export function FilterBar() {
-  const { nodeTypeFilters, toggleNodeTypeFilter, layoutType, setLayoutType } = useVizStore();
+  const { layoutType, setLayoutType } = useVizStore();
 
   return (
-    <div className="flex items-center justify-between border-b border-white/5 px-4 py-1.5">
-      {/* Node Filters */}
-      <div className="flex items-center gap-1.5">
-        <span className="mr-1 select-none text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-          Filter:
-        </span>
-        {FILTERS.map(({ type, label }) => (
-          <button
-            key={type}
-            type="button"
-            onClick={() => toggleNodeTypeFilter(type)}
-            className={cn(
-              'filter-pill rounded-full px-2.5 py-0.5 text-[10px] font-medium transition-all duration-150',
-              nodeTypeFilters.has(type)
-                ? 'filter-pill-active bg-violet-500/20 text-violet-300 ring-1 ring-violet-500/30'
-                : 'filter-pill-inactive bg-zinc-800/50 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300',
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
+    <div className="flex items-center justify-end border-b border-white/5 px-4 py-1.5">
       {/* Layout Switcher */}
       <div className="flex items-center gap-1">
         <span className="mr-1.5 select-none text-[10px] font-medium uppercase tracking-wider text-zinc-500">
