@@ -1,6 +1,8 @@
 # gitSdm
 
-AI-powered GitHub repository visualization platform. Paste a public repo URL and explore an interactive dependency graph, architecture insights, file explorer, contributors, and commit timeline.
+AI-powered GitHub repository visualization platform (**Git Software Dependency Map**). Paste a public repo URL and explore an interactive dependency graph, architecture insights, file explorer, contributors, and commit timeline.
+
+![gitSdm Dashboard](assets/dashboard.png)
 
 ## Stack
 
@@ -11,8 +13,8 @@ AI-powered GitHub repository visualization platform. Paste a public repo URL and
 
 ```bash
 cp .env.example .env
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173). API routes are served via Vite middleware in development.
@@ -33,13 +35,13 @@ Open [http://localhost:5173](http://localhost:5173). API routes are served via V
 
 ## Scripts
 
-- `npm run dev` — start Vite dev server with API middleware
-- `npm run build` — build the Vite frontend into `dist/`
-- `npm run build:server` — build the Node production server into `dist-server/`
-- `npm run build:docker` — build both frontend and production server
-- `npm run start` — serve `dist/` and `/api/*` from the production Node server
-- `npm run preview` — preview the frontend bundle only
-- `npm test` — run unit tests (manifest parsers)
+- `pnpm run dev` — start Vite dev server with API middleware
+- `pnpm run build` — build the Vite frontend into `dist/`
+- `pnpm run build:server` — build the Node production server into `dist-server/`
+- `pnpm run build:docker` — build both frontend and production server
+- `pnpm run start` — serve `dist/` and `/api/*` from the production Node server
+- `pnpm run preview` — preview the frontend bundle only
+- `pnpm test` — run unit tests (manifest parsers)
 
 ## Production with Docker
 
@@ -140,9 +142,12 @@ gcloud run deploy gitsdm \
 - Repository structure graph (folders, files, packages, contributors)
 - Multi-ecosystem dependency parsing (npm, Python, Rust, Go, Docker, Java)
 - AI: explain repo/node and/or architecture overview
-- Smart file explorer with entry/config/test badges
+- Smart file explorer with entry/config/test badges and interactive Code Inspector (featuring a custom tokenized syntax-highlighted skeleton loader)
 - Contributor bar chart and 90-day commit timeline
 - In-memory LRU cache (per serverless instance; best-effort on cold starts)
+
+### Premium Code Inspector Loading State
+![Code Inspector Skeleton Loader](assets/skeleton.png)
 
 ## Limits
 

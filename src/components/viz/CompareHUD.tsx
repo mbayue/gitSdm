@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useVizStore } from '@/stores/viz-store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Check, Star, Trash2, X, ChevronDown, ChevronUp, Layers, HelpCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Plus, Star, Trash2, X, ChevronDown, ChevronUp, Layers, HelpCircle } from 'lucide-react';
+
 
 export interface GraphDiff {
   added: Set<string>;

@@ -350,6 +350,19 @@ svg {
   animation: shimmer 2s linear infinite;
 }
 
+.code-loader-line {
+  background:
+    linear-gradient(90deg, rgba(191, 219, 254, 0.72) 0%, rgba(224, 242, 254, 0.92) 48%, rgba(219, 234, 254, 0.72) 100%);
+  background-size: 220% 100%;
+  animation: shimmer 1.8s linear infinite;
+}
+
+.dark .code-loader-line {
+  background:
+    linear-gradient(90deg, rgba(30, 58, 138, 0.45) 0%, rgba(56, 189, 248, 0.28) 48%, rgba(30, 58, 138, 0.45) 100%);
+  background-size: 220% 100%;
+}
+
 .graph-canvas-host .react-flow {
   background:
     radial-gradient(circle at center, rgba(139, 92, 246, 0.04) 0%, transparent 70%),
@@ -369,7 +382,7 @@ svg {
 }
 
 .graph-canvas-host .react-flow__node {
-  transition: opacity 0.2s ease;
+  transition: opacity 150ms ease;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -377,8 +390,28 @@ svg {
 }
 
 .graph-canvas-host .react-flow__node.dimmed {
-  opacity: 0.2;
+  opacity: 0.18;
 }
+
+.graph-canvas-host .react-flow__node.highlighted > div {
+  border-color: #a78bfa !important;
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.4) !important;
+}
+
+.graph-canvas-host .react-flow__node.highlighted-neighbor > div {
+  border-color: rgba(139, 92, 246, 0.45) !important;
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.15) !important;
+}
+
+/* Improve text rendering inside graph nodes to reduce blurriness */
+.graph-canvas-host .react-flow__node > div,
+.graph-canvas-host .react-flow__node span,
+.graph-canvas-host .react-flow__node * {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
+}
+
 
 .graph-canvas-host .react-flow__edge-path {
   stroke: rgba(var(--white-rgb), 0.24);

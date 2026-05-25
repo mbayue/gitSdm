@@ -2,8 +2,6 @@ import { X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchRepoFile } from '@/lib/api-client';
 import { HighlightedCode, CodePlaceholder } from '@/lib/syntax-highlight';
-import { Skeleton } from '@/components/ui/Skeleton';
-
 import { useVizStore } from '@/stores/viz-store';
 
 interface CodeInspectorViewProps {
@@ -51,11 +49,7 @@ export function CodeInspectorView({ owner, repo, filePath, onClose }: CodeInspec
           <CodePlaceholder message="Select a file in the explorer to view its contents." />
         )}
         {filePath && isLoading && (
-          <div className="space-y-2 p-3">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <Skeleton key={i} className="h-4 w-full bg-zinc-800" />
-            ))}
-          </div>
+          <CodeInspectorSkeleton />
         )}
         {filePath && error && (
           <CodePlaceholder
@@ -67,5 +61,70 @@ export function CodeInspectorView({ owner, repo, filePath, onClose }: CodeInspec
         )}
       </div>
     </div>
+  );
+}
+
+function CodeInspectorSkeleton() {
+  const skeletonLines = [
+    { indent: 0, tokens: [{ w: 'w-12', c: 'keyword' }, { w: 'w-20', c: 'text' }, { w: 'w-8', c: 'keyword' }, { w: 'w-16', c: 'string' }] },
+    { indent: 0, tokens: [{ w: 'w-12', c: 'keyword' }, { w: 'w-16', c: 'text' }, { w: 'w-8', c: 'keyword' }, { w: 'w-36', c: 'string' }] },
+    { indent: 0, tokens: [] },
+    { indent: 0, tokens: [{ w: 'w-64', c: 'comment' }] },
+    { indent: 0, tokens: [{ w: 'w-14', c: 'keyword' }, { w: 'w-16', c: 'keyword' }, { w: 'w-28', c: 'function' }, { w: 'w-24', c: 'text' }] },
+    { indent: 4, tokens: [{ w: 'w-10', c: 'keyword' }, { w: 'w-28', c: 'text' }, { w: 'w-16', c: 'function' }, { w: 'w-12', c: 'text' }] },
+    { indent: 4, tokens: [{ w: 'w-10', c: 'keyword' }, { w: 'w-20', c: 'text' }, { w: 'w-14', c: 'function' }] },
+    { indent: 8, tokens: [{ w: 'w-16', c: 'text' }, { w: 'w-8', c: 'text' }, { w: 'w-12', c: 'string' }, { w: 'w-10', c: 'text' }] },
+    { indent: 8, tokens: [{ w: 'w-14', c: 'text' }, { w: 'w-24', c: 'function' }] },
+    { indent: 4, tokens: [{ w: 'w-4', c: 'text' }] },
+    { indent: 0, tokens: [] },
+    { indent: 4, tokens: [{ w: 'w-12', c: 'keyword' }] },
+    { indent: 8, tokens: [{ w: 'w-6', c: 'keyword' }, { w: 'w-8', c: 'text' }, { w: 'w-36', c: 'string' }] },
+    { indent: 12, tokens: [{ w: 'w-16', c: 'text' }, { w: 'w-8', c: 'text' }] },
+    { indent: 16, tokens: [{ w: 'w-6', c: 'keyword' }, { w: 'w-28', c: 'function' }] },
+    { indent: 12, tokens: [{ w: 'w-10', c: 'text' }] },
+    { indent: 16, tokens: [{ w: 'w-6', c: 'keyword' }, { w: 'w-24', c: 'function' }] },
+    { indent: 12, tokens: [{ w: 'w-4', c: 'text' }] },
+    { indent: 8, tokens: [{ w: 'w-12', c: 'keyword' }] },
+    { indent: 4, tokens: [{ w: 'w-6', c: 'keyword' }] },
+    { indent: 0, tokens: [{ w: 'w-2', c: 'text' }] }
+  ];
+
+  return (
+    <pre className="code-inspector-font text-[13px] leading-[22px] py-2">
+      {skeletonLines.map((line, index) => (
+        <div key={index} className="flex border-l-2 border-transparent py-0.5">
+          <span className="w-12 shrink-0 select-none pr-4 text-right tabular-nums text-zinc-700/40">
+            {index + 1}
+          </span>
+          <div className="min-w-0 flex-1 pl-4 flex items-center h-[22px]">
+            {line.indent > 0 && (
+              <div style={{ width: `${line.indent * 8}px` }} className="shrink-0" />
+            )}
+            {line.tokens.length > 0 ? (
+              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                {line.tokens.map((token, tIdx) => (
+                  <div
+                    key={tIdx}
+                    className={`h-2.5 rounded-sm ${token.w} ${
+                      token.c === 'keyword'
+                        ? 'bg-purple-500/15 dark:bg-purple-400/10'
+                        : token.c === 'function'
+                        ? 'bg-blue-500/15 dark:bg-blue-400/10'
+                        : token.c === 'string'
+                        ? 'bg-emerald-500/15 dark:bg-emerald-400/10'
+                        : token.c === 'comment'
+                        ? 'bg-zinc-500/20 dark:bg-zinc-700/20'
+                        : 'bg-zinc-700/25 dark:bg-zinc-800/40'
+                    } animate-pulse`}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="h-2.5" />
+            )}
+          </div>
+        </div>
+      ))}
+    </pre>
   );
 }

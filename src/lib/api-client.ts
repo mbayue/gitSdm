@@ -12,6 +12,7 @@ import type {
   AIMermaidResponse,
   AIRoastResponse,
   AIReadmeEnhanceResponse,
+  AILearningPathResponse,
 } from '@/types';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -169,3 +170,15 @@ export async function aiReadmeEnhance(
     body: JSON.stringify({ owner, repo, branch }),
   });
 }
+
+export async function aiLearningPath(
+  owner: string,
+  repo: string,
+  branch?: string,
+): Promise<AILearningPathResponse> {
+  return request<AILearningPathResponse>('/api/ai/learning-path', {
+    method: 'POST',
+    body: JSON.stringify({ owner, repo, branch }),
+  });
+}
+

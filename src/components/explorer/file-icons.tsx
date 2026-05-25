@@ -4,6 +4,8 @@ import {
   FileText,
   Lock,
   Box,
+  Folder,
+  FolderOpen,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -50,23 +52,8 @@ export function FileTypeIcon({ name, className }: FileIconProps) {
 }
 
 export function FolderIcon({ open, className }: { open?: boolean; className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      className={cn('h-4 w-4 shrink-0', className)}
-      fill="currentColor"
-    >
-      {open ? (
-        <path
-          className="text-fuchsia-400"
-          d="M1.5 3.5A1 1 0 0 1 2.5 2.5h3.172a1 1 0 0 1 .707.293L7.914 4H13.5a1 1 0 0 1 1 1v7.5a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1V3.5z"
-        />
-      ) : (
-        <path
-          className="text-fuchsia-400/90"
-          d="M1.5 3.5A1 1 0 0 1 2.5 2.5h3.172a1 1 0 0 1 .707.293L7.914 4H13.5a1 1 0 0 1 1 1v1H1.5V3.5z"
-        />
-      )}
-    </svg>
-  );
+  if (open) {
+    return <FolderOpen className={cn('h-4 w-4 shrink-0 text-violet-400 dark:text-violet-400/90', className)} />;
+  }
+  return <Folder className={cn('h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-500/80', className)} />;
 }

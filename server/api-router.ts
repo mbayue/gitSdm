@@ -13,6 +13,7 @@ import {
   generateMermaidDiagram,
   generateRepoRoast,
   generateReadmeEnhancement,
+  generateLearningPath,
 } from './ai/summarizer';
 import { analyzeRepository } from './services/analyze-repo';
 import { getRepoFileContent } from './services/get-file';
@@ -197,6 +198,18 @@ export async function handleApiRequest(
         return true;
       }
       const result = await generateOnboarding(parsed.data.owner, parsed.data.repo, parsed.data.branch);
+      sendJson(res, 200, result);
+      return true;
+    }
+
+    if (pathname === '/api/ai/learning-path' && method === 'POST') {
+      const body = await getRequestBody(req);
+      const parsed = repoQuerySchema.safeParse(body);
+      if (!parsed.success) {
+        sendError(res, 400, 'owner and repo required');
+        return true;
+      }
+      const result = await generateLearningPath(parsed.data.owner, parsed.data.repo, parsed.data.branch);
       sendJson(res, 200, result);
       return true;
     }

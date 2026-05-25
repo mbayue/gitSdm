@@ -1,6 +1,17 @@
 import dagre from 'dagre';
-import { forceSimulation, forceLink, forceManyBody, forceCollide, forceX, forceY } from 'd3-force';
+import {
+  forceSimulation,
+  forceLink,
+  forceManyBody,
+  forceCollide,
+  forceX,
+  forceY,
+  type SimulationLinkDatum,
+  type SimulationNodeDatum,
+} from 'd3-force';
 import type { Node, Edge } from '@xyflow/react';
+
+type LayoutNode = Node & SimulationNodeDatum;
 
 export function getLayoutedElements(
   nodes: Node[],
@@ -8,6 +19,7 @@ export function getLayoutedElements(
   layoutType: 'TB' | 'LR' | 'force',
 ) {
   if (nodes.length === 0) return { nodes, edges };
+  const nodeIds = new Set(nodes.map((node) => node.id));
 
   if (layoutType === 'force') {
     // Deterministic position seeding based on ID hash to ensure stable layout
@@ -22,7 +34,7 @@ export function getLayoutedElements(
     };
 
     // Clone nodes and seed them deterministically
-    const simNodes = nodes.map((n) => {
+    const simNodes: LayoutNode[] = nodes.map((n) => {
       const seed = getSeedPosition(n.id);
       return {
         ...n,
@@ -31,23 +43,20 @@ export function getLayoutedElements(
       };
     });
 
-    // Create mapping of ID to node
-    const nodeMap = new Map(simNodes.map(n => [n.id, n]));
-
     // Filter edges to only include ones where both source and target exist
-    const simLinks = edges
-      .filter((e) => nodeMap.has(e.source) && nodeMap.has(e.target))
+    const simLinks: SimulationLinkDatum<LayoutNode>[] = edges
+      .filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target))
       .map((e) => ({
         source: e.source,
         target: e.target,
       }));
 
     // Create force simulation
-    const simulation = forceSimulation(simNodes as any)
+    const simulation = forceSimulation(simNodes)
       .force(
         'link',
         forceLink(simLinks)
-          .id((d: any) => d.id)
+          .id((d) => d.id)
           .distance(70)
       )
       .force('charge', forceManyBody().strength(-150))
@@ -89,7 +98,7 @@ export function getLayoutedElements(
   });
 
   edges.forEach((edge) => {
-    if (nodes.some((n) => n.id === edge.source) && nodes.some((n) => n.id === edge.target)) {
+    if (nodeIds.has(edge.source) && nodeIds.has(edge.target)) {
       g.setEdge(edge.source, edge.target);
     }
   });

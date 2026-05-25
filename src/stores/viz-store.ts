@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { NodeType } from '@/types';
 
-export type SidebarTab = 'explain' | 'architecture' | 'health' | 'playground' | 'dependencies';
+export type SidebarTab = 'start' | 'explain' | 'architecture' | 'health' | 'playground' | 'dependencies';
 export type LayoutType = 'TB' | 'LR' | 'force';
 
 interface VizState {
@@ -21,6 +21,15 @@ interface VizState {
   selectedBranch: string | null;
   compareBranch: string | null;
   availableBranches: string[];
+
+  // Interactive upgrades
+  hoveredNodeId: string | null;
+  hoveredConnectedIds: Set<string>;
+  executionFlowActive: boolean;
+  executionFlowStep: number;
+  executionFlowPaths: string[];
+  activeFocusLayer: 'all' | 'api' | 'ui' | 'core' | 'config';
+
   setSelectedBranch: (branch: string | null) => void;
   setCompareBranch: (branch: string | null) => void;
   setAvailableBranches: (branches: string[]) => void;
@@ -38,6 +47,14 @@ interface VizState {
   setLayoutType: (type: LayoutType) => void;
   setTheme: (theme: 'dark' | 'light') => void;
   toggleTheme: () => void;
+
+  setHoveredNodeId: (id: string | null) => void;
+  setHoveredConnectedIds: (ids: Set<string>) => void;
+  setExecutionFlowActive: (active: boolean) => void;
+  setExecutionFlowStep: (step: number) => void;
+  setExecutionFlowPaths: (paths: string[]) => void;
+  setActiveFocusLayer: (layer: 'all' | 'api' | 'ui' | 'core' | 'config') => void;
+
   reset: () => void;
 }
 
@@ -48,7 +65,7 @@ export const useVizStore = create<VizState>((set) => ({
   nodeTypeFilters: new Set(defaultFilters),
   selectedNodeId: null,
   highlightedNodeIds: new Set(),
-  sidebarTab: 'explain',
+  sidebarTab: 'start',
   drawerOpen: false,
   explorerOpen: true,
   inspectorOpen: false,
@@ -60,6 +77,14 @@ export const useVizStore = create<VizState>((set) => ({
   selectedBranch: null,
   compareBranch: null,
   availableBranches: [],
+
+  hoveredNodeId: null,
+  hoveredConnectedIds: new Set(),
+  executionFlowActive: false,
+  executionFlowStep: 0,
+  executionFlowPaths: [],
+  activeFocusLayer: 'all',
+
   setSelectedBranch: (selectedBranch) => set({ selectedBranch }),
   setCompareBranch: (compareBranch) => set({ compareBranch }),
   setAvailableBranches: (availableBranches) => set({ availableBranches }),
@@ -91,13 +116,21 @@ export const useVizStore = create<VizState>((set) => ({
       if (typeof window !== 'undefined') localStorage.setItem('theme', nextTheme);
       return { theme: nextTheme };
     }),
+
+  setHoveredNodeId: (hoveredNodeId) => set({ hoveredNodeId }),
+  setHoveredConnectedIds: (hoveredConnectedIds) => set({ hoveredConnectedIds }),
+  setExecutionFlowActive: (executionFlowActive) => set({ executionFlowActive }),
+  setExecutionFlowStep: (executionFlowStep) => set({ executionFlowStep }),
+  setExecutionFlowPaths: (executionFlowPaths) => set({ executionFlowPaths }),
+  setActiveFocusLayer: (activeFocusLayer) => set({ activeFocusLayer }),
+
   reset: () =>
     set({
       searchQuery: '',
       nodeTypeFilters: new Set(defaultFilters),
       selectedNodeId: null,
       highlightedNodeIds: new Set(),
-      sidebarTab: 'explain',
+      sidebarTab: 'start',
       drawerOpen: false,
       explorerOpen: true,
       inspectorOpen: false,
@@ -107,5 +140,12 @@ export const useVizStore = create<VizState>((set) => ({
       toastMessage: null,
       selectedBranch: null,
       compareBranch: null,
+      hoveredNodeId: null,
+      hoveredConnectedIds: new Set(),
+      executionFlowActive: false,
+      executionFlowStep: 0,
+      executionFlowPaths: [],
+      activeFocusLayer: 'all',
     }),
 }));
+

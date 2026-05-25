@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TreeNode } from '@/types';
@@ -18,6 +18,12 @@ export function SmartFileExplorer({
   selectedPath,
 }: SmartFileExplorerProps) {
   const [rootOpen, setRootOpen] = useState(true);
+
+  useEffect(() => {
+    if (selectedPath) {
+      setRootOpen(true);
+    }
+  }, [selectedPath]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto py-1 text-[13px]">
@@ -61,6 +67,13 @@ function TreeRow({
   selectedPath?: string;
 }) {
   const [open, setOpen] = useState(depth < 1);
+
+  useEffect(() => {
+    if (selectedPath && (selectedPath === node.path || selectedPath.startsWith(node.path + '/'))) {
+      setOpen(true);
+    }
+  }, [selectedPath, node.path]);
+
 
   if (node.type === 'dir') {
     return (

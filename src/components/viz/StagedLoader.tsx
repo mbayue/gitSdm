@@ -13,9 +13,9 @@ interface Stage {
 const STAGES: Stage[] = [
   { id: 1, label: 'Connecting to GitHub', sublabel: 'Authenticating & fetching repository metadata', icon: GitBranch, duration: 1000 },
   { id: 2, label: 'Ingesting file tree', sublabel: 'Mapping directories, files & module boundaries', icon: Layers, duration: 1200 },
-  { id: 3, label: 'Resolving dependencies', sublabel: 'Parsing manifests across all detected ecosystems', icon: Zap, duration: 1100 },
-  { id: 4, label: 'Building architecture graph', sublabel: 'Computing node positions & edge relationships', icon: Map, duration: 1100 },
-  { id: 5, label: 'Generating AI insights', sublabel: 'Synthesizing architecture overview & explanations', icon: Brain, duration: 99999 },
+  { id: 3, label: 'Resolving dependencies', sublabel: 'Parsing manifests across detected ecosystems', icon: Zap, duration: 1100 },
+  { id: 4, label: 'Building architecture graph', sublabel: 'Computing node positions & dependency chains', icon: Map, duration: 1100 },
+  { id: 5, label: 'Synthesizing AI onboarding roadmap', sublabel: 'Generating recommended reading paths & execution flows', icon: Brain, duration: 99999 },
 ];
 
 interface StagedLoaderProps {

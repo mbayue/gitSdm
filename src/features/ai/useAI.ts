@@ -10,6 +10,7 @@ import {
   aiMermaid,
   aiRoast,
   aiReadmeEnhance,
+  aiLearningPath,
 } from '@/lib/api-client';
 import type { AIExplainRequest } from '@/types';
 
@@ -81,3 +82,11 @@ export function useReadmeEnhance() {
       aiReadmeEnhance(owner, repo),
   });
 }
+
+export function useLearningPath() {
+  return useMutation({
+    mutationFn: ({ owner, repo, branch }: { owner: string; repo: string; branch?: string }) =>
+      aiLearningPath(owner, repo, branch),
+  });
+}
+

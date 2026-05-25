@@ -59,7 +59,7 @@ function CircleTreeNode({ data, selected, type }: NodeProps) {
   return (
     <div
       className={cn(
-        'group flex items-center gap-2 rounded-lg border px-2.5 py-1.5 transition-all duration-200 backdrop-blur-md',
+        'group flex items-center gap-2 rounded-lg border px-2.5 py-1.5 transition-[background-color,border-color,box-shadow] duration-150',
         selected
           ? 'bg-zinc-900/95 shadow-lg shadow-black/60'
           : 'bg-zinc-950/80 border-white/[0.06] hover:border-white/20 hover:bg-zinc-900/50',

@@ -627,4 +627,160 @@ ${buildRepoContext(analysis)}`,
   return { readme, cached: false };
 }
 
+export async function generateLearningPath(
+  owner: string,
+  repo: string,
+  branch?: string,
+): Promise<{
+  mentalModel: {
+    type: string;
+    description: string;
+    concept: string;
+  };
+  recommendedPath: {
+    path: string;
+    importance: number;
+    reason: string;
+    role: string;
+  }[];
+  executionFlow: {
+    steps: {
+      from: string;
+      to: string;
+      description: string;
+    }[];
+    visualSteps: string[];
+  };
+  insights: {
+    architecture: string;
+    risks: string[];
+    suggestions: string[];
+  };
+  cached: boolean;
+}> {
+  if ((process.env.AI_PROVIDER ?? 'mock').toLowerCase() === 'mock') {
+    const branchSuffix = branch ? ` (branch: ${branch})` : '';
+    return {
+      mentalModel: {
+        type: 'Modular Service Pipeline',
+        concept: 'Ingest → Parse & Layout → Render Graph → Enrich with LLM',
+        description: `This repository follows a pipeline architecture${branchSuffix}. It fetches file structures via the GitHub API, parses configuration manifests (like package.json) to map dependencies, arranges nodes using the Dagre layout engine, and uses React Flow for canvas interactions. AI features query Gemini dynamically with code snippets.`
+      },
+      recommendedPath: [
+        { path: 'README.md', importance: 95, reason: 'High-level project statement, configuration guides, and design directives.', role: 'Documentation' },
+        { path: 'package.json', importance: 90, reason: 'Lists scripts and dependency graph. Critical for mapping dependencies.', role: 'Config' },
+        { path: 'server/api-router.ts', importance: 88, reason: 'Entrypoint for API endpoints (Ingestion, AI explanations, Mermaid).', role: 'Server API Router' },
+        { path: 'server/graph/graph-builder.ts', importance: 85, reason: 'Constructs nodes and edges, applying layout math via Dagre.', role: 'Core Builder' },
+        { path: 'src/stores/viz-store.ts', importance: 82, reason: 'State container holding global graph filters, selection, and UI panels.', role: 'State Store' },
+        { path: 'src/features/graph/GraphCanvas.tsx', importance: 80, reason: 'The primary interactive view where elements render on a canvas.', role: 'React Flow Canvas' }
+      ],
+      executionFlow: {
+        steps: [
+          { from: 'Landing Page (HomePage)', to: 'Repo Input Parser', description: 'User submits repository URL which gets parsed into owner, repo, and optional branch.' },
+          { from: 'Repo Input Parser', to: 'Server Analysis Endpoint', description: 'Triggers /api/repo/analyze, launching flat tree fetching and dependency resolutions.' },
+          { from: 'Server Analysis Endpoint', to: 'Graph Builder Engine', description: 'Files are categorized, package.json dependencies are analyzed, and tree is positioned.' },
+          { from: 'Graph Builder Engine', to: 'React Flow Canvas', description: 'React Flow receives the Dagre layouted nodes and edges, drawing the visual model.' },
+          { from: 'React Flow Canvas', to: 'Start Here AI Onboarding', description: 'AI synthesizes mental models, recommended files, and execution flow details.' }
+        ],
+        visualSteps: [
+          'src/pages/HomePage.tsx',
+          'server/api-router.ts',
+          'server/services/analyze-repo.ts',
+          'server/graph/graph-builder.ts',
+          'src/pages/VizPage.tsx',
+          'src/components/viz/LearningPathTab.tsx'
+        ]
+      },
+      insights: {
+        architecture: 'The repository leverages a cleanly decoupled layout: a Node server router for API handlers and GitHub data client pipelines, alongside a lightweight React Vite client. Global store synchronization is handled cleanly using Zustand.',
+        risks: [
+          'The Dagre layout calculation runs on the server, which can block the main API event loop for extremely large repositories.',
+          'Memory-cached LRU storage in serverless server instances will reset during cold starts, causing frequent rate limits.'
+        ],
+        suggestions: [
+          'New contributors should first look at how data flows from analyze-repo.ts into graph-builder.ts.',
+          'Try implementing client-side layout caching or local storage hydration to avoid repeated API requests.'
+        ]
+      },
+      cached: false
+    };
+  }
+
+  const analysis = await analyzeRepository({ owner, repo, branch });
+  const key = aiCacheKey('learning-path', owner, repo, analysis.meta.sha, 'v1');
+
+  const cached = cache.get<any>(key);
+  if (cached) return { ...cached, cached: true };
+
+  const provider = await getAIProvider();
+  const raw = await provider.complete(
+    [
+      { role: 'system', content: SYSTEM_PROMPT },
+      {
+        role: 'user',
+        content: `Analyze this repository and return a comprehensive onboarding intelligence JSON with this exact shape:
+{
+  "mentalModel": {
+    "type": "Architecture Type (e.g. Layered MVC, Event-Driven, Pipeline, Modular Service, Layered Frontend)",
+    "concept": "1-sentence tagline describing the repository's core flow",
+    "description": "2-3 sentences explaining the overarching mental model of this codebase to help a new developer."
+  },
+  "recommendedPath": [
+    {
+      "path": "exact file path from the repository files list (must exist!)",
+      "importance": 0-100 score of how important this file is to read first,
+      "reason": "specific description of why this file matters and its main responsibilities",
+      "role": "e.g. Entry Point, Core Logic, Config, Router, UI View"
+    }
+  ],
+  "executionFlow": {
+    "steps": [
+      {
+        "from": "starting component/file/stage",
+        "to": "target component/file/stage",
+        "description": "brief explanation of what data or execution flow happens between these two"
+      }
+    ],
+    "visualSteps": [
+      "array of 4-7 file paths (must exist in the repository files list) representing a typical execution pipeline in order"
+    ]
+  },
+  "insights": {
+    "architecture": "1-2 sentences on state management, visual engines, or database connections used.",
+    "risks": [
+      "2 critical architectural risks or potential technical debt items detected in this repository structure"
+    ],
+    "suggestions": [
+      "2 helpful suggestions for a new developer or contributor trying to modify this repository"
+    ]
+  }
+}
+
+Choose 5-8 of the most critical files for recommendedPath, sorted by suggested reading order (highest priority first).
+Ensure visualSteps lists actual existing file paths that map out the primary execution path (e.g., from main entrypoint through routers, controllers, services, database/view).
+Only reference files that exist in the context list.
+
+${buildRepoContext(analysis)}`,
+      },
+    ],
+    { json: true },
+  );
+
+  let parsed: any;
+  try {
+    parsed = safeParseJSON(raw);
+  } catch (err) {
+    parsed = {
+      mentalModel: { type: 'Modular Application', concept: 'Unknown flow', description: 'Unable to parse AI mental model.' },
+      recommendedPath: analysis.importantFiles.slice(0, 4).map((f, idx) => ({ path: f, importance: 90 - idx * 10, reason: 'Structurally important file.', role: 'Source' })),
+      executionFlow: { steps: [], visualSteps: analysis.importantFiles.slice(0, 4) },
+      insights: { architecture: 'Standard setup.', risks: [], suggestions: [] }
+    };
+  }
+
+  cache.set(key, parsed);
+  return { ...parsed, cached: false };
+}
+
 export type { RepoAnalysis };
+

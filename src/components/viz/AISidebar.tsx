@@ -13,12 +13,15 @@ import {
 import type { RepoAnalysis } from '@/types';
 import { Skeleton } from '@/components/ui/Skeleton';
 
+import { LearningPathTab } from './LearningPathTab';
+
 const tabs = [
+  { id: 'start' as SidebarTab, label: 'Onboarding', icon: Sparkles },
   { id: 'explain' as SidebarTab, label: 'Explain', icon: Brain },
   { id: 'architecture' as SidebarTab, label: 'Architecture', icon: Map },
   { id: 'health' as SidebarTab, label: 'Health', icon: ShieldAlert },
-  { id: 'playground' as SidebarTab, label: 'Playground', icon: Flame },
   { id: 'dependencies' as SidebarTab, label: 'Packages', icon: Package },
+  { id: 'playground' as SidebarTab, label: 'Playground', icon: Flame },
 ];
 
 interface AISidebarProps {
@@ -127,29 +130,40 @@ export function AISidebar({ analysis }: AISidebarProps) {
   return (
     <aside className="flex h-full w-full flex-col border-l border-white/5 bg-zinc-950/60 shadow-2xl backdrop-blur-xl">
       {/* Sidebar Navigation Tabs */}
-      <div className="flex border-b border-white/5 bg-zinc-950/40 p-1.5 gap-1 shrink-0 overflow-x-auto">
+      <div className="flex items-center border-b border-white/5 bg-zinc-950/40 px-1.5 py-1 gap-0.5 shrink-0">
         {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setSidebarTab(t.id)}
+            title={t.label}
             className={cn(
-              'flex flex-1 items-center justify-center gap-1 py-1.5 px-2 rounded-lg text-[10px] font-medium transition-all duration-200 shrink-0 min-w-[70px]',
+              'flex items-center justify-center gap-1.5 rounded-lg font-medium transition-colors duration-150',
               sidebarTab === t.id
-                ? 'bg-violet-600/15 dark:text-violet-200 text-violet-700 border border-violet-500/20 shadow-[0_0_12px_rgba(139,92,246,0.1)]'
-                : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200 border border-transparent',
+                ? 'bg-violet-600/15 dark:text-violet-200 text-violet-700 border border-violet-500/20 shadow-[0_0_12px_rgba(139,92,246,0.1)] px-2.5 py-1.5 text-[10px]'
+                : 'text-zinc-500 hover:bg-white/5 hover:text-zinc-300 border border-transparent w-8 h-8 shrink-0',
             )}
           >
-            <t.icon className={cn("h-3.5 w-3.5", sidebarTab === t.id ? "dark:text-violet-400 text-violet-600" : "")} />
-            <span>{t.label}</span>
+            <t.icon className={cn(
+              sidebarTab === t.id ? 'h-3 w-3 dark:text-violet-400 text-violet-600' : 'h-4 w-4'
+            )} />
+            {sidebarTab === t.id && <span className="whitespace-nowrap">{t.label}</span>}
           </button>
         ))}
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 text-sm scroll-mt-2 scrollbar-thin">
         <AnimatePresence mode="wait">
+          {/* TAB 0: START HERE */}
+          {sidebarTab === 'start' && (
+            <TabPanel key="start">
+              <LearningPathTab analysis={analysis} />
+            </TabPanel>
+          )}
+
           {/* TAB 1: EXPLAIN */}
           {sidebarTab === 'explain' && (
+
             <TabPanel key="explain">
               {/* Selected Node or Repo Header */}
               {selectedNode ? (

@@ -2,33 +2,33 @@ import { motion } from 'framer-motion';
 import { Sparkles, Zap, GitBranch, Brain, Shield } from 'lucide-react';
 
 const stats = [
-  { value: '< 10s', label: 'To full repo map' },
-  { value: 'AI', label: 'Architecture analysis' },
-  { value: '∞', label: 'Public repositories' },
+  { value: '< 10s', label: 'To onboard new developers' },
+  { value: 'AI', label: 'Roadmaps & mental models' },
+  { value: '∞', label: 'Repository execution paths' },
 ];
 
 const floatingNodes = [
   {
     icon: Brain,
-    label: 'AI Architecture Map',
+    label: 'AI Roadmap: Ingestion Pipeline',
     accentClass: 'hero-node-violet',
-    x: '-26vw', y: '-30px', delay: 0, duration: 5.5,
+    x: '-36vw', y: '-30px', delay: 0, duration: 5.5,
   },
   {
     icon: GitBranch,
-    label: 'server/api-router.ts',
+    label: 'Execution Trace: server.ts → router.ts',
     accentClass: 'hero-node-cyan',
     x: '24vw', y: '-70px', delay: 1, duration: 6.5,
   },
   {
     icon: Shield,
-    label: 'Health: 94/100',
+    label: 'Smart Focus: API Layer only',
     accentClass: 'hero-node-emerald',
     x: '-30vw', y: '90px', delay: 2, duration: 7,
   },
   {
     icon: Zap,
-    label: 'Refactor opportunities: 3',
+    label: 'Architecture risks: 2',
     accentClass: 'hero-node-amber',
     x: '28vw', y: '70px', delay: 1.5, duration: 5.8,
   },
@@ -81,24 +81,21 @@ export function Hero() {
           className="hero-badge mb-7 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs"
         >
           <Sparkles className="h-3.5 w-3.5" />
-          <span>AI-powered repository intelligence</span>
+          <span>AI-native repository onboarding intelligence</span>
           <span className="h-1 w-1 rounded-full bg-current animate-pulse" />
         </motion.div>
 
         {/* Headline */}
         <h1 className="text-5xl font-extrabold tracking-tight sm:text-7xl text-white leading-[1.1] mb-6">
-          Understand Any{' '}
+          AI-Native Repository
+          <br />
           <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">
-            Repository
+            Onboarding Intelligence
           </span>
-          <br className="hidden sm:block" />
-          {' '}Instantly
         </h1>
 
         <p className="text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed mb-10">
-          AI-powered repository intelligence and architecture visualization.
-          Understand any codebase in{' '}
-          <span className="text-white font-medium">seconds</span>, not days.
+          Transform complex repositories into interactive learning paths. Instantly grasp mental models, trace execution pipelines, and master codebase structure in <span className="text-white font-medium">seconds</span>.
         </p>
 
         {/* Stats bar */}

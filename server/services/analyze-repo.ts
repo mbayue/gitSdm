@@ -27,7 +27,7 @@ export async function analyzeRepository(
   }
 
   const { owner, repo } = parsed;
-  const branch = typeof parsed === 'object' && 'branch' in parsed ? parsed.branch : undefined;
+  const branch = typeof parsed === 'object' && 'branch' in parsed ? (parsed as any).branch as string | undefined : undefined;
   const info = await fetchRepoInfo(owner, repo, branch);
   const cacheKey = analyzeCacheKey(owner, repo, info.sha);
 

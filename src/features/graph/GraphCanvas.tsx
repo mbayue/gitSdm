@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type CSSProperties } from 'react';
 import {
   ReactFlow,
   Controls,
@@ -7,7 +7,6 @@ import {
   BackgroundVariant,
   useEdgesState,
   useNodesState,
-  getConnectedEdges,
   useReactFlow,
   type Node,
   type Edge,
@@ -33,14 +32,17 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
     highlightedNodeIds,
     setSelectedNodeId,
     setHighlightedNodeIds,
+    focusedFilePath,
     setFocusedFilePath,
     setInspectorOpen,
     layoutType,
     theme,
+    activeFocusLayer,
   } = useVizStore();
 
-  const { fitView } = useReactFlow();
+  const { fitView, setCenter } = useReactFlow();
   const isDark = theme === 'dark';
+  const showMiniMap = !readOnly && graph.nodes.length <= 350;
 
   const flowStyle = useMemo(() => ({
     background: isDark
@@ -66,7 +68,7 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
     const q = searchQuery.toLowerCase();
     const activeFilters = nodeTypeFilters;
 
-    const nodes = graph.nodes.filter((n) => {
+    let nodes = graph.nodes.filter((n) => {
       if (!activeFilters.has(n.type)) return false;
       if (!q) return true;
       const label = n.data.label ? String(n.data.label).toLowerCase() : '';
@@ -74,15 +76,53 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
       return label.includes(q) || path.includes(q);
     });
 
+    // Apply Focus Layer filters dynamically
+    if (activeFocusLayer && activeFocusLayer !== 'all') {
+      nodes = nodes.filter((n) => {
+        if (n.type === 'repo') return true;
+        const path = n.data.path ? String(n.data.path).toLowerCase() : '';
+        const ext = n.data.extension ? String(n.data.extension).toLowerCase() : '';
+
+        if (activeFocusLayer === 'api') {
+          return path.includes('api') || path.includes('server') || path.includes('route') || path.includes('controller') || path.includes('endpoints');
+        }
+        if (activeFocusLayer === 'ui') {
+          return path.includes('component') || path.includes('page') || path.includes('style') || path.includes('view') || ['tsx', 'jsx', 'css'].includes(ext);
+        }
+        if (activeFocusLayer === 'core') {
+          return path.includes('service') || path.includes('util') || path.includes('helper') || path.includes('lib') || path.includes('core') || ['rs', 'go', 'py', 'ts', 'js'].includes(ext);
+        }
+        if (activeFocusLayer === 'config') {
+          return ext === 'json' || ext === 'yaml' || ext === 'yml' || ext === 'toml' || path.includes('config') || path.includes('webpack') || path.includes('vite');
+        }
+        return true;
+      });
+    }
+
     const nodeIds = new Set(nodes.map((n) => n.id));
     const edges = graph.edges.filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target));
 
     return { nodes, edges };
-  }, [graph, searchQuery, nodeTypeFilters, readOnly]);
+  }, [graph, searchQuery, nodeTypeFilters, readOnly, activeFocusLayer]);
 
   const layouted = useMemo(() => {
     return getLayoutedElements(filtered.nodes as Node[], filtered.edges as Edge[], layoutType);
   }, [filtered, layoutType]);
+
+  const connectedNodeIdsByNodeId = useMemo(() => {
+    const lookup = new Map<string, Set<string>>();
+
+    for (const edge of filtered.edges) {
+      if (!lookup.has(edge.source)) lookup.set(edge.source, new Set([edge.source]));
+      if (!lookup.has(edge.target)) lookup.set(edge.target, new Set([edge.target]));
+      lookup.get(edge.source)?.add(edge.target);
+      lookup.get(edge.target)?.add(edge.source);
+      lookup.get(edge.source)?.add(edge.source);
+      lookup.get(edge.target)?.add(edge.target);
+    }
+
+    return lookup;
+  }, [filtered.edges]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -90,10 +130,11 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
   useEffect(() => {
     const rawNodes = layouted.nodes;
     const rawEdges = layouted.edges;
+    const nodeById = new Map(rawNodes.map((node) => [node.id, node]));
 
     const nodesWithClasses = rawNodes.map((n) => ({
       ...n,
-      className: getNodeClassName(n as any, selectedNodeId, highlightedNodeIds),
+      className: getNodeClassName(n, selectedNodeId, highlightedNodeIds),
     }));
 
     const edgesWithStyles = rawEdges.map((e) => {
@@ -101,7 +142,7 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
       return {
         ...e,
         type: layoutType === 'force' ? 'default' : 'smoothstep',
-        style: getEdgeStyle(e, selectedNodeId, highlightedNodeIds, rawNodes as Node[], theme),
+        style: getEdgeStyle(e, selectedNodeId, highlightedNodeIds, nodeById, theme),
         animated: !!isSelectedNodeConnected,
       };
     });
@@ -111,15 +152,48 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
   }, [layouted, selectedNodeId, highlightedNodeIds, layoutType, theme, setNodes, setEdges]);
 
   useEffect(() => {
+    // Only fit view initially if no node is selected/focused
+    if (selectedNodeId || focusedFilePath) return;
     const timer = setTimeout(() => {
       fitView({ duration: 400, padding: 0.35 });
     }, 100);
     return () => clearTimeout(timer);
-  }, [layoutType, fitView, graph]);
+  }, [layoutType, fitView, graph, selectedNodeId, focusedFilePath]);
+
+  const lastCenteredIdRef = useRef<string | null>(null);
+
+  // Center and zoom in on selected node or focused file path
+  useEffect(() => {
+    if (!nodes || nodes.length === 0) return;
+
+    const activeId = selectedNodeId || (focusedFilePath ? `file:${focusedFilePath}` : null);
+    if (!activeId) {
+      lastCenteredIdRef.current = null;
+      return;
+    }
+
+    if (lastCenteredIdRef.current === activeId) return;
+
+    const targetNode = nodes.find(
+      (n) => n.id === activeId || (n.data?.path && n.data.path === focusedFilePath)
+    );
+
+    if (targetNode) {
+      lastCenteredIdRef.current = activeId;
+      const x = targetNode.position.x + (targetNode.measured?.width ?? targetNode.width ?? 120) / 2;
+      const y = targetNode.position.y + (targetNode.measured?.height ?? targetNode.height ?? 36) / 2;
+
+      const timer = setTimeout(() => {
+        setCenter(x, y, { zoom: 1.3, duration: 600 });
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedNodeId, focusedFilePath, nodes, setCenter]);
 
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
       if (readOnly) return;
+      lastCenteredIdRef.current = null; // Force centering on explicit click
       setSelectedNodeId(node.id);
 
       if (node.type === 'file' && node.data?.path) {
@@ -127,15 +201,9 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
         setInspectorOpen(true);
       }
 
-      const connected = getConnectedEdges([node], filtered.edges as Edge[]);
-      const ids = new Set<string>([node.id]);
-      connected.forEach((e) => {
-        ids.add(e.source);
-        ids.add(e.target);
-      });
-      setHighlightedNodeIds(ids);
+      setHighlightedNodeIds(new Set(connectedNodeIdsByNodeId.get(node.id) ?? [node.id]));
     },
-    [readOnly, filtered.edges, setSelectedNodeId, setHighlightedNodeIds, setFocusedFilePath, setInspectorOpen],
+    [readOnly, connectedNodeIdsByNodeId, setSelectedNodeId, setHighlightedNodeIds, setFocusedFilePath, setInspectorOpen],
   );
 
   const onPaneClick = useCallback(() => {
@@ -162,6 +230,7 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
         proOptions={{ hideAttribution: true }}
         nodesDraggable={!readOnly}
         nodesConnectable={false}
+        onlyRenderVisibleElements
         panOnDrag
         panOnScroll={false}
         zoomOnScroll
@@ -181,29 +250,29 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
               showInteractive={false}
               className="graph-controls !shadow-none"
             />
-            <MiniMap
-              position="top-right"
-              className="graph-minimap !rounded-md !shadow-none"
-              style={{
-                width: 100,
-                height: 64,
-                backgroundColor: isDark ? 'rgba(9, 9, 11, 0.88)' : 'rgba(255, 255, 255, 0.88)',
-                border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(39, 39, 42, 0.16)'}`,
-              }}
-              pannable
-              zoomable
-              bgColor={isDark ? '#111113' : '#ffffff'}
-              nodeColor={(n) => {
-                const d = n.data as { nodeColor?: string; extension?: string; label?: string };
-                if (d.nodeColor) return d.nodeColor;
-                const ext = d.extension ?? '';
-                const name = (d.label as string) ?? '';
-                if (n.type === 'folder') return getNodeCircleColor('folder', name, ext);
-                if (n.type === 'file') return getNodeCircleColor('file', name, ext);
-                return '#ffffff';
-              }}
-              maskColor={isDark ? 'rgba(0, 0, 0, 0.82)' : 'rgba(255, 255, 255, 0.72)'}
-            />
+            {showMiniMap && (
+              <MiniMap
+                position="top-right"
+                className="graph-minimap !rounded-md !shadow-none"
+                style={{
+                  width: 100,
+                  height: 64,
+                  backgroundColor: isDark ? 'rgba(9, 9, 11, 0.88)' : 'rgba(255, 255, 255, 0.88)',
+                  border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(39, 39, 42, 0.16)'}`,
+                }}
+                bgColor={isDark ? '#111113' : '#ffffff'}
+                nodeColor={(n) => {
+                  const d = n.data as { nodeColor?: string; extension?: string; label?: string };
+                  if (d.nodeColor) return d.nodeColor;
+                  const ext = d.extension ?? '';
+                  const name = (d.label as string) ?? '';
+                  if (n.type === 'folder') return getNodeCircleColor('folder', name, ext);
+                  if (n.type === 'file') return getNodeCircleColor('file', name, ext);
+                  return '#ffffff';
+                }}
+                maskColor={isDark ? 'rgba(0, 0, 0, 0.82)' : 'rgba(255, 255, 255, 0.72)'}
+              />
+            )}
           </>
         )}
       </ReactFlow>
@@ -212,12 +281,12 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
 }
 
 function getNodeClassName(
-  node: GraphNode,
+  node: GraphNode | Node,
   selectedId: string | null,
   highlighted: Set<string>,
 ): string {
   if (!selectedId) return '';
-  if (node.id === selectedId) return '';
+  if (node.id === selectedId) return 'selected';
   if (highlighted.has(node.id)) return '';
   return 'dimmed';
 }
@@ -226,11 +295,11 @@ function getEdgeStyle(
   edge: { source: string; target: string },
   selectedId: string | null,
   highlighted: Set<string>,
-  nodes: Node[],
+  nodes: Map<string, Node>,
   theme: 'dark' | 'light',
 ): React.CSSProperties {
-  const targetNode = nodes.find((n) => n.id === edge.target);
-  const sourceNode = nodes.find((n) => n.id === edge.source);
+  const targetNode = nodes.get(edge.target);
+  const sourceNode = nodes.get(edge.source);
 
   const isTargetDeleted = targetNode?.data?.diffStatus === 'deleted';
   const isSourceDeleted = sourceNode?.data?.diffStatus === 'deleted';

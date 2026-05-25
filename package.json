@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:server": "vite build --ssr server/prod-server.ts --outDir dist-server",
-    "build:docker": "npm run build && npm run build:server",
+    "build:docker": "pnpm run build && pnpm run build:server",
     "start": "node dist-server/prod-server.js",
     "preview": "vite preview",
     "test": "vitest run",
