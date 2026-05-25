@@ -6,6 +6,7 @@ WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
 
+RUN apk add --no-cache libc6-compat python3 make g++
 RUN pnpm install --frozen-lockfile --ignore-scripts=false
 
 COPY . .
