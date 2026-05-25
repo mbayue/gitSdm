@@ -7,7 +7,11 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 RUN apk add --no-cache libc6-compat python3 make g++
-RUN pnpm install --frozen-lockfile --ignore-scripts=false
+
+RUN pnpm install \
+  --frozen-lockfile \
+  --ignore-scripts=false \
+  --config.minimum-release-age=0
 
 COPY . .
 
