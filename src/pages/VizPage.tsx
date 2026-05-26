@@ -17,7 +17,6 @@ import { VizError } from '@/components/viz/VizError';
 import { Check } from 'lucide-react';
 import { StagedLoader } from '@/components/viz/StagedLoader';
 import type { GraphNode, TreeNode } from '@/types';
-import { useExplain } from '@/features/ai/useAI';
 import { CompareHUD } from '@/components/viz/CompareHUD';
 
 export function VizPage() {
@@ -47,7 +46,6 @@ export function VizPage() {
     setToastMessage,
   } = useVizStore();
   const selectedFilePath = focusedFilePath;
-  const explain = useExplain();
 
   useEffect(() => {
     if (toastMessage) {
@@ -97,19 +95,6 @@ export function VizPage() {
       setInspectorOpen(true);
     }
   }, [selectedNode, setFocusedFilePath, setInspectorOpen]);
-
-  useEffect(() => {
-    if (selectedNodeId && data) {
-      explain.mutate({
-        owner: data.meta.owner,
-        repo: data.meta.repo,
-        scope: 'node',
-        nodeId: selectedNodeId,
-        branch: selectedBranch || undefined,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedNodeId, data?.meta.owner, data?.meta.repo, selectedBranch]);
 
   // Recursively map file paths to their tree node SHA
   const fileShaMaps = useMemo(() => {

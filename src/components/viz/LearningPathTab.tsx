@@ -16,6 +16,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
   const selectedBranch = useVizStore((s) => s.selectedBranch);
   const activeFocusLayer = useVizStore((s) => s.activeFocusLayer);
   const setActiveFocusLayer = useVizStore((s) => s.setActiveFocusLayer);
+  const focusedFilePath = useVizStore((s) => s.focusedFilePath);
   const setFocusedFilePath = useVizStore((s) => s.setFocusedFilePath);
   const setInspectorOpen = useVizStore((s) => s.setInspectorOpen);
 
@@ -37,24 +38,30 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
   }, [owner, repo, selectedBranch]);
 
   const data = lp.data;
-  const steps = data?.executionFlow?.visualSteps ?? [];
+  const executionSteps = data?.executionFlow?.steps ?? [];
 
   // Play/Pause execution tracer simulation
   useEffect(() => {
-    if (isPlaying && steps.length > 0) {
+    if (isPlaying && executionSteps.length > 0) {
       // Focus first step immediately
-      const currentPath = steps[activeStep];
-      if (currentPath) {
-        setFocusedFilePath(currentPath);
+      const currentStep = executionSteps[activeStep];
+      if (currentStep) {
+        const toPath = currentStep.to.split('(')[0].trim();
+        const fromPath = currentStep.from.split('(')[0].trim();
+        const path = analysis.graph.nodes.some(n => n.data.path === toPath) ? toPath : fromPath;
+        setFocusedFilePath(path);
         setInspectorOpen(true);
       }
 
       timerRef.current = setInterval(() => {
         setActiveStep((prev) => {
-          const next = (prev + 1) % steps.length;
-          const nextPath = steps[next];
-          if (nextPath) {
-            setFocusedFilePath(nextPath);
+          const next = (prev + 1) % executionSteps.length;
+          const nextStep = executionSteps[next];
+          if (nextStep) {
+            const toPath = nextStep.to.split('(')[0].trim();
+            const fromPath = nextStep.from.split('(')[0].trim();
+            const path = analysis.graph.nodes.some(n => n.data.path === toPath) ? toPath : fromPath;
+            setFocusedFilePath(path);
             setInspectorOpen(true);
           }
           return next;
@@ -70,12 +77,26 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPlaying, steps, activeStep, setFocusedFilePath, setInspectorOpen]);
+  }, [isPlaying, executionSteps, activeStep, setFocusedFilePath, setInspectorOpen, analysis.graph.nodes]);
+
+  // Sync activeStep with focusedFilePath when focusedFilePath changes
+  useEffect(() => {
+    if (!focusedFilePath || !executionSteps.length || isPlaying) return;
+    const index = executionSteps.findIndex((step) => {
+      const toPath = step.to.split('(')[0].trim();
+      const fromPath = step.from.split('(')[0].trim();
+      return toPath === focusedFilePath || fromPath === focusedFilePath;
+    });
+    setActiveStep(index);
+  }, [focusedFilePath, executionSteps, isPlaying]);
 
   const handleStepClick = (index: number) => {
     setActiveStep(index);
-    const path = steps[index];
-    if (path) {
+    const step = executionSteps[index];
+    if (step) {
+      const toPath = step.to.split('(')[0].trim();
+      const fromPath = step.from.split('(')[0].trim();
+      const path = analysis.graph.nodes.some(n => n.data.path === toPath) ? toPath : fromPath;
       setFocusedFilePath(path);
       setInspectorOpen(true);
     }
@@ -255,7 +276,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
       </div>
 
       {/* Execution Flow simulation tracer */}
-      {steps.length > 0 && (
+      {executionSteps.length > 0 && (
         <div className="rounded-xl border border-white/[0.05] bg-zinc-950/40 p-4">
           <div className="flex items-center justify-between mb-3.5">
             <div className="flex items-center gap-1.5">
@@ -265,7 +286,12 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
               </h4>
             </div>
             <button
-              onClick={() => setIsPlaying(!isPlaying)}
+              onClick={() => {
+                if (!isPlaying && activeStep === -1) {
+                  setActiveStep(0);
+                }
+                setIsPlaying(!isPlaying);
+              }}
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[10px] font-semibold tracking-wide transition-all shadow-sm",
                 isPlaying
@@ -292,7 +318,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
           {/* Timeline steps */}
           <div className="relative border-l border-white/[0.06] ml-2.5 pl-4 space-y-4">
             {data.executionFlow?.steps?.map((step, sIdx) => {
-              const isActive = isPlaying && steps[activeStep]?.includes(step.from.split('(')[0].trim()) || activeStep === sIdx;
+              const isActive = activeStep === sIdx;
               return (
                 <div
                   key={sIdx}

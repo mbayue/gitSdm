@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Brain, Map, ShieldAlert, Flame, Package, Copy, Download, RefreshCw,
+  Brain, Map, ShieldAlert, Flame, Package, Copy,
   Sparkles, AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -36,10 +36,12 @@ export function AISidebar({ analysis }: AISidebarProps) {
     selectedNodeId,
     setSelectedNodeId,
     setToastMessage,
+    selectedBranch,
   } = useVizStore();
 
   const [eli5Mode, setEli5Mode] = useState(false);
   const [activePlayground, setActivePlayground] = useState<'roast' | 'readme'>('roast');
+  const lastExplanationKeyRef = useRef<string | null>(null);
 
   const explain = useExplain();
   const explainNew = useExplainNew();
@@ -57,21 +59,28 @@ export function AISidebar({ analysis }: AISidebarProps) {
 
   // Trigger standard explain when tab or node changes
   useEffect(() => {
-    if (sidebarTab === 'explain' && !selectedNodeId && eli5Mode) {
-      if (!explainNew.data && !explainNew.isPending) {
+    if (sidebarTab !== 'explain') return;
+
+    const currentKey = `${owner}/${repo}/${selectedNodeId ?? 'repo'}/${selectedNodeId ? 'normal' : (eli5Mode ? 'eli5' : 'normal')}/${selectedBranch ?? 'default'}`;
+
+    if (lastExplanationKeyRef.current !== currentKey) {
+      explain.reset();
+      explainNew.reset();
+      lastExplanationKeyRef.current = currentKey;
+
+      if (!selectedNodeId && eli5Mode) {
         explainNew.mutate({ owner, repo });
-      }
-    } else if (sidebarTab === 'explain') {
-      if (!explain.data && !explain.isPending) {
+      } else {
         explain.mutate({
           owner,
           repo,
           scope: selectedNodeId ? 'node' : 'repo',
           nodeId: selectedNodeId ?? undefined,
+          branch: selectedBranch || undefined,
         });
       }
     }
-  }, [sidebarTab, owner, repo, selectedNodeId, eli5Mode]);
+  }, [sidebarTab, owner, repo, selectedNodeId, eli5Mode, selectedBranch, explain, explainNew]);
 
   // Trigger architecture details
   useEffect(() => {
@@ -124,6 +133,7 @@ export function AISidebar({ analysis }: AISidebarProps) {
         repo,
         scope: selectedNodeId ? 'node' : 'repo',
         nodeId: selectedNodeId ?? undefined,
+        branch: selectedBranch || undefined,
       });
     }
   };
