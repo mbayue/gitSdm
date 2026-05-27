@@ -133,6 +133,9 @@ async function createAnthropicProvider(overrideKey?: string): Promise<AIProvider
     throw new Error('ANTHROPIC_API_KEY is required when using Anthropic provider');
   }
   const client = new Anthropic({ apiKey });
+  if (process.env.ANTHROPIC_API_BASE) {
+    client.baseURL = process.env.ANTHROPIC_API_BASE;
+  }
   const model = process.env.ANTHROPIC_MODEL ?? 'claude-3-5-haiku-latest';
 
   return {
