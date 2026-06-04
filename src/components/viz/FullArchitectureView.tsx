@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, Copy, Download, RefreshCw, Network, Check } from 'lucide-react';
+import { Copy, Download, RefreshCw, Network, Check } from 'lucide-react';
 import mermaid from 'mermaid';
 import { useMermaid } from '@/features/ai/useAI';
 import { cn } from '@/lib/utils';
@@ -36,7 +36,6 @@ mermaid.initialize({
     noteTextColor: '#f4f4f5',
   },
   themeCSS: `
-    /* Node general resets and premium styling */
     .node rect, .node polygon, .node circle, .node path {
       fill: #18181b;
       stroke: #3f3f46;
@@ -46,7 +45,6 @@ mermaid.initialize({
       transition: all 0.2s ease-in-out;
     }
     
-    /* Interactive Hover effects */
     .node:hover rect, .node:hover polygon, .node:hover circle, .node:hover path {
       fill: #242427 !important;
       stroke: #8b5cf6 !important;
@@ -54,7 +52,6 @@ mermaid.initialize({
       cursor: pointer;
     }
 
-    /* Connection Lines / Edges styling */
     .edgePath .path {
       stroke: #52525b !important;
       stroke-width: 1.5px !important;
@@ -73,7 +70,6 @@ mermaid.initialize({
       fill: #a78bfa !important;
     }
 
-    /* Subgraph container boxes styling */
     .cluster rect {
       fill: rgba(24, 24, 27, 0.2) !important;
       stroke: rgba(63, 63, 70, 0.4) !important;
@@ -100,7 +96,6 @@ mermaid.initialize({
       padding: 0 !important;
     }
 
-    /* Node Text & HTML labels styling */
     .node text, .node .label, .node .label text, .node .label div, .node .label span, .node span, .node div, .node a, .node a:visited, .node a:hover {
       color: #f4f4f5 !important;
       fill: #f4f4f5 !important;
@@ -110,7 +105,6 @@ mermaid.initialize({
       text-decoration: none !important;
     }
 
-    /* Specific Node Type class colors */
     .node.entry rect, .node.entry polygon {
       fill: #1e1b4b !important;
       stroke: #8b5cf6 !important;
@@ -143,19 +137,16 @@ mermaid.initialize({
   `,
 });
 
-interface MermaidModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface FullArchitectureViewProps {
+  analysis: RepoAnalysis;
   owner: string;
   repo: string;
-  analysis?: RepoAnalysis;
 }
 
 function generateProgrammaticMermaid(analysis: RepoAnalysis): string {
   const nodes = analysis.graph?.nodes?.filter((n) => n.type === 'file') || [];
   const edges = analysis.graph?.edges || [];
 
-  // Identify the most connected files to keep the diagram readable
   const fileConnectivity = new Map<string, { incoming: number; outgoing: number }>();
 
   nodes.forEach((n) => {
@@ -169,7 +160,6 @@ function generateProgrammaticMermaid(analysis: RepoAnalysis): string {
     if (target) target.incoming++;
   });
 
-  // Calculate degree for each node
   const scoredNodes = nodes.map((n) => {
     const conn = fileConnectivity.get(n.id) || { incoming: 0, outgoing: 0 };
     const degree = conn.incoming + conn.outgoing;
@@ -179,13 +169,11 @@ function generateProgrammaticMermaid(analysis: RepoAnalysis): string {
     return { node: n, score };
   });
 
-  // Sort and keep top 25 files to prevent clutter
   scoredNodes.sort((a, b) => b.score - a.score);
   const topScored = scoredNodes.slice(0, 25);
   const keptNodeIds = new Set(topScored.map((sn) => sn.node.id));
   const keptNodes = topScored.map((sn) => sn.node);
 
-  // Group the kept files by their parent directory
   const foldersMap = new Map<string, typeof keptNodes>();
   keptNodes.forEach((node) => {
     const path = node.data?.path || '';
@@ -226,7 +214,6 @@ function generateProgrammaticMermaid(analysis: RepoAnalysis): string {
     }
   });
 
-  // Apply classes to nodes for custom visual coloring
   keptNodes.forEach((node) => {
     const mermaidId = node.id.replace(/[^a-zA-Z0-9_]/g, '_');
     let cls = 'service';
@@ -239,54 +226,27 @@ function generateProgrammaticMermaid(analysis: RepoAnalysis): string {
   return lines.join('\n');
 }
 
-export function MermaidModal({ isOpen, onClose, owner, repo, analysis }: MermaidModalProps) {
-  const { mutate: generate, data, isPending, isError, error, reset } = useMermaid();
+export function FullArchitectureView({ analysis, owner, repo }: FullArchitectureViewProps) {
+  const { mutate: generate, data, isPending, isError, error } = useMermaid();
   const [svg, setSvg] = useState<string>('');
   const [renderError, setRenderError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [copiedSvg, setCopiedSvg] = useState(false);
   const svgContainerRef = useRef<HTMLDivElement>(null);
 
-  // Mode: 'code' (direct programmatic from graph) vs 'ai' (AI summary flowchart)
   const [mode, setMode] = useState<'code' | 'ai'>('code');
 
-  // Zoom and pan states
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
-  // Trigger diagram generation on open or mode switch
   useEffect(() => {
-    if (isOpen && mode === 'ai' && !data) {
+    if (mode === 'ai' && !data) {
       generate({ owner, repo });
     }
-  }, [isOpen, mode, data, owner, repo, generate]);
+  }, [mode, data, owner, repo, generate]);
 
-  // Reset state when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      reset();
-      setMode('code');
-    }
-  }, [isOpen, reset]);
-
-  // Handle ESC key to close
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
-    }
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen, onClose]);
-
-  // Render the diagram to SVG when data, analysis, or mode changes
   useEffect(() => {
     let code = '';
     if (mode === 'code') {
@@ -314,12 +274,11 @@ export function MermaidModal({ isOpen, onClose, owner, repo, analysis }: Mermaid
     setZoom(1);
     setPan({ x: 0, y: 0 });
 
-    const id = `mermaid-modal-svg-${Math.floor(Math.random() * 1000000)}`;
+    const id = `mermaid-view-svg-${Math.floor(Math.random() * 1000000)}`;
 
     mermaid.render(id, code)
       .then(({ svg: renderedSvg }) => {
         if (active) {
-          // Adjust styles to fit and look modern
           let styled = renderedSvg;
           if (renderedSvg.includes('width=')) {
             styled = renderedSvg
@@ -334,7 +293,6 @@ export function MermaidModal({ isOpen, onClose, owner, repo, analysis }: Mermaid
         if (active) {
           setRenderError('Failed to layout flowchart. This can happen with complex circular dependencies.');
         }
-        // Cleanup bad nodes added to document body by mermaid
         const badEl = document.getElementById(id);
         if (badEl) badEl.remove();
         const badBind = document.getElementById(`d${id}`);
@@ -347,7 +305,7 @@ export function MermaidModal({ isOpen, onClose, owner, repo, analysis }: Mermaid
   }, [mode, data, analysis]);
 
   const handleCopyCode = async () => {
-    const rawCode = mode === 'ai' ? data?.diagram : (analysis ? generateProgrammaticMermaid(analysis) : '');
+    const rawCode = mode === 'ai' ? data?.diagram : generateProgrammaticMermaid(analysis);
     if (!rawCode) return;
     try {
       await navigator.clipboard.writeText(rawCode);
@@ -391,13 +349,8 @@ export function MermaidModal({ isOpen, onClose, owner, repo, analysis }: Mermaid
     }
   };
 
-  const handleRetry = () => {
-    generate({ owner, repo });
-  };
-
-  // SVG drag and zoom event handlers
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return; // Only left click drags
+    if (e.button !== 0) return;
     setIsDragging(true);
     setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
   };
@@ -421,33 +374,24 @@ export function MermaidModal({ isOpen, onClose, owner, repo, analysis }: Mermaid
     setZoom(Math.max(0.15, Math.min(5, nextZoom)));
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Overlay Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-300"
-        onClick={onClose}
-      />
+    <div className="flex h-full w-full flex-col bg-zinc-950 p-6">
+      {/* Header Panel */}
+      <div className="mb-6 flex flex-col justify-between gap-4 border-b border-white/5 pb-5 sm:flex-row sm:items-center select-none">
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight text-white flex items-center gap-2">
+            <Network className="h-5 w-5 text-violet-400 animate-pulse" />
+            System Architecture Flowchart
+          </h2>
+          <p className="mt-1 text-xs text-zinc-400">
+            Interactive block diagram mapping the structure of <span className="font-mono text-zinc-300">{owner}/{repo}</span>
+          </p>
+        </div>
 
-      {/* Modal Dialog Box */}
-      <div className="relative z-10 flex flex-col w-full max-w-5xl h-[85vh] rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl overflow-hidden transition-all duration-300">
-
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-zinc-900 bg-zinc-900/20 px-5 py-4 select-none">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600/10 border border-violet-500/20 text-violet-400">
-              <Network className="h-4.5 w-4.5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-white leading-none">System Architecture Flowchart</h3>
-              <p className="text-[10px] text-zinc-500 mt-1 font-mono">{owner}/{repo}</p>
-            </div>
-          </div>
-
+        {/* Action Controls */}
+        <div className="flex flex-wrap items-center gap-2">
           {/* Segmented Mode Selector */}
-          <div className="flex items-center rounded-md border border-white/5 bg-zinc-950 p-0.5 ml-4">
+          <div className="flex items-center rounded-md border border-white/5 bg-zinc-950 p-0.5 mr-2">
             <button
               type="button"
               onClick={() => setMode('code')}
@@ -474,111 +418,102 @@ export function MermaidModal({ isOpen, onClose, owner, repo, analysis }: Mermaid
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            {svg && (
-              <>
-                <button
-                  type="button"
-                  onClick={handleCopySvg}
-                  className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all active:scale-[0.98]"
-                >
-                  {copiedSvg ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5 text-zinc-400" />}
-                  <span>{copiedSvg ? 'Copied SVG!' : 'Copy SVG'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCopyCode}
-                  className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all active:scale-[0.98]"
-                >
-                  {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5 text-zinc-400" />}
-                  <span>{copied ? 'Copied Code!' : 'Copy Code'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDownloadSvg}
-                  className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-violet-500 transition-all active:scale-[0.98] shadow-[0_0_15px_rgba(109,40,217,0.25)]"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  <span>Download SVG</span>
-                </button>
-              </>
-            )}
-            <button
-              type="button"
-              onClick={onClose}
-              className="ml-2 flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-900 transition-all"
-            >
-              <X className="h-4.5 w-4.5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Content Area */}
-        <div className="flex-1 overflow-auto p-6 bg-zinc-950 custom-scrollbar flex flex-col">
-          {mode === 'code' && !analysis && (
-            <div className="flex flex-col items-center justify-center h-full flex-1 space-y-4">
-              <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-violet-500 border-t-transparent" />
-              <div className="text-center">
-                <span className="text-xs text-zinc-400 font-semibold tracking-wider uppercase block">Loading Codebase Graph</span>
-                <span className="text-[10px] text-zinc-500 block mt-1">Reading parsed AST topology...</span>
-              </div>
-            </div>
-          )}
-
-          {mode === 'ai' && isPending && (
-            <div className="flex flex-col items-center justify-center h-full flex-1 space-y-4">
-              <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-violet-500 border-t-transparent" />
-              <div className="text-center">
-                <span className="text-xs text-zinc-400 font-semibold tracking-wider uppercase block">Analyzing Codebase Flow (AI)</span>
-                <span className="text-[10px] text-zinc-500 block mt-1">Generating visual relationship graph...</span>
-              </div>
-            </div>
-          )}
-
-          {mode === 'ai' && isError && (
-            <div className="flex flex-col items-center justify-center h-full flex-1 max-w-sm mx-auto text-center space-y-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
-                <X className="h-6 w-6" />
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-white">Failed to generate AI diagram</h4>
-                <p className="text-xs text-zinc-500 mt-1.5 leading-relaxed max-w-md">
-                  {error instanceof Error ? error.message : 'An error occurred while generating the architecture schema.'}
-                </p>
-              </div>
+          {svg && (
+            <>
               <button
                 type="button"
-                onClick={handleRetry}
-                className="flex items-center gap-1.5 rounded-lg bg-zinc-900 border border-zinc-800 px-4 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all"
+                onClick={handleCopySvg}
+                className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-350 hover:bg-zinc-800 hover:text-white transition-all active:scale-[0.98]"
               >
-                <RefreshCw className="h-3.5 w-3.5" />
-                <span>Retry Generation</span>
+                {copiedSvg ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5 text-zinc-400" />}
+                <span>{copiedSvg ? 'Copied SVG!' : 'Copy SVG'}</span>
               </button>
-            </div>
+              <button
+                type="button"
+                onClick={handleCopyCode}
+                className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-355 hover:bg-zinc-800 hover:text-white transition-all active:scale-[0.98]"
+              >
+                {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5 text-zinc-400" />}
+                <span>{copied ? 'Copied Code!' : 'Copy Code'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadSvg}
+                className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-violet-500 transition-all active:scale-[0.98] shadow-[0_0_15px_rgba(109,40,217,0.25)]"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>Download SVG</span>
+              </button>
+            </>
           )}
+        </div>
+      </div>
 
-          {/* Render Area */}
-          {((mode === 'code' && analysis) || (mode === 'ai' && !isPending && !isError && data)) && (
-            <div className="space-y-4 h-full flex flex-col flex-1">
-              {renderError ? (
-                <div className="flex flex-col items-center justify-center p-8 text-center bg-red-500/5 border border-red-500/10 rounded-xl flex-1">
-                  <span className="text-red-400 text-xs font-medium">{renderError}</span>
-                </div>
-              ) : !svg ? (
-                <div className="flex flex-col items-center justify-center flex-1 space-y-3">
-                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
-                  <span className="text-xs text-zinc-500 font-medium">Laying out SVG flowchart...</span>
-                </div>
-              ) : (
+      {/* Main Canvas Area */}
+      <div className="flex-1 min-h-0 flex flex-col bg-zinc-900/10 border border-white/[0.03] rounded-xl overflow-hidden">
+        {mode === 'code' && !analysis && (
+          <div className="flex flex-col items-center justify-center h-full flex-1 space-y-4">
+            <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-violet-500 border-t-transparent" />
+            <div className="text-center">
+              <span className="text-xs text-zinc-400 font-semibold tracking-wider uppercase block">Loading Codebase Graph</span>
+              <span className="text-[10px] text-zinc-500 block mt-1">Reading parsed AST topology...</span>
+            </div>
+          </div>
+        )}
+
+        {mode === 'ai' && isPending && (
+          <div className="flex flex-col items-center justify-center h-full flex-1 space-y-4">
+            <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-violet-500 border-t-transparent" />
+            <div className="text-center">
+              <span className="text-xs text-zinc-400 font-semibold tracking-wider uppercase block">Analyzing Codebase Flow (AI)</span>
+              <span className="text-[10px] text-zinc-500 block mt-1">Generating visual relationship graph...</span>
+            </div>
+          </div>
+        )}
+
+        {mode === 'ai' && isError && (
+          <div className="flex flex-col items-center justify-center h-full flex-1 max-w-sm mx-auto text-center space-y-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+              <Network className="h-6 w-6" />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-white">Failed to generate AI diagram</h4>
+              <p className="text-xs text-zinc-500 mt-1.5 leading-relaxed max-w-md">
+                {error instanceof Error ? error.message : 'An error occurred while generating the architecture schema.'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => generate({ owner, repo })}
+              className="flex items-center gap-1.5 rounded-lg bg-zinc-900 border border-zinc-800 px-4 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              <span>Retry Generation</span>
+            </button>
+          </div>
+        )}
+
+        {((mode === 'code' && analysis) || (mode === 'ai' && !isPending && !isError && data)) && (
+          <div className="space-y-4 h-full flex flex-col flex-1 relative">
+            {renderError ? (
+              <div className="flex flex-col items-center justify-center p-8 text-center bg-red-500/5 border border-red-500/10 rounded-xl flex-1">
+                <span className="text-red-400 text-xs font-medium">{renderError}</span>
+              </div>
+            ) : !svg ? (
+              <div className="flex flex-col items-center justify-center flex-1 space-y-3">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+                <span className="text-xs text-zinc-500 font-medium">Laying out SVG flowchart...</span>
+              </div>
+            ) : (
+              <>
                 <div
-                  className="relative flex-1 w-full h-[50vh] min-h-[380px] overflow-hidden bg-zinc-900/20 border border-zinc-800/40 rounded-xl select-none cursor-grab active:cursor-grabbing"
+                  className="relative flex-1 w-full overflow-hidden bg-zinc-950/20 rounded-t-xl select-none cursor-grab active:cursor-grabbing"
                   onMouseDown={handleMouseDown}
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
                   onMouseLeave={handleMouseUp}
                   onWheel={handleWheel}
                 >
-                  {/* SVG Render Container */}
                   <div
                     ref={svgContainerRef}
                     className="w-full h-full flex items-center justify-center transition-transform duration-75 ease-out"
@@ -590,7 +525,7 @@ export function MermaidModal({ isOpen, onClose, owner, repo, analysis }: Mermaid
                   />
 
                   {/* Zoom Controls Overlay */}
-                  <div className="absolute bottom-4 right-4 flex items-center gap-1 bg-zinc-950/80 border border-zinc-800 rounded-lg p-1 shadow-lg backdrop-blur-sm z-20">
+                  <div className="absolute bottom-4 right-4 flex items-center gap-1 bg-zinc-950/80 border border-white/5 rounded-lg p-1 shadow-lg backdrop-blur-sm z-20">
                     <button
                       type="button"
                       onClick={() => setZoom(z => Math.max(0.15, z - 0.1))}
@@ -610,7 +545,7 @@ export function MermaidModal({ isOpen, onClose, owner, repo, analysis }: Mermaid
                     >
                       <span className="text-sm leading-none font-bold select-none">+</span>
                     </button>
-                    <div className="w-px h-4 bg-zinc-800 mx-1" />
+                    <div className="w-px h-4 bg-zinc-850 mx-1" />
                     <button
                       type="button"
                       onClick={() => {
@@ -624,23 +559,23 @@ export function MermaidModal({ isOpen, onClose, owner, repo, analysis }: Mermaid
                     </button>
                   </div>
                 </div>
-              )}
 
-              <div className="bg-zinc-900/40 border border-zinc-800/40 rounded-xl p-3.5">
-                <h5 className="text-[11px] font-bold text-white uppercase tracking-wider mb-1">
-                  {mode === 'code' ? 'Code Graph Architecture Tip' : 'AI Enhanced Architecture Tip'}
-                </h5>
-                <p className="text-[10px] text-zinc-400 leading-relaxed">
-                  {mode === 'code' ? (
-                    'This diagram is programmatically built client-side by analyzing static file imports, grouped inside bounding boxes named after directory subfolders. Zoom and pan to inspect module boundaries.'
-                  ) : (
-                    'This diagram represents the logical system architecture and dependencies summarized by the Gemini LLM. You can download the rendered SVG or copy/paste the Mermaid raw markdown.'
-                  )}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
+                <div className="bg-zinc-950/40 border-t border-white/5 p-4 rounded-b-xl select-none">
+                  <h5 className="text-[11px] font-bold text-white uppercase tracking-wider mb-1">
+                    {mode === 'code' ? 'Code Graph Architecture Tip' : 'AI Enhanced Architecture Tip'}
+                  </h5>
+                  <p className="text-[10px] text-zinc-400 leading-relaxed">
+                    {mode === 'code' ? (
+                      'This diagram is programmatically built client-side by analyzing static file imports, grouped inside bounding boxes named after directory subfolders. Zoom and pan to inspect module boundaries.'
+                    ) : (
+                      'This diagram represents the logical system architecture and dependencies summarized by the Gemini LLM. You can download the rendered SVG or copy/paste the Mermaid raw markdown.'
+                    )}
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

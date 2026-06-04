@@ -283,7 +283,7 @@ Test files are co-located with source files:
 ### Planned Features
 
 - [x] AI-generated architecture diagrams
-- [ ] Commit History
+- [x] Commit History
 - [ ] Private repository support
 - [ ] Export to PDF / PNG
 - [ ] Monorepo-aware dependency grouping

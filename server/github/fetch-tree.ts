@@ -1,5 +1,14 @@
 import { getOctokit, handleOctokitError } from './client';
-import type { TreeNode } from '../../src/types';
+import type { TreeNode, TimelineWeek } from '../../src/types';
+import {
+  isMockRepo,
+  fetchMockRepoBranches,
+  fetchMockRepoInfo,
+  fetchMockFlatTree,
+  fetchMockFileContents,
+  fetchMockContributors,
+  fetchMockTimeline,
+} from './mock-data';
 
 const MAX_TREE_ITEMS = 2000;
 
@@ -31,6 +40,9 @@ export async function fetchRepoBranches(
   owner: string,
   repo: string,
 ): Promise<{ name: string; protected: boolean }[]> {
+  if (isMockRepo(owner)) {
+    return fetchMockRepoBranches();
+  }
   const octokit = getOctokit();
   try {
     const { data } = await octokit.repos.listBranches({ owner, repo, per_page: 100 });
@@ -46,6 +58,9 @@ export async function fetchRepoBranches(
 }
 
 export async function fetchRepoInfo(owner: string, repo: string, branchName?: string): Promise<RepoInfo> {
+  if (isMockRepo(owner)) {
+    return fetchMockRepoInfo(owner, repo, branchName);
+  }
   const octokit = getOctokit();
   try {
     const { data } = await octokit.repos.get({ owner, repo });
@@ -82,6 +97,9 @@ export async function fetchFlatTree(
   repo: string,
   sha: string,
 ): Promise<{ items: FlatTreeItem[]; truncated: boolean }> {
+  if (isMockRepo(owner)) {
+    return fetchMockFlatTree(owner, repo);
+  }
   const octokit = getOctokit();
   try {
     const { data } = await octokit.git.getTree({
@@ -183,6 +201,9 @@ export async function fetchFileContents(
   paths: string[],
   ref: string,
 ): Promise<Record<string, string>> {
+  if (isMockRepo(owner)) {
+    return fetchMockFileContents(owner, repo, paths);
+  }
   const octokit = getOctokit();
   const result: Record<string, string> = {};
 
@@ -211,6 +232,9 @@ export async function fetchContributors(
   owner: string,
   repo: string,
 ): Promise<{ login: string; avatarUrl: string; contributions: number }[]> {
+  if (isMockRepo(owner)) {
+    return fetchMockContributors();
+  }
   const octokit = getOctokit();
   try {
     const { data } = await octokit.repos.listContributors({
@@ -233,7 +257,11 @@ export async function fetchContributors(
 export async function fetchTimeline(
   owner: string,
   repo: string,
-): Promise<{ week: string; count: number; commits: { sha: string; message: string; date: string }[] }[]> {
+  branch?: string,
+): Promise<TimelineWeek[]> {
+  if (isMockRepo(owner)) {
+    return fetchMockTimeline();
+  }
   const octokit = getOctokit();
   try {
     const since = new Date();
@@ -242,11 +270,12 @@ export async function fetchTimeline(
     const { data } = await octokit.repos.listCommits({
       owner,
       repo,
+      sha: branch || undefined,
       since: since.toISOString(),
       per_page: 100,
     });
 
-    const weeks = new Map<string, { count: number; commits: { sha: string; message: string; date: string }[] }>();
+    const weeks = new Map<string, { count: number; commits: TimelineWeek['commits'] }>();
 
     for (const commit of data) {
       if (!commit.commit?.author?.date) continue;
@@ -262,6 +291,9 @@ export async function fetchTimeline(
           sha: commit.sha.slice(0, 7),
           message: (commit.commit.message ?? '').split('\n')[0].slice(0, 80),
           date: commit.commit.author.date,
+          authorName: commit.commit.author?.name || undefined,
+          authorLogin: commit.author?.login || undefined,
+          authorAvatar: commit.author?.avatar_url || undefined,
         });
       }
       weeks.set(weekKey, entry);
@@ -274,3 +306,4 @@ export async function fetchTimeline(
     return [];
   }
 }
+

@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Brain, Map, ShieldAlert, Flame, Package, Copy,
-  Sparkles, AlertTriangle
+  Sparkles, AlertTriangle, PanelRightClose, PanelRightOpen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useVizStore, type SidebarTab } from '@/stores/viz-store';
@@ -37,6 +37,10 @@ export function AISidebar({ analysis }: AISidebarProps) {
     setSelectedNodeId,
     setToastMessage,
     selectedBranch,
+    aiSidebarOpen,
+    setAiSidebarOpen,
+    setFocusedFilePath,
+    setInspectorOpen,
   } = useVizStore();
 
   const [eli5Mode, setEli5Mode] = useState(false);
@@ -51,6 +55,22 @@ export function AISidebar({ analysis }: AISidebarProps) {
   const roast = useRoast();
   const readmeEnhance = useReadmeEnhance();
 
+  // Keep stable refs to mutation functions — mutation objects change reference every render
+  const explainRef = useRef(explain);
+  explainRef.current = explain;
+  const explainNewRef = useRef(explainNew);
+  explainNewRef.current = explainNew;
+  const architectureRef = useRef(architecture);
+  architectureRef.current = architecture;
+  const healthRef = useRef(health);
+  healthRef.current = health;
+  const refactorRef = useRef(refactor);
+  refactorRef.current = refactor;
+  const roastRef = useRef(roast);
+  roastRef.current = roast;
+  const readmeEnhanceRef = useRef(readmeEnhance);
+  readmeEnhanceRef.current = readmeEnhance;
+
   const { owner, repo } = analysis.meta;
 
   const selectedNode = selectedNodeId
@@ -64,14 +84,14 @@ export function AISidebar({ analysis }: AISidebarProps) {
     const currentKey = `${owner}/${repo}/${selectedNodeId ?? 'repo'}/${selectedNodeId ? 'normal' : (eli5Mode ? 'eli5' : 'normal')}/${selectedBranch ?? 'default'}`;
 
     if (lastExplanationKeyRef.current !== currentKey) {
-      explain.reset();
-      explainNew.reset();
+      explainRef.current.reset();
+      explainNewRef.current.reset();
       lastExplanationKeyRef.current = currentKey;
 
       if (!selectedNodeId && eli5Mode) {
-        explainNew.mutate({ owner, repo });
+        explainNewRef.current.mutate({ owner, repo });
       } else {
-        explain.mutate({
+        explainRef.current.mutate({
           owner,
           repo,
           scope: selectedNodeId ? 'node' : 'repo',
@@ -80,34 +100,34 @@ export function AISidebar({ analysis }: AISidebarProps) {
         });
       }
     }
-  }, [sidebarTab, owner, repo, selectedNodeId, eli5Mode, selectedBranch, explain, explainNew]);
+  }, [sidebarTab, owner, repo, selectedNodeId, eli5Mode, selectedBranch]);
 
-  // Trigger architecture details
+  // Trigger architecture details — use ref to avoid mutation object in deps
   useEffect(() => {
-    if (sidebarTab === 'architecture' && !architecture.data && !architecture.isPending) {
-      architecture.mutate({ owner, repo });
+    if (sidebarTab === 'architecture' && !architectureRef.current.data && !architectureRef.current.isPending) {
+      architectureRef.current.mutate({ owner, repo });
     }
   }, [sidebarTab, owner, repo]);
 
-  // Trigger health report & refactoring
+  // Trigger health report & refactoring — use refs to avoid mutation objects in deps
   useEffect(() => {
     if (sidebarTab === 'health') {
-      if (!health.data && !health.isPending) {
-        health.mutate({ owner, repo });
+      if (!healthRef.current.data && !healthRef.current.isPending) {
+        healthRef.current.mutate({ owner, repo });
       }
-      if (!refactor.data && !refactor.isPending) {
-        refactor.mutate({ owner, repo });
+      if (!refactorRef.current.data && !refactorRef.current.isPending) {
+        refactorRef.current.mutate({ owner, repo });
       }
     }
   }, [sidebarTab, owner, repo]);
 
-  // Trigger playground modules
+  // Trigger playground modules — use refs to avoid mutation objects in deps
   useEffect(() => {
     if (sidebarTab === 'playground') {
-      if (activePlayground === 'roast' && !roast.data && !roast.isPending) {
-        roast.mutate({ owner, repo });
-      } else if (activePlayground === 'readme' && !readmeEnhance.data && !readmeEnhance.isPending) {
-        readmeEnhance.mutate({ owner, repo });
+      if (activePlayground === 'roast' && !roastRef.current.data && !roastRef.current.isPending) {
+        roastRef.current.mutate({ owner, repo });
+      } else if (activePlayground === 'readme' && !readmeEnhanceRef.current.data && !readmeEnhanceRef.current.isPending) {
+        readmeEnhanceRef.current.mutate({ owner, repo });
       }
     }
   }, [sidebarTab, activePlayground, owner, repo]);
@@ -126,9 +146,9 @@ export function AISidebar({ analysis }: AISidebarProps) {
     : (explain.error instanceof Error ? explain.error.message : String(explain.error));
   const explainRetry = () => {
     if (eli5Mode && !selectedNodeId) {
-      explainNew.mutate({ owner, repo });
+      explainNewRef.current.mutate({ owner, repo });
     } else {
-      explain.mutate({
+      explainRef.current.mutate({
         owner,
         repo,
         scope: selectedNodeId ? 'node' : 'repo',
@@ -138,8 +158,23 @@ export function AISidebar({ analysis }: AISidebarProps) {
     }
   };
 
+  if (!aiSidebarOpen) {
+    return (
+      <aside className="flex h-full w-10 shrink-0 flex-col items-center border-l border-white/5 bg-zinc-950 py-2">
+        <button
+          type="button"
+          onClick={() => setAiSidebarOpen(true)}
+          className="rounded p-1.5 text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
+          title="Show AI sidebar"
+        >
+          <PanelRightOpen className="h-4 w-4" />
+        </button>
+      </aside>
+    );
+  }
+
   return (
-    <aside className="flex h-full w-full flex-col border-l border-white/5 bg-zinc-950/60 shadow-2xl backdrop-blur-xl">
+    <aside className="flex h-full w-[360px] shrink-0 flex-col border-l border-white/5 bg-zinc-950/60 shadow-2xl backdrop-blur-xl">
       {/* Sidebar Navigation Tabs */}
       <div className="flex items-center border-b border-white/5 bg-zinc-950/40 px-1.5 py-1 gap-0.5 shrink-0">
         {tabs.map((t) => (
@@ -161,6 +196,14 @@ export function AISidebar({ analysis }: AISidebarProps) {
             {sidebarTab === t.id && <span className="whitespace-nowrap">{t.label}</span>}
           </button>
         ))}
+        <button
+          type="button"
+          onClick={() => setAiSidebarOpen(false)}
+          className="ml-auto rounded p-1.5 text-zinc-600 hover:bg-white/5 hover:text-zinc-400"
+          title="Hide AI sidebar"
+        >
+          <PanelRightClose className="h-4 w-4" />
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 text-sm scroll-mt-2 scrollbar-thin">
@@ -388,7 +431,11 @@ export function AISidebar({ analysis }: AISidebarProps) {
                                 <button
                                   key={idx}
                                   type="button"
-                                  onClick={() => setSelectedNodeId(file)}
+                                  onClick={() => {
+                                    setSelectedNodeId(`file:${file}`);
+                                    setFocusedFilePath(file);
+                                    setInspectorOpen(true);
+                                  }}
                                   className="rounded border border-white/5 bg-white/5 px-2 py-0.5 font-mono text-[10px] dark:text-cyan-400/80 text-cyan-700 hover:bg-white/10 hover:text-white transition-all text-left truncate max-w-full"
                                 >
                                   {file}

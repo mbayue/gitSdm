@@ -7,12 +7,12 @@ export interface CacheStore {
   delete(key: string): void;
 }
 
-const analyzeCache = new LRUCache<string, any>({
+const analyzeCache = new LRUCache<string, unknown>({
   max: 200,
   ttl: 1000 * 60 * 60,
 });
 
-const aiCache = new LRUCache<string, any>({
+const aiCache = new LRUCache<string, unknown>({
   max: 200,
   ttl: 1000 * 60 * 30,
 });
@@ -36,8 +36,15 @@ export const cache: CacheStore = {
   },
 };
 
-export function analyzeCacheKey(owner: string, repo: string, sha: string): string {
-  return `analyze:${owner}/${repo}@${sha}`;
+export function clearAllCaches(): void {
+  analyzeCache.clear();
+  aiCache.clear();
+}
+
+export function analyzeCacheKey(owner: string, repo: string, sha: string, branch?: string): string {
+  return branch
+    ? `analyze:${owner}/${repo}@${sha}:${branch}`
+    : `analyze:${owner}/${repo}@${sha}`;
 }
 
 export function aiCacheKey(

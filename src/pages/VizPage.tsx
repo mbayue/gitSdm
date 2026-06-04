@@ -9,7 +9,8 @@ import { useVizStore } from '@/stores/viz-store';
 import { VizTopBar } from '@/components/viz/VizTopBar';
 import { FilterBar } from '@/components/viz/FilterBar';
 import { AISidebar } from '@/components/viz/AISidebar';
-import { StatsDrawer } from '@/components/viz/StatsDrawer';
+import { FullArchitectureView } from '@/components/viz/FullArchitectureView';
+import { FullContributorsView } from '@/components/contributors/FullContributorsView';
 import { ExplorerPanel } from '@/components/explorer/ExplorerPanel';
 import { CodeInspectorView } from '@/components/explorer/CodeInspectorView';
 import { FileTypeLegend } from '@/components/viz/FileTypeLegend';
@@ -18,6 +19,7 @@ import { Check } from 'lucide-react';
 import { StagedLoader } from '@/components/viz/StagedLoader';
 import type { GraphNode, TreeNode } from '@/types';
 import { CompareHUD } from '@/components/viz/CompareHUD';
+import { FullCommitHistoryView } from '@/components/timeline/FullCommitHistoryView';
 
 export function VizPage() {
   const { owner = '', repo = '' } = useParams();
@@ -44,6 +46,7 @@ export function VizPage() {
     focusedFilePath,
     toastMessage,
     setToastMessage,
+    activeView,
   } = useVizStore();
   const selectedFilePath = focusedFilePath;
 
@@ -233,32 +236,56 @@ export function VizPage() {
               </div>
             )}
 
-            <motion.section
+             <motion.section
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="relative min-h-0 min-w-0 flex-1 overflow-hidden bg-zinc-950"
             >
-              <ReactFlowProvider>
-                <GraphFocusSync />
-                <GraphCanvas graph={combinedGraph || data.graph} />
-              </ReactFlowProvider>
-              <FileTypeLegend graph={data.graph} />
-              <CompareHUD diff={graphDiff} defaultBranch={data.meta.defaultBranch} />
-              {data.treeTruncated && (
-                <div className="absolute left-3 top-2 z-10 rounded-lg bg-amber-500/10 px-2 py-1 text-[10px] text-amber-300 ring-1 ring-amber-500/20">
-                  Tree truncated
-                </div>
+              <div className={`h-full w-full relative ${activeView !== 'graph' ? 'hidden' : ''}`}>
+                <ReactFlowProvider>
+                  <GraphFocusSync />
+                  <GraphCanvas graph={combinedGraph || data.graph} />
+                </ReactFlowProvider>
+                <FileTypeLegend graph={data.graph} />
+                <CompareHUD diff={graphDiff} defaultBranch={data.meta.defaultBranch} />
+                {data.treeTruncated && (
+                  <div className="absolute left-3 top-2 z-10 rounded-lg bg-amber-500/10 px-2 py-1 text-[10px] text-amber-300 ring-1 ring-amber-500/20">
+                    Tree truncated
+                  </div>
+                )}
+              </div>
+
+              {activeView === 'architecture' && (
+                <FullArchitectureView
+                  analysis={data}
+                  owner={owner}
+                  repo={repo}
+                />
+              )}
+              {activeView === 'contributors' && (
+                <FullContributorsView
+                  analysis={data}
+                  owner={owner}
+                  repo={repo}
+                />
+              )}
+              {activeView === 'commits' && (
+                <FullCommitHistoryView
+                  timeline={data.timeline}
+                  owner={owner}
+                  repo={repo}
+                  branch={selectedBranch}
+                  isLoading={isLoading}
+                />
               )}
             </motion.section>
 
-            <div className="hidden h-full w-[360px] shrink-0 lg:block">
+            <div className="hidden h-full shrink-0 lg:block">
               <AISidebar analysis={data} />
             </div>
           </div>
         ) : null}
       </div>
-
-      {data && <StatsDrawer analysis={data} />}
 
       <AnimatePresence>
         {toastMessage && (

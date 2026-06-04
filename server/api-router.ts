@@ -21,6 +21,7 @@ import { fetchTrending } from './services/trending';
 import { fetchRepoBranches } from './github/fetch-tree';
 import { logApi } from './utils/logger';
 import { parseQuery, readBody, sendError, sendJson } from './utils/http';
+import { clearAllCaches } from './cache/lru';
 
 async function getRequestBody(req: IncomingMessage & { body?: unknown }): Promise<unknown> {
   if (req.body !== undefined) return req.body;
@@ -71,6 +72,13 @@ export async function handleApiRequest(
       const repos = await fetchTrending();
       logApi('/api/trending', { durationMs: Date.now() - start, count: repos.length });
       sendJson(res, 200, { repos });
+      return true;
+    }
+
+    if (pathname === '/api/cache/clear' && method === 'POST') {
+      clearAllCaches();
+      logApi('/api/cache/clear', { durationMs: Date.now() - start });
+      sendJson(res, 200, { cleared: true });
       return true;
     }
 

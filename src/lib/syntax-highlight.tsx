@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import hljs from 'highlight.js';
 import type { ReactNode } from 'react';
 
-export function languageFromPath(path: string): string {
+function languageFromPath(path: string): string {
   const ext = path.split('.').pop()?.toLowerCase() ?? '';
   const map: Record<string, string> = {
     ts: 'typescript',

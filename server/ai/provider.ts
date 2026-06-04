@@ -35,17 +35,18 @@ export async function createProvider(overrideKey?: string): Promise<AIProvider> 
   // Auto-detect provider based on available environment API keys
   let providerType: 'gemini' | 'openai' | 'anthropic' | 'mock' = 'mock';
 
-  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim()) {
+  // AI_PROVIDER takes explicit precedence over key-based auto-detection
+  if (process.env.AI_PROVIDER) {
+    const envProvider = process.env.AI_PROVIDER.toLowerCase();
+    if (envProvider === 'gemini' || envProvider === 'openai' || envProvider === 'anthropic' || envProvider === 'mock') {
+      providerType = envProvider as 'gemini' | 'openai' | 'anthropic' | 'mock';
+    }
+  } else if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim()) {
     providerType = 'gemini';
   } else if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim()) {
     providerType = 'openai';
   } else if (process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.trim()) {
     providerType = 'anthropic';
-  } else if (process.env.AI_PROVIDER) {
-    const envProvider = process.env.AI_PROVIDER.toLowerCase();
-    if (envProvider === 'gemini' || envProvider === 'openai' || envProvider === 'anthropic' || envProvider === 'mock') {
-      providerType = envProvider as any;
-    }
   }
 
   switch (providerType) {
@@ -306,14 +307,18 @@ Let's look at the structure:
 }
 
 let providerInstance: AIProvider | null = null;
+let providerInstanceKey: string | null = null;
 
 export async function getAIProvider(overrideKey?: string): Promise<AIProvider> {
   // User-provided key: always create a fresh instance (no caching across users)
   if (overrideKey) {
     return createProvider(overrideKey);
   }
-  if (!providerInstance) {
+  // Cache by the resolved provider type so changing AI_PROVIDER invalidates the cache
+  const currentKey = process.env.AI_PROVIDER ?? process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'mock';
+  if (!providerInstance || providerInstanceKey !== currentKey) {
     providerInstance = await createProvider();
+    providerInstanceKey = currentKey;
   }
   return providerInstance;
 }

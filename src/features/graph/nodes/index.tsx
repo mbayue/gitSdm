@@ -134,10 +134,4 @@ PackageNode.displayName = 'PackageNode';
 export const ContributorNode = memo(CircleTreeNode);
 ContributorNode.displayName = 'ContributorNode';
 
-export const nodeTypes = {
-  repo: RepoNode,
-  folder: FolderNode,
-  file: FileNode,
-  package: PackageNode,
-  contributor: ContributorNode,
-};
+

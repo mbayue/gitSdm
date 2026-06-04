@@ -94,7 +94,27 @@ export function VizError({ message }: VizErrorProps) {
             Retry
           </GlowButton>
         </div>
+
+        {/* Offline suggestion */}
+        <div className="mt-6 border-t border-white/5 pt-4 text-center">
+          <p className="text-xs text-zinc-400 mb-3">
+            Setup GITHUB_TOKEN in .env or run locally with a mock repository:
+          </p>
+          <div className="flex gap-2 justify-center">
+            <Link to="/mock/todo-app">
+              <GlowButton variant="ghost" className="text-xs px-3 py-1.5 gap-1.5 h-8">
+                <span>📦</span> Todo App (Mock)
+              </GlowButton>
+            </Link>
+            <Link to="/mock/gitsdm">
+              <GlowButton variant="ghost" className="text-xs px-3 py-1.5 gap-1.5 h-8">
+                <span>🔮</span> gitSdm (Mock)
+              </GlowButton>
+            </Link>
+          </div>
+        </div>
       </motion.div>
     </div>
   );
 }
+

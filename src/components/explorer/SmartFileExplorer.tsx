@@ -20,9 +20,10 @@ export function SmartFileExplorer({
   const [rootOpen, setRootOpen] = useState(true);
 
   useEffect(() => {
-    if (selectedPath) {
+    if (selectedPath && !rootOpen) {
       setRootOpen(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPath]);
 
   return (
@@ -69,9 +70,10 @@ function TreeRow({
   const [open, setOpen] = useState(depth < 1);
 
   useEffect(() => {
-    if (selectedPath && (selectedPath === node.path || selectedPath.startsWith(node.path + '/'))) {
+    if (selectedPath && (selectedPath === node.path || selectedPath.startsWith(node.path + '/')) && !open) {
       setOpen(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPath, node.path]);
 
 
@@ -115,7 +117,7 @@ function TreeRow({
       type="button"
       onClick={() => onSelectFile?.(node.path)}
       className={cn(
-        'flex w-full items-center gap-1.5 rounded-md py-[3px] pr-2 text-left transition-all',
+        'flex w-full items-center gap-1.5 rounded-md py-[3px] pr-2 text-left',
         selected && isHtml &&
           'mx-1 border border-rose-500/50 bg-rose-500/20 text-white shadow-[0_0_14px_rgba(244,114,182,0.2)]',
         selected && !isHtml &&

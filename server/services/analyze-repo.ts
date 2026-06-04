@@ -27,9 +27,9 @@ export async function analyzeRepository(
   }
 
   const { owner, repo } = parsed;
-  const branch = typeof parsed === 'object' && 'branch' in parsed ? (parsed as any).branch as string | undefined : undefined;
+  const branch = typeof parsed === 'object' && 'branch' in parsed ? (parsed as { branch?: string }).branch : undefined;
   const info = await fetchRepoInfo(owner, repo, branch);
-  const cacheKey = analyzeCacheKey(owner, repo, info.sha);
+  const cacheKey = analyzeCacheKey(owner, repo, info.sha, branch);
 
   const cached = cache.get<RepoAnalysis>(cacheKey);
   if (cached) return cached;
@@ -37,7 +37,7 @@ export async function analyzeRepository(
   const [{ items, truncated }, contributors, timeline] = await Promise.all([
     fetchFlatTree(owner, repo, info.sha),
     fetchContributors(owner, repo),
-    fetchTimeline(owner, repo),
+    fetchTimeline(owner, repo, branch),
   ]);
 
   const tree = annotateTree(buildTreeFromPaths(items));

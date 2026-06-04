@@ -15,7 +15,15 @@ import {
 import { FolderGit2, Folder, FileCode } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import '@xyflow/react/dist/style.css';
-import { nodeTypes } from './nodes';
+import { RepoNode, FolderNode, FileNode, PackageNode, ContributorNode } from './nodes';
+
+const nodeTypes = {
+  repo: RepoNode,
+  folder: FolderNode,
+  file: FileNode,
+  package: PackageNode,
+  contributor: ContributorNode,
+};
 import type { GraphData, GraphNode } from '@/types';
 import { useVizStore } from '@/stores/viz-store';
 import { getLayoutedElements } from './layout-client';
@@ -49,7 +57,7 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
   const isDark = theme === 'dark';
 
   const flowStyle = useMemo(() => ({
-    '--xy-background-color': isDark ? '#050508' : '#f9fafb',
+    '--xy-background-color': isDark ? '#0f1015' : '#f9fafb',
     '--xy-controls-button-background-color': isDark ? 'rgba(24, 24, 27, 0.72)' : 'rgba(255, 255, 255, 0.86)',
     '--xy-controls-button-background-color-hover': isDark ? 'rgba(39, 39, 42, 0.95)' : 'rgba(244, 244, 245, 0.95)',
     '--xy-controls-button-color': isDark ? 'rgba(244, 244, 245, 0.78)' : 'rgba(39, 39, 42, 0.78)',
@@ -241,8 +249,16 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
     setHighlightedNodeIds(new Set());
   }, [setSelectedNodeId, setHighlightedNodeIds]);
 
+  const isLoading = nodes.length === 0;
+
   return (
-    <div className="graph-canvas-host h-full w-full">
+    <div className="graph-canvas-host h-full w-full relative">
+      {isLoading && (
+        <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-sm select-none">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+          <span className="mt-3 text-xs text-zinc-400 font-medium">Laying out dependency graph...</span>
+        </div>
+      )}
       <ReactFlow
         className="canvas-flow-bg"
         colorMode={theme}

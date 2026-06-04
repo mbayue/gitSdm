@@ -10,7 +10,7 @@ interface ExplorerPanelProps {
 }
 
 export function ExplorerPanel({ analysis, selectedFilePath, onSelectFile }: ExplorerPanelProps) {
-  const { explorerOpen, setExplorerOpen, setInspectorOpen } = useVizStore();
+  const { explorerOpen, setExplorerOpen } = useVizStore();
   const rootLabel = analysis.meta.fullName.split('/')[1] ?? analysis.meta.repo;
 
   if (!explorerOpen) {
@@ -47,10 +47,7 @@ export function ExplorerPanel({ analysis, selectedFilePath, onSelectFile }: Expl
         tree={analysis.tree}
         rootLabel={rootLabel}
         selectedPath={selectedFilePath ?? undefined}
-        onSelectFile={(path) => {
-          onSelectFile(path);
-          setInspectorOpen(true);
-        }}
+        onSelectFile={onSelectFile}
       />
     </div>
   );

@@ -12,13 +12,14 @@ interface RepoInputProps {
 }
 
 const PRESETS = [
+  { label: '📦 Mock Todo App', repo: 'mock/todo-app', desc: 'Offline mode' },
+  { label: '🔮 Mock gitSdm', repo: 'mock/gitsdm', desc: 'Offline mode' },
   { label: '⚛️ React', repo: 'facebook/react', desc: 'UI library' },
   { label: '▲ Next.js', repo: 'vercel/next.js', desc: 'React framework' },
-  { label: '🤖 Gemini CLI', repo: 'google-gemini/gemini-cli', desc: 'AI CLI' },
   { label: '🐍 FastAPI', repo: 'tiangolo/fastapi', desc: 'Python API' },
-  { label: '🦜 LangChain', repo: 'langchain-ai/langchain', desc: 'LLM framework' },
   { label: '✨ gitSdm', repo: 'bayue48/gitSdm', desc: 'This app' },
 ];
+
 
 export function RepoInput({ initialUrl = '' }: RepoInputProps) {
   const [url, setUrl] = useState(initialUrl);

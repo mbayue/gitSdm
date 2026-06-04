@@ -17,7 +17,7 @@ export function getLayoutedElements(
   nodes: Node[],
   edges: Edge[],
   layoutType: 'TB' | 'LR' | 'force',
-) {
+): { nodes: Node[]; edges: Edge[] } {
   if (nodes.length === 0) return { nodes, edges };
   const nodeIds = new Set(nodes.map((node) => node.id));
 
@@ -56,7 +56,7 @@ export function getLayoutedElements(
       .force(
         'link',
         forceLink(simLinks)
-          .id((d) => d.id)
+          .id((d) => (d as LayoutNode).id)
           .distance(70)
       )
       .force('charge', forceManyBody().strength(-150))
@@ -73,8 +73,8 @@ export function getLayoutedElements(
     return {
       nodes: simNodes.map((n) => ({
         ...n,
-        position: { x: n.x, y: n.y },
-      })),
+        position: { x: n.x ?? 0, y: n.y ?? 0 },
+      })) as Node[],
       edges,
     };
   }

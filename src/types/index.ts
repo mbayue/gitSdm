@@ -64,7 +64,14 @@ export interface Contributor {
 export interface TimelineWeek {
   week: string;
   count: number;
-  commits: { sha: string; message: string; date: string }[];
+  commits: {
+    sha: string;
+    message: string;
+    date: string;
+    authorName?: string;
+    authorLogin?: string;
+    authorAvatar?: string;
+  }[];
 }
 
 export interface RepoMeta {

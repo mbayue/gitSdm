@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 
 const LS_KEY = 'gitsdm_gemini_api_key';
 
-export function getStoredApiKey(): string | null {
+function getStoredApiKey(): string | null {
   try {
     return localStorage.getItem(LS_KEY) || null;
   } catch {
@@ -16,7 +16,7 @@ function setStoredApiKey(key: string | null) {
   try {
     if (key) localStorage.setItem(LS_KEY, key);
     else localStorage.removeItem(LS_KEY);
-  } catch { }
+  } catch { /* ignore */ }
 }
 
 export function ApiKeyPopover() {

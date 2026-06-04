@@ -15,7 +15,7 @@ interface FileIconProps {
   className?: string;
 }
 
-export function getFileIconSpec(name: string): { Icon: LucideIcon; className: string } {
+function getFileIconSpec(name: string): { Icon: LucideIcon; className: string } {
   const lower = name.toLowerCase();
   if (lower.endsWith('.json') || lower.endsWith('.lock') || lower.includes('lock'))
     return { Icon: FileJson, className: 'text-amber-400' };

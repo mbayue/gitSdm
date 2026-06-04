@@ -12,6 +12,7 @@ interface VizState {
   sidebarTab: SidebarTab;
   drawerOpen: boolean;
   explorerOpen: boolean;
+  aiSidebarOpen: boolean;
   inspectorOpen: boolean;
   focusedFilePath: string | null;
   onboardingStep: number;
@@ -21,6 +22,7 @@ interface VizState {
   selectedBranch: string | null;
   compareBranch: string | null;
   availableBranches: string[];
+  activeView: 'graph' | 'architecture' | 'contributors' | 'commits';
 
   // Interactive upgrades
   hoveredNodeId: string | null;
@@ -43,6 +45,7 @@ interface VizState {
   setSidebarTab: (tab: SidebarTab) => void;
   setDrawerOpen: (open: boolean) => void;
   setExplorerOpen: (open: boolean) => void;
+  setAiSidebarOpen: (open: boolean) => void;
   setInspectorOpen: (open: boolean) => void;
   setFocusedFilePath: (path: string | null) => void;
   setOnboardingStep: (step: number) => void;
@@ -56,6 +59,7 @@ interface VizState {
   setExecutionFlowStep: (step: number) => void;
   setExecutionFlowPaths: (paths: string[]) => void;
   setActiveFocusLayer: (layer: 'all' | 'api' | 'ui' | 'core' | 'config') => void;
+  setActiveView: (view: 'graph' | 'architecture' | 'contributors' | 'commits') => void;
 
   reset: () => void;
 }
@@ -70,6 +74,7 @@ export const useVizStore = create<VizState>((set) => ({
   sidebarTab: 'start',
   drawerOpen: false,
   explorerOpen: true,
+  aiSidebarOpen: true,
   inspectorOpen: false,
   focusedFilePath: null,
   onboardingStep: 0,
@@ -79,6 +84,7 @@ export const useVizStore = create<VizState>((set) => ({
   selectedBranch: null,
   compareBranch: null,
   availableBranches: [],
+  activeView: 'graph',
 
   hoveredNodeId: null,
   hoveredConnectedIds: new Set(),
@@ -116,6 +122,7 @@ export const useVizStore = create<VizState>((set) => ({
   setSidebarTab: (sidebarTab) => set({ sidebarTab }),
   setDrawerOpen: (drawerOpen) => set({ drawerOpen }),
   setExplorerOpen: (explorerOpen) => set({ explorerOpen }),
+  setAiSidebarOpen: (aiSidebarOpen) => set({ aiSidebarOpen }),
   setInspectorOpen: (inspectorOpen) => set({ inspectorOpen }),
   setFocusedFilePath: (focusedFilePath) => set({ focusedFilePath }),
   setOnboardingStep: (onboardingStep) => set({ onboardingStep }),
@@ -137,6 +144,7 @@ export const useVizStore = create<VizState>((set) => ({
   setExecutionFlowStep: (executionFlowStep) => set({ executionFlowStep }),
   setExecutionFlowPaths: (executionFlowPaths) => set({ executionFlowPaths }),
   setActiveFocusLayer: (activeFocusLayer) => set({ activeFocusLayer }),
+  setActiveView: (activeView) => set({ activeView }),
 
   reset: () =>
     set({
@@ -147,6 +155,7 @@ export const useVizStore = create<VizState>((set) => ({
       sidebarTab: 'start',
       drawerOpen: false,
       explorerOpen: true,
+      aiSidebarOpen: true,
       inspectorOpen: false,
       focusedFilePath: null,
       onboardingStep: 0,
@@ -161,6 +170,7 @@ export const useVizStore = create<VizState>((set) => ({
       executionFlowPaths: [],
       activeFocusLayer: 'all',
       diffStatusFilters: new Set(),
+      activeView: 'graph',
     }),
 }));
 
