@@ -1,4 +1,3 @@
-import type { IncomingMessage, ServerResponse } from 'http';
 import { z } from 'zod';
 import { GitHubRateLimitError } from './github/client';
 import { parseRepoParams } from './github/parse-url';
@@ -20,14 +19,8 @@ import { getRepoFileContent } from './services/get-file';
 import { fetchTrending } from './services/trending';
 import { fetchRepoBranches } from './github/fetch-tree';
 import { logApi } from './utils/logger';
-import { parseQuery, readBody, sendError, sendJson } from './utils/http';
 import { clearAllCaches } from './cache/lru';
 import { getPublicAppConfig } from './config/app-config';
-
-async function getRequestBody(req: IncomingMessage & { body?: unknown }): Promise<unknown> {
-  if (req.body !== undefined) return req.body;
-  return readBody(req);
-}
 
 const analyzeBodySchema = z.object({
   url: z.string().optional(),
@@ -58,48 +51,53 @@ const fileQuerySchema = repoQuerySchema.extend({
   path: z.string().min(1).max(500),
 });
 
+function sendError(status: number, message: string, details?: unknown): Response {
+  return Response.json({ error: message, details }, { status });
+}
+
 export async function handleApiRequest(
-  req: IncomingMessage,
-  res: ServerResponse,
-  pathname: string,
-): Promise<boolean> {
+  req: Request,
+): Promise<Response | null> {
   const start = Date.now();
-  const method = req.method ?? 'GET';
-  const query = parseQuery(req.url ?? '');
-  const userKey = (req.headers['x-gemini-api-key'] as string | undefined) || undefined;
-  const gitHubToken = (req.headers['x-github-token'] as string | undefined) || undefined;
+  const method = req.method;
+  const url = new URL(req.url);
+  const pathname = url.pathname;
+
+  // Convert search params to a record for validation
+  const query: Record<string, string> = {};
+  url.searchParams.forEach((v, k) => {
+    query[k] = v;
+  });
+
+  const userKey = req.headers.get('x-gemini-api-key') || undefined;
+  const gitHubToken = req.headers.get('x-github-token') || undefined;
 
   try {
     if (pathname === '/api/trending' && method === 'GET') {
       const repos = await fetchTrending();
       logApi('/api/trending', { durationMs: Date.now() - start, count: repos.length });
-      sendJson(res, 200, { repos });
-      return true;
+      return Response.json({ repos }, { status: 200 });
     }
 
     if (pathname === '/api/config' && method === 'GET') {
-      sendJson(res, 200, getPublicAppConfig());
-      return true;
+      return Response.json(getPublicAppConfig(), { status: 200 });
     }
 
     if (pathname === '/api/cache/clear' && method === 'POST') {
       clearAllCaches();
       logApi('/api/cache/clear', { durationMs: Date.now() - start });
-      sendJson(res, 200, { cleared: true });
-      return true;
+      return Response.json({ cleared: true }, { status: 200 });
     }
 
     if (pathname === '/api/repo/analyze' && method === 'POST') {
-      const body = await getRequestBody(req);
+      const body = await req.json().catch(() => ({}));
       const parsed = analyzeBodySchema.safeParse(body);
       if (!parsed.success) {
-        sendError(res, 400, 'Invalid request body', parsed.error.flatten());
-        return true;
+        return sendError(400, 'Invalid request body', parsed.error.flatten());
       }
       const repo = parseRepoParams(parsed.data.owner, parsed.data.repo, parsed.data.url);
       if (!repo) {
-        sendError(res, 400, 'Invalid GitHub repository URL');
-        return true;
+        return sendError(400, 'Invalid GitHub repository URL');
       }
       const analysis = await analyzeRepository({ ...repo, branch: parsed.data.branch }, gitHubToken);
       logApi('/api/repo/analyze', {
@@ -107,212 +105,182 @@ export async function handleApiRequest(
         repo: `${repo.owner}/${repo.repo}`,
         branch: parsed.data.branch || 'default',
       });
-      sendJson(res, 200, analysis);
-      return true;
+      return Response.json(analysis, { status: 200 });
     }
 
     if (pathname === '/api/repo/branches' && method === 'GET') {
       const q = repoQuerySchema.safeParse(query);
       if (!q.success) {
-        sendError(res, 400, 'owner and repo required');
-        return true;
+        return sendError(400, 'owner and repo required');
       }
       const branches = await fetchRepoBranches(q.data.owner, q.data.repo, gitHubToken);
-      sendJson(res, 200, branches);
-      return true;
+      return Response.json(branches, { status: 200 });
     }
 
     if (pathname === '/api/repo/graph' && method === 'GET') {
       const q = repoQuerySchema.safeParse(query);
       if (!q.success) {
-        sendError(res, 400, 'owner and repo required');
-        return true;
+        return sendError(400, 'owner and repo required');
       }
       const analysis = await analyzeRepository(q.data, gitHubToken);
-      sendJson(res, 200, { graph: analysis.graph, meta: analysis.meta });
-      return true;
+      return Response.json({ graph: analysis.graph, meta: analysis.meta }, { status: 200 });
     }
 
     if (pathname === '/api/repo/tree' && method === 'GET') {
       const q = repoQuerySchema.safeParse(query);
       if (!q.success) {
-        sendError(res, 400, 'owner and repo required');
-        return true;
+        return sendError(400, 'owner and repo required');
       }
       const analysis = await analyzeRepository(q.data, gitHubToken);
-      sendJson(res, 200, {
+      return Response.json({
         tree: analysis.tree,
         truncated: analysis.treeTruncated,
         importantFiles: analysis.importantFiles,
-      });
-      return true;
+      }, { status: 200 });
     }
 
     if (pathname === '/api/repo/file' && method === 'GET') {
       const q = fileQuerySchema.safeParse(query);
       if (!q.success) {
-        sendError(res, 400, 'owner, repo, and path required');
-        return true;
+        return sendError(400, 'owner, repo, and path required');
       }
       const file = await getRepoFileContent(q.data.owner, q.data.repo, q.data.path, q.data.branch, gitHubToken);
-      sendJson(res, 200, file);
-      return true;
+      return Response.json(file, { status: 200 });
     }
 
     if (pathname === '/api/repo/contributors' && method === 'GET') {
       const q = repoQuerySchema.safeParse(query);
       if (!q.success) {
-        sendError(res, 400, 'owner and repo required');
-        return true;
+        return sendError(400, 'owner and repo required');
       }
       const analysis = await analyzeRepository(q.data, gitHubToken);
-      sendJson(res, 200, { contributors: analysis.contributors });
-      return true;
+      return Response.json({ contributors: analysis.contributors }, { status: 200 });
     }
 
     if (pathname === '/api/ai/explain' && method === 'POST') {
-      const body = await getRequestBody(req);
+      const body = await req.json().catch(() => ({}));
       const parsed = aiExplainSchema.safeParse(body);
       if (!parsed.success) {
-        sendError(res, 400, 'Invalid request', parsed.error.flatten());
-        return true;
+        return sendError(400, 'Invalid request', parsed.error.flatten());
       }
       const result = await explainRepo({ ...parsed.data, apiKey: userKey, gitHubToken });
-      sendJson(res, 200, result);
-      return true;
+      return Response.json(result, { status: 200 });
     }
 
     if (pathname === '/api/ai/architecture' && method === 'POST') {
-      const body = await getRequestBody(req);
+      const body = await req.json().catch(() => ({}));
       const parsed = repoQuerySchema.safeParse(body);
       if (!parsed.success) {
-        sendError(res, 400, 'owner and repo required');
-        return true;
+        return sendError(400, 'owner and repo required');
       }
       const result = await explainArchitecture(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
-      sendJson(res, 200, result);
-      return true;
+      return Response.json(result, { status: 200 });
     }
 
     if (pathname === '/api/ai/suggest-files' && method === 'POST') {
-      const body = await getRequestBody(req);
+      const body = await req.json().catch(() => ({}));
       const parsed = repoQuerySchema.safeParse(body);
       if (!parsed.success) {
-        sendError(res, 400, 'owner and repo required');
-        return true;
+        return sendError(400, 'owner and repo required');
       }
       const result = await suggestFiles(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
-      sendJson(res, 200, result);
-      return true;
+      return Response.json(result, { status: 200 });
     }
 
     if (pathname === '/api/ai/onboarding' && method === 'POST') {
-      const body = await getRequestBody(req);
+      const body = await req.json().catch(() => ({}));
       const parsed = repoQuerySchema.safeParse(body);
       if (!parsed.success) {
-        sendError(res, 400, 'owner and repo required');
-        return true;
+        return sendError(400, 'owner and repo required');
       }
       const result = await generateOnboarding(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
-      sendJson(res, 200, result);
-      return true;
+      return Response.json(result, { status: 200 });
     }
 
     if (pathname === '/api/ai/learning-path' && method === 'POST') {
-      const body = await getRequestBody(req);
+      const body = await req.json().catch(() => ({}));
       const parsed = repoQuerySchema.safeParse(body);
       if (!parsed.success) {
-        sendError(res, 400, 'owner and repo required');
-        return true;
+        return sendError(400, 'owner and repo required');
       }
       const result = await generateLearningPath(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
-      sendJson(res, 200, result);
-      return true;
+      return Response.json(result, { status: 200 });
     }
 
     if (pathname === '/api/ai/explain-new' && method === 'POST') {
-      const body = await getRequestBody(req);
+      const body = await req.json().catch(() => ({}));
       const parsed = repoQuerySchema.safeParse(body);
       if (!parsed.success) {
-        sendError(res, 400, 'owner and repo required');
-        return true;
+        return sendError(400, 'owner and repo required');
       }
       const result = await explainRepoELI5(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
-      sendJson(res, 200, result);
-      return true;
+      return Response.json(result, { status: 200 });
     }
 
     if (pathname === '/api/ai/refactor' && method === 'POST') {
-      const body = await getRequestBody(req);
+      const body = await req.json().catch(() => ({}));
       const parsed = repoQuerySchema.safeParse(body);
       if (!parsed.success) {
-        sendError(res, 400, 'owner and repo required');
-        return true;
+        return sendError(400, 'owner and repo required');
       }
       const result = await generateRefactorSuggestions(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
-      sendJson(res, 200, result);
-      return true;
+      return Response.json(result, { status: 200 });
     }
 
     if (pathname === '/api/ai/health' && method === 'POST') {
-      const body = await getRequestBody(req);
+      const body = await req.json().catch(() => ({}));
       const parsed = repoQuerySchema.safeParse(body);
       if (!parsed.success) {
-        sendError(res, 400, 'owner and repo required');
-        return true;
+        return sendError(400, 'owner and repo required');
       }
       const result = await generateHealthReport(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
-      sendJson(res, 200, result);
-      return true;
+      return Response.json(result, { status: 200 });
     }
 
     if (pathname === '/api/ai/mermaid' && method === 'POST') {
-      const body = await getRequestBody(req);
+      const body = await req.json().catch(() => ({}));
       const parsed = repoQuerySchema.safeParse(body);
       if (!parsed.success) {
-        sendError(res, 400, 'owner and repo required');
-        return true;
+        return sendError(400, 'owner and repo required');
       }
       const result = await generateMermaidDiagram(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
-      sendJson(res, 200, result);
-      return true;
+      return Response.json(result, { status: 200 });
     }
 
     if (pathname === '/api/ai/roast' && method === 'POST') {
-      const body = await getRequestBody(req);
+      const body = await req.json().catch(() => ({}));
       const parsed = repoQuerySchema.safeParse(body);
       if (!parsed.success) {
-        sendError(res, 400, 'owner and repo required');
-        return true;
+        return sendError(400, 'owner and repo required');
       }
       const result = await generateRepoRoast(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
-      sendJson(res, 200, result);
-      return true;
+      return Response.json(result, { status: 200 });
     }
 
     if (pathname === '/api/ai/readme-enhance' && method === 'POST') {
-      const body = await getRequestBody(req);
+      const body = await req.json().catch(() => ({}));
       const parsed = repoQuerySchema.safeParse(body);
       if (!parsed.success) {
-        sendError(res, 400, 'owner and repo required');
-        return true;
+        return sendError(400, 'owner and repo required');
       }
       const result = await generateReadmeEnhancement(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
-      sendJson(res, 200, result);
-      return true;
+      return Response.json(result, { status: 200 });
     }
 
-    return false;
+    return null;
   } catch (error) {
     if (error instanceof GitHubRateLimitError) {
-      res.setHeader('Retry-After', String(error.retryAfter ?? 60));
-      sendError(res, 429, error.message);
-      return true;
+      return Response.json(
+        { error: error.message },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(error.retryAfter ?? 60) },
+        },
+      );
     }
     const message = error instanceof Error ? error.message : 'Internal server error';
     logApi(pathname, { durationMs: Date.now() - start, error: message });
     const status = message.toLowerCase().includes('not found') ? 404 : 500;
-    sendError(res, status, message);
-    return true;
+    return sendError(status, message);
   }
 }

@@ -39,15 +39,40 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
   const data = lp.data;
   const executionSteps = data?.executionFlow?.steps ?? [];
 
+  // Helper to extract a single valid graph node path from a step description
+  const resolveStepPath = (step: any): string => {
+    if (!step) return '';
+    const extractFiles = (text: string) => {
+      const matches = text.match(/[\w/.-]+\.[a-zA-Z0-9]+/g) || [];
+      return matches.map(m => m.trim()).filter(Boolean);
+    };
+
+    const toFiles = extractFiles(step.to);
+    for (const f of toFiles) {
+      const match = analysis.graph.nodes.find(n => 
+        n.data.path === f || (n.data.path && n.data.path.endsWith(f))
+      );
+      if (match?.data.path) return match.data.path;
+    }
+
+    const fromFiles = extractFiles(step.from);
+    for (const f of fromFiles) {
+      const match = analysis.graph.nodes.find(n => 
+        n.data.path === f || (n.data.path && n.data.path.endsWith(f))
+      );
+      if (match?.data.path) return match.data.path;
+    }
+
+    return step.to.split('(')[0].trim();
+  };
+
   // Play/Pause execution tracer simulation
   useEffect(() => {
     if (isPlaying && executionSteps.length > 0) {
       // Focus first step immediately
       const currentStep = executionSteps[activeStep];
       if (currentStep) {
-        const toPath = currentStep.to.split('(')[0].trim();
-        const fromPath = currentStep.from.split('(')[0].trim();
-        const path = analysis.graph.nodes.some(n => n.data.path === toPath) ? toPath : fromPath;
+        const path = resolveStepPath(currentStep);
         setFocusedFilePath(path);
         setInspectorOpen(true);
       }
@@ -57,9 +82,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
           const next = (prev + 1) % executionSteps.length;
           const nextStep = executionSteps[next];
           if (nextStep) {
-            const toPath = nextStep.to.split('(')[0].trim();
-            const fromPath = nextStep.from.split('(')[0].trim();
-            const path = analysis.graph.nodes.some(n => n.data.path === toPath) ? toPath : fromPath;
+            const path = resolveStepPath(nextStep);
             setFocusedFilePath(path);
             setInspectorOpen(true);
           }
@@ -81,21 +104,17 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
   // Sync activeStep with focusedFilePath when focusedFilePath changes
   useEffect(() => {
     if (!focusedFilePath || !executionSteps.length || isPlaying) return;
-    const index = executionSteps.findIndex((step) => {
-      const toPath = step.to.split('(')[0].trim();
-      const fromPath = step.from.split('(')[0].trim();
-      return toPath === focusedFilePath || fromPath === focusedFilePath;
-    });
-    setActiveStep(index);
+    const index = executionSteps.findIndex((step) => resolveStepPath(step) === focusedFilePath);
+    if (index !== -1) {
+      setActiveStep(index);
+    }
   }, [focusedFilePath, executionSteps, isPlaying]);
 
   const handleStepClick = (index: number) => {
     setActiveStep(index);
     const step = executionSteps[index];
     if (step) {
-      const toPath = step.to.split('(')[0].trim();
-      const fromPath = step.from.split('(')[0].trim();
-      const path = analysis.graph.nodes.some(n => n.data.path === toPath) ? toPath : fromPath;
+      const path = resolveStepPath(step);
       setFocusedFilePath(path);
       setInspectorOpen(true);
     }

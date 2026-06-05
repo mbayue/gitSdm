@@ -1,5 +1,5 @@
 import type { Plugin } from 'vite';
-import { handleApiRequest } from './api-router';
+import { handleNodeRequest } from './utils/http';
 import { loadServerEnv } from './env';
 import { resetOctokit } from './github/client';
 
@@ -26,7 +26,7 @@ export function apiMiddleware(): Plugin {
           return;
         }
 
-        const handled = await handleApiRequest(req, res, pathname);
+        const handled = await handleNodeRequest(req, res);
         if (!handled) {
           sendNotFound(res);
         }

@@ -1,57 +1,58 @@
-import type { IncomingMessage, ServerResponse } from 'http';
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import { handleApiRequest } from '../api-router';
 
-export type ApiRequest = IncomingMessage & {
-  query: Record<string, string | string[] | undefined>;
-  body?: unknown;
-};
-
-export type ApiResponse = ServerResponse & {
-  status: (code: number) => ApiResponse;
-  json: (data: unknown) => void;
-};
-
-export function parseQuery(url: string): Record<string, string> {
-  const q = url.includes('?') ? url.split('?')[1] : '';
-  const params = new URLSearchParams(q);
-  const result: Record<string, string> = {};
-  params.forEach((v, k) => {
-    result[k] = v;
-  });
-  return result;
-}
-
-export async function readBody(req: IncomingMessage): Promise<unknown> {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    req.on('data', (chunk) => {
-      data += chunk;
-    });
-    req.on('end', () => {
-      if (!data) {
-        resolve(undefined);
-        return;
+/**
+ * Adapter to handle Node-compatible requests (Vite dev server, Vercel)
+ * and route them through the Web-standard handleApiRequest.
+ */
+export async function handleNodeRequest(
+  nodeReq: IncomingMessage,
+  nodeRes: ServerResponse,
+): Promise<boolean> {
+  const headers = new Headers();
+  for (const [key, value] of Object.entries(nodeReq.headers)) {
+    if (value) {
+      if (Array.isArray(value)) {
+        value.forEach((v) => headers.append(key, v));
+      } else {
+        headers.set(key, value);
       }
-      try {
-        resolve(JSON.parse(data));
-      } catch {
-        reject(new Error('Invalid JSON body'));
-      }
-    });
-    req.on('error', reject);
+    }
+  }
+
+  const protocol = (nodeReq.socket as any).encrypted ? 'https' : 'http';
+  const host = nodeReq.headers.host ?? 'localhost';
+  const url = `${protocol}://${host}${nodeReq.url}`;
+
+  let body: BodyInit | undefined;
+  if ((nodeReq as any).body !== undefined) {
+    const parsedBody = (nodeReq as any).body;
+    body = typeof parsedBody === 'string' ? parsedBody : JSON.stringify(parsedBody);
+  } else if (nodeReq.method !== 'GET' && nodeReq.method !== 'HEAD') {
+    const chunks: Buffer[] = [];
+    for await (const chunk of nodeReq) {
+      chunks.push(chunk as Buffer);
+    }
+    body = Buffer.concat(chunks);
+  }
+
+  const webReq = new Request(url, {
+    method: nodeReq.method,
+    headers,
+    body,
   });
-}
 
-export function sendJson(res: ServerResponse, status: number, data: unknown): void {
-  res.statusCode = status;
-  res.setHeader('Content-Type', 'application/json');
-  res.end(JSON.stringify(data));
-}
+  const webRes = await handleApiRequest(webReq);
+  if (!webRes) {
+    return false;
+  }
 
-export function sendError(
-  res: ServerResponse,
-  status: number,
-  message: string,
-  details?: unknown,
-): void {
-  sendJson(res, status, { error: message, details });
+  nodeRes.statusCode = webRes.status;
+  webRes.headers.forEach((value, key) => {
+    nodeRes.setHeader(key, value);
+  });
+
+  const arrayBuffer = await webRes.arrayBuffer();
+  nodeRes.end(Buffer.from(arrayBuffer));
+  return true;
 }
