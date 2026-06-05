@@ -4,6 +4,7 @@ import mermaid from 'mermaid';
 import { useMermaid } from '@/features/ai/useAI';
 import { cn } from '@/lib/utils';
 import type { RepoAnalysis } from '@/types';
+import { toPng } from 'html-to-image';
 
 // Initialize mermaid with custom dark theme variables and premium styling overrides
 mermaid.initialize({
@@ -349,6 +350,27 @@ export function FullArchitectureView({ analysis, owner, repo }: FullArchitecture
     }
   };
 
+  const handleDownloadPng = async () => {
+    if (!svgContainerRef.current) return;
+    const svgEl = svgContainerRef.current.querySelector('svg');
+    if (!svgEl) return;
+    try {
+      const dataUrl = await toPng(svgEl as unknown as HTMLElement, {
+        backgroundColor: '#09090b',
+        quality: 0.95,
+        pixelRatio: 2,
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `${repo}_architecture.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Download PNG failed', err);
+    }
+  };
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
     setIsDragging(true);
@@ -439,10 +461,18 @@ export function FullArchitectureView({ analysis, owner, repo }: FullArchitecture
               <button
                 type="button"
                 onClick={handleDownloadSvg}
+                className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3.5 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all active:scale-[0.98]"
+              >
+                <Download className="h-3.5 w-3.5 text-zinc-400" />
+                <span>Download SVG</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadPng}
                 className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-violet-500 transition-all active:scale-[0.98] shadow-[0_0_15px_rgba(109,40,217,0.25)]"
               >
                 <Download className="h-3.5 w-3.5" />
-                <span>Download SVG</span>
+                <span>Download PNG</span>
               </button>
             </>
           )}

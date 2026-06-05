@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { GitBranch, Share2, Check, Sun, Moon } from 'lucide-react';
+import { GitBranch, Share2, Check } from 'lucide-react';
 import type { RepoMeta } from '@/types';
 import { formatStars } from '@/lib/utils';
 import { useState } from 'react';
@@ -14,7 +14,7 @@ interface VizTopBarProps {
 export function VizTopBar({ meta }: VizTopBarProps) {
   const [copied, setCopied] = useState(false);
   const setToastMessage = useVizStore((s) => s.setToastMessage);
-  const { theme, toggleTheme } = useVizStore();
+  // const { theme, toggleTheme } = useVizStore();
 
   const handleShare = async () => {
     try {

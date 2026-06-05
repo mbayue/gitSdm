@@ -22,6 +22,7 @@ import { fetchRepoBranches } from './github/fetch-tree';
 import { logApi } from './utils/logger';
 import { parseQuery, readBody, sendError, sendJson } from './utils/http';
 import { clearAllCaches } from './cache/lru';
+import { getPublicAppConfig } from './config/app-config';
 
 async function getRequestBody(req: IncomingMessage & { body?: unknown }): Promise<unknown> {
   if (req.body !== undefined) return req.body;
@@ -76,9 +77,7 @@ export async function handleApiRequest(
     }
 
     if (pathname === '/api/config' && method === 'GET') {
-      sendJson(res, 200, {
-        aiProvider: (process.env.AI_PROVIDER ?? 'mock').toLowerCase(),
-      });
+      sendJson(res, 200, getPublicAppConfig());
       return true;
     }
 

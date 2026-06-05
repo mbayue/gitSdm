@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
   ReactFlow,
   Controls,
@@ -12,7 +12,10 @@ import {
   type Edge,
   type DefaultEdgeOptions,
 } from '@xyflow/react';
-import { FolderGit2, Folder, FileCode } from 'lucide-react';
+import { FolderGit2, Folder, FileCode, Download, Loader2 } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { toPng } from 'html-to-image';
+import { jsPDF } from 'jspdf';
 import { cn } from '@/lib/utils';
 import '@xyflow/react/dist/style.css';
 import { RepoNode, FolderNode, FileNode, PackageNode, ContributorNode } from './nodes';
@@ -53,7 +56,8 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
     compareBranch,
   } = useVizStore();
 
-  const { fitView, setCenter } = useReactFlow();
+  const reactFlowInstance = useReactFlow();
+  const { fitView, setCenter } = reactFlowInstance;
   const isDark = theme === 'dark';
 
   const flowStyle = useMemo(() => ({
@@ -249,7 +253,83 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
     setHighlightedNodeIds(new Set());
   }, [setSelectedNodeId, setHighlightedNodeIds]);
 
-  const isLoading = nodes.length === 0;
+  const { owner = '', repo = '' } = useParams();
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'png' | 'pdf' | null>(null);
+
+  const handleExport = useCallback(async (format: 'png' | 'pdf') => {
+    const el = document.querySelector('.react-flow') as HTMLElement;
+    if (!el) return;
+
+    setIsExporting(true);
+    setExportFormat(format);
+
+    // Save current viewport
+    const zoom = reactFlowInstance.getZoom();
+    const { x, y } = reactFlowInstance.getViewport();
+
+    // Fit view to capture all nodes nicely
+    reactFlowInstance.fitView({ padding: 0.1 });
+
+    // Wait a brief moment for the fitView layout transition to complete
+    await new Promise((resolve) => setTimeout(resolve, 250));
+
+    try {
+      const isDark = theme === 'dark';
+      const dataUrl = await toPng(el, {
+        backgroundColor: isDark ? '#0f1015' : '#f9fafb',
+        quality: 0.98,
+        pixelRatio: 2, // 2x scale for crisp nodes and text
+        filter: (node: HTMLElement) => {
+          if (
+            node.classList && (
+              node.classList.contains('react-flow__controls') ||
+              node.classList.contains('react-flow__panel') ||
+              node.classList.contains('react-flow__attribution') ||
+              node.classList.contains('graph-controls') ||
+              node.classList.contains('export-panel') ||
+              node.classList.contains('graph-legend')
+            )
+          ) {
+            return false;
+          }
+          return true;
+        },
+      });
+
+      if (format === 'png') {
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = `${owner}_${repo}_dependency_map.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        // PDF Export
+        const rect = el.getBoundingClientRect();
+        const elWidth = rect.width;
+        const elHeight = rect.height;
+
+        const pdf = new jsPDF({
+          orientation: elWidth > elHeight ? 'landscape' : 'portrait',
+          unit: 'px',
+          format: [elWidth, elHeight],
+        });
+
+        pdf.addImage(dataUrl, 'PNG', 0, 0, elWidth, elHeight);
+        pdf.save(`${owner}_${repo}_dependency_map.pdf`);
+      }
+    } catch (err) {
+      console.error('Failed to export graph:', err);
+    } finally {
+      // Revert viewport back to user's perspective
+      reactFlowInstance.setViewport({ x, y, zoom }, { duration: 150 });
+      setIsExporting(false);
+      setExportFormat(null);
+    }
+  }, [reactFlowInstance, theme, owner, repo]);
+
+  const isLoading = !graph || !graph.nodes || graph.nodes.length === 0;
 
   return (
     <div className="graph-canvas-host h-full w-full relative">
@@ -257,6 +337,14 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
         <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-sm select-none">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
           <span className="mt-3 text-xs text-zinc-400 font-medium">Laying out dependency graph...</span>
+        </div>
+      )}
+      {isExporting && (
+        <div className="absolute inset-0 z-[200] flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-md select-none">
+          <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+          <span className="mt-3 text-xs text-zinc-400 font-medium font-mono">
+            Generating high-res {exportFormat?.toUpperCase()}...
+          </span>
         </div>
       )}
       <ReactFlow
@@ -293,6 +381,32 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
         />
         {!readOnly && (
           <>
+            <Panel
+              position="top-left"
+              className="ml-3 mt-3 flex items-center gap-2 rounded-xl border border-white/5 bg-zinc-950/80 p-2 text-xs text-zinc-300 shadow-2xl backdrop-blur-md export-panel select-none"
+            >
+              <div className="flex items-center gap-1.5 px-2 border-r border-white/5 font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                Export Map
+              </div>
+              <button
+                type="button"
+                onClick={() => handleExport('png')}
+                className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-[11px] font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all active:scale-[0.98]"
+                title="Export graph as PNG"
+              >
+                <Download className="h-3 w-3 text-zinc-400" />
+                <span>PNG</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleExport('pdf')}
+                className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-[11px] font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all active:scale-[0.98]"
+                title="Export graph as PDF"
+              >
+                <Download className="h-3 w-3 text-zinc-400" />
+                <span>PDF</span>
+              </button>
+            </Panel>
             <Controls
               showInteractive={false}
               className="graph-controls !shadow-none"

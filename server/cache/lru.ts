@@ -7,12 +7,14 @@ export interface CacheStore {
   delete(key: string): void;
 }
 
-const analyzeCache = new LRUCache<string, unknown>({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const analyzeCache = new LRUCache<string, any>({
   max: 200,
   ttl: 1000 * 60 * 60,
 });
 
-const aiCache = new LRUCache<string, unknown>({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const aiCache = new LRUCache<string, any>({
   max: 200,
   ttl: 1000 * 60 * 30,
 });

@@ -1,10 +1,10 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { GitBranch, Sun, Moon } from 'lucide-react';
+import { GitBranch } from 'lucide-react';
 import { GlowButton } from '@/components/ui/GlowButton';
-import { useVizStore } from '@/stores/viz-store';
+// import { useVizStore } from '@/stores/viz-store';
 
 export function Navbar() {
-  const { theme, toggleTheme } = useVizStore();
+  // const { theme, toggleTheme } = useVizStore();
   const location = useLocation();
   const navigate = useNavigate();
 

@@ -5,6 +5,7 @@ import { ArrowRight, Github, Zap } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { GlowButton } from '@/components/ui/GlowButton';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { getVisibleRepoPresets } from '@/components/home/repo-presets';
 import { fetchAppConfig } from '@/lib/api-client';
 import { parseRepoFromUrl, LAST_REPO_KEY } from '@/lib/utils';
 
@@ -12,14 +13,7 @@ interface RepoInputProps {
   initialUrl?: string;
 }
 
-const PRESETS = [
-  { label: '📦 Mock Todo App', repo: 'mock/todo-app', desc: 'Offline mode' },
-  { label: '🔮 Mock gitSdm', repo: 'mock/gitsdm', desc: 'Offline mode' },
-  { label: '⚛️ React', repo: 'facebook/react', desc: 'UI library' },
-  { label: '▲ Next.js', repo: 'vercel/next.js', desc: 'React framework' },
-  { label: '🐍 FastAPI', repo: 'tiangolo/fastapi', desc: 'Python API' },
-  { label: '✨ gitSdm', repo: 'bayue48/gitSdm', desc: 'This app' },
-];
+export { REPO_PRESETS as PRESETS } from '@/components/home/repo-presets';
 
 
 export function RepoInput({ initialUrl = '' }: RepoInputProps) {
@@ -46,7 +40,7 @@ export function RepoInput({ initialUrl = '' }: RepoInputProps) {
   }, []);
 
   const presets = useMemo(
-    () => PRESETS.filter((item) => showMockPresets || !item.repo.startsWith('mock/')),
+    () => getVisibleRepoPresets(showMockPresets),
     [showMockPresets],
   );
 

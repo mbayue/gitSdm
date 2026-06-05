@@ -242,7 +242,7 @@ export async function fetchMockRepoInfo(owner: string, repo: string, branchName?
   };
 }
 
-export async function fetchMockFlatTree(owner: string, repo: string): Promise<{ items: FlatTreeItem[]; truncated: boolean }> {
+export async function fetchMockFlatTree(_owner: string, repo: string): Promise<{ items: FlatTreeItem[]; truncated: boolean }> {
   const files = repo.toLowerCase() === 'gitsdm' ? GITSDM_FILES : TODO_APP_FILES;
   return {
     items: files.map((file, idx) => ({
@@ -256,7 +256,7 @@ export async function fetchMockFlatTree(owner: string, repo: string): Promise<{ 
 }
 
 export async function fetchMockFileContents(
-  owner: string,
+  _owner: string,
   repo: string,
   paths: string[],
 ): Promise<Record<string, string>> {

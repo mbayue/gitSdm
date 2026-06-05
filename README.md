@@ -183,13 +183,15 @@ gcloud run deploy gitsdm \
 - **Force-directed graphs** with `@xyflow/react` (React Flow)
 - **Real-time filtering** by file type, module, or dependency
 - **Branch comparison** with visual diff
-- **Mermaid diagram** export for documentation
+- **High-resolution exports** to PNG and PDF for dependency maps
+- **Interactive Mermaid flowcharts** with SVG and PNG download support
 
 ### 📊 **Repository Intelligence**
 - **Contributor analytics** with `recharts` visualizations
 - **Commit timeline** and activity patterns
 - **Trending repositories** discovery
 - **File explorer** with syntax highlighting via `highlight.js`
+- **Dynamic presets** that automatically adjust based on active AI provider configurations
 
 ---
 
@@ -207,6 +209,8 @@ gcloud run deploy gitsdm \
 | Tailwind CSS 3.4 | Styling |
 | Recharts 2 | Charts & analytics |
 | Mermaid 11 | Diagram generation |
+| html-to-image | Element/SVG to image conversion |
+| jsPDF | PDF generation library |
 | Lucide React | Icon library |
 
 ### Backend
@@ -282,11 +286,16 @@ Test files are co-located with source files:
 
 ### Planned Features
 
-- [x] AI-generated architecture diagrams
-- [x] Commit History
-- [ ] Private repository support
-- [ ] Export to PDF / PNG
-- [ ] Monorepo-aware dependency grouping
+- [x] **AI-generated architecture diagrams** — High-quality Mermaid flowcharts detailing module boundaries and system workflows.
+- [x] **Commit History & Activity** — Interactive timeline visualizing author patterns and directory churn over time.
+- [x] **Export to PDF / PNG / SVG** — High-res canvas snapshots and vector diagram outputs for documentation.
+- [ ] **Private repository support** — Secure OAuth authentication and credential storage to map private codebases.
+- [ ] **Monorepo-aware dependency grouping** — Automatic workspace detection (npm/pnpm/yarn) and cross-package mapping.
+- [ ] **AI-powered semantic search & Q&A** — Context-aware vector search to ask code questions and locate entry points.
+- [ ] **Change impact analysis (Blast Radius)** — Visualizer highlighting transitive dependents to predict edit breakages.
+- [ ] **CI/CD integration** — GitHub Action to automatically comment visual architecture diffs on PR updates.
+- [ ] **Interactive path pruning & editing** — Tools to manually prune/group nodes and export tailored subgraphs.
+- [ ] **Multi-repository mapping** — Cross-repo mapping to trace frontend-to-backend API and SDK dependencies.
 
 ---
 
