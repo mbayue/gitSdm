@@ -1,6 +1,8 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { GitBranch } from 'lucide-react';
 import { GlowButton } from '@/components/ui/GlowButton';
+import { ApiKeyPopover } from '@/components/viz/ApiKeyPopover';
+import { GitHubPatPopover } from '@/components/viz/GitHubPatPopover';
 // import { useVizStore } from '@/stores/viz-store';
 
 export function Navbar() {
@@ -50,14 +52,8 @@ export function Navbar() {
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
           */}
-          <a
-            href="https://github.com/bayue48/gitsdm"
-            target="_blank"
-            rel="noreferrer"
-            className="hidden text-sm text-zinc-400 transition-colors hover:text-white sm:block"
-          >
-            GitHub
-          </a>
+          <ApiKeyPopover />
+          <GitHubPatPopover />
           <GlowButton
             type="button"
             variant="ghost"

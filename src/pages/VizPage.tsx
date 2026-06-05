@@ -119,6 +119,12 @@ export function VizPage() {
     return { selected, compare };
   }, [data, compareData]);
 
+  // Check if current file path actually exists in active repository data
+  const fileExists = useMemo(() => {
+    if (!selectedFilePath) return false;
+    return fileShaMaps.selected.has(selectedFilePath) || fileShaMaps.compare.has(selectedFilePath);
+  }, [selectedFilePath, fileShaMaps]);
+
   // Compute graph diff status
   const graphDiff = useMemo(() => {
     if (!compareBranch || !data || !compareData) return null;
@@ -225,7 +231,7 @@ export function VizPage() {
               onSelectFile={handleSelectFile}
             />
 
-            {inspectorOpen && (
+            {inspectorOpen && fileExists && (
               <div className="hidden h-full w-[min(360px,28vw)] max-w-[400px] shrink-0 border-r border-white/[0.06] lg:block">
                 <CodeInspectorView
                   owner={data.meta.owner}

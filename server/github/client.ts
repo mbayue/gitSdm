@@ -6,11 +6,17 @@ export function resetOctokit(): void {
   octokitInstance = null;
 }
 
-export function getOctokit(): Octokit {
+export function getOctokit(token?: string): Octokit {
+  if (token) {
+    return new Octokit({
+      auth: token,
+      userAgent: 'gitSdm/1.0',
+    });
+  }
   if (!octokitInstance) {
-    const token = process.env.GITHUB_TOKEN?.trim();
+    const envToken = process.env.GITHUB_TOKEN?.trim();
     octokitInstance = new Octokit({
-      auth: token || undefined,
+      auth: envToken || undefined,
       userAgent: 'gitSdm/1.0',
     });
   }

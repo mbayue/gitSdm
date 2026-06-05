@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   aiArchitecture,
   aiExplain,
@@ -83,10 +83,13 @@ export function useReadmeEnhance() {
   });
 }
 
-export function useLearningPath() {
-  return useMutation({
-    mutationFn: ({ owner, repo, branch }: { owner: string; repo: string; branch?: string }) =>
-      aiLearningPath(owner, repo, branch),
+export function useLearningPath(owner: string, repo: string, branch: string | null = null, enabled = true) {
+  return useQuery({
+    queryKey: ['learningPath', owner, repo, branch],
+    queryFn: () => aiLearningPath(owner, repo, branch || undefined),
+    enabled: enabled && !!owner && !!repo,
+    staleTime: 1000 * 60 * 30,
   });
 }
+
 

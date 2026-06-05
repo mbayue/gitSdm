@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useVizStore } from '@/stores/viz-store';
 import { BranchSelector } from './BranchSelector';
 import { ApiKeyPopover } from './ApiKeyPopover';
+import { GitHubPatPopover } from './GitHubPatPopover';
 
 interface VizTopBarProps {
   meta?: RepoMeta;
@@ -74,6 +75,7 @@ export function VizTopBar({ meta }: VizTopBarProps) {
         </button>
         */}
         <ApiKeyPopover />
+        <GitHubPatPopover />
         <button
           type="button"
           onClick={handleShare}

@@ -37,7 +37,7 @@ export function HomePage() {
           <span className="font-semibold text-zinc-500">gitSdm<sup>β</sup></span> — AI-powered repository intelligence platform · Built for the Juara Vibe Coding challenge
         </p>
         <p className="mt-1 text-[10px] text-zinc-700">
-          Only public GitHub repositories are supported · Powered by Google Gemini
+          Public & private repositories supported · Powered by Google Gemini
         </p>
       </footer>
     </div>

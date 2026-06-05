@@ -16,6 +16,7 @@ import type { RepoAnalysis } from '../../src/types';
 
 export async function analyzeRepository(
   input: string | { owner: string; repo: string; branch?: string },
+  token?: string,
 ): Promise<RepoAnalysis> {
   const parsed =
     typeof input === 'string'
@@ -28,16 +29,16 @@ export async function analyzeRepository(
 
   const { owner, repo } = parsed;
   const branch = typeof parsed === 'object' && 'branch' in parsed ? (parsed as { branch?: string }).branch : undefined;
-  const info = await fetchRepoInfo(owner, repo, branch);
+  const info = await fetchRepoInfo(owner, repo, branch, token);
   const cacheKey = analyzeCacheKey(owner, repo, info.sha, branch);
 
   const cached = cache.get<RepoAnalysis>(cacheKey);
   if (cached) return cached;
 
   const [{ items, truncated }, contributors, timeline] = await Promise.all([
-    fetchFlatTree(owner, repo, info.sha),
-    fetchContributors(owner, repo),
-    fetchTimeline(owner, repo, branch),
+    fetchFlatTree(owner, repo, info.sha, token),
+    fetchContributors(owner, repo, token),
+    fetchTimeline(owner, repo, branch, token),
   ]);
 
   const tree = annotateTree(buildTreeFromPaths(items));
@@ -51,7 +52,7 @@ export async function analyzeRepository(
   );
 
   const pathsToFetch = Array.from(new Set([...manifestPaths, ...importantSourceFiles]));
-  const fileContents = await fetchFileContents(owner, repo, pathsToFetch, info.sha);
+  const fileContents = await fetchFileContents(owner, repo, pathsToFetch, info.sha, token);
   const dependencies = analyzeDependencies(fileContents);
 
   const graph = buildGraph({

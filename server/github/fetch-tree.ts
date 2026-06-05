@@ -39,11 +39,12 @@ export interface FlatTreeItem {
 export async function fetchRepoBranches(
   owner: string,
   repo: string,
+  token?: string,
 ): Promise<{ name: string; protected: boolean }[]> {
   if (isMockRepo(owner)) {
     return fetchMockRepoBranches();
   }
-  const octokit = getOctokit();
+  const octokit = getOctokit(token);
   try {
     const { data } = await octokit.repos.listBranches({ owner, repo, per_page: 100 });
     return data.map((b) => ({ name: b.name, protected: b.protected }));
@@ -57,11 +58,16 @@ export async function fetchRepoBranches(
   }
 }
 
-export async function fetchRepoInfo(owner: string, repo: string, branchName?: string): Promise<RepoInfo> {
+export async function fetchRepoInfo(
+  owner: string, 
+  repo: string, 
+  branchName?: string,
+  token?: string,
+): Promise<RepoInfo> {
   if (isMockRepo(owner)) {
     return fetchMockRepoInfo(owner, repo, branchName);
   }
-  const octokit = getOctokit();
+  const octokit = getOctokit(token);
   try {
     const { data } = await octokit.repos.get({ owner, repo });
     const targetBranch = branchName || data.default_branch;
@@ -96,11 +102,12 @@ export async function fetchFlatTree(
   owner: string,
   repo: string,
   sha: string,
+  token?: string,
 ): Promise<{ items: FlatTreeItem[]; truncated: boolean }> {
   if (isMockRepo(owner)) {
     return fetchMockFlatTree(owner, repo);
   }
-  const octokit = getOctokit();
+  const octokit = getOctokit(token);
   try {
     const { data } = await octokit.git.getTree({
       owner,
@@ -200,11 +207,12 @@ export async function fetchFileContents(
   repo: string,
   paths: string[],
   ref: string,
+  token?: string,
 ): Promise<Record<string, string>> {
   if (isMockRepo(owner)) {
     return fetchMockFileContents(owner, repo, paths);
   }
-  const octokit = getOctokit();
+  const octokit = getOctokit(token);
   const result: Record<string, string> = {};
 
   await Promise.all(
@@ -231,11 +239,12 @@ export async function fetchFileContents(
 export async function fetchContributors(
   owner: string,
   repo: string,
+  token?: string,
 ): Promise<{ login: string; avatarUrl: string; contributions: number }[]> {
   if (isMockRepo(owner)) {
     return fetchMockContributors();
   }
-  const octokit = getOctokit();
+  const octokit = getOctokit(token);
   try {
     const { data } = await octokit.repos.listContributors({
       owner,
@@ -258,11 +267,12 @@ export async function fetchTimeline(
   owner: string,
   repo: string,
   branch?: string,
+  token?: string,
 ): Promise<TimelineWeek[]> {
   if (isMockRepo(owner)) {
     return fetchMockTimeline();
   }
-  const octokit = getOctokit();
+  const octokit = getOctokit(token);
   try {
     const since = new Date();
     since.setDate(since.getDate() - 90);

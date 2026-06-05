@@ -20,16 +20,15 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
   const setFocusedFilePath = useVizStore((s) => s.setFocusedFilePath);
   const setInspectorOpen = useVizStore((s) => s.setInspectorOpen);
 
-  const lp = useLearningPath();
+  const lp = useLearningPath(owner, repo, selectedBranch);
 
   // Execution flow simulation state
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Fetch learning path on mount or repo change
+  // Reset simulation state when repo or branch changes
   useEffect(() => {
-    lp.mutate({ owner, repo, branch: selectedBranch ?? undefined });
     setIsPlaying(false);
     setActiveStep(0);
     return () => {
@@ -108,7 +107,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
   };
 
   const handleRefresh = () => {
-    lp.mutate({ owner, repo, branch: selectedBranch ?? undefined });
+    lp.refetch();
   };
 
   if (lp.isPending) {

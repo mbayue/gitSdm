@@ -24,6 +24,15 @@ function getApiKeyHeader(): Record<string, string> {
   }
 }
 
+function getGitHubTokenHeader(): Record<string, string> {
+  try {
+    const token = localStorage.getItem('gitsdm_github_pat');
+    return token ? { 'X-GitHub-Token': token } : {};
+  } catch {
+    return {};
+  }
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const isAiRoute = path.startsWith('/api/ai');
   const res = await fetch(path, {
@@ -31,6 +40,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     headers: {
       'Content-Type': 'application/json',
       ...(isAiRoute ? getApiKeyHeader() : {}),
+      ...getGitHubTokenHeader(),
       ...options?.headers,
     },
   });

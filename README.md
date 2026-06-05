@@ -25,16 +25,16 @@
 
 **gitSdm** transforms how developers understand unfamiliar codebases. Instead of spending hours reading through files and tracing dependencies, gitSdm provides **instant, interactive architecture visualization** powered by AI.
 
-> *"The kind of deep insight that normally takes days of reading code — delivered in seconds."*
+> _"The kind of deep insight that normally takes days of reading code — delivered in seconds."_
 
 ### 🎯 Value Proposition
 
-| Problem | Solution |
-|---------|----------|
-| 🕒 Hours spent onboarding to new repos | ⚡ Instant architecture overview |
-| 🔍 Manual dependency tracing | 🕸️ Interactive dependency graph |
-| 📚 Scattered documentation | 🤖 AI-generated code explanations |
-| 🧩 Unclear module boundaries | 🎯 Visual file classification |
+| Problem                                | Solution                          |
+| -------------------------------------- | --------------------------------- |
+| 🕒 Hours spent onboarding to new repos | ⚡ Instant architecture overview  |
+| 🔍 Manual dependency tracing           | 🕸️ Interactive dependency graph   |
+| 📚 Scattered documentation             | 🤖 AI-generated code explanations |
+| 🧩 Unclear module boundaries           | 🎯 Visual file classification     |
 
 ---
 
@@ -105,17 +105,17 @@ cp .env.example .env
 
 ### Environment Configuration
 
-| Variable | Description |
-|----------|-------------|
-| `GITHUB_TOKEN` | Optional. Increases GitHub API rate limits for public repos |
-| `AI_PROVIDER` | `mock` (default), `gemini`,`openai`, or `anthropic` |
-| `OPENAI_API_KEY` | Required when `AI_PROVIDER=openai` |
-| `ANTHROPIC_API_KEY` | Required when `AI_PROVIDER=anthropic` |
-| `GEMINI_API_KEY` | Required when `AI_PROVIDER=gemini` |
-| `GEMINI_MODEL` | Optional when `AI_PROVIDER=gemini`; defaults to `gemini-1.5-flash` |
-| `GEMINI_API_VERSION` | Optional when `AI_PROVIDER=gemini`; defaults to `v1alpha` |
-| `OPENAI_MODEL` | Optional when `AI_PROVIDER=openai`; defaults to `gpt-4o-mini` |
-| `ANTHROPIC_MODEL` | Optional when `AI_PROVIDER=anthropic`; defaults to `claude-3-5-haiku-latest` |
+| Variable             | Description                                                                  |
+| -------------------- | ---------------------------------------------------------------------------- |
+| `GITHUB_TOKEN`       | Optional. Increases GitHub API rate limits for public repos                  |
+| `AI_PROVIDER`        | `mock` (default), `gemini`,`openai`, or `anthropic`                          |
+| `OPENAI_API_KEY`     | Required when `AI_PROVIDER=openai`                                           |
+| `ANTHROPIC_API_KEY`  | Required when `AI_PROVIDER=anthropic`                                        |
+| `GEMINI_API_KEY`     | Required when `AI_PROVIDER=gemini`                                           |
+| `GEMINI_MODEL`       | Optional when `AI_PROVIDER=gemini`; defaults to `gemini-1.5-flash`           |
+| `GEMINI_API_VERSION` | Optional when `AI_PROVIDER=gemini`; defaults to `v1alpha`                    |
+| `OPENAI_MODEL`       | Optional when `AI_PROVIDER=openai`; defaults to `gpt-4o-mini`                |
+| `ANTHROPIC_MODEL`    | Optional when `AI_PROVIDER=anthropic`; defaults to `claude-3-5-haiku-latest` |
 
 ### Development
 
@@ -168,18 +168,21 @@ gcloud run deploy gitsdm \
 ## 🧩 Core Features
 
 ### 🔬 **Repository Analysis**
+
 - **Instant parsing** of any public GitHub repository
 - **Dependency graph** generation with `d3-force` and `dagre` layout algorithms
 - **File classification** by type (component, utility, config, etc.)
 - **Module boundary detection** for architectural insights
 
 ### 🤖 **AI-Powered Insights**
+
 - **Architecture summaries** via Google Gemini, OpenAI, or Anthropic Claude
 - **Code explanations** for specific files and modules in `Standard` and `ELI5 (Explain It Like I'm 5)` modes
 - **Smart file suggestions** based on context
 - **Learning paths** for onboarding to new codebases
 
 ### 🕸️ **Interactive Visualization**
+
 - **Force-directed graphs** with `@xyflow/react` (React Flow)
 - **Real-time filtering** by file type, module, or dependency
 - **Branch comparison** with visual diff
@@ -187,6 +190,7 @@ gcloud run deploy gitsdm \
 - **Interactive Mermaid flowcharts** with SVG and PNG download support
 
 ### 📊 **Repository Intelligence**
+
 - **Contributor analytics** with `recharts` visualizations
 - **Commit timeline** and activity patterns
 - **Trending repositories** discovery
@@ -198,61 +202,68 @@ gcloud run deploy gitsdm \
 ## 🛠️ Technology Stack
 
 ### Frontend
-| Technology | Purpose |
-|------------|---------|
-| React 19 | UI framework |
-| TypeScript 5.8 | Type safety |
-| Vite 6 | Build tooling |
-| @xyflow/react 12 | Graph visualization |
-| Framer Motion 12 | Animations |
-| TanStack React Query 5 | Data fetching |
-| Tailwind CSS 3.4 | Styling |
-| Recharts 2 | Charts & analytics |
-| Mermaid 11 | Diagram generation |
-| html-to-image | Element/SVG to image conversion |
-| jsPDF | PDF generation library |
-| Lucide React | Icon library |
+
+| Technology             | Purpose                         |
+| ---------------------- | ------------------------------- |
+| React 19               | UI framework                    |
+| TypeScript 5.8         | Type safety                     |
+| Vite 6                 | Build tooling                   |
+| @xyflow/react 12       | Graph visualization             |
+| Framer Motion 12       | Animations                      |
+| TanStack React Query 5 | Data fetching                   |
+| Tailwind CSS 3.4       | Styling                         |
+| Recharts 2             | Charts & analytics              |
+| Mermaid 11             | Diagram generation              |
+| html-to-image          | Element/SVG to image conversion |
+| jsPDF                  | PDF generation library          |
+| Lucide React           | Icon library                    |
 
 ### Backend
-| Technology | Purpose |
-|------------|---------|
-| Node.js 22 | Runtime |
-| Express (via Vercel) | API server |
-| Octokit 21 | GitHub API client |
-| LRU Cache 11 | Response caching |
-| Google GenAI 2.6 | AI provider |
-| OpenAI 4 | AI provider |
-| Anthropic SDK 0.39 | AI provider |
+
+| Technology           | Purpose           |
+| -------------------- | ----------------- |
+| Node.js 22           | Runtime           |
+| Express (via Vercel) | API server        |
+| Octokit 21           | GitHub API client |
+| LRU Cache 11         | Response caching  |
+| Google GenAI 2.6     | AI provider       |
+| OpenAI 4             | AI provider       |
+| Anthropic SDK 0.39   | AI provider       |
 
 ### Infrastructure
-| Technology | Purpose |
-|------------|---------|
+
+| Technology       | Purpose             |
+| ---------------- | ------------------- |
 | Google Cloud Run | Deployment platform |
-| Docker | Containerization |
-| pnpm | Package management |
-| Vitest | Testing framework |
-| ESLint 9 | Code quality |
+| Docker           | Containerization    |
+| pnpm             | Package management  |
+| Vitest           | Testing framework   |
+| ESLint 9         | Code quality        |
 
 ---
 
 ## 📖 Usage Guide
 
 ### 1. **Analyze a Repository**
+
 ```
 Enter a GitHub URL → gitSdm fetches & parses → Interactive graph appears
 ```
 
 ### 2. **Explore Architecture**
+
 ```
 Click nodes → View file contents → Trace dependencies → Understand modules
 ```
 
 ### 3. **Get AI Insights**
+
 ```
 Select "Explain Architecture" → AI analyzes structure → Natural language summary
 ```
 
 ### 4. **Compare Branches**
+
 ```
 Select branches → Visual diff → See architectural changes
 ```
@@ -273,6 +284,7 @@ pnpm test:watch
 ```
 
 Test files are co-located with source files:
+
 - `server/parser/manifest-parsers/index.test.ts`
 - `server/github/parse-url.test.ts`
 - `server/graph/graph-builder.test.ts`
@@ -289,10 +301,10 @@ Test files are co-located with source files:
 - [x] **AI-generated architecture diagrams** — High-quality Mermaid flowcharts detailing module boundaries and system workflows.
 - [x] **Commit History & Activity** — Interactive timeline visualizing author patterns and directory churn over time.
 - [x] **Export to PDF / PNG / SVG** — High-res canvas snapshots and vector diagram outputs for documentation.
-- [ ] **Private repository support** — Secure OAuth authentication and credential storage to map private codebases.
+- [x] **Private repository support** — Secure OAuth authentication and credential storage to map private codebases.
 - [ ] **Monorepo-aware dependency grouping** — Automatic workspace detection (npm/pnpm/yarn) and cross-package mapping.
 - [ ] **AI-powered semantic search & Q&A** — Context-aware vector search to ask code questions and locate entry points.
-- [ ] **Change impact analysis (Blast Radius)** — Visualizer highlighting transitive dependents to predict edit breakages.
+- [x] **Change impact analysis (Blast Radius)** — Visualizer highlighting transitive dependents to predict edit breakages.
 - [ ] **CI/CD integration** — GitHub Action to automatically comment visual architecture diffs on PR updates.
 - [ ] **Interactive path pruning & editing** — Tools to manually prune/group nodes and export tailored subgraphs.
 - [ ] **Multi-repository mapping** — Cross-repo mapping to trace frontend-to-backend API and SDK dependencies.

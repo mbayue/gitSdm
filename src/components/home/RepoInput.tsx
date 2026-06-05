@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { ArrowRight, Github, Zap, ListTodo, Boxes, Atom, Triangle, Terminal, GitBranch } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
@@ -8,6 +9,7 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { getVisibleRepoPresets } from '@/components/home/repo-presets';
 import { fetchAppConfig } from '@/lib/api-client';
 import { parseRepoFromUrl, LAST_REPO_KEY } from '@/lib/utils';
+import { GitHubPatPopover } from '@/components/viz/GitHubPatPopover';
 
 interface RepoInputProps {
   initialUrl?: string;
@@ -29,24 +31,15 @@ export function RepoInput({ initialUrl = '' }: RepoInputProps) {
   const [url, setUrl] = useState(initialUrl);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showMockPresets, setShowMockPresets] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    let ignore = false;
+  const { data: config } = useQuery({
+    queryKey: ['appConfig'],
+    queryFn: fetchAppConfig,
+    staleTime: 1000 * 60 * 60,
+  });
 
-    fetchAppConfig()
-      .then((config) => {
-        if (!ignore) setShowMockPresets(config.aiProvider === 'mock');
-      })
-      .catch(() => {
-        if (!ignore) setShowMockPresets(false);
-      });
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
+  const showMockPresets = config?.aiProvider === 'mock';
 
   const presets = useMemo(
     () => getVisibleRepoPresets(showMockPresets),
@@ -89,22 +82,25 @@ export function RepoInput({ initialUrl = '' }: RepoInputProps) {
       className="mx-auto max-w-2xl scroll-mt-20 px-4"
     >
       <GlassCard className="p-2">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
-          <div className="relative flex-1">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row items-center w-full">
+          <div className="relative flex-1 w-full">
             <Github className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
             <Input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://github.com/owner/repo  or  owner/repo"
-              className="pl-10"
+              className="pl-10 w-full"
               disabled={loading}
             />
           </div>
-          <GlowButton type="submit" loading={loading} className="sm:shrink-0">
-            <Zap className="h-4 w-4" />
-            Analyze
-            <ArrowRight className="h-4 w-4" />
-          </GlowButton>
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
+            <GitHubPatPopover />
+            <GlowButton type="submit" loading={loading} className="w-full sm:w-auto">
+              <Zap className="h-4 w-4" />
+              Analyze
+              <ArrowRight className="h-4 w-4" />
+            </GlowButton>
+          </div>
         </form>
 
         {error && (
