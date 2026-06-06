@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import { getVisibleRepoPresets } from './repo-presets';
 
 describe('getVisibleRepoPresets', () => {
@@ -15,5 +15,13 @@ describe('getVisibleRepoPresets', () => {
 
     expect(repos).toContain('mock/todo-app');
     expect(repos).toContain('mock/gitsdm');
+  });
+
+  it('returns valid structures containing descriptive details', () => {
+    const items = getVisibleRepoPresets(true);
+    expect(items.length).toBeGreaterThan(0);
+    expect(items[0].repo).toBeDefined();
+    expect(items[0].label).toBeDefined();
+    expect(items[0].desc).toBeDefined();
   });
 });

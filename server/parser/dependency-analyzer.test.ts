@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { analyzeDependencies } from './dependency-analyzer';
 
 describe('dependency-analyzer', () => {
@@ -28,5 +28,10 @@ describe('dependency-analyzer', () => {
 
     const deps = analyzeDependencies(fileContents);
     expect(deps).toHaveLength(1);
+  });
+
+  it('safely handles empty files maps', () => {
+    const deps = analyzeDependencies({});
+    expect(deps).toEqual([]);
   });
 });

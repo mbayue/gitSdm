@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { parseGitHubUrl, parseRepoParams } from './parse-url';
 
 describe('parse-url', () => {
@@ -22,6 +22,11 @@ describe('parse-url', () => {
       expect(parseGitHubUrl('https://google.com')).toBeNull();
       expect(parseGitHubUrl('not-a-repo')).toBeNull();
     });
+
+    it('handles git trailing slashes safely', () => {
+      const result = parseGitHubUrl('https://github.com/bayue48/gitSdm/');
+      expect(result).toEqual({ owner: 'bayue48', repo: 'gitSdm' });
+    });
   });
 
   describe('parseRepoParams', () => {
@@ -33,6 +38,11 @@ describe('parse-url', () => {
     it('falls back to url if owner and repo are missing', () => {
       const result = parseRepoParams(undefined, undefined, 'https://github.com/facebook/react');
       expect(result).toEqual({ owner: 'facebook', repo: 'react' });
+    });
+
+    it('returns empty fallback elements if missing parameters and URL is empty', () => {
+      const result = parseRepoParams(undefined, undefined, '');
+      expect(result).toBeNull();
     });
   });
 });

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { extractRawImports, resolveImports, buildImportEdges } from './import-resolver';
 
 describe('import-resolver', () => {
@@ -50,6 +50,11 @@ describe('import-resolver', () => {
       expect(resolved).toContain('src/styles/main.css');
       expect(resolved).toContain('src/components/ui/Button.tsx');
       expect(resolved).toContain('src/config/app.json');
+    });
+
+    it('safely handles empty rawImports array', () => {
+      const resolved = resolveImports('src/App.tsx', [], new Set(['src/components/TodoList.tsx']));
+      expect(resolved).toEqual([]);
     });
   });
 

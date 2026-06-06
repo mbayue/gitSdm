@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import {
   parsePackageJson,
   parseGoMod,
@@ -23,9 +23,19 @@ describe('manifest parsers', () => {
     expect(deps.find((d) => d.name === 'vite')?.type).toBe('dev');
   });
 
+  it('handles invalid package.json gracefully', () => {
+    const deps = parsePackageJson('corrupted-json-payload-string-invalid');
+    expect(deps).toEqual([]);
+  });
+
   it('parses go.mod require block', () => {
     const deps = parseGoMod(`module example.com/app\n\nrequire (\n\tgithub.com/foo/bar v1.2.3\n)\n`);
     expect(deps.some((d) => d.name === 'github.com/foo/bar')).toBe(true);
+  });
+
+  it('handles empty go.mod input gracefully', () => {
+    const deps = parseGoMod('');
+    expect(deps).toEqual([]);
   });
 
   it('parses requirements.txt dependencies', () => {
@@ -54,6 +64,11 @@ describe('manifest parsers', () => {
     expect(deps.find((d) => d.name === 'serde')?.version).toBe('1.0');
   });
 
+  it('handles corrupted Cargo.toml gracefully', () => {
+    const deps = parseCargoToml('invalid toml layout dependency string with no key-value structure');
+    expect(deps).toEqual([]);
+  });
+
   it('parses Dockerfile base images', () => {
     const content = `FROM node:18-alpine AS builder\nWORKDIR /app\nFROM alpine:latest\n`;
     const deps = parseDockerfile(content);
@@ -73,5 +88,10 @@ describe('manifest parsers', () => {
   it('routes by filename', () => {
     const deps = parseManifest('package.json', '{"dependencies":{"lodash":"^4.0.0"}}');
     expect(deps[0]?.ecosystem).toBe('npm');
+  });
+
+  it('returns empty array when no route parser matches file', () => {
+    const deps = parseManifest('README.md', '# Readme Content');
+    expect(deps).toEqual([]);
   });
 });
