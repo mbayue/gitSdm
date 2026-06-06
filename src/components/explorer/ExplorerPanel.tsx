@@ -1,4 +1,4 @@
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, FileCode } from 'lucide-react';
 import { useVizStore } from '@/stores/viz-store';
 import type { RepoAnalysis } from '@/types';
 import { SmartFileExplorer } from './SmartFileExplorer';
@@ -10,7 +10,7 @@ interface ExplorerPanelProps {
 }
 
 export function ExplorerPanel({ analysis, selectedFilePath, onSelectFile }: ExplorerPanelProps) {
-  const { explorerOpen, setExplorerOpen } = useVizStore();
+  const { explorerOpen, setExplorerOpen, inspectorOpen, setInspectorOpen } = useVizStore();
   const rootLabel = analysis.meta.fullName.split('/')[1] ?? analysis.meta.repo;
 
   if (!explorerOpen) {
@@ -34,6 +34,18 @@ export function ExplorerPanel({ analysis, selectedFilePath, onSelectFile }: Expl
         <span className="flex-1 text-[10px] font-medium uppercase tracking-widest text-zinc-500">
           Explorer
         </span>
+        <button
+          type="button"
+          onClick={() => setInspectorOpen(!inspectorOpen)}
+          className={`rounded p-1 transition-colors ${
+            inspectorOpen 
+              ? 'text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20' 
+              : 'text-zinc-600 hover:bg-white/5 hover:text-zinc-400'
+          }`}
+          title={inspectorOpen ? "Hide code inspector" : "Show code inspector"}
+        >
+          <FileCode className="h-3.5 w-3.5" />
+        </button>
         <button
           type="button"
           onClick={() => setExplorerOpen(false)}

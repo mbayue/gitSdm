@@ -17,6 +17,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
+    "types": ["bun-types"],
     "paths": {
       "@/*": ["src/*"],
       "@server/*": ["server/*"]

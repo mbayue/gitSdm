@@ -2,7 +2,8 @@ import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Brain, Map, ShieldAlert, Flame, Package, Copy,
-  Sparkles, AlertTriangle, PanelRightClose, PanelRightOpen
+  Sparkles, AlertTriangle, PanelRightClose, PanelRightOpen,
+  Download
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useVizStore, type SidebarTab } from '@/stores/viz-store';
@@ -40,7 +41,6 @@ export function AISidebar({ analysis }: AISidebarProps) {
     aiSidebarOpen,
     setAiSidebarOpen,
     setFocusedFilePath,
-    setInspectorOpen,
   } = useVizStore();
 
   const [eli5Mode, setEli5Mode] = useState(false);
@@ -135,6 +135,42 @@ export function AISidebar({ analysis }: AISidebarProps) {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setToastMessage(text.slice(0, 100) + '...');
+  };
+
+  const handleExportSuggestions = () => {
+    if (!refactor.data?.suggestions) return;
+
+    const score = { high: 3, medium: 2, low: 1 };
+    const sorted = [...refactor.data.suggestions].sort((a, b) =>
+      (score[b.risk] ?? 0) - (score[a.risk] ?? 0)
+    );
+
+    let markdown = `# Refactoring Suggestions for ${owner}/${repo}\n\n`;
+    markdown += `Generated on: ${new Date().toLocaleDateString()}\n\n`;
+
+    sorted.forEach((sug, idx) => {
+      markdown += `### ${idx + 1}. ${sug.title}\n`;
+      markdown += `- **Category**: ${sug.category}\n`;
+      markdown += `- **Risk Level**: ${sug.risk.toUpperCase()}\n`;
+      markdown += `- **Description**: ${sug.description}\n`;
+      if (sug.files && sug.files.length > 0) {
+        markdown += `- **Target Files**:\n`;
+        sug.files.forEach((f) => {
+          markdown += `  - \`${f}\`\n`;
+        });
+      }
+      markdown += `\n---\n\n`;
+    });
+
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${owner}_${repo}_refactoring_suggestions.md`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const isExplainLoading = eli5Mode && !selectedNodeId ? explainNew.isPending : explain.isPending;
@@ -399,13 +435,31 @@ export function AISidebar({ analysis }: AISidebarProps) {
 
                   {/* Refactor Suggestions */}
                   <div className="space-y-3 border-t border-white/5 pt-4">
-                    <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
-                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
-                      Refactoring Suggestions
-                    </h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
+                        Refactoring Suggestions
+                      </h4>
+                      {refactor.data?.suggestions && refactor.data.suggestions.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleExportSuggestions}
+                          className="flex items-center gap-1 rounded bg-white/5 border border-white/5 px-2 py-0.5 text-[10px] text-zinc-400 hover:bg-white/10 hover:text-white transition-all font-medium"
+                          title="Export suggestions as Markdown"
+                        >
+                          <Download className="h-3 w-3" />
+                          <span>Export</span>
+                        </button>
+                      )}
+                    </div>
 
-                    {refactor.data?.suggestions.map((sug, i) => (
-                      <div key={i} className="rounded-xl border border-white/5 bg-zinc-900/20 p-3.5 space-y-2">
+                    {[...(refactor.data?.suggestions ?? [])]
+                      .sort((a, b) => {
+                        const score = { high: 3, medium: 2, low: 1 };
+                        return (score[b.risk] ?? 0) - (score[a.risk] ?? 0);
+                      })
+                      .map((sug, i) => (
+                        <div key={i} className="rounded-xl border border-white/5 bg-zinc-900/20 p-3.5 space-y-2">
                         <div className="flex items-start justify-between gap-2">
                           <span className="rounded bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 font-mono text-[9px] text-zinc-400 uppercase">
                             {sug.category}
@@ -434,7 +488,6 @@ export function AISidebar({ analysis }: AISidebarProps) {
                                   onClick={() => {
                                     setSelectedNodeId(`file:${file}`);
                                     setFocusedFilePath(file);
-                                    setInspectorOpen(true);
                                   }}
                                   className="rounded border border-white/5 bg-white/5 px-2 py-0.5 font-mono text-[10px] dark:text-cyan-400/80 text-cyan-700 hover:bg-white/10 hover:text-white transition-all text-left truncate max-w-full"
                                 >

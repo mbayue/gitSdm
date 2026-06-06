@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { applyDagreLayout } from './layout';
 import { getNodeCircleColor, getNodeCircleSize } from './node-colors';
 import type { GraphNode, GraphEdge } from '../../src/types';
@@ -34,6 +34,11 @@ describe('graph layout and visualization utilities', () => {
       const laidOut = applyDagreLayout(nodes, edges, 'LR');
       // B should be further right than A in left-to-right layout
       expect(laidOut[1].position.x).toBeGreaterThan(laidOut[0].position.x);
+    });
+
+    it('gracefully handles empty nodes list', () => {
+      const laidOut = applyDagreLayout([], [], 'TB');
+      expect(laidOut).toEqual([]);
     });
   });
 

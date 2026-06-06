@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { classifyFile, annotateTree, findImportantFiles } from './file-classifier';
 import type { TreeNode } from '../../src/types';
 
@@ -35,6 +35,10 @@ describe('file-classifier', () => {
     it('identifies source files', () => {
       expect(classifyFile('src/utils/helpers.ts')).toBe('source');
       expect(classifyFile('server/db/conn.go')).toBe('source');
+    });
+
+    it('safely handles empty filename strings', () => {
+      expect(classifyFile('')).toBe('other');
     });
   });
 

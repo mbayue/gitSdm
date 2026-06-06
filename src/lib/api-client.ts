@@ -33,6 +33,24 @@ function getGitHubTokenHeader(): Record<string, string> {
   }
 }
 
+export class ApiError extends Error {
+  public code?: string;
+  public status: number;
+  public details?: any;
+  public error?: string;
+
+  constructor(message: string, status: number, data?: any) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    if (data && typeof data === 'object') {
+      this.code = data.code;
+      this.details = data.details || data.context;
+      this.error = data.error;
+    }
+  }
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const isAiRoute = path.startsWith('/api/ai');
   const res = await fetch(path, {
@@ -47,7 +65,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.error ?? `Request failed: ${res.status}`);
+    throw new ApiError(data.error ?? `Request failed: ${res.status}`, res.status, data);
   }
   return data as T;
 }

@@ -59,7 +59,7 @@ export function FullContributorsView({ analysis, owner, repo }: FullContributors
               <Users className="h-5 w-5" />
             </div>
             <div>
-              <span className="text-[10px] text-zinc-500 uppercase font-mono tracking-wider">Total Contributors</span>
+              <span className="text-[10px] text-zinc-400 uppercase font-mono tracking-wider font-semibold">Total Contributors</span>
               <h3 className="text-2xl font-bold text-white mt-0.5">{stats.totalContributors}</h3>
             </div>
           </div>
@@ -73,7 +73,7 @@ export function FullContributorsView({ analysis, owner, repo }: FullContributors
               <GitCommit className="h-5 w-5" />
             </div>
             <div>
-              <span className="text-[10px] text-zinc-500 uppercase font-mono tracking-wider">Total Commits</span>
+              <span className="text-[10px] text-zinc-400 uppercase font-mono tracking-wider font-semibold">Total Commits</span>
               <h3 className="text-2xl font-bold text-white mt-0.5">{stats.totalCommits}</h3>
             </div>
           </div>
@@ -87,7 +87,7 @@ export function FullContributorsView({ analysis, owner, repo }: FullContributors
               <Flame className="h-5 w-5 animate-pulse" />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="text-[10px] text-zinc-500 uppercase font-mono tracking-wider block truncate">Most Active Contributor</span>
+              <span className="text-[10px] text-zinc-400 uppercase font-mono tracking-wider font-semibold block truncate">Most Active Contributor</span>
               <h3 className="text-md font-bold text-white mt-0.5 truncate" title={`${stats.mostActiveName} (${stats.mostActiveCommits} commits)`}>
                 {stats.mostActiveName} <span className="text-xs text-zinc-400 font-normal">({stats.mostActiveCommits})</span>
               </h3>
@@ -103,7 +103,7 @@ export function FullContributorsView({ analysis, owner, repo }: FullContributors
               <Calendar className="h-5 w-5" />
             </div>
             <div>
-              <span className="text-[10px] text-zinc-500 uppercase font-mono tracking-wider">Active Timeline</span>
+              <span className="text-[10px] text-zinc-400 uppercase font-mono tracking-wider font-semibold">Active Timeline</span>
               <h3 className="text-2xl font-bold text-white mt-0.5">{stats.activeWeeks} Weeks</h3>
             </div>
           </div>
@@ -111,9 +111,9 @@ export function FullContributorsView({ analysis, owner, repo }: FullContributors
       </div>
 
       {/* Main visual panel layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch h-[calc(100vh-270px)] min-h-[500px]">
         {/* Left Column: Contributor Leaderboard */}
-        <div className="lg:col-span-5 rounded-xl border border-white/[0.04] bg-zinc-900/10 p-5 flex flex-col min-h-[380px]">
+        <div className="lg:col-span-5 rounded-xl border border-white/[0.04] bg-zinc-900/10 p-5 flex flex-col h-full overflow-hidden">
           <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-1.5 select-none shrink-0">
             <TrendingUp className="h-4 w-4 text-violet-400" />
             Leaderboard & Commit Share
@@ -192,13 +192,13 @@ export function FullContributorsView({ analysis, owner, repo }: FullContributors
         </div>
 
         {/* Right Column: Commit Timeline & Chart */}
-        <div className="lg:col-span-7 rounded-xl border border-white/[0.04] bg-zinc-900/10 p-5 flex flex-col min-h-[380px]">
+        <div className="lg:col-span-7 rounded-xl border border-white/[0.04] bg-zinc-900/10 p-5 flex flex-col h-full overflow-hidden">
           <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-1.5 select-none shrink-0">
             <Calendar className="h-4 w-4 text-violet-400" />
             Commit Activity Timeline
           </h3>
           <div className="flex-1 flex items-center justify-center bg-zinc-900/5 rounded-xl border border-white/[0.02] p-4">
-            <RepoTimeline timeline={timeline} height={260} />
+            <RepoTimeline timeline={timeline} height="100%" />
           </div>
         </div>
       </div>

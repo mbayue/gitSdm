@@ -23,37 +23,41 @@ function setStoredPat(token: string | null) {
 
 
 interface VizErrorProps {
-  message: string;
+  error?: string | { error?: string; message?: string; code?: string };
+  message?: string;
 }
 
-function getErrorMeta(message: string): {
+function getErrorMeta(errStr: string, code?: string): {
   icon: typeof AlertCircle;
   title: string;
   tip: string;
   color: string;
   borderColor: string;
 } {
-  const lower = message.toLowerCase();
+  const lower = errStr.toLowerCase();
+  const isPrivate = code === 'REPO_INACCESSIBLE' || lower.includes('private') || lower.includes('not found') || lower.includes('404');
+  const isRate = code === 'RATE_LIMIT_EXCEEDED' || lower.includes('rate limit') || lower.includes('429');
+  const isNetwork = lower.includes('network') || lower.includes('fetch') || lower.includes('connect');
 
-  if (lower.includes('private') || lower.includes('not found') || lower.includes('404')) {
+  if (isPrivate) {
     return {
       icon: Lock,
       title: 'Repository Inaccessible',
-      tip: 'This repository is private or doesn\'t exist. gitSdm works with public repositories only.',
+      tip: "This repository is private or doesn't exist. gitSdm works with public repositories only.",
       color: 'text-amber-400',
       borderColor: 'border-amber-500/20',
     };
   }
-  if (lower.includes('rate limit') || lower.includes('429')) {
+  if (isRate) {
     return {
       icon: RefreshCw,
       title: 'GitHub Rate Limit',
-      tip: 'GitHub\'s API rate limit was exceeded. Wait a minute and try again.',
+      tip: "GitHub's API rate limit was exceeded. Wait a minute and try again.",
       color: 'text-blue-400',
       borderColor: 'border-blue-500/20',
     };
   }
-  if (lower.includes('network') || lower.includes('fetch') || lower.includes('connect')) {
+  if (isNetwork) {
     return {
       icon: Wifi,
       title: 'Connection Error',
@@ -71,17 +75,30 @@ function getErrorMeta(message: string): {
   };
 }
 
-export function VizError({ message }: VizErrorProps) {
-  const meta = getErrorMeta(message);
+export function VizError({ error, message }: VizErrorProps) {
+  let errStr = message || 'An unexpected analysis error occurred';
+  let errCode = '';
+
+  if (error) {
+    if (typeof error === 'string') {
+      errStr = error;
+    } else {
+      errStr = error.error || error.message || errStr;
+      errCode = error.code || '';
+    }
+  }
+
+  const meta = getErrorMeta(errStr, errCode);
   const Icon = meta.icon;
 
   const [tokenValue, setTokenValue] = useState(() => getStoredPat() ?? '');
   const [saved, setSaved] = useState(false);
   const [showToken, setShowToken] = useState(false);
 
-  const isPrivateError = message.toLowerCase().includes('private') || 
-                         message.toLowerCase().includes('not found') || 
-                         message.toLowerCase().includes('404');
+  const isPrivateError = errCode === 'REPO_INACCESSIBLE' || 
+                         errStr.toLowerCase().includes('private') || 
+                         errStr.toLowerCase().includes('not found') || 
+                         errStr.toLowerCase().includes('404');
   
   const hasPat = !!getStoredPat();
   const tipText = isPrivateError
@@ -113,7 +130,7 @@ export function VizError({ message }: VizErrorProps) {
         {/* Raw error in a subtle code block */}
         <div className="mt-4 rounded-lg bg-zinc-800/60 border border-white/5 p-3 text-left">
           <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 block mb-1">Error details</span>
-          <p className="text-xs text-zinc-500 font-mono leading-relaxed break-words">{message}</p>
+          <p className="text-xs text-zinc-500 font-mono leading-relaxed break-words">{errStr}</p>
         </div>
 
         {isPrivateError && (

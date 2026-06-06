@@ -306,10 +306,34 @@ export function FullArchitectureView({ analysis, owner, repo }: FullArchitecture
   }, [mode, data, analysis]);
 
   const handleCopyCode = async () => {
-    const rawCode = mode === 'ai' ? data?.diagram : generateProgrammaticMermaid(analysis);
+    let rawCode = mode === 'ai' ? data?.diagram : generateProgrammaticMermaid(analysis);
     if (!rawCode) return;
+    
+    // Clean raw block ticks if present
+    rawCode = rawCode.trim();
+    if (rawCode.startsWith('```mermaid')) {
+      rawCode = rawCode.slice(10);
+    } else if (rawCode.startsWith('```')) {
+      rawCode = rawCode.slice(3);
+    }
+    if (rawCode.endsWith('```')) {
+      rawCode = rawCode.slice(0, -3);
+    }
+    rawCode = rawCode.trim();
+
     try {
-      await navigator.clipboard.writeText(rawCode);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(rawCode);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = rawCode;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -323,7 +347,18 @@ export function FullArchitectureView({ analysis, owner, repo }: FullArchitecture
     if (!svgEl) return;
     try {
       const svgData = new XMLSerializer().serializeToString(svgEl);
-      await navigator.clipboard.writeText(svgData);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(svgData);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = svgData;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
       setCopiedSvg(true);
       setTimeout(() => setCopiedSvg(false), 2000);
     } catch (err) {

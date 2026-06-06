@@ -19,7 +19,18 @@ export function VizTopBar({ meta }: VizTopBarProps) {
   const handleShare = async () => {
     try {
       const url = window.location.href;
-      await navigator.clipboard.writeText(url);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = url;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
       setCopied(true);
       setToastMessage(url);
       setTimeout(() => setCopied(false), 2000);

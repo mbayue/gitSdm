@@ -1,15 +1,16 @@
 import { getOctokit, handleOctokitError } from '../github/client';
 import { fetchRepoInfo } from '../github/fetch-tree';
 import { isMockRepo, fetchMockFileContents } from '../github/mock-data';
+import type { RequestContext } from '../utils/context';
 
 export async function getRepoFileContent(
   owner: string,
   repo: string,
   path: string,
   branch?: string,
-  token?: string,
+  tokenOrCtx?: string | RequestContext,
 ): Promise<{ path: string; content: string; sha: string }> {
-  const info = await fetchRepoInfo(owner, repo, branch, token);
+  const info = await fetchRepoInfo(owner, repo, branch, tokenOrCtx);
 
   if (isMockRepo(owner)) {
     const contents = await fetchMockFileContents(owner, repo, [path]);
@@ -20,7 +21,9 @@ export async function getRepoFileContent(
     return { path, content, sha: info.sha };
   }
 
-  const octokit = getOctokit(token);
+  const octokit = (tokenOrCtx && typeof tokenOrCtx === 'object' && 'octokit' in tokenOrCtx)
+    ? tokenOrCtx.octokit
+    : getOctokit(tokenOrCtx as string | undefined);
   try {
     const { data } = await octokit.repos.getContent({
       owner,

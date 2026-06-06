@@ -33,9 +33,24 @@ export function FullCommitHistoryView({ timeline, owner, repo, branch, isLoading
   }, [commits, search]);
 
   const handleCopySha = (sha: string) => {
-    navigator.clipboard.writeText(sha);
-    setCopiedSha(sha);
-    setTimeout(() => setCopiedSha(null), 2000);
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(sha);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = sha;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      setCopiedSha(sha);
+      setTimeout(() => setCopiedSha(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy SHA: ', err);
+    }
   };
 
   const formatDate = (dateStr: string) => {
@@ -129,17 +144,39 @@ export function FullCommitHistoryView({ timeline, owner, repo, branch, isLoading
                     <div className="rounded-xl border border-white/[0.03] bg-zinc-900/10 p-4 transition-all duration-200 hover:border-white/[0.08] hover:bg-white/[0.01] hover:shadow-[0_4px_20px_rgba(0,0,0,0.25)]">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex gap-3 min-w-0">
-                          {commit.authorAvatar ? (
-                            <img
-                              src={commit.authorAvatar}
-                              alt={commit.authorLogin || 'Avatar'}
-                              className="h-9 w-9 shrink-0 rounded-full border border-white/10 shadow-sm"
-                              onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                            />
+                          {commit.authorLogin ? (
+                            <a
+                              href={`https://github.com/${commit.authorLogin}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="relative group shrink-0"
+                            >
+                              {commit.authorAvatar ? (
+                                <img
+                                  src={commit.authorAvatar}
+                                  alt={commit.authorLogin || 'Avatar'}
+                                  className="h-9 w-9 shrink-0 rounded-full border border-white/10 shadow-sm hover:border-violet-500 hover:ring-2 hover:ring-violet-500/20 transition-all duration-200"
+                                  onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                                />
+                              ) : (
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-zinc-900 text-zinc-400 shadow-sm hover:border-violet-500 hover:text-violet-400 transition-all">
+                                  <User className="h-4 w-4" />
+                                </div>
+                              )}
+                            </a>
                           ) : (
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-zinc-900 text-zinc-400 shadow-sm">
-                              <User className="h-4 w-4" />
-                            </div>
+                            commit.authorAvatar ? (
+                              <img
+                                src={commit.authorAvatar}
+                                alt={commit.authorName || 'Avatar'}
+                                className="h-9 w-9 shrink-0 rounded-full border border-white/10 shadow-sm"
+                                onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                              />
+                            ) : (
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-zinc-900 text-zinc-400 shadow-sm">
+                                <User className="h-4 w-4" />
+                              </div>
+                            )
                           )}
 
                           <div className="min-w-0">
@@ -147,9 +184,20 @@ export function FullCommitHistoryView({ timeline, owner, repo, branch, isLoading
                               {commit.message}
                             </h4>
                             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-400">
-                              <span className="font-semibold text-zinc-300">
-                                {commit.authorLogin || commit.authorName || 'Unknown'}
-                              </span>
+                              {commit.authorLogin ? (
+                                <a
+                                  href={`https://github.com/${commit.authorLogin}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="font-semibold text-zinc-300 hover:text-violet-400 transition-colors"
+                                >
+                                  {commit.authorLogin}
+                                </a>
+                              ) : (
+                                <span className="font-semibold text-zinc-350">
+                                  {commit.authorName || 'Unknown'}
+                                </span>
+                              )}
                               {commit.authorLogin && commit.authorName && (
                                 <span className="text-[10px] text-zinc-500">({commit.authorName})</span>
                               )}

@@ -1,24 +1,18 @@
-FROM node:22-alpine AS build
-
-RUN corepack enable && corepack prepare pnpm@10.28.2 --activate
-
-ENV PNPM_CONFIG_MINIMUM_RELEASE_AGE=0
-ENV PNPM_CONFIG_IGNORE_SCRIPTS=false
+FROM oven/bun:1-alpine AS build
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json bun.lock ./
 
-RUN apk add --no-cache libc6-compat python3 make g++
+RUN apk add --no-cache python3 make g++
 
-RUN pnpm install --frozen-lockfile
+RUN bun install --frozen-lockfile
 
 COPY . .
 
-RUN pnpm run build:docker
-RUN pnpm prune --prod
+RUN bun run build:docker
 
-FROM node:22-alpine AS runner
+FROM oven/bun:1-alpine AS runner
 
 ENV NODE_ENV=production
 ENV PORT=3000
@@ -32,4 +26,4 @@ COPY --from=build /app/dist-server ./dist-server
 
 EXPOSE 3000
 
-CMD ["node", "dist-server/prod-server.js"]
+CMD ["bun", "dist-server/prod-server.js"]

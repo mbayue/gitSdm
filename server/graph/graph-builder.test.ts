@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { buildGraph } from './graph-builder';
 
 describe('buildGraph', () => {
@@ -25,5 +25,17 @@ describe('buildGraph', () => {
     expect(graph.nodes.some((n) => n.type === 'package')).toBe(false);
     expect(graph.edges.length).toBeGreaterThan(0);
     expect(graph.layout).toBe('dagre');
+  });
+
+  it('handles empty trees gracefully without crashing', () => {
+    const graph = buildGraph({
+      owner: 'test',
+      repo: 'app',
+      tree: [],
+      dependencies: [],
+      contributors: [],
+    });
+    expect(graph.nodes.length).toBe(1); // repo node still constructed
+    expect(graph.nodes[0].type).toBe('repo');
   });
 });
