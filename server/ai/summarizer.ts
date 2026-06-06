@@ -1,5 +1,6 @@
 import { aiCacheKey, cache, hashContext } from '../cache/lru';
 import type { RepoAnalysis } from '../../src/types';
+import type { RequestContext } from '../utils/context';
 import { getAIProvider } from './provider';
 import { buildRepoContext, SYSTEM_PROMPT } from './prompts';
 import { analyzeRepository } from '../services/analyze-repo';
@@ -34,18 +35,21 @@ function safeParseJSON<T>(raw: string): T {
   return JSON.parse(cleaned) as T;
 }
 
-export async function explainRepo(params: {
-  owner: string;
-  repo: string;
-  branch?: string;
-  scope: 'repo' | 'node' | 'file';
-  nodeId?: string;
-  filePath?: string;
-  fileSnippet?: string;
-  context?: string;
-  apiKey?: string;
-  gitHubToken?: string;
-}): Promise<{ explanation: string; cached: boolean }> {
+export async function explainRepo(
+  params: {
+    owner: string;
+    repo: string;
+    branch?: string;
+    scope: 'repo' | 'node' | 'file';
+    nodeId?: string;
+    filePath?: string;
+    fileSnippet?: string;
+    context?: string;
+    apiKey?: string;
+    gitHubToken?: string;
+  },
+  ctx?: RequestContext,
+): Promise<{ explanation: string; cached: boolean }> {
   if ((process.env.AI_PROVIDER ?? 'mock').toLowerCase() === 'mock') {
     const branchSuffix = params.branch ? ` on branch **${params.branch}**` : '';
     const explanation = params.scope === 'node' && params.nodeId
@@ -56,7 +60,7 @@ export async function explainRepo(params: {
     return { explanation, cached: false };
   }
 
-  const analysis = await analyzeRepository({ owner: params.owner, repo: params.repo, branch: params.branch }, params.gitHubToken);
+  const analysis = await analyzeRepository({ owner: params.owner, repo: params.repo, branch: params.branch }, ctx || params.gitHubToken);
   const ctxHash = hashContext(
     JSON.stringify({ scope: params.scope, nodeId: params.nodeId, filePath: params.filePath, context: params.context }),
   );
@@ -105,6 +109,7 @@ export async function explainArchitecture(
   branch?: string,
   apiKey?: string,
   gitHubToken?: string,
+  ctx?: RequestContext,
 ): Promise<{ overview: string; layers: { name: string; description: string }[]; cached: boolean }> {
   if ((process.env.AI_PROVIDER ?? 'mock').toLowerCase() === 'mock') {
     const branchSuffix = branch ? ` (branch: ${branch})` : '';
@@ -132,7 +137,7 @@ export async function explainArchitecture(
     };
   }
 
-  const analysis = await analyzeRepository({ owner, repo, branch }, gitHubToken);
+  const analysis = await analyzeRepository({ owner, repo, branch }, ctx || gitHubToken);
   const key = aiCacheKey('architecture', owner, repo, analysis.meta.sha, 'v1');
 
   const cached = cache.get<{ overview: string; layers: { name: string; description: string }[] }>(key);
@@ -180,6 +185,7 @@ export async function suggestFiles(
   branch?: string,
   apiKey?: string,
   gitHubToken?: string,
+  ctx?: RequestContext,
 ): Promise<{
   files: { path: string; reason: string; priority: 'high' | 'medium' | 'low' }[];
   cached: boolean;
@@ -196,7 +202,7 @@ export async function suggestFiles(
     };
   }
 
-  const analysis = await analyzeRepository({ owner, repo, branch }, gitHubToken);
+  const analysis = await analyzeRepository({ owner, repo, branch }, ctx || gitHubToken);
   const key = aiCacheKey('suggest', owner, repo, analysis.meta.sha, 'v1');
 
   const cached = cache.get<{ files: { path: string; reason: string; priority: 'high' | 'medium' | 'low' }[] }>(key);
@@ -247,6 +253,7 @@ export async function generateOnboarding(
   branch?: string,
   apiKey?: string,
   gitHubToken?: string,
+  ctx?: RequestContext,
 ): Promise<{ steps: { title: string; description: string; filePath?: string }[]; cached: boolean }> {
   if ((process.env.AI_PROVIDER ?? 'mock').toLowerCase() === 'mock') {
     const branchSuffix = branch ? ` on branch ${branch}` : '';
@@ -260,7 +267,7 @@ export async function generateOnboarding(
     };
   }
 
-  const analysis = await analyzeRepository({ owner, repo, branch }, gitHubToken);
+  const analysis = await analyzeRepository({ owner, repo, branch }, ctx || gitHubToken);
   const key = aiCacheKey('onboarding', owner, repo, analysis.meta.sha, 'v1');
 
   const cached = cache.get<{ steps: { title: string; description: string; filePath?: string }[] }>(key);
@@ -318,6 +325,7 @@ export async function explainRepoELI5(
   branch?: string,
   apiKey?: string,
   gitHubToken?: string,
+  ctx?: RequestContext,
 ): Promise<{ explanation: string; cached: boolean }> {
   if ((process.env.AI_PROVIDER ?? 'mock').toLowerCase() === 'mock') {
     const branchSuffix = branch ? ` (reading branch: **${branch}**)` : '';
@@ -327,7 +335,7 @@ export async function explainRepoELI5(
     };
   }
 
-  const analysis = await analyzeRepository({ owner, repo, branch }, gitHubToken);
+  const analysis = await analyzeRepository({ owner, repo, branch }, ctx || gitHubToken);
   const key = aiCacheKey('eli5', owner, repo, analysis.meta.sha, 'v1');
 
   const cached = cache.get<string>(key);
@@ -370,6 +378,7 @@ export async function generateRefactorSuggestions(
   branch?: string,
   apiKey?: string,
   gitHubToken?: string,
+  ctx?: RequestContext,
 ): Promise<{
   suggestions: { title: string; description: string; category: string; files: string[]; risk: 'high' | 'medium' | 'low' }[];
   cached: boolean;
@@ -433,7 +442,7 @@ export async function generateRefactorSuggestions(
     };
   }
 
-  const analysis = await analyzeRepository({ owner, repo, branch }, gitHubToken);
+  const analysis = await analyzeRepository({ owner, repo, branch }, ctx || gitHubToken);
   const key = aiCacheKey('refactor', owner, repo, analysis.meta.sha, 'v1');
 
   const cached = cache.get<{ suggestions: Array<{ title: string, description: string, category: string, files: string[], risk: 'high'|'medium'|'low' }> }>(key);
@@ -493,6 +502,7 @@ export async function generateHealthReport(
   branch?: string,
   apiKey?: string,
   gitHubToken?: string,
+  ctx?: RequestContext,
 ): Promise<{
   scores: { maintainability: number; modularity: number; readability: number; architecture: number; complexity: number };
   summary: string;
@@ -515,7 +525,7 @@ export async function generateHealthReport(
     };
   }
 
-  const analysis = await analyzeRepository({ owner, repo, branch }, gitHubToken);
+  const analysis = await analyzeRepository({ owner, repo, branch }, ctx || gitHubToken);
   const key = aiCacheKey('health', owner, repo, analysis.meta.sha, 'v1');
 
   const cached = cache.get<{ scores: { maintainability: number; modularity: number; readability: number; architecture: number; complexity: number }; summary: string }>(key);
@@ -565,6 +575,7 @@ export async function generateMermaidDiagram(
   branch?: string,
   apiKey?: string,
   gitHubToken?: string,
+  ctx?: RequestContext,
 ): Promise<{ diagram: string; cached: boolean }> {
   if ((process.env.AI_PROVIDER ?? 'mock').toLowerCase() === 'mock') {
     const branchSuffix = branch ? ` (rendering branch: ${branch})` : '';
@@ -574,7 +585,7 @@ export async function generateMermaidDiagram(
     };
   }
 
-  const analysis = await analyzeRepository({ owner, repo, branch }, gitHubToken);
+  const analysis = await analyzeRepository({ owner, repo, branch }, ctx || gitHubToken);
   const key = aiCacheKey('mermaid', owner, repo, analysis.meta.sha, 'v2');
 
   const cached = cache.get<string>(key);
@@ -628,6 +639,7 @@ export async function generateRepoRoast(
   branch?: string,
   apiKey?: string,
   gitHubToken?: string,
+  ctx?: RequestContext,
 ): Promise<{ roast: string; cached: boolean }> {
   if ((process.env.AI_PROVIDER ?? 'mock').toLowerCase() === 'mock') {
     const branchSuffix = branch ? ` on branch \`${branch}\`` : '';
@@ -644,7 +656,7 @@ export async function generateRepoRoast(
     };
   }
 
-  const analysis = await analyzeRepository({ owner, repo, branch }, gitHubToken);
+  const analysis = await analyzeRepository({ owner, repo, branch }, ctx || gitHubToken);
   const key = aiCacheKey('roast', owner, repo, analysis.meta.sha, 'v1');
 
   const cached = cache.get<string>(key);
@@ -684,6 +696,7 @@ export async function generateReadmeEnhancement(
   branch?: string,
   apiKey?: string,
   gitHubToken?: string,
+  ctx?: RequestContext,
 ): Promise<{ readme: string; cached: boolean }> {
   if ((process.env.AI_PROVIDER ?? 'mock').toLowerCase() === 'mock') {
     const branchSuffix = branch ? ` (branch: ${branch})` : '';
@@ -693,7 +706,7 @@ export async function generateReadmeEnhancement(
     };
   }
 
-  const analysis = await analyzeRepository({ owner, repo, branch }, gitHubToken);
+  const analysis = await analyzeRepository({ owner, repo, branch }, ctx || gitHubToken);
   const key = aiCacheKey('readme-enhance', owner, repo, analysis.meta.sha, 'v1');
 
   const cached = cache.get<string>(key);
@@ -726,6 +739,7 @@ export async function generateLearningPath(
   branch?: string,
   apiKey?: string,
   gitHubToken?: string,
+  ctx?: RequestContext,
 ): Promise<{
   mentalModel: {
     type: string;
@@ -852,7 +866,7 @@ export async function generateLearningPath(
     };
   }
 
-  const analysis = await analyzeRepository({ owner, repo, branch }, gitHubToken);
+  const analysis = await analyzeRepository({ owner, repo, branch }, ctx || gitHubToken);
   const key = aiCacheKey('learning-path', owner, repo, analysis.meta.sha, 'v1');
 
   type LearningPathResult = {

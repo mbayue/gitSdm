@@ -41,7 +41,6 @@ export function AISidebar({ analysis }: AISidebarProps) {
     aiSidebarOpen,
     setAiSidebarOpen,
     setFocusedFilePath,
-    setInspectorOpen,
   } = useVizStore();
 
   const [eli5Mode, setEli5Mode] = useState(false);
@@ -489,7 +488,6 @@ export function AISidebar({ analysis }: AISidebarProps) {
                                   onClick={() => {
                                     setSelectedNodeId(`file:${file}`);
                                     setFocusedFilePath(file);
-                                    setInspectorOpen(true);
                                   }}
                                   className="rounded border border-white/5 bg-white/5 px-2 py-0.5 font-mono text-[10px] dark:text-cyan-400/80 text-cyan-700 hover:bg-white/10 hover:text-white transition-all text-left truncate max-w-full"
                                 >

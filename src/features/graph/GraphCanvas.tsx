@@ -49,7 +49,6 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
     setHighlightedNodeIds,
     focusedFilePath,
     setFocusedFilePath,
-    setInspectorOpen,
     layoutType,
     theme,
     activeFocusLayer,
@@ -306,10 +305,9 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
 
       if (node.type === 'file' && node.data?.path) {
         setFocusedFilePath(node.data.path as string);
-        setInspectorOpen(true);
       }
     },
-    [readOnly, setSelectedNodeId, setFocusedFilePath, setInspectorOpen],
+    [readOnly, setSelectedNodeId, setFocusedFilePath],
   );
 
   const onPaneClick = useCallback(() => {

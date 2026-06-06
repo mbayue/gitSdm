@@ -18,7 +18,6 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
   const setActiveFocusLayer = useVizStore((s) => s.setActiveFocusLayer);
   const focusedFilePath = useVizStore((s) => s.focusedFilePath);
   const setFocusedFilePath = useVizStore((s) => s.setFocusedFilePath);
-  const setInspectorOpen = useVizStore((s) => s.setInspectorOpen);
 
   const lp = useLearningPath(owner, repo, selectedBranch);
 
@@ -74,7 +73,6 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
       if (currentStep) {
         const path = resolveStepPath(currentStep);
         setFocusedFilePath(path);
-        setInspectorOpen(true);
       }
 
       timerRef.current = setInterval(() => {
@@ -84,7 +82,6 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
           if (nextStep) {
             const path = resolveStepPath(nextStep);
             setFocusedFilePath(path);
-            setInspectorOpen(true);
           }
           return next;
         });
@@ -99,7 +96,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPlaying, executionSteps, activeStep, setFocusedFilePath, setInspectorOpen, analysis.graph.nodes]);
+  }, [isPlaying, executionSteps, activeStep, setFocusedFilePath, analysis.graph.nodes]);
 
   // Sync activeStep with focusedFilePath when focusedFilePath changes
   useEffect(() => {
@@ -116,13 +113,11 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
     if (step) {
       const path = resolveStepPath(step);
       setFocusedFilePath(path);
-      setInspectorOpen(true);
     }
   };
 
   const handleFileClick = (path: string) => {
     setFocusedFilePath(path);
-    setInspectorOpen(true);
   };
 
   const handleRefresh = () => {

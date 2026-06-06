@@ -14,7 +14,7 @@ interface CodeInspectorViewProps {
 export function CodeInspectorView({ owner, repo, filePath, onClose }: CodeInspectorViewProps) {
   const selectedBranch = useVizStore((s) => s.selectedBranch);
   const { data, isLoading, error } = useQuery({
-    queryKey: ['file', owner, repo, filePath, selectedBranch],
+    queryKey: ['file', owner, repo, selectedBranch, filePath],
     queryFn: () => fetchRepoFile(owner, repo, filePath!, selectedBranch || undefined),
     enabled: !!filePath,
     staleTime: 1000 * 60 * 10,

@@ -38,15 +38,15 @@ export function VizPage() {
 
   const {
     reset,
+    focusedFilePath,
+    setFocusedFilePath,
     selectedNodeId,
     setSelectedNodeId,
-    setInspectorOpen,
-    inspectorOpen,
-    setFocusedFilePath,
-    focusedFilePath,
+    activeView,
     toastMessage,
     setToastMessage,
-    activeView,
+    inspectorOpen,
+    setInspectorOpen,
   } = useVizStore();
   const selectedFilePath = focusedFilePath;
 
@@ -66,10 +66,8 @@ export function VizPage() {
   );
 
   const handleCloseInspector = useCallback(() => {
-    setFocusedFilePath(null);
     setInspectorOpen(false);
-    setSelectedNodeId(null);
-  }, [setFocusedFilePath, setInspectorOpen, setSelectedNodeId]);
+  }, [setInspectorOpen]);
 
   useEffect(() => {
     reset();
@@ -80,12 +78,13 @@ export function VizPage() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setSelectedNodeId(null);
-        handleCloseInspector();
+        setFocusedFilePath(null);
+        setInspectorOpen(false);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [setSelectedNodeId, handleCloseInspector]);
+  }, [setSelectedNodeId, setFocusedFilePath, setInspectorOpen]);
 
   const selectedNode = useMemo<GraphNode | null>(() => {
     if (!data || !selectedNodeId) return null;
@@ -95,9 +94,8 @@ export function VizPage() {
   useEffect(() => {
     if (selectedNode?.type === 'file' && selectedNode.data.path) {
       setFocusedFilePath(selectedNode.data.path);
-      setInspectorOpen(true);
     }
-  }, [selectedNode, setFocusedFilePath, setInspectorOpen]);
+  }, [selectedNode, setFocusedFilePath]);
 
   // Recursively map file paths to their tree node SHA
   const fileShaMaps = useMemo(() => {

@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import { GitHubRateLimitError } from './github/client';
+import { getOctokit, GitHubRateLimitError } from './github/client';
 import { parseRepoParams } from './github/parse-url';
+import type { RequestContext } from './utils/context';
 import {
   explainArchitecture,
   explainRepo,
@@ -72,6 +73,10 @@ export async function handleApiRequest(
   const userKey = req.headers.get('x-gemini-api-key') || undefined;
   const gitHubToken = req.headers.get('x-github-token') || undefined;
 
+  const ctx: RequestContext = {
+    octokit: getOctokit(gitHubToken),
+  };
+
   try {
     if (pathname === '/api/trending' && method === 'GET') {
       const repos = await fetchTrending();
@@ -99,7 +104,7 @@ export async function handleApiRequest(
       if (!repo) {
         return sendError(400, 'Invalid GitHub repository URL');
       }
-      const analysis = await analyzeRepository({ ...repo, branch: parsed.data.branch }, gitHubToken);
+      const analysis = await analyzeRepository({ ...repo, branch: parsed.data.branch }, ctx);
       logApi('/api/repo/analyze', {
         durationMs: Date.now() - start,
         repo: `${repo.owner}/${repo.repo}`,
@@ -113,7 +118,7 @@ export async function handleApiRequest(
       if (!q.success) {
         return sendError(400, 'owner and repo required');
       }
-      const branches = await fetchRepoBranches(q.data.owner, q.data.repo, gitHubToken);
+      const branches = await fetchRepoBranches(q.data.owner, q.data.repo, ctx);
       return Response.json(branches, { status: 200 });
     }
 
@@ -122,7 +127,7 @@ export async function handleApiRequest(
       if (!q.success) {
         return sendError(400, 'owner and repo required');
       }
-      const analysis = await analyzeRepository(q.data, gitHubToken);
+      const analysis = await analyzeRepository(q.data, ctx);
       return Response.json({ graph: analysis.graph, meta: analysis.meta }, { status: 200 });
     }
 
@@ -131,7 +136,7 @@ export async function handleApiRequest(
       if (!q.success) {
         return sendError(400, 'owner and repo required');
       }
-      const analysis = await analyzeRepository(q.data, gitHubToken);
+      const analysis = await analyzeRepository(q.data, ctx);
       return Response.json({
         tree: analysis.tree,
         truncated: analysis.treeTruncated,
@@ -144,7 +149,7 @@ export async function handleApiRequest(
       if (!q.success) {
         return sendError(400, 'owner, repo, and path required');
       }
-      const file = await getRepoFileContent(q.data.owner, q.data.repo, q.data.path, q.data.branch, gitHubToken);
+      const file = await getRepoFileContent(q.data.owner, q.data.repo, q.data.path, q.data.branch, ctx);
       return Response.json(file, { status: 200 });
     }
 
@@ -153,7 +158,7 @@ export async function handleApiRequest(
       if (!q.success) {
         return sendError(400, 'owner and repo required');
       }
-      const analysis = await analyzeRepository(q.data, gitHubToken);
+      const analysis = await analyzeRepository(q.data, ctx);
       return Response.json({ contributors: analysis.contributors }, { status: 200 });
     }
 
@@ -163,7 +168,7 @@ export async function handleApiRequest(
       if (!parsed.success) {
         return sendError(400, 'Invalid request', parsed.error.flatten());
       }
-      const result = await explainRepo({ ...parsed.data, apiKey: userKey, gitHubToken });
+      const result = await explainRepo({ ...parsed.data, apiKey: userKey, gitHubToken }, ctx);
       return Response.json(result, { status: 200 });
     }
 
@@ -173,7 +178,7 @@ export async function handleApiRequest(
       if (!parsed.success) {
         return sendError(400, 'owner and repo required');
       }
-      const result = await explainArchitecture(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
+      const result = await explainArchitecture(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
       return Response.json(result, { status: 200 });
     }
 
@@ -183,7 +188,7 @@ export async function handleApiRequest(
       if (!parsed.success) {
         return sendError(400, 'owner and repo required');
       }
-      const result = await suggestFiles(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
+      const result = await suggestFiles(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
       return Response.json(result, { status: 200 });
     }
 
@@ -193,7 +198,7 @@ export async function handleApiRequest(
       if (!parsed.success) {
         return sendError(400, 'owner and repo required');
       }
-      const result = await generateOnboarding(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
+      const result = await generateOnboarding(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
       return Response.json(result, { status: 200 });
     }
 
@@ -203,7 +208,7 @@ export async function handleApiRequest(
       if (!parsed.success) {
         return sendError(400, 'owner and repo required');
       }
-      const result = await generateLearningPath(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
+      const result = await generateLearningPath(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
       return Response.json(result, { status: 200 });
     }
 
@@ -213,7 +218,7 @@ export async function handleApiRequest(
       if (!parsed.success) {
         return sendError(400, 'owner and repo required');
       }
-      const result = await explainRepoELI5(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
+      const result = await explainRepoELI5(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
       return Response.json(result, { status: 200 });
     }
 
@@ -223,7 +228,7 @@ export async function handleApiRequest(
       if (!parsed.success) {
         return sendError(400, 'owner and repo required');
       }
-      const result = await generateRefactorSuggestions(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
+      const result = await generateRefactorSuggestions(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
       return Response.json(result, { status: 200 });
     }
 
@@ -233,7 +238,7 @@ export async function handleApiRequest(
       if (!parsed.success) {
         return sendError(400, 'owner and repo required');
       }
-      const result = await generateHealthReport(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
+      const result = await generateHealthReport(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
       return Response.json(result, { status: 200 });
     }
 
@@ -243,7 +248,7 @@ export async function handleApiRequest(
       if (!parsed.success) {
         return sendError(400, 'owner and repo required');
       }
-      const result = await generateMermaidDiagram(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
+      const result = await generateMermaidDiagram(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
       return Response.json(result, { status: 200 });
     }
 
@@ -253,7 +258,7 @@ export async function handleApiRequest(
       if (!parsed.success) {
         return sendError(400, 'owner and repo required');
       }
-      const result = await generateRepoRoast(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
+      const result = await generateRepoRoast(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
       return Response.json(result, { status: 200 });
     }
 
@@ -263,7 +268,7 @@ export async function handleApiRequest(
       if (!parsed.success) {
         return sendError(400, 'owner and repo required');
       }
-      const result = await generateReadmeEnhancement(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken);
+      const result = await generateReadmeEnhancement(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
       return Response.json(result, { status: 200 });
     }
 
