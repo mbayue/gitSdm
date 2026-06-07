@@ -210,7 +210,7 @@ export function VizPage() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-zinc-950">
-      <VizTopBar meta={data?.meta} />
+      <VizTopBar meta={data?.meta} owner={owner} repo={repo} />
       <FilterBar owner={owner} repo={repo} analysis={data} />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -225,7 +225,7 @@ export function VizPage() {
             />
 
             {inspectorOpen && (
-              <div className="hidden h-full w-[min(360px,28vw)] max-w-[400px] shrink-0 border-r border-white/[0.06] lg:block">
+              <div className="hidden h-full w-full md:w-[min(360px,28vw)] md:max-w-[400px] shrink-0 border-r border-white/[0.06] md:block absolute md:static z-50 bg-zinc-950">
                 <CodeInspectorView
                   owner={data.meta.owner}
                   repo={data.meta.repo}
@@ -235,7 +235,7 @@ export function VizPage() {
               </div>
             )}
 
-             <motion.section
+            <motion.section
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="relative min-h-0 min-w-0 flex-1 overflow-hidden bg-zinc-950"
@@ -279,7 +279,7 @@ export function VizPage() {
               )}
             </motion.section>
 
-            <div className="hidden h-full shrink-0 lg:block">
+            <div className="hidden h-full shrink-0 xl:block">
               <AISidebar analysis={data} />
             </div>
           </div>

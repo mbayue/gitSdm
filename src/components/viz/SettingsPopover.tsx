@@ -94,7 +94,8 @@ export function SettingsPopover() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-10 z-50 w-80 rounded-xl border border-white/10 bg-zinc-950 p-4 shadow-2xl shadow-black/60 backdrop-blur-xl space-y-4">
+        <div className="fixed left-2 right-2 top-14 w-auto sm:absolute sm:right-0 sm:left-auto sm:top-10 sm:w-80 z-50 rounded-xl border border-white/10 bg-zinc-950 p-4 shadow-2xl shadow-black/60 backdrop-blur-xl space-y-4"
+        >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/5 pb-2">
             <span className="text-xs font-semibold text-white tracking-wider uppercase">Credentials</span>

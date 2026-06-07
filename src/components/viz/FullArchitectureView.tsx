@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Copy, Download, RefreshCw, Network, Check } from 'lucide-react';
+import { RefreshCw, Network, Check, CodeXml, Code, FileImage, FileCode2 } from 'lucide-react';
 import mermaid from 'mermaid';
 import { useMermaid } from '@/features/ai/useAI';
 import { cn } from '@/lib/utils';
@@ -308,7 +308,7 @@ export function FullArchitectureView({ analysis, owner, repo }: FullArchitecture
   const handleCopyCode = async () => {
     let rawCode = mode === 'ai' ? data?.diagram : generateProgrammaticMermaid(analysis);
     if (!rawCode) return;
-    
+
     // Clean raw block ticks if present
     rawCode = rawCode.trim();
     if (rawCode.startsWith('```mermaid')) {
@@ -425,7 +425,9 @@ export function FullArchitectureView({ analysis, owner, repo }: FullArchitecture
   };
 
   const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
+    if (e.cancelable) {
+      e.preventDefault();
+    }
     const zoomFactor = 1.08;
     const nextZoom = e.deltaY < 0 ? zoom * zoomFactor : zoom / zoomFactor;
     setZoom(Math.max(0.15, Math.min(5, nextZoom)));
@@ -474,43 +476,56 @@ export function FullArchitectureView({ analysis, owner, repo }: FullArchitecture
               AI Enhanced
             </button>
           </div>
-
-          {svg && (
-            <>
-              <button
-                type="button"
-                onClick={handleCopySvg}
-                className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-350 hover:bg-zinc-800 hover:text-white transition-all active:scale-[0.98]"
-              >
-                {copiedSvg ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5 text-zinc-400" />}
-                <span>{copiedSvg ? 'Copied SVG!' : 'Copy SVG'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleCopyCode}
-                className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-355 hover:bg-zinc-800 hover:text-white transition-all active:scale-[0.98]"
-              >
-                {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5 text-zinc-400" />}
-                <span>{copied ? 'Copied Code!' : 'Copy Code'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleDownloadSvg}
-                className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3.5 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all active:scale-[0.98]"
-              >
-                <Download className="h-3.5 w-3.5 text-zinc-400" />
-                <span>Download SVG</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleDownloadPng}
-                className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-violet-500 transition-all active:scale-[0.98] shadow-[0_0_15px_rgba(109,40,217,0.25)]"
-              >
-                <Download className="h-3.5 w-3.5" />
-                <span>Download PNG</span>
-              </button>
-            </>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleCopySvg}
+              disabled={!svg}
+              className={cn(
+                "flex items-center justify-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 h-8 px-2 sm:px-3 text-xs text-zinc-350 transition-all",
+                svg ? "hover:bg-zinc-800 hover:text-white active:scale-[0.98]" : "opacity-50 cursor-not-allowed"
+              )}
+              title="Copy SVG">
+              {copiedSvg ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <CodeXml className="h-3.5 w-3.5 text-zinc-400" />}
+              <span className="hidden sm:inline">{copiedSvg ? 'Copied SVG!' : 'Copy SVG'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleCopyCode}
+              disabled={!svg}
+              className={cn(
+                "flex items-center justify-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 h-8 px-2 sm:px-3 text-xs text-zinc-355 transition-all",
+                svg ? "hover:bg-zinc-800 hover:text-white active:scale-[0.98]" : "opacity-50 cursor-not-allowed"
+              )}
+              title="Copy Code">
+              {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Code className="h-3.5 w-3.5 text-zinc-400" />}
+              <span className="hidden sm:inline">{copied ? 'Copied Code!' : 'Copy Code'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadSvg}
+              disabled={!svg}
+              className={cn(
+                "flex items-center justify-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 h-8 px-2 sm:px-3.5 text-xs font-semibold text-zinc-300 transition-all",
+                svg ? "hover:bg-zinc-800 hover:text-white active:scale-[0.98]" : "opacity-50 cursor-not-allowed"
+              )}
+              title="Download SVG">
+              <FileCode2 className="h-3.5 w-3.5 text-zinc-400" />
+              <span className="hidden sm:inline">Download SVG</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadPng}
+              disabled={!svg}
+              className={cn(
+                "flex items-center justify-center gap-1.5 rounded-lg h-8 px-2 sm:px-3.5 text-xs font-semibold text-white transition-all",
+                svg ? "bg-violet-600 hover:bg-violet-500 active:scale-[0.98] shadow-[0_0_15px_rgba(109,40,217,0.25)]" : "bg-violet-600/50 opacity-50 cursor-not-allowed"
+              )}
+              title="Download PNG">
+              <FileImage className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Download PNG</span>
+            </button>
+          </div>
         </div>
       </div>
 

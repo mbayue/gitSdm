@@ -248,10 +248,10 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
   ): Set<string> => {
     const affected = new Set<string>([selectedId]);
     const queue: string[] = [];
-  
+
     const targetNode = allNodes.find(n => n.id === selectedId);
     if (!targetNode) return affected;
-  
+
     if (targetNode.type === 'file') {
       queue.push(selectedId);
     } else if (targetNode.type === 'folder') {
@@ -266,7 +266,7 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
         }
       }
     }
-  
+
     while (queue.length > 0) {
       const curr = queue.shift()!;
       for (const edge of allEdges) {
@@ -279,7 +279,7 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
         }
       }
     }
-  
+
     return affected;
   }, []);
 
@@ -445,7 +445,7 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
           <>
             <Panel
               position="top-left"
-              className="ml-3 mt-3 flex items-center gap-2 rounded-xl border border-white/5 bg-zinc-950/80 p-2 text-xs text-zinc-300 shadow-2xl backdrop-blur-md export-panel select-none"
+              className="ml-3 mt-3 hidden md:flex items-center gap-2 rounded-xl border border-white/5 bg-zinc-950/80 p-2 text-xs text-zinc-300 shadow-2xl backdrop-blur-md export-panel select-none"
             >
               <div className="flex items-center gap-1.5 px-2 border-r border-white/5 font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                 Export Map
@@ -475,7 +475,7 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
             />
             <Panel
               position="top-right"
-              className="mr-3 mt-3 flex flex-col gap-2.5 rounded-xl border border-white/5 bg-zinc-950/80 p-3.5 text-xs text-zinc-300 shadow-2xl backdrop-blur-md max-w-[220px]"
+              className="mr-3 mt-3 hidden md:flex flex-col gap-2.5 rounded-xl border border-white/5 bg-zinc-950/80 p-3.5 text-xs text-zinc-300 shadow-2xl backdrop-blur-md max-w-[220px]"
             >
               {/* Analysis Tools */}
               <div className="space-y-1 pb-1.5 border-b border-white/5">

@@ -27,9 +27,9 @@ export function FilterBar({ owner: _owner, repo: _repo, analysis: _analysis }: F
   const { layoutType, setLayoutType, activeView, setActiveView } = useVizStore();
 
   return (
-    <div className="flex items-center justify-between border-b border-white/5 px-4 py-1.5 bg-zinc-950/20">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 px-4 py-1.5 bg-zinc-950/20 overflow-x-auto no-scrollbar">
       {/* Left side actions (View switcher tabs) */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0 shrink-0">
         <div className="flex items-center gap-1 rounded-lg bg-zinc-950/40 p-0.5 border border-white/5">
           {VIEW_TABS.map((t) => (
             <button

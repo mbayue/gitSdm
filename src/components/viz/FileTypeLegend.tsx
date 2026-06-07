@@ -18,7 +18,7 @@ export function FileTypeLegend({ graph }: { graph: GraphData }) {
   if (!counts.length) return null;
 
   return (
-    <div className="pointer-events-none absolute bottom-3 right-3 z-10 rounded-md border border-white/15 bg-black/85 px-3 py-2.5 shadow-xl">
+    <div className="pointer-events-none absolute bottom-3 right-3 z-10 hidden md:block rounded-md border border-white/15 bg-black/85 px-3 py-2.5 shadow-xl">
       <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
         File types
       </p>

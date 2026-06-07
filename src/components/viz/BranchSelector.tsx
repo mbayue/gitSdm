@@ -86,11 +86,11 @@ export function BranchSelector({ owner, repo, defaultBranch }: BranchSelectorPro
         )}
       >
         <GitBranch className="h-3.5 w-3.5" />
-        <span className="max-w-[120px] truncate">{activeBranch}</span>
+        <span className="hidden sm:block max-w-[120px] truncate">{activeBranch}</span>
         {compareBranch && (
           <>
             <ArrowLeftRight className="h-3 w-3 text-amber-500/70" />
-            <span className="max-w-[120px] truncate text-amber-400 font-semibold">{compareBranch}</span>
+            <span className="hidden sm:block max-w-[120px] truncate text-amber-400 font-semibold">{compareBranch}</span>
           </>
         )}
         <ChevronDown className={cn('h-3 w-3 transition-transform duration-200 opacity-60', isOpen && 'rotate-180')} />
@@ -104,7 +104,7 @@ export function BranchSelector({ owner, repo, defaultBranch }: BranchSelectorPro
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.96 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="absolute left-0 mt-2 z-[100] w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-zinc-800/40 bg-zinc-950 p-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.3)] backdrop-blur-xl"
+            className="fixed left-2 right-2 top-14 w-auto sm:absolute sm:left-0 sm:right-auto sm:top-auto sm:mt-2 sm:w-72 max-w-[calc(100vw-1rem)] sm:max-w-none z-[100] rounded-xl border border-zinc-800/40 bg-zinc-950 p-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.3)] backdrop-blur-xl"
           >
             {/* Mode Switcher Tabs */}
             <div className="mb-2.5 flex rounded-lg bg-zinc-900 p-0.5">
@@ -185,10 +185,10 @@ export function BranchSelector({ owner, repo, defaultBranch }: BranchSelectorPro
                         isDisabled
                           ? 'opacity-40 cursor-not-allowed text-zinc-500'
                           : isCurrent && mode === 'switch'
-                          ? 'bg-violet-500/10 text-violet-500 dark:text-violet-400 font-semibold'
-                          : isCompared && mode === 'compare'
-                          ? 'bg-amber-500/10 text-amber-500 dark:text-amber-400 font-semibold'
-                          : 'text-zinc-300 hover:bg-zinc-900/80 hover:text-zinc-100'
+                            ? 'bg-violet-500/10 text-violet-500 dark:text-violet-400 font-semibold'
+                            : isCompared && mode === 'compare'
+                              ? 'bg-amber-500/10 text-amber-500 dark:text-amber-400 font-semibold'
+                              : 'text-zinc-300 hover:bg-zinc-900/80 hover:text-zinc-100'
                       )}
                     >
                       <span className="truncate pr-4">{b.name}</span>

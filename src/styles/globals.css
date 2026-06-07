@@ -3,7 +3,9 @@
 @tailwind utilities;
 
 /* Smooth theme transitions */
-*, ::before, ::after {
+*,
+::before,
+::after {
   transition-property: background-color, border-color, color, fill, stroke, box-shadow;
   transition-duration: 200ms;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -82,18 +84,31 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--bg-base);
+  background-color: rgb(var(--black-rgb));
+  /* 09090b */
   color: rgba(var(--white-rgb), 0.9);
   font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 /* Precise developer-centric monospace overrides */
-.font-mono, 
-code, 
-pre, 
+.font-mono,
+code,
+pre,
 .code-inspector-font {
   font-family: 'JetBrains Mono', 'Cascadia Code', monospace !important;
+}
+
+/* Prevent Mermaid's hidden rendering container from causing scrollbar blinks */
+div[id^="dmermaid-view-svg-"] {
+  position: fixed !important;
+  top: -9999px !important;
+  left: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 #root {
@@ -117,8 +132,8 @@ pre,
 
 .canvas-flow-bg {
   background: radial-gradient(circle at 50% 28%, var(--bg-glow-violet) 0%, transparent 58%),
-              radial-gradient(circle at 100% 0%, var(--bg-glow-cyan) 0%, transparent 42%),
-              var(--canvas-bg);
+    radial-gradient(circle at 100% 0%, var(--bg-glow-cyan) 0%, transparent 42%),
+    var(--canvas-bg);
 }
 
 .gradient-text {
@@ -414,18 +429,18 @@ svg {
   opacity: 0.18;
 }
 
-.graph-canvas-host .react-flow__node.highlighted > div {
+.graph-canvas-host .react-flow__node.highlighted>div {
   border-color: #a78bfa !important;
   box-shadow: 0 0 16px rgba(139, 92, 246, 0.4) !important;
 }
 
-.graph-canvas-host .react-flow__node.highlighted-neighbor > div {
+.graph-canvas-host .react-flow__node.highlighted-neighbor>div {
   border-color: rgba(139, 92, 246, 0.45) !important;
   box-shadow: 0 0 8px rgba(139, 92, 246, 0.15) !important;
 }
 
 /* Improve text rendering inside graph nodes to reduce blurriness */
-.graph-canvas-host .react-flow__node > div,
+.graph-canvas-host .react-flow__node>div,
 .graph-canvas-host .react-flow__node span,
 .graph-canvas-host .react-flow__node * {
   -webkit-font-smoothing: antialiased;
@@ -653,14 +668,16 @@ svg {
 }
 
 /* Blast Radius Custom Styles */
-.graph-canvas-host .react-flow__node.epicenter-pulse > div {
-  border-color: #ef4444 !important; /* crimson red */
+.graph-canvas-host .react-flow__node.epicenter-pulse>div {
+  border-color: #ef4444 !important;
+  /* crimson red */
   box-shadow: 0 0 20px rgba(239, 68, 68, 0.55) !important;
   animation: epicenter-ripple 2s infinite ease-in-out;
 }
 
-.graph-canvas-host .react-flow__node.affected-highlight > div {
-  border-color: #f59e0b !important; /* amber */
+.graph-canvas-host .react-flow__node.affected-highlight>div {
+  border-color: #f59e0b !important;
+  /* amber */
   box-shadow: 0 0 14px rgba(245, 158, 11, 0.35) !important;
 }
 
@@ -668,9 +685,11 @@ svg {
   0% {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
   }
+
   70% {
     box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
   }
+
   100% {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
   }
