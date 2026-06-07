@@ -12,11 +12,12 @@ import {
   type Edge,
   type DefaultEdgeOptions,
 } from '@xyflow/react';
-import { FolderGit2, Folder, FileCode, Download, Loader2, Zap } from 'lucide-react';
+import { FolderGit2, Folder, FileCode, Download, Loader2, Zap, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 import '@xyflow/react/dist/style.css';
 import { RepoNode, FolderNode, FileNode, PackageNode, ContributorNode } from './nodes';
 
@@ -60,6 +61,7 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
   const reactFlowInstance = useReactFlow();
   const { fitView, setCenter } = reactFlowInstance;
   const isDark = theme === 'dark';
+  const [isAnalysisMinimized, setIsAnalysisMinimized] = useState(false);
 
   const flowStyle = useMemo(() => ({
     '--xy-background-color': isDark ? '#0f1015' : '#f9fafb',
@@ -473,128 +475,170 @@ export function GraphCanvas({ graph, readOnly }: GraphCanvasProps) {
               showInteractive={false}
               className="graph-controls !shadow-none"
             />
-            <Panel
-              position="top-right"
-              className="mr-3 mt-3 hidden md:flex flex-col gap-2.5 rounded-xl border border-white/5 bg-zinc-950/80 p-3.5 text-xs text-zinc-300 shadow-2xl backdrop-blur-md max-w-[220px]"
-            >
-              {/* Analysis Tools */}
-              <div className="space-y-1 pb-1.5 border-b border-white/5">
-                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider block mb-0.5 select-none font-bold">Analysis Tool</span>
-                <button
-                  type="button"
-                  onClick={() => setBlastRadiusActive(!blastRadiusActive)}
-                  title="Highlight change propagation impact"
-                  className={cn(
-                    "flex w-full items-center gap-2 rounded-md border px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
-                    blastRadiusActive ? "bg-red-500/10 border-red-500/20 text-red-400" : "border-transparent opacity-80"
-                  )}
-                >
-                  <div className={cn(
-                    "flex h-5 w-5 items-center justify-center rounded border shrink-0 transition-colors",
-                    blastRadiusActive ? "bg-red-500/20 border-red-500/30 text-red-400 animate-pulse" : "bg-zinc-800/50 border-zinc-700/50 text-zinc-400"
-                  )}>
-                    <Zap className="h-3 w-3" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[11px] font-semibold">Blast Radius</span>
-                    <span className="text-[9px] text-zinc-500 font-mono">Trace change impact</span>
-                  </div>
-                </button>
-              </div>
-              <div className="flex items-center gap-1.5 border-b border-white/5 pb-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
-                Canvas Legend
-              </div>
+            <Panel position="top-right" className="!m-0 !mt-3 !right-0 z-10 hidden md:flex items-end flex-col">
+              <AnimatePresence mode="wait">
+                {isAnalysisMinimized ? (
+                  <motion.div
+                    key="minimized"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="flex items-center"
+                  >
+                    <button
+                      onClick={() => setIsAnalysisMinimized(false)}
+                      className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-l-md border border-r-0 border-white/15 bg-zinc-950/80 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white shadow-2xl backdrop-blur-md"
+                      title="Show Analysis Tools"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="expanded"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="mr-3 flex flex-col gap-2.5 rounded-xl border border-white/5 bg-zinc-950/80 p-3.5 text-xs text-zinc-300 shadow-2xl backdrop-blur-md w-[170px]"
+                  >
+                    {/* Analysis Tools */}
+                    <div className="space-y-1 pb-1.5 border-b border-white/5 relative">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider select-none font-bold">Analysis Tool</span>
+                        <button
+                          onClick={() => setIsAnalysisMinimized(true)}
+                          className="cursor-pointer rounded text-zinc-500 hover:bg-white/10 hover:text-white transition-colors p-0.5 -mr-1"
+                          title="Minimize"
+                        >
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setBlastRadiusActive(!blastRadiusActive)}
+                        title="Highlight change propagation impact"
+                        className={cn(
+                          "flex w-full items-center gap-2 rounded-md border px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
+                          blastRadiusActive ? "bg-red-500/10 border-red-500/20 text-red-400" : "border-transparent opacity-80"
+                        )}
+                      >
+                        <div className={cn(
+                          "flex h-5 w-5 items-center justify-center rounded border shrink-0 transition-colors",
+                          blastRadiusActive ? "bg-red-500/20 border-red-500/30 text-red-400 animate-pulse" : "bg-zinc-800/50 border-zinc-700/50 text-zinc-400"
+                        )}>
+                          <Zap className="h-3 w-3" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-semibold">Blast Radius</span>
+                          <span className="text-[9px] text-zinc-500 font-mono">Trace change impact</span>
+                        </div>
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1.5 border-b border-white/5 pb-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
+                      Canvas Legend
+                    </div>
 
-              {/* Node Types Section */}
-              <div className="space-y-1">
-                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider block mb-0.5 select-none">Node Types</span>
-                <button
-                  type="button"
-                  onClick={() => toggleNodeTypeFilter('repo')}
-                  title="Toggle Repository Root filter"
-                  className={cn(
-                    "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
-                    !nodeTypeFilters.has('repo') && "opacity-40 line-through decoration-zinc-500"
-                  )}
-                >
-                  <div className="flex h-5 w-5 items-center justify-center rounded bg-violet-500/10 border border-violet-500/20 text-violet-400 shrink-0">
-                    <FolderGit2 className="h-3 w-3" />
-                  </div>
-                  <span className="text-[11px] font-medium text-zinc-300">Repository Root</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toggleNodeTypeFilter('folder')}
-                  title="Toggle Directories filter"
-                  className={cn(
-                    "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
-                    !nodeTypeFilters.has('folder') && "opacity-40 line-through decoration-zinc-500"
-                  )}
-                >
-                  <div className="flex h-5 w-5 items-center justify-center rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 shrink-0">
-                    <Folder className="h-3 w-3 fill-amber-400/10" />
-                  </div>
-                  <span className="text-[11px] font-medium text-zinc-300">Directory</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toggleNodeTypeFilter('file')}
-                  title="Toggle Code Files filter"
-                  className={cn(
-                    "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
-                    !nodeTypeFilters.has('file') && "opacity-40 line-through decoration-zinc-500"
-                  )}
-                >
-                  <div className="flex h-5 w-5 items-center justify-center rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 shrink-0">
-                    <FileCode className="h-3 w-3" />
-                  </div>
-                  <span className="text-[11px] font-medium text-zinc-300">Code / Assets</span>
-                </button>
-              </div>
+                    {/* Node Types Section */}
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider block mb-0.5 select-none">Node Types</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleNodeTypeFilter('repo')}
+                        title="Toggle Repository Root filter"
+                        className={cn(
+                          "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
+                          !nodeTypeFilters.has('repo') && "opacity-40 line-through decoration-zinc-500"
+                        )}
+                      >
+                        <div className="flex h-5 w-5 items-center justify-center rounded bg-violet-500/10 border border-violet-500/20 text-violet-400 shrink-0">
+                          <FolderGit2 className="h-3 w-3" />
+                        </div>
+                        <span className="text-[11px] font-medium text-zinc-300">Repository Root</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleNodeTypeFilter('folder')}
+                        title="Toggle Directories filter"
+                        className={cn(
+                          "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
+                          !nodeTypeFilters.has('folder') && "opacity-40 line-through decoration-zinc-500"
+                        )}
+                      >
+                        <div className="flex h-5 w-5 items-center justify-center rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 shrink-0">
+                          <Folder className="h-3 w-3 fill-amber-400/10" />
+                        </div>
+                        <span className="text-[11px] font-medium text-zinc-300">Directory</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleNodeTypeFilter('file')}
+                        title="Toggle Code Files filter"
+                        className={cn(
+                          "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
+                          !nodeTypeFilters.has('file') && "opacity-40 line-through decoration-zinc-500"
+                        )}
+                      >
+                        <div className="flex h-5 w-5 items-center justify-center rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 shrink-0">
+                          <FileCode className="h-3 w-3" />
+                        </div>
+                        <span className="text-[11px] font-medium text-zinc-300">Code / Assets</span>
+                      </button>
+                    </div>
 
-              {/* Diff status section */}
-              {compareBranch && (
-                <div className="space-y-1 pt-1.5 border-t border-white/5">
-                  <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider block mb-0.5 select-none">Change Status</span>
-                  <button
-                    type="button"
-                    onClick={() => toggleDiffStatusFilter('added')}
-                    title="Filter by Added Files"
-                    className={cn(
-                      "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
-                      diffStatusFilters.size > 0 && !diffStatusFilters.has('added') && "opacity-40"
+                    {/* Diff Status Section */}
+                    {compareBranch && (
+                      <div className="space-y-1 border-t border-white/5 pt-1.5">
+                        <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider block mb-0.5 select-none">Changes</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleDiffStatusFilter('added')}
+                          title="Toggle Added files filter"
+                          className={cn(
+                            "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
+                            !diffStatusFilters.has('added') && "opacity-40 line-through decoration-zinc-500"
+                          )}
+                        >
+                          <div className="flex h-5 w-5 items-center justify-center rounded bg-green-500/10 border border-green-500/20 text-green-400 shrink-0 text-[10px] font-bold">
+                            +
+                          </div>
+                          <span className="text-[11px] font-medium text-zinc-300">Added</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleDiffStatusFilter('modified')}
+                          title="Toggle Modified files filter"
+                          className={cn(
+                            "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
+                            !diffStatusFilters.has('modified') && "opacity-40 line-through decoration-zinc-500"
+                          )}
+                        >
+                          <div className="flex h-5 w-5 items-center justify-center rounded bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 shrink-0 text-[10px] font-bold">
+                            M
+                          </div>
+                          <span className="text-[11px] font-medium text-zinc-300">Modified</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleDiffStatusFilter('deleted')}
+                          title="Toggle Deleted files filter"
+                          className={cn(
+                            "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
+                            !diffStatusFilters.has('deleted') && "opacity-40 line-through decoration-zinc-500"
+                          )}
+                        >
+                          <div className="flex h-5 w-5 items-center justify-center rounded bg-red-500/10 border border-red-500/20 text-red-400 shrink-0 text-[10px] font-bold">
+                            -
+                          </div>
+                          <span className="text-[11px] font-medium text-zinc-300">Deleted</span>
+                        </button>
+                      </div>
                     )}
-                  >
-                    <span className="flex h-4 w-4 items-center justify-center text-xs font-bold text-emerald-500 select-none bg-emerald-500/10 border border-emerald-500/20 rounded font-mono shrink-0">+</span>
-                    <span className="text-[11px] font-medium text-zinc-300">Added File</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleDiffStatusFilter('modified')}
-                    title="Filter by Modified Files"
-                    className={cn(
-                      "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
-                      diffStatusFilters.size > 0 && !diffStatusFilters.has('modified') && "opacity-40"
-                    )}
-                  >
-                    <span className="flex h-4 w-4 items-center justify-center text-xs font-bold text-amber-500 select-none bg-amber-500/10 border border-amber-500/20 rounded font-mono shrink-0">~</span>
-                    <span className="text-[11px] font-medium text-zinc-300">Modified File</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleDiffStatusFilter('deleted')}
-                    title="Filter by Deleted Files"
-                    className={cn(
-                      "flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
-                      diffStatusFilters.size > 0 && !diffStatusFilters.has('deleted') && "opacity-40"
-                    )}
-                  >
-                    <span className="flex h-4 w-4 items-center justify-center text-xs font-bold text-red-500 select-none bg-red-500/10 border border-red-500/20 rounded font-mono shrink-0">-</span>
-                    <span className="text-[11px] font-medium text-zinc-300">Deleted File</span>
-                  </button>
-                </div>
-              )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </Panel>
           </>
         )}

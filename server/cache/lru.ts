@@ -19,28 +19,55 @@ const aiCache = new LRUCache<string, any>({
   ttl: 1000 * 60 * 30,
 });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const searchCache = new LRUCache<string, any>({
+  max: 500, // up to 100 per repo, 5 repos typical
+  ttl: 1000 * 60 * 60, // 60 minutes
+});
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const indexCache = new LRUCache<string, any>({
+  max: 50,
+  ttl: 1000 * 60 * 60 * 2, // 2 hours
+});
+
+function getBucket(key: string): LRUCache<string, any> {
+  if (key.startsWith('ai:')) return aiCache;
+  if (key.startsWith('search:')) return searchCache;
+  if (key.startsWith('index:')) return indexCache;
+  return analyzeCache;
+}
+
 export const cache: CacheStore = {
   get<T>(key: string): T | undefined {
-    const bucket = key.startsWith('ai:') ? aiCache : analyzeCache;
-    return bucket.get(key) as T | undefined;
+    return getBucket(key).get(key) as T | undefined;
   },
   set<T>(key: string, value: T, ttlMs?: number): void {
-    const bucket = key.startsWith('ai:') ? aiCache : analyzeCache;
-    bucket.set(key, value, ttlMs ? { ttl: ttlMs } : undefined);
+    getBucket(key).set(key, value, ttlMs ? { ttl: ttlMs } : undefined);
   },
   has(key: string): boolean {
-    const bucket = key.startsWith('ai:') ? aiCache : analyzeCache;
-    return bucket.has(key);
+    return getBucket(key).has(key);
   },
   delete(key: string): void {
-    const bucket = key.startsWith('ai:') ? aiCache : analyzeCache;
-    bucket.delete(key);
+    getBucket(key).delete(key);
   },
 };
 
 export function clearAllCaches(): void {
   analyzeCache.clear();
   aiCache.clear();
+  searchCache.clear();
+  indexCache.clear();
+}
+
+/** Remove all cached search results for a given repository. */
+export function invalidateSearchCache(owner: string, repo: string): void {
+  const prefix = `search:${owner}/${repo}@`;
+  for (const key of searchCache.keys()) {
+    if (key.startsWith(prefix)) {
+      searchCache.delete(key);
+    }
+  }
 }
 
 export function analyzeCacheKey(owner: string, repo: string, sha: string, branch?: string): string {

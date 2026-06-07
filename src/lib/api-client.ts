@@ -13,6 +13,9 @@ import type {
   AIRoastResponse,
   AIReadmeEnhanceResponse,
   AILearningPathResponse,
+  SearchResponse,
+  QAResponse,
+  IndexingStatus,
 } from '@/types';
 
 function getApiKeyHeader(): Record<string, string> {
@@ -224,5 +227,50 @@ export async function aiLearningPath(
     method: 'POST',
     body: JSON.stringify({ owner, repo, branch }),
   });
+}
+
+// ── Semantic Search ────────────────────────────────────────────────────
+
+export async function semanticSearch(
+  query: string,
+  owner: string,
+  repo: string,
+  branch?: string,
+): Promise<SearchResponse> {
+  return request<SearchResponse>('/api/search', {
+    method: 'POST',
+    body: JSON.stringify({ query, owner, repo, branch }),
+  });
+}
+
+export async function semanticAsk(
+  question: string,
+  owner: string,
+  repo: string,
+  branch?: string,
+): Promise<QAResponse> {
+  return request<QAResponse>('/api/search/ask', {
+    method: 'POST',
+    body: JSON.stringify({ question, owner, repo, branch }),
+  });
+}
+
+export async function triggerIndexing(
+  owner: string,
+  repo: string,
+  branch?: string,
+): Promise<{ status: string }> {
+  return request<{ status: string }>('/api/search/index', {
+    method: 'POST',
+    body: JSON.stringify({ owner, repo, branch }),
+  });
+}
+
+export async function fetchIndexingStatus(
+  owner: string,
+  repo: string,
+): Promise<IndexingStatus> {
+  const params = new URLSearchParams({ owner, repo });
+  return request<IndexingStatus>(`/api/search/status?${params}`);
 }
 

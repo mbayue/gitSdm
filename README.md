@@ -303,7 +303,7 @@ Test files are co-located with source files:
 - [x] **Export to PDF / PNG / SVG** — High-res canvas snapshots and vector diagram outputs for documentation.
 - [x] **Private repository support** — Secure OAuth authentication and credential storage to map private codebases.
 - [ ] **Monorepo-aware dependency grouping** — Automatic workspace detection (npm/pnpm/yarn) and cross-package mapping.
-- [ ] **AI-powered semantic search & Q&A** — Context-aware vector search to ask code questions and locate entry points.
+- [x] **AI-powered semantic search & Q&A** — Context-aware vector search to ask code questions and locate entry points. (Beta)
 - [x] **Change impact analysis (Blast Radius)** — Visualizer highlighting transitive dependents to predict edit breakages.
 - [ ] **CI/CD integration** — GitHub Action to automatically comment visual architecture diffs on PR updates.
 - [ ] **Interactive path pruning & editing** — Tools to manually prune/group nodes and export tailored subgraphs.

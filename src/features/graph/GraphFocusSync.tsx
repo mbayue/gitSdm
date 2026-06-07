@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useReactFlow, getConnectedEdges } from '@xyflow/react';
 import { useVizStore } from '@/stores/viz-store';
 
@@ -9,26 +9,33 @@ export function GraphFocusSync() {
   const setHighlightedNodeIds = useVizStore((s) => s.setHighlightedNodeIds);
   const { getNode, getEdges, getZoom, setCenter } = useReactFlow();
 
+  // Retry counter for when nodes haven't been laid out yet (e.g., navigating from SearchPage)
+  const retryRef = useRef(0);
+  const [tick, setTick] = useState(0);
+
   useEffect(() => {
-    if (!focusedFilePath) return;
+    if (!focusedFilePath) {
+      retryRef.current = 0;
+      return;
+    }
 
     const nodeId = `file:${focusedFilePath}`;
     let target = getNode(nodeId);
 
+    // If node not found yet, retry up to 3 times with increasing delay
+    // (nodes may not be laid out on first mount)
     if (!target) {
-      const parts = focusedFilePath.split('/');
-      for (let i = parts.length - 1; i >= 0; i--) {
-        const folderPath = parts.slice(0, i).join('/');
-        const folderId = folderPath ? `folder:${folderPath}` : null;
-        if (folderId && getNode(folderId)) {
-          target = getNode(folderId)!;
-          break;
-        }
+      if (retryRef.current < 3) {
+        retryRef.current++;
+        const timer = setTimeout(() => {
+          setTick(t => t + 1);
+        }, 200 * retryRef.current);
+        return () => clearTimeout(timer);
       }
+      return;
     }
 
-    if (!target) return;
-
+    retryRef.current = 0;
     const id = target.id;
     setSelectedNodeId(id);
 
@@ -45,7 +52,7 @@ export function GraphFocusSync() {
       const height = typeof target.measured?.height === 'number' ? target.measured.height : target.height ?? 0;
       setCenter(target.position.x + width / 2, target.position.y + height / 2, {
         duration: 480,
-        zoom: getZoom(),
+        zoom: 1.3,
       });
     }, 50);
 
@@ -58,6 +65,7 @@ export function GraphFocusSync() {
     setCenter,
     setSelectedNodeId,
     setHighlightedNodeIds,
+    tick,
   ]);
 
   return null;

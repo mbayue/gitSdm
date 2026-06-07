@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { GitBranch, Share2, Check } from 'lucide-react';
+import { GitBranch, Share2, Check, Search } from 'lucide-react';
 import type { RepoMeta } from '@/types';
 import { formatStars } from '@/lib/utils';
 import { useState } from 'react';
@@ -81,6 +81,13 @@ export function VizTopBar({ meta, owner: fallbackOwner, repo: fallbackRepo }: Vi
         );
       })()}
       <div className="ml-auto flex shrink-0 items-center gap-2">
+        <Link
+          to={`/${fallbackOwner}/${fallbackRepo}/search`}
+          className="flex h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-zinc-900 px-2 sm:px-3 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.05)] active:scale-[0.98]"
+        >
+          <Search className="h-3.5 w-3.5 text-zinc-400" />
+          <span className="hidden sm:inline">Search</span>
+        </Link>
         {/* Theme toggle disabled/hidden for now
         <button
           type="button"
@@ -95,17 +102,17 @@ export function VizTopBar({ meta, owner: fallbackOwner, repo: fallbackRepo }: Vi
         <button
           type="button"
           onClick={handleShare}
-          className="flex h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-zinc-900 px-3 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.05)] active:scale-[0.98]"
+          className="flex h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-zinc-900 px-2 sm:px-3 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all shadow-[0_1px_2px_rgba(0,0,0,0.05)] active:scale-[0.98]"
         >
           {copied ? (
             <>
               <Check className="h-3.5 w-3.5 text-green-400" />
-              <span className="text-green-400 font-medium">Copied!</span>
+              <span className="hidden sm:inline text-green-400 font-medium">Copied!</span>
             </>
           ) : (
             <>
               <Share2 className="h-3.5 w-3.5 text-zinc-400" />
-              <span>Share</span>
+              <span className="hidden sm:inline">Share</span>
             </>
           )}
         </button>

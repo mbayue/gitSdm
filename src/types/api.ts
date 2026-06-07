@@ -103,3 +103,49 @@ export interface AILearningPathResponse {
   };
   cached: boolean;
 }
+
+// ── Semantic Search Types ──────────────────────────────────────────────
+
+export interface SearchResultCard {
+  filePath: string;
+  startLine: number;
+  endLine: number;
+  snippet: string;
+  language: string;
+  score: number;
+}
+
+export interface QAAnswer {
+  answer: string;
+  citations: { filePath: string; startLine: number; endLine: number }[];
+}
+
+export interface SearchResponse {
+  results: {
+    chunk: {
+      filePath: string;
+      startLine: number;
+      endLine: number;
+      chunkIndex: number;
+      language: string;
+      content: string;
+      repoKey: string;
+      commitSha: string;
+    };
+    score: number;
+  }[];
+  query: string;
+  cached: boolean;
+}
+
+export interface QAResponse {
+  answer: string;
+  citations: { filePath: string; startLine: number; endLine: number }[];
+  cached: boolean;
+}
+
+export type IndexingStatus =
+  | { state: 'idle' }
+  | { state: 'indexing'; progress: number; filesProcessed: number; totalFiles: number }
+  | { state: 'complete'; chunkCount: number; timestamp: number }
+  | { state: 'failed'; error: string; failedFiles: number };

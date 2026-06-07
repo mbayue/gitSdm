@@ -18,11 +18,14 @@ import {
 import { analyzeRepository } from './services/analyze-repo';
 import { getRepoFileContent } from './services/get-file';
 import { fetchTrending } from './services/trending';
-import { fetchRepoBranches } from './github/fetch-tree';
+import { fetchRepoBranches, fetchRepoInfo } from './github/fetch-tree';
 import { logApi, logError } from './utils/logger';
 import { clearAllCaches } from './cache/lru';
 import { getPublicAppConfig } from './config/app-config';
 import { toErrorPayload, AppError } from './utils/errors';
+import { getSearchEngine } from './search/search-engine';
+import { getQAEngine } from './search/qa-engine';
+import { getIndexingPipeline } from './search/indexing-pipeline';
 import type {
   RepoAnalysis,
   TrendingRepo,
@@ -66,6 +69,26 @@ const repoQuerySchema = z.object({
 
 const fileQuerySchema = repoQuerySchema.extend({
   path: z.string().min(1).max(500),
+});
+
+const searchBodySchema = z.object({
+  query: z.string().min(3).max(500),
+  owner: z.string(),
+  repo: z.string(),
+  branch: z.string().optional(),
+});
+
+const askBodySchema = z.object({
+  question: z.string().min(3).max(500),
+  owner: z.string(),
+  repo: z.string(),
+  branch: z.string().optional(),
+});
+
+const indexBodySchema = z.object({
+  owner: z.string(),
+  repo: z.string(),
+  branch: z.string().optional(),
 });
 
 
@@ -283,6 +306,75 @@ export async function handleApiRequest(
       }
       const result: AIReadmeEnhanceResponse = await generateReadmeEnhancement(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
       return Response.json(result, { status: 200 });
+    }
+
+    // ── Semantic Search Routes ──────────────────────────────────────────
+
+    if (pathname === '/api/search' && method === 'POST') {
+      const body = await req.json().catch(() => ({}));
+      const parsed = searchBodySchema.safeParse(body);
+      if (!parsed.success) {
+        throw new AppError(400, 'Invalid search request', 'VALIDATION_ERROR', false, parsed.error.flatten());
+      }
+      const info = await fetchRepoInfo(parsed.data.owner, parsed.data.repo, parsed.data.branch, ctx);
+      const engine = getSearchEngine();
+      const result = await engine.search({
+        query: parsed.data.query,
+        owner: parsed.data.owner,
+        repo: parsed.data.repo,
+        commitSha: info.sha,
+      });
+      logApi('/api/search', { durationMs: Date.now() - start, results: result.results.length });
+      return Response.json(result, { status: 200 });
+    }
+
+    if (pathname === '/api/search/ask' && method === 'POST') {
+      const body = await req.json().catch(() => ({}));
+      const parsed = askBodySchema.safeParse(body);
+      if (!parsed.success) {
+        throw new AppError(400, 'Invalid ask request', 'VALIDATION_ERROR', false, parsed.error.flatten());
+      }
+      const info = await fetchRepoInfo(parsed.data.owner, parsed.data.repo, parsed.data.branch, ctx);
+      const qaEngine = getQAEngine();
+      const result = await qaEngine.ask({
+        question: parsed.data.question,
+        owner: parsed.data.owner,
+        repo: parsed.data.repo,
+        commitSha: info.sha,
+        apiKey: userKey,
+      });
+      logApi('/api/search/ask', { durationMs: Date.now() - start, citations: result.citations.length });
+      return Response.json(result, { status: 200 });
+    }
+
+    if (pathname === '/api/search/index' && method === 'POST') {
+      const body = await req.json().catch(() => ({}));
+      const parsed = indexBodySchema.safeParse(body);
+      if (!parsed.success) {
+        throw new AppError(400, 'Invalid index request', 'VALIDATION_ERROR', false, parsed.error.flatten());
+      }
+      const info = await fetchRepoInfo(parsed.data.owner, parsed.data.repo, parsed.data.branch, ctx);
+      const pipeline = getIndexingPipeline();
+      // Fire-and-forget: start indexing in background
+      pipeline.startIndexing({
+        owner: parsed.data.owner,
+        repo: parsed.data.repo,
+        branch: parsed.data.branch,
+        commitSha: info.sha,
+      }, ctx).catch(() => { /* logged internally */ });
+      logApi('/api/search/index', { durationMs: Date.now() - start, repo: `${parsed.data.owner}/${parsed.data.repo}` });
+      return Response.json({ status: 'started' }, { status: 200 });
+    }
+
+    if (pathname === '/api/search/status' && method === 'GET') {
+      const owner = query.owner;
+      const repo = query.repo;
+      if (!owner || !repo) {
+        throw new AppError(400, 'owner and repo query params required', 'INVALID_PARAMS');
+      }
+      const pipeline = getIndexingPipeline();
+      const status = pipeline.getStatus(`${owner}/${repo}`);
+      return Response.json(status, { status: 200 });
     }
 
     return null;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { ReactFlowProvider } from '@xyflow/react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -69,9 +69,14 @@ export function VizPage() {
     setInspectorOpen(false);
   }, [setInspectorOpen]);
 
+  // Reset state when navigating to a different repo
+  const prevRepoRef = useRef(`${owner}/${repo}`);
   useEffect(() => {
-    reset();
-    return () => reset();
+    const key = `${owner}/${repo}`;
+    if (key !== prevRepoRef.current) {
+      prevRepoRef.current = key;
+      reset();
+    }
   }, [owner, repo, reset]);
 
   useEffect(() => {
