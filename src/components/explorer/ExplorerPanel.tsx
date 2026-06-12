@@ -1,5 +1,5 @@
 import { PanelLeftClose, PanelLeftOpen, FileCode } from 'lucide-react';
-import { useVizStore } from '@/stores/viz-store';
+import { useVizStore } from '@/stores/vizStore';
 import type { RepoAnalysis } from '@/types';
 import { SmartFileExplorer } from './SmartFileExplorer';
 

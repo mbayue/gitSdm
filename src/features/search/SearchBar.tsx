@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { Search, Loader2, Clock } from 'lucide-react';
-import { useSearchStore } from './search-store';
+import { useSearchStore } from './searchStore';
 import { clsx } from 'clsx';
 
 interface SearchBarProps {

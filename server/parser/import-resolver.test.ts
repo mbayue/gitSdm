@@ -29,6 +29,18 @@ describe('import-resolver', () => {
       expect(imports).toContain('../db');
       expect(imports).toContain('./models');
     });
+
+    it('extracts Go relative imports', () => {
+      const goCode = `
+        package main
+
+        import "./internal/pkg"
+        import "../shared"
+      `;
+      const imports = extractRawImports('cmd/app/main.go', goCode);
+      expect(imports).toContain('./internal/pkg');
+      expect(imports).toContain('../shared');
+    });
   });
 
   describe('resolveImports', () => {
@@ -56,6 +68,15 @@ describe('import-resolver', () => {
       const resolved = resolveImports('src/App.tsx', [], new Set(['src/components/TodoList.tsx']));
       expect(resolved).toEqual([]);
     });
+
+    it('resolves by prefix fallback when extension is unknown', () => {
+      const resolved = resolveImports(
+        'src/App.tsx',
+        ['./assets/logo'],
+        new Set(['src/assets/logo.svg'])
+      );
+      expect(resolved).toEqual(['src/assets/logo.svg']);
+    });
   });
 
   describe('buildImportEdges', () => {
@@ -78,6 +99,26 @@ describe('import-resolver', () => {
         target: 'file:src/components/TodoList.tsx',
         type: 'imports',
       });
+    });
+
+    it('resolves imports via prefix fallback in buildImportEdges', () => {
+      const fileContents = {
+        'src/App.tsx': `import './styles';`,
+        'src/styles.css': 'body { margin: 0; }',
+      };
+      const allFiles = ['src/App.tsx', 'src/styles.css'];
+      const edges = buildImportEdges(fileContents, allFiles);
+      expect(edges).toHaveLength(1);
+      expect(edges[0].target).toBe('file:src/styles.css');
+    });
+
+    it('skips self-imports in buildImportEdges', () => {
+      const fileContents = {
+        'src/a.ts': `import { x } from './a';`,
+      };
+      const allFiles = ['src/a.ts'];
+      const edges = buildImportEdges(fileContents, allFiles);
+      expect(edges).toHaveLength(0);
     });
   });
 });

@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useReactFlow, getConnectedEdges } from '@xyflow/react';
-import { useVizStore } from '@/stores/viz-store';
+import { useVizStore } from '@/stores/vizStore';
 
 /** Pans/zooms the graph to the file node when a path is selected in the explorer. */
 export function GraphFocusSync() {
   const focusedFilePath = useVizStore((s) => s.focusedFilePath);
   const setSelectedNodeId = useVizStore((s) => s.setSelectedNodeId);
   const setHighlightedNodeIds = useVizStore((s) => s.setHighlightedNodeIds);
-  const { getNode, getEdges, getZoom, setCenter } = useReactFlow();
+  const { getNode, getEdges, setCenter } = useReactFlow();
 
   // Retry counter for when nodes haven't been laid out yet (e.g., navigating from SearchPage)
   const retryRef = useRef(0);
@@ -20,7 +20,7 @@ export function GraphFocusSync() {
     }
 
     const nodeId = `file:${focusedFilePath}`;
-    let target = getNode(nodeId);
+    const target = getNode(nodeId);
 
     // If node not found yet, retry up to 3 times with increasing delay
     // (nodes may not be laid out on first mount)
@@ -61,7 +61,6 @@ export function GraphFocusSync() {
     focusedFilePath,
     getNode,
     getEdges,
-    getZoom,
     setCenter,
     setSelectedNodeId,
     setHighlightedNodeIds,

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { analyzeRepo } from '@/lib/api-client';
+import { analyzeRepo } from '@/lib/apiClient';
 import type { RepoAnalysis } from '@/types';
 
 export function useAnalyzeRepo(owner: string, repo: string, branch: string | null = null, enabled = true) {

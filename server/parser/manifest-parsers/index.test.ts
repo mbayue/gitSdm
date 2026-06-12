@@ -9,6 +9,7 @@ import {
   parseDockerfile,
   parsePomXml,
 } from './index';
+import { getParserForFile, parserRegistry } from './registry';
 
 describe('manifest parsers', () => {
   it('parses package.json dependencies', () => {
@@ -28,9 +29,30 @@ describe('manifest parsers', () => {
     expect(deps).toEqual([]);
   });
 
+  it('parses peerDependencies from package.json', () => {
+    const deps = parsePackageJson(
+      JSON.stringify({
+        dependencies: { react: '^19.0.0' },
+        peerDependencies: { 'react-dom': '^19.0.0' },
+      }),
+    );
+    expect(deps).toHaveLength(2);
+    expect(deps.find((d) => d.name === 'react-dom')?.type).toBe('peer');
+  });
+
   it('parses go.mod require block', () => {
     const deps = parseGoMod(`module example.com/app\n\nrequire (\n\tgithub.com/foo/bar v1.2.3\n)\n`);
     expect(deps.some((d) => d.name === 'github.com/foo/bar')).toBe(true);
+  });
+
+  it('parses inline go.mod require entries', () => {
+    const deps = parseGoMod(`module example.com/app\n\nrequire github.com/inline/pkg v2.0.0\n`);
+    expect(deps).toContainEqual({
+      name: 'github.com/inline/pkg',
+      version: 'v2.0.0',
+      type: 'prod',
+      ecosystem: 'go',
+    });
   });
 
   it('handles empty go.mod input gracefully', () => {
@@ -69,6 +91,14 @@ describe('manifest parsers', () => {
     expect(deps).toEqual([]);
   });
 
+  it('parses Cargo.toml plain version without quotes', () => {
+    const content = `[dependencies]\nserde = 1.0\n`;
+    const deps = parseCargoToml(content);
+    expect(deps).toHaveLength(1);
+    expect(deps[0].name).toBe('serde');
+    expect(deps[0].version).toBe('1.0');
+  });
+
   it('parses Dockerfile base images', () => {
     const content = `FROM node:18-alpine AS builder\nWORKDIR /app\nFROM alpine:latest\n`;
     const deps = parseDockerfile(content);
@@ -93,5 +123,24 @@ describe('manifest parsers', () => {
   it('returns empty array when no route parser matches file', () => {
     const deps = parseManifest('README.md', '# Readme Content');
     expect(deps).toEqual([]);
+  });
+
+  it('routes custom regex manifest parser registrations', () => {
+    parserRegistry.set('regex-test', {
+      name: 'regex-test',
+      filePattern: /^custom\.(json|toml)$/,
+      parse: () => [{ name: 'custom-dep', type: 'prod', ecosystem: 'custom' }],
+    });
+
+    expect(getParserForFile('nested/custom.toml')?.name).toBe('regex-test');
+    expect(parseManifest('custom.json', '').at(0)?.name).toBe('custom-dep');
+    // RegExp pattern should not match unrelated files (covers RegExp fall-through)
+    expect(getParserForFile('other/unrelated.yaml')).toBeNull();
+
+    parserRegistry.delete('regex-test');
+  });
+
+  it('returns null from getParserForFile for unmatched files', () => {
+    expect(getParserForFile('unknown-file.xyz')).toBeNull();
   });
 });

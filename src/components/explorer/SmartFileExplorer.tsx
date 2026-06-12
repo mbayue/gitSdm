@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TreeNode } from '@/types';
-import { FileTypeIcon, FolderIcon } from './file-icons';
+import { FileTypeIcon, FolderIcon } from './FileIcons';
 
 interface SmartFileExplorerProps {
   tree: TreeNode[];

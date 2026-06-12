@@ -4,7 +4,7 @@ import { logApi } from '../utils/logger';
 
 // Concurrency queue to control/batch AI API requests
 class PromiseQueue {
-  private queue: (() => Promise<any>)[] = [];
+  private queue: (() => Promise<void>)[] = [];
   private activeCount = 0;
   constructor(private maxConcurrency = 2) {}
 
@@ -67,7 +67,7 @@ export function safeParseJSON<T>(raw: string): T {
   return JSON.parse(cleaned) as T;
 }
 
-export interface AiTaskParams<T> {
+export interface AiTaskParams<T extends NonNullable<unknown>> {
   taskName: string;
   owner: string;
   repo: string;
@@ -80,7 +80,7 @@ export interface AiTaskParams<T> {
   mockFallback: () => T;
 }
 
-export async function executeAiTask<T>(
+export async function executeAiTask<T extends NonNullable<unknown>>(
   params: AiTaskParams<T>
 ): Promise<{ data: T; cached: boolean }> {
   const isMock = (process.env.AI_PROVIDER ?? 'mock').toLowerCase() === 'mock';
@@ -110,7 +110,7 @@ export async function executeAiTask<T>(
   if (params.json) {
     try {
       result = safeParseJSON<T>(raw);
-    } catch (err) {
+    } catch {
       logApi(`ai/service/${params.taskName}`, {
         error: 'JSON parse failure',
         rawPayload: raw.slice(0, 500),

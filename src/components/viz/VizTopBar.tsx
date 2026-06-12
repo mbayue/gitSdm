@@ -3,7 +3,7 @@ import { GitBranch, Share2, Check, Search } from 'lucide-react';
 import type { RepoMeta } from '@/types';
 import { formatStars } from '@/lib/utils';
 import { useState } from 'react';
-import { useVizStore } from '@/stores/viz-store';
+import { useVizStore } from '@/stores/vizStore';
 import { BranchSelector } from './BranchSelector';
 import { SettingsPopover } from './SettingsPopover';
 

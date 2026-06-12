@@ -400,10 +400,7 @@ svg {
 }
 
 .graph-canvas-host .react-flow {
-  background:
-    radial-gradient(circle at center, rgba(139, 92, 246, 0.04) 0%, transparent 70%),
-    radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.02) 0%, transparent 50%),
-    var(--canvas-bg) !important;
+  background: #0f0f1a !important;
   color: rgba(var(--white-rgb), 0.9);
 }
 
@@ -459,14 +456,24 @@ svg {
   border-radius: 6px;
   overflow: hidden;
   background: var(--glass-bg);
+  bottom: 12px;
+  left: 12px;
+  right: auto;
+  display: flex;
+  flex-direction: row;
 }
 
 .graph-canvas-host .react-flow__controls.graph-controls button {
   background: transparent;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: none;
+  border-right: 1px solid var(--glass-border);
   color: rgba(var(--white-rgb), 0.6);
   width: 26px;
   height: 26px;
+}
+
+.graph-canvas-host .react-flow__controls.graph-controls button:last-child {
+  border-right: none;
 }
 
 .graph-canvas-host .react-flow__controls.graph-controls button:hover {

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchRepoBranches } from '@/lib/api-client';
+import { fetchRepoBranches } from '@/lib/apiClient';
 
 export function useRepoBranches(owner: string, repo: string, enabled = true) {
   return useQuery({

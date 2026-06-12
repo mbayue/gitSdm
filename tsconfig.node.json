@@ -2,9 +2,7 @@
   "compilerOptions": {
     "composite": true,
     "target": "ES2022",
-    "lib": [
-      "ES2023"
-    ],
+    "lib": ["ES2023"],
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
@@ -14,9 +12,13 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
   },
   "include": [
-    "vite.config.ts"
-  ]
+    "vite.config.ts",
+    "server/**/*.ts",
+    "api/**/*.ts",
+    "src/types/**/*.ts",
+  ],
+  "exclude": ["server/**/*.test.ts"],
 }

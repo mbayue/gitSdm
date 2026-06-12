@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { getVisibleRepoPresets } from './repo-presets';
+import { getVisibleRepoPresets } from './repoPresets';
 
 describe('getVisibleRepoPresets', () => {
   it('hides mock presets when mock provider is disabled', () => {

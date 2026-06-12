@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import type { TLSSocket } from 'node:tls';
 import { handleApiRequest } from '../api-router';
 
 /**
@@ -20,13 +21,14 @@ export async function handleNodeRequest(
     }
   }
 
-  const protocol = (nodeReq.socket as any).encrypted ? 'https' : 'http';
+  const protocol = (nodeReq.socket as TLSSocket).encrypted ? 'https' : 'http';
   const host = nodeReq.headers.host ?? 'localhost';
   const url = `${protocol}://${host}${nodeReq.url}`;
 
   let body: BodyInit | undefined;
-  if ((nodeReq as any).body !== undefined) {
-    const parsedBody = (nodeReq as any).body;
+  const requestWithBody = nodeReq as IncomingMessage & { body?: unknown };
+  if (requestWithBody.body !== undefined) {
+    const parsedBody = requestWithBody.body;
     body = typeof parsedBody === 'string' ? parsedBody : JSON.stringify(parsedBody);
   } else if (nodeReq.method !== 'GET' && nodeReq.method !== 'HEAD') {
     const chunks: Buffer[] = [];

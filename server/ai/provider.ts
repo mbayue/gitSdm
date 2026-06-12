@@ -247,7 +247,7 @@ Here is the quick breakdown of how things flow:
           summary: 'The repository exhibits a highly structured framework. Components are cleanly separated by domain, and custom React Flow elements are compartmentalized. The addition of standard environment configurations and cached service interfaces indicates strong architecture quality.'
         });
       }
-      if (user.includes('Mermaid.js architecture flowchart')) {
+      if (user.includes('Mermaid.js flowchart')) {
         return `\`\`\`mermaid
 graph TD
   User[Developer Browser] -->|Requests| Router[Vite Dev API Router]

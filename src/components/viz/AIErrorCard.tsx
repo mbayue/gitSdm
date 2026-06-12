@@ -1,7 +1,7 @@
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface AIErrorCardProps {
-  error?: string | { error?: string; message?: string; code?: string; details?: any };
+  error?: string | { error?: string; message?: string; code?: string; details?: unknown };
   message?: string;
   onRetry?: () => void;
   title?: string;

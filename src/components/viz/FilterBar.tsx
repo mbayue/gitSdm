@@ -1,13 +1,12 @@
 import { cn } from '@/lib/utils';
-import { useVizStore } from '@/stores/viz-store';
-import { ChevronsDown, ChevronsRight, Network, History, Share2, Users } from 'lucide-react';
+import { useVizStore } from '@/stores/vizStore';
+import { Network, History, Share2, Users, GitFork } from 'lucide-react';
 
 import type { RepoAnalysis } from '@/types';
 
 const LAYOUTS = [
   { type: 'force', label: 'Organic Cluster', icon: Network },
-  { type: 'LR', label: 'Horizontal Tree', icon: ChevronsRight },
-  { type: 'TB', label: 'Vertical Tree', icon: ChevronsDown },
+  { type: 'network', label: 'Force Network', icon: GitFork },
 ] as const;
 
 const VIEW_TABS = [

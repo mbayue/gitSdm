@@ -1,5 +1,5 @@
 import { FileCode, ChevronRight } from 'lucide-react';
-import { useSearchStore } from './search-store';
+import { useSearchStore } from './searchStore';
 
 interface SearchResultsProps {
   onSelectFile?: (filePath: string, startLine: number) => void;
