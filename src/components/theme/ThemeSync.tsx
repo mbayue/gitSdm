@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useVizStore } from '@/stores/viz-store';
+import { useVizStore } from '@/stores/vizStore';
 
 export function ThemeSync() {
   const theme = useVizStore((s) => s.theme);

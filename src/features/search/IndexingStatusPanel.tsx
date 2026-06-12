@@ -1,5 +1,5 @@
 import { Database, AlertCircle, CheckCircle2, RefreshCw, Loader2, Zap } from 'lucide-react';
-import { useSearchStore } from './search-store';
+import { useSearchStore } from './searchStore';
 
 interface IndexingStatusProps {
   onRetry?: () => void;

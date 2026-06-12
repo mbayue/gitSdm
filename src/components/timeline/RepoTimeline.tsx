@@ -1,5 +1,5 @@
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { useVizStore } from '@/stores/viz-store';
+import { useVizStore } from '@/stores/vizStore';
 import type { TimelineWeek } from '@/types';
 
 interface RepoTimelineProps {

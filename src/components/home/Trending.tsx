@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { Star } from 'lucide-react';
-import { fetchTrending } from '@/lib/api-client';
+import { fetchTrending } from '@/lib/apiClient';
 import { useNavigate } from 'react-router-dom';
 import { formatStars } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/GlassCard';

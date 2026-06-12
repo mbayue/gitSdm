@@ -4,8 +4,8 @@ import {
   semanticAsk,
   triggerIndexing,
   fetchIndexingStatus,
-} from '@/lib/api-client';
-import { useSearchStore } from './search-store';
+} from '@/lib/apiClient';
+import { useSearchStore } from './searchStore';
 import type { SearchResultCard, IndexingStatus } from '@/types';
 
 export function useSemanticSearch() {

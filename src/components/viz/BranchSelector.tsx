@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useVizStore } from '@/stores/viz-store';
+import { useVizStore } from '@/stores/vizStore';
 import { useRepoBranches } from '@/hooks/useRepoBranches';
 import { GitBranch, ChevronDown, Search, Check, AlertCircle, ArrowLeftRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';

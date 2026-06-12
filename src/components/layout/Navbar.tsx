@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { GitBranch } from 'lucide-react';
 import { GlowButton } from '@/components/ui/GlowButton';
 import { SettingsPopover } from '@/components/viz/SettingsPopover';
-// import { useVizStore } from '@/stores/viz-store';
+// import { useVizStore } from '@/stores/vizStore';
 
 export function Navbar() {
   // const { theme, toggleTheme } = useVizStore();

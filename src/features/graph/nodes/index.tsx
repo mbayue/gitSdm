@@ -1,7 +1,6 @@
 import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { cn } from '@/lib/utils';
-import { useVizStore } from '@/stores/viz-store';
 import { Folder, FileCode, FileText, Settings, FolderGit2, Users } from 'lucide-react';
 
 function getNodeIcon(
@@ -34,12 +33,10 @@ function getNodeIcon(
 function CircleTreeNode({ data, selected, type }: NodeProps) {
   const label = data.label as string;
   const color = (data.nodeColor as string) ?? '#ffffff';
-  const layoutType = useVizStore((state) => state.layoutType);
   const diffStatus = data.diffStatus as 'added' | 'modified' | 'deleted' | undefined;
 
-  const isLR = layoutType === 'LR';
-  const targetPos = isLR ? Position.Left : Position.Top;
-  const sourcePos = isLR ? Position.Right : Position.Bottom;
+  const targetPos = Position.Top;
+  const sourcePos = Position.Bottom;
 
   // Styling based on diffStatus
   let diffClasses = '';

@@ -2,36 +2,34 @@ import { LRUCache } from 'lru-cache';
 
 export interface CacheStore {
   get<T>(key: string): T | undefined;
-  set<T>(key: string, value: T, ttlMs?: number): void;
+  set<T extends CacheValue>(key: string, value: T, ttlMs?: number): void;
   has(key: string): boolean;
   delete(key: string): void;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const analyzeCache = new LRUCache<string, any>({
+type CacheValue = NonNullable<unknown>;
+
+const analyzeCache = new LRUCache<string, CacheValue>({
   max: 200,
   ttl: 1000 * 60 * 60,
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const aiCache = new LRUCache<string, any>({
+const aiCache = new LRUCache<string, CacheValue>({
   max: 200,
   ttl: 1000 * 60 * 30,
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const searchCache = new LRUCache<string, any>({
+const searchCache = new LRUCache<string, CacheValue>({
   max: 500, // up to 100 per repo, 5 repos typical
   ttl: 1000 * 60 * 60, // 60 minutes
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const indexCache = new LRUCache<string, any>({
+const indexCache = new LRUCache<string, CacheValue>({
   max: 50,
   ttl: 1000 * 60 * 60 * 2, // 2 hours
 });
 
-function getBucket(key: string): LRUCache<string, any> {
+function getBucket(key: string): LRUCache<string, CacheValue> {
   if (key.startsWith('ai:')) return aiCache;
   if (key.startsWith('search:')) return searchCache;
   if (key.startsWith('index:')) return indexCache;
@@ -42,7 +40,7 @@ export const cache: CacheStore = {
   get<T>(key: string): T | undefined {
     return getBucket(key).get(key) as T | undefined;
   },
-  set<T>(key: string, value: T, ttlMs?: number): void {
+  set<T extends CacheValue>(key: string, value: T, ttlMs?: number): void {
     getBucket(key).set(key, value, ttlMs ? { ttl: ttlMs } : undefined);
   },
   has(key: string): boolean {

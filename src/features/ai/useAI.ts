@@ -11,7 +11,7 @@ import {
   aiRoast,
   aiReadmeEnhance,
   aiLearningPath,
-} from '@/lib/api-client';
+} from '@/lib/apiClient';
 import type { AIExplainRequest } from '@/types';
 
 export function useExplain() {

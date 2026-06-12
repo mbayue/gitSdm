@@ -1,8 +1,8 @@
 import { X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchRepoFile } from '@/lib/api-client';
-import { HighlightedCode, CodePlaceholder } from '@/lib/syntax-highlight';
-import { useVizStore } from '@/stores/viz-store';
+import { fetchRepoFile } from '@/lib/apiClient';
+import { HighlightedCode, CodePlaceholder } from '@/lib/syntaxHighlight';
+import { useVizStore } from '@/stores/vizStore';
 
 interface CodeInspectorViewProps {
   owner: string;
@@ -46,14 +46,14 @@ export function CodeInspectorView({ owner, repo, filePath, onClose }: CodeInspec
 
       <div className="code-inspector-scroll min-h-0 flex-1 overflow-auto bg-zinc-950 py-1">
         {!filePath && (
-          <CodePlaceholder message="Select a file in the explorer to view its contents." />
+          <CodePlaceholder message="Select a source file to view its contents. Folders and repository roots aren’t previewable." />
         )}
         {filePath && isLoading && (
           <CodeInspectorSkeleton />
         )}
         {filePath && error && (
           <CodePlaceholder
-            message={error instanceof Error ? error.message : 'Failed to load file'}
+            message={error instanceof Error && error.message.includes('not a regular file') ? 'This selection is a folder or repository root, not a previewable source file.' : error instanceof Error ? error.message : 'Failed to load file'}
           />
         )}
         {filePath && data && (

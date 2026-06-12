@@ -16,7 +16,7 @@ type LayoutNode = Node & SimulationNodeDatum;
 export function getLayoutedElements(
   nodes: Node[],
   edges: Edge[],
-  layoutType: 'TB' | 'LR' | 'force',
+  layoutType: 'force' | 'network',
 ): { nodes: Node[]; edges: Edge[] } {
   if (nodes.length === 0) return { nodes, edges };
   const nodeIds = new Set(nodes.map((node) => node.id));
@@ -99,7 +99,9 @@ export function getLayoutedElements(
 
   edges.forEach((edge) => {
     if (nodeIds.has(edge.source) && nodeIds.has(edge.target)) {
-      g.setEdge(edge.source, edge.target);
+      if (edge.type === 'contains') {
+        g.setEdge(edge.source, edge.target);
+      }
     }
   });
 

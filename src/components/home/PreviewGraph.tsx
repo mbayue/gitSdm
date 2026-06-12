@@ -1,8 +1,8 @@
-import { motion } from 'framer-motion';
-import { ReactFlowProvider } from '@xyflow/react';
-import { GraphCanvas } from '@/features/graph/GraphCanvas';
-import { demoGraph } from '@/features/graph/demo-graph';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { motion } from "framer-motion";
+import { ReactFlowProvider } from "@xyflow/react";
+import { GraphCanvas } from "@/features/graph/canvas/GraphCanvas";
+import { demoGraph } from "@/features/graph/demoGraph";
+import { GlassCard } from "@/components/ui/GlassCard";
 
 export function PreviewGraph() {
   return (

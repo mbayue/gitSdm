@@ -39,10 +39,10 @@ function getGitHubTokenHeader(): Record<string, string> {
 export class ApiError extends Error {
   public code?: string;
   public status: number;
-  public details?: any;
+  public details?: unknown;
   public error?: string;
 
-  constructor(message: string, status: number, data?: any) {
+  constructor(message: string, status: number, data?: { code?: string; details?: unknown; context?: unknown; error?: string }) {
     super(message);
     this.name = 'ApiError';
     this.status = status;

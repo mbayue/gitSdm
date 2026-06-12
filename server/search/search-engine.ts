@@ -46,7 +46,7 @@ export function createSearchEngine(): SearchEngine {
       let embeddingResult;
       try {
         embeddingResult = await provider.embed(query);
-      } catch (err) {
+      } catch {
         throw new AppError(
           503,
           'Search temporarily unavailable. Please retry.',

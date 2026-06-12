@@ -15,7 +15,7 @@ export function logApi(
 export function logError(
   route: string,
   error: unknown,
-  meta?: Record<string, any>,
+  meta?: Record<string, unknown>,
 ): void {
   const message = error instanceof Error ? error.message : String(error);
   const stack = error instanceof Error ? error.stack : undefined;

@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useLearningPath } from '@/features/ai/useAI';
-import { useVizStore } from '@/stores/viz-store';
-import type { RepoAnalysis } from '@/types';
+import { useVizStore } from '@/stores/vizStore';
+import type { GraphNode, RepoAnalysis } from '@/types';
 import {
   Play, Pause, Compass, Brain,
   RefreshCw, Zap, ShieldAlert, Sparkles
@@ -18,6 +18,8 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
   const setActiveFocusLayer = useVizStore((s) => s.setActiveFocusLayer);
   const focusedFilePath = useVizStore((s) => s.focusedFilePath);
   const setFocusedFilePath = useVizStore((s) => s.setFocusedFilePath);
+  const setSelectedNodeId = useVizStore((s) => s.setSelectedNodeId);
+  const setHighlightedNodeIds = useVizStore((s) => s.setHighlightedNodeIds);
 
   const lp = useLearningPath(owner, repo, selectedBranch);
 
@@ -36,10 +38,33 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
   }, [owner, repo, selectedBranch]);
 
   const data = lp.data;
-  const executionSteps = data?.executionFlow?.steps ?? [];
+  const executionSteps = useMemo(() => data?.executionFlow?.steps ?? [], [data?.executionFlow?.steps]);
+  type ExecutionStep = (typeof executionSteps)[number];
+
+  const connectedNodeIdsByNodeId = useMemo(() => {
+    const lookup = new Map<string, Set<string>>();
+    for (const edge of analysis.graph.edges) {
+      if (!lookup.has(edge.source)) lookup.set(edge.source, new Set([edge.source]));
+      if (!lookup.has(edge.target)) lookup.set(edge.target, new Set([edge.target]));
+      lookup.get(edge.source)?.add(edge.target);
+      lookup.get(edge.target)?.add(edge.source);
+    }
+    return lookup;
+  }, [analysis.graph.edges]);
+
+  const findFileNode = useCallback((path: string): GraphNode | undefined =>
+    analysis.graph.nodes.find((n) => n.type === 'file' && (n.data.path === path || (n.data.path && n.data.path.endsWith(path)))), [analysis.graph.nodes]);
+
+  const focusFilePath = useCallback((path: string) => {
+    const node = findFileNode(path);
+    const nodeId = node?.id ?? `file:${path}`;
+    setSelectedNodeId(nodeId);
+    setHighlightedNodeIds(new Set(connectedNodeIdsByNodeId.get(nodeId) ?? [nodeId]));
+    setFocusedFilePath(node?.data.path ?? path);
+  }, [connectedNodeIdsByNodeId, findFileNode, setFocusedFilePath, setHighlightedNodeIds, setSelectedNodeId]);
 
   // Helper to extract a single valid graph node path from a step description
-  const resolveStepPath = (step: any): string => {
+  const resolveStepPath = useCallback((step: ExecutionStep): string => {
     if (!step) return '';
     const extractFiles = (text: string) => {
       const matches = text.match(/[\w/.-]+\.[a-zA-Z0-9]+/g) || [];
@@ -63,7 +88,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
     }
 
     return step.to.split('(')[0].trim();
-  };
+  }, [analysis.graph.nodes]);
 
   // Play/Pause execution tracer simulation
   useEffect(() => {
@@ -72,7 +97,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
       const currentStep = executionSteps[activeStep];
       if (currentStep) {
         const path = resolveStepPath(currentStep);
-        setFocusedFilePath(path);
+        focusFilePath(path);
       }
 
       timerRef.current = setInterval(() => {
@@ -81,7 +106,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
           const nextStep = executionSteps[next];
           if (nextStep) {
             const path = resolveStepPath(nextStep);
-            setFocusedFilePath(path);
+            focusFilePath(path);
           }
           return next;
         });
@@ -96,7 +121,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPlaying, executionSteps, activeStep, setFocusedFilePath, analysis.graph.nodes]);
+  }, [isPlaying, executionSteps, activeStep, focusFilePath, resolveStepPath]);
 
   // Sync activeStep with focusedFilePath when focusedFilePath changes
   useEffect(() => {
@@ -105,19 +130,19 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
     if (index !== -1) {
       setActiveStep(index);
     }
-  }, [focusedFilePath, executionSteps, isPlaying]);
+  }, [focusedFilePath, executionSteps, isPlaying, resolveStepPath]);
 
   const handleStepClick = (index: number) => {
     setActiveStep(index);
     const step = executionSteps[index];
     if (step) {
       const path = resolveStepPath(step);
-      setFocusedFilePath(path);
+      focusFilePath(path);
     }
   };
 
   const handleFileClick = (path: string) => {
-    setFocusedFilePath(path);
+    focusFilePath(path);
   };
 
   const handleRefresh = () => {

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Sparkles, Search, MessageSquare, Code2, Database } from 'lucide-react';
-import { useSearchStore } from '@/features/search/search-store';
-import { useVizStore } from '@/stores/viz-store';
+import { useSearchStore } from '@/features/search/searchStore';
+import { useVizStore } from '@/stores/vizStore';
 import { SearchBar } from '@/features/search/SearchBar';
 import { ModeToggle } from '@/features/search/ModeToggle';
 import { SearchResults } from '@/features/search/SearchResults';
@@ -83,7 +83,7 @@ export function SearchPage() {
 
   const handleSelectFile = useCallback(
     (filePath: string, _startLine: number) => {
-      // Set viz-store state so GraphFocusSync zooms to the node
+      // Set vizStore state so GraphFocusSync zooms to the node
       // and the code inspector opens when VizPage mounts.
       // If the file doesn't exist in the graph (truncated), GraphFocusSync
       // silently returns without zooming — the inspector will show a

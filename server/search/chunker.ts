@@ -176,30 +176,32 @@ function findBoundaries(lines: string[], language: string): Boundary[] {
   return boundaries;
 }
 
+const JS_PATTERNS: RegExp[] = [
+  /^(export\s+)?(async\s+)?function\s+/,
+  /^(export\s+)?(default\s+)?class\s+/,
+  /^(export\s+)?(const|let|var)\s+\w+\s*=\s*(async\s+)?(\([^)]*\)|[a-zA-Z_$]\w*)\s*=>/,
+  /^(export\s+)?(const|let|var)\s+\w+\s*=\s*(async\s+)?function/,
+  /^interface\s+/,
+  /^type\s+\w+\s*=/,
+  /^enum\s+/,
+  /^(export\s+)?abstract\s+class\s+/,
+];
+
+const PY_PATTERNS: RegExp[] = [
+  /^(async\s+)?def\s+/,
+  /^class\s+/,
+];
+
+const PATTERN_MAP: Record<string, RegExp[]> = {
+  typescript: JS_PATTERNS,
+  tsx: JS_PATTERNS,
+  javascript: JS_PATTERNS,
+  jsx: JS_PATTERNS,
+  python: PY_PATTERNS,
+};
+
 function getPatterns(language: string): RegExp[] {
-  switch (language) {
-    case 'typescript':
-    case 'tsx':
-    case 'javascript':
-    case 'jsx':
-      return [
-        /^(export\s+)?(async\s+)?function\s+/,
-        /^(export\s+)?(default\s+)?class\s+/,
-        /^(export\s+)?(const|let|var)\s+\w+\s*=\s*(async\s+)?(\([^)]*\)|[a-zA-Z_$]\w*)\s*=>/,
-        /^(export\s+)?(const|let|var)\s+\w+\s*=\s*(async\s+)?function/,
-        /^interface\s+/,
-        /^type\s+\w+\s*=/,
-        /^enum\s+/,
-        /^(export\s+)?abstract\s+class\s+/,
-      ];
-    case 'python':
-      return [
-        /^(async\s+)?def\s+/,
-        /^class\s+/,
-      ];
-    default:
-      return [];
-  }
+  return PATTERN_MAP[language] ?? [];
 }
 
 function findBlockEnd(lines: string[], startLine: number, language: string): number {

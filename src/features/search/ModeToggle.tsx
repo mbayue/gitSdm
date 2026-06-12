@@ -1,6 +1,6 @@
 import { Search, MessageSquare } from 'lucide-react';
-import { useSearchStore } from './search-store';
-import type { SearchMode } from './search-store';
+import { useSearchStore } from './searchStore';
+import type { SearchMode } from './searchStore';
 import { clsx } from 'clsx';
 
 export function ModeToggle() {

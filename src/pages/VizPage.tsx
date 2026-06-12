@@ -1,39 +1,41 @@
-import { useEffect, useMemo, useCallback, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { ReactFlowProvider } from '@xyflow/react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { GraphCanvas } from '@/features/graph/GraphCanvas';
-import { GraphFocusSync } from '@/features/graph/GraphFocusSync';
-import { useAnalyzeRepo } from '@/hooks/useAnalyzeRepo';
-import { useVizStore } from '@/stores/viz-store';
-import { VizTopBar } from '@/components/viz/VizTopBar';
-import { FilterBar } from '@/components/viz/FilterBar';
-import { AISidebar } from '@/components/viz/AISidebar';
-import { FullArchitectureView } from '@/components/viz/FullArchitectureView';
-import { FullContributorsView } from '@/components/contributors/FullContributorsView';
-import { ExplorerPanel } from '@/components/explorer/ExplorerPanel';
-import { CodeInspectorView } from '@/components/explorer/CodeInspectorView';
-import { FileTypeLegend } from '@/components/viz/FileTypeLegend';
-import { VizError } from '@/components/viz/VizError';
-import { Check } from 'lucide-react';
-import { StagedLoader } from '@/components/viz/StagedLoader';
-import type { GraphNode, TreeNode } from '@/types';
-import { CompareHUD } from '@/components/viz/CompareHUD';
-import { FullCommitHistoryView } from '@/components/timeline/FullCommitHistoryView';
+import { useEffect, useMemo, useCallback, useRef } from "react";
+import { useParams } from "react-router-dom";
+import { ReactFlowProvider } from "@xyflow/react";
+import { motion, AnimatePresence } from "framer-motion";
+import { GraphCanvas } from "@/features/graph/canvas/GraphCanvas";
+import { GraphFocusSync } from "@/features/graph/canvas/GraphFocusSync";
+import { useAnalyzeRepo } from "@/hooks/useAnalyzeRepo";
+import { useVizStore } from "@/stores/vizStore";
+import { VizTopBar } from "@/components/viz/VizTopBar";
+import { FilterBar } from "@/components/viz/FilterBar";
+import { AISidebar } from "@/components/viz/AISidebar";
+import { FullArchitectureView } from "@/components/viz/FullArchitectureView";
+import { FullContributorsView } from "@/components/contributors/ContributorsView";
+import { ExplorerPanel } from "@/components/explorer/ExplorerPanel";
+import { CodeInspectorView } from "@/components/explorer/CodeInspectorView";
+import { VizError } from "@/components/viz/VizError";
+import { Check } from "lucide-react";
+import { StagedLoader } from "@/components/viz/StagedLoader";
+import type { GraphNode, TreeNode } from "@/types";
+import { FullCommitHistoryView } from "@/components/timeline/CommitHistoryView";
 
 export function VizPage() {
-  const { owner = '', repo = '' } = useParams();
+  const { owner = "", repo = "" } = useParams();
   const { selectedBranch, compareBranch } = useVizStore();
 
   // Fetch selected/active branch analysis
-  const { data, isLoading, error } = useAnalyzeRepo(owner, repo, selectedBranch);
+  const { data, isLoading, error } = useAnalyzeRepo(
+    owner,
+    repo,
+    selectedBranch,
+  );
 
   // Fetch comparison branch analysis
   const { data: compareData } = useAnalyzeRepo(
     owner,
     repo,
     compareBranch,
-    !!compareBranch
+    !!compareBranch,
   );
 
   const {
@@ -41,7 +43,6 @@ export function VizPage() {
     focusedFilePath,
     setFocusedFilePath,
     selectedNodeId,
-    setSelectedNodeId,
     activeView,
     toastMessage,
     setToastMessage,
@@ -79,36 +80,31 @@ export function VizPage() {
     }
   }, [owner, repo, reset]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setSelectedNodeId(null);
-        setFocusedFilePath(null);
-        setInspectorOpen(false);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [setSelectedNodeId, setFocusedFilePath, setInspectorOpen]);
-
   const selectedNode = useMemo<GraphNode | null>(() => {
     if (!data || !selectedNodeId) return null;
     return data.graph.nodes.find((n) => n.id === selectedNodeId) ?? null;
   }, [data, selectedNodeId]);
 
   useEffect(() => {
-    if (selectedNode?.type === 'file' && selectedNode.data.path) {
+    if (selectedNode?.type === "file" && selectedNode.data.path) {
       setFocusedFilePath(selectedNode.data.path);
     }
   }, [selectedNode, setFocusedFilePath]);
 
   // Recursively map file paths to their tree node SHA
   const fileShaMaps = useMemo(() => {
-    if (!data) return { selected: new Map<string, string>(), compare: new Map<string, string>() };
+    if (!data)
+      return {
+        selected: new Map<string, string>(),
+        compare: new Map<string, string>(),
+      };
 
-    const buildShaMap = (nodes: TreeNode[], map = new Map<string, string>()) => {
+    const buildShaMap = (
+      nodes: TreeNode[],
+      map = new Map<string, string>(),
+    ) => {
       for (const node of nodes) {
-        if (node.type === 'file' && node.sha) {
+        if (node.type === "file" && node.sha) {
           map.set(node.path, node.sha);
         } else if (node.children) {
           buildShaMap(node.children, map);
@@ -118,10 +114,11 @@ export function VizPage() {
     };
 
     const selected = buildShaMap(data.tree);
-    const compare = compareData ? buildShaMap(compareData.tree) : new Map<string, string>();
+    const compare = compareData
+      ? buildShaMap(compareData.tree)
+      : new Map<string, string>();
     return { selected, compare };
   }, [data, compareData]);
-
 
   // Compute graph diff status
   const graphDiff = useMemo(() => {
@@ -156,15 +153,20 @@ export function VizPage() {
     if (!data) return null;
     if (!compareBranch || !compareData || !graphDiff) return data.graph;
 
-    const nodesMap = new Map(data.graph.nodes.map((n) => [n.id, { ...n, data: { ...n.data } }]));
+    const nodesMap = new Map(
+      data.graph.nodes.map((n) => [n.id, { ...n, data: { ...n.data } }]),
+    );
 
     // Annotate current nodes with diff statuses
     for (const [id, node] of nodesMap.entries()) {
       const path = node.data.path;
       if (graphDiff.added.has(id) || (path && graphDiff.added.has(path))) {
-        node.data.diffStatus = 'added';
-      } else if (graphDiff.modified.has(id) || (path && graphDiff.modified.has(path))) {
-        node.data.diffStatus = 'modified';
+        node.data.diffStatus = "added";
+      } else if (
+        graphDiff.modified.has(id) ||
+        (path && graphDiff.modified.has(path))
+      ) {
+        node.data.diffStatus = "modified";
       }
     }
 
@@ -173,15 +175,19 @@ export function VizPage() {
     for (const node of compareData.graph.nodes) {
       if (!nodesMap.has(node.id)) {
         const path = node.data.path;
-        const isFileDeleted = node.type === 'file' && path && graphDiff.deleted.has(path);
-        const isFolderDeleted = node.type === 'folder' && node.id && !data.graph.nodes.some((n) => n.id === node.id);
+        const isFileDeleted =
+          node.type === "file" && path && graphDiff.deleted.has(path);
+        const isFolderDeleted =
+          node.type === "folder" &&
+          node.id &&
+          !data.graph.nodes.some((n) => n.id === node.id);
 
         if (isFileDeleted || isFolderDeleted) {
           deletedNodes.push({
             ...node,
             data: {
               ...node.data,
-              diffStatus: 'deleted',
+              diffStatus: "deleted",
             },
           });
         }
@@ -210,7 +216,11 @@ export function VizPage() {
   }, [data, compareBranch, compareData, graphDiff]);
 
   if (error) {
-    return <VizError error={error as any} />;
+    return (
+      <VizError
+        error={error instanceof Error ? error.message : String(error)}
+      />
+    );
   }
 
   return (
@@ -245,13 +255,17 @@ export function VizPage() {
               animate={{ opacity: 1 }}
               className="relative min-h-0 min-w-0 flex-1 overflow-hidden bg-zinc-950"
             >
-              <div className={`h-full w-full relative ${activeView !== 'graph' ? 'hidden' : ''}`}>
+              <div
+                className={`h-full w-full relative ${activeView !== "graph" ? "hidden" : ""}`}
+              >
                 <ReactFlowProvider>
                   <GraphFocusSync />
-                  <GraphCanvas graph={combinedGraph || data.graph} />
+                  <GraphCanvas
+                    graph={combinedGraph || data.graph}
+                    graphDiff={graphDiff}
+                    defaultBranch={data.meta.defaultBranch}
+                  />
                 </ReactFlowProvider>
-                <FileTypeLegend graph={data.graph} />
-                <CompareHUD diff={graphDiff} defaultBranch={data.meta.defaultBranch} />
                 {data.treeTruncated && (
                   <div className="absolute left-3 top-2 z-10 rounded-lg bg-amber-500/10 px-2 py-1 text-[10px] text-amber-300 ring-1 ring-amber-500/20">
                     Tree truncated
@@ -259,21 +273,21 @@ export function VizPage() {
                 )}
               </div>
 
-              {activeView === 'architecture' && (
+              {activeView === "architecture" && (
                 <FullArchitectureView
                   analysis={data}
                   owner={owner}
                   repo={repo}
                 />
               )}
-              {activeView === 'contributors' && (
+              {activeView === "contributors" && (
                 <FullContributorsView
                   analysis={data}
                   owner={owner}
                   repo={repo}
                 />
               )}
-              {activeView === 'commits' && (
+              {activeView === "commits" && (
                 <FullCommitHistoryView
                   timeline={data.timeline}
                   owner={owner}

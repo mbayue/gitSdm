@@ -1,5 +1,5 @@
 import { BookOpen, ExternalLink } from 'lucide-react';
-import { useSearchStore } from './search-store';
+import { useSearchStore } from './searchStore';
 
 interface QAAnswerViewProps {
   onSelectFile?: (filePath: string, startLine: number) => void;

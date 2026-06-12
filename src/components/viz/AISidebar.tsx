@@ -6,7 +6,7 @@ import {
   Download
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useVizStore, type SidebarTab } from '@/stores/viz-store';
+import { useVizStore, type SidebarTab } from '@/stores/vizStore';
 import {
   useExplain, useExplainNew, useArchitecture, useRefactor,
   useHealth, useRoast, useReadmeEnhance

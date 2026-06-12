@@ -6,15 +6,15 @@ import { ArrowRight, Github, Zap, ListTodo, Boxes, Atom, Triangle, Terminal, Git
 import { Input } from '@/components/ui/Input';
 import { GlowButton } from '@/components/ui/GlowButton';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { getVisibleRepoPresets } from '@/components/home/repo-presets';
-import { fetchAppConfig } from '@/lib/api-client';
+import { getVisibleRepoPresets } from '@/components/home/repoPresets';
+import { fetchAppConfig } from '@/lib/apiClient';
 import { parseRepoFromUrl, LAST_REPO_KEY } from '@/lib/utils';
 
 interface RepoInputProps {
   initialUrl?: string;
 }
 
-export { REPO_PRESETS as PRESETS } from '@/components/home/repo-presets';
+export { REPO_PRESETS as PRESETS } from '@/components/home/repoPresets';
 
 const PRESET_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   ListTodo,
