@@ -8,12 +8,10 @@ import { ModeToggle } from '@/features/search/ModeToggle';
 import { SearchResults } from '@/features/search/SearchResults';
 import { QAAnswerView } from '@/features/search/QAAnswerView';
 import { IndexingStatusPanel } from '@/features/search/IndexingStatusPanel';
-import {
-  useSemanticSearch,
-  useSemanticAsk,
-  useTriggerIndexing,
-  useIndexingStatus,
-} from '@/features/search/hooks';
+import { useSemanticSearch } from '@/features/search/useSemanticSearch';
+import { useSemanticAsk } from '@/features/search/useSemanticAsk';
+import { useTriggerIndexing } from '@/features/search/useTriggerIndexing';
+import { useIndexingStatus } from '@/features/search/useIndexingStatus';
 
 export function SearchPage() {
   const { owner = '', repo = '' } = useParams();

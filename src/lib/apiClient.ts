@@ -6,7 +6,7 @@ import type {
   AISuggestFilesResponse,
   RepoAnalysis,
   TrendingRepo,
-  AIExplainNewResponse,
+  AIExplainLifResponse,
   AIRefactorResponse,
   AIHealthResponse,
   AIMermaidResponse,
@@ -152,12 +152,12 @@ export async function aiOnboarding(
   });
 }
 
-export async function aiExplainNew(
+export async function aiExplainLif(
   owner: string,
   repo: string,
   branch?: string,
-): Promise<AIExplainNewResponse> {
-  return request<AIExplainNewResponse>('/api/ai/explain-new', {
+): Promise<AIExplainLifResponse> {
+  return request<AIExplainLifResponse>('/api/ai/explain-lif', {
     method: 'POST',
     body: JSON.stringify({ owner, repo, branch }),
   });

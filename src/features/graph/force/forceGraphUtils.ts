@@ -35,9 +35,16 @@ export function getForceLinkColor(
     }
   }
 
-  if (!selectedId) return 'rgba(180,190,220,0.4)';
-  if (sourceId === selectedId || targetId === selectedId) return 'rgba(255,255,255,0.8)';
-  return 'rgba(255,255,255,0.1)';
+  const src = typeof link.source === 'object' ? link.source as ForceGraphNode : null;
+
+  if (!selectedId) {
+    const baseColor = src?.color || 'rgba(180,190,220,0.35)';
+    return baseColor.startsWith('rgba') || baseColor.startsWith('#') ? baseColor : baseColor; // standard fallback
+  }
+  if (sourceId === selectedId || targetId === selectedId) {
+    return src?.color || 'rgba(255,255,255,0.8)';
+  }
+  return 'rgba(255,255,255,0.06)';
 }
 
 export function computeBlastRadius(

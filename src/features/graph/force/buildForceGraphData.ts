@@ -45,6 +45,7 @@ export function buildForceGraphData(
       const fileType = node.data.extension || node.data.fileClass || node.type;
       const community = String(node.data.fileClass || node.type);
       const communityName = community.charAt(0).toUpperCase() + community.slice(1);
+      const isRepo = node.type === 'repo';
 
       return {
         id: node.id,
@@ -57,6 +58,8 @@ export function buildForceGraphData(
         degree: degreeById.get(node.id) ?? 0,
         color: node.data.nodeColor || NODE_TYPE_COLORS[node.type] || getCommunityColor(community),
         diffStatus: node.data.diffStatus,
+        fx: isRepo ? 0 : undefined,
+        fy: isRepo ? 0 : undefined,
       };
     });
 

@@ -8,6 +8,7 @@ export interface AIExplainRequest {
   fileSnippet?: string;
   context?: string;
   branch?: string;
+  eli5?: boolean;
 }
 
 export interface AIExplainResponse {
@@ -31,7 +32,7 @@ export interface AIOnboardingResponse {
   cached: boolean;
 }
 
-export interface AIExplainNewResponse {
+export interface AIExplainLifResponse {
   explanation: string;
   cached: boolean;
 }

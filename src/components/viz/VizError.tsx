@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { AlertCircle, Lock, Wifi, ArrowLeft, RefreshCw, Github, Check, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Lock, Wifi, ArrowLeft, RefreshCw, GitBranch as GithubIcon, Check, Eye, EyeOff } from 'lucide-react';
 import { GlowButton } from '@/components/ui/GlowButton';
 
 const LS_KEY = 'gitsdm_github_pat';
@@ -137,7 +137,7 @@ export function VizError({ error, message }: VizErrorProps) {
           <div className="mt-6 rounded-xl border border-indigo-500/20 bg-gradient-to-b from-indigo-950/10 to-zinc-950/40 p-5 text-left shadow-lg shadow-black/20">
             <div className="flex items-center gap-2 mb-2">
               <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400">
-                <Github className="h-3.5 w-3.5" />
+                <GithubIcon className="h-3.5 w-3.5" />
               </div>
               <span className="text-xs font-semibold text-white">Access Private Repository</span>
             </div>

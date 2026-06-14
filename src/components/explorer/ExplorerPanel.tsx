@@ -1,7 +1,9 @@
-import { PanelLeftClose, PanelLeftOpen, FileCode } from 'lucide-react';
+import { useState } from 'react';
+import { PanelLeftClose, PanelLeftOpen, FolderMinus, FolderPlus, Search, X } from 'lucide-react';
 import { useVizStore } from '@/stores/vizStore';
 import type { RepoAnalysis } from '@/types';
 import { SmartFileExplorer } from './SmartFileExplorer';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ExplorerPanelProps {
   analysis: RepoAnalysis;
@@ -10,55 +12,100 @@ interface ExplorerPanelProps {
 }
 
 export function ExplorerPanel({ analysis, selectedFilePath, onSelectFile }: ExplorerPanelProps) {
-  const { explorerOpen, setExplorerOpen, inspectorOpen, setInspectorOpen } = useVizStore();
+  const { explorerOpen, setExplorerOpen } = useVizStore();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expansionTrigger, setExpansionTrigger] = useState<{ type: 'expand' | 'collapse'; time: number } | null>(null);
+
   const rootLabel = analysis.meta.fullName.split('/')[1] ?? analysis.meta.repo;
 
   if (!explorerOpen) {
     return (
-      <div className="hidden md:flex w-10 shrink-0 flex-col items-center border-r border-white/[0.06] bg-zinc-950 py-2">
-        <button
-          type="button"
-          onClick={() => setExplorerOpen(true)}
-          className="rounded p-1.5 text-zinc-500 hover:bg-white/5 hover:text-zinc-300"
-          title="Show explorer"
-        >
-          <PanelLeftOpen className="h-4 w-4" />
-        </button>
+      <div className="hidden md:flex h-full w-10 shrink-0 flex-col items-center border-r border-white/[0.06] bg-zinc-950 py-2 select-none">
+        <Tooltip>
+          <TooltipTrigger
+            type="button"
+            onClick={() => setExplorerOpen(true)}
+            className="rounded p-1.5 text-zinc-500 hover:bg-white/5 hover:text-zinc-350 transition-colors outline-none cursor-pointer"
+          >
+            <PanelLeftOpen className="h-4 w-4" />
+          </TooltipTrigger>
+          <TooltipContent side="right">Show Explorer</TooltipContent>
+        </Tooltip>
       </div>
     );
   }
 
   return (
-    <div className="hidden md:flex h-full w-[220px] shrink-0 flex-col border-r border-white/[0.06] bg-zinc-950">
-      <header className="flex h-9 shrink-0 items-center gap-1 border-b border-white/[0.06] px-2">
-        <span className="flex-1 text-[10px] font-medium uppercase tracking-widest text-zinc-500">
+    <div className="hidden md:flex h-full w-full shrink-0 flex-col border-r border-white/[0.06] bg-zinc-950">
+      <header className="flex h-9 shrink-0 items-center justify-between gap-1 border-b border-white/[0.04] px-3 select-none">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
           Explorer
         </span>
-        <button
-          type="button"
-          onClick={() => setInspectorOpen(!inspectorOpen)}
-          className={`rounded p-1 transition-colors ${inspectorOpen
-            ? 'text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20'
-            : 'text-zinc-600 hover:bg-white/5 hover:text-zinc-400'
-            }`}
-          title={inspectorOpen ? "Hide code inspector" : "Show code inspector"}
-        >
-          <FileCode className="h-3.5 w-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={() => setExplorerOpen(false)}
-          className="rounded p-1 text-zinc-600 hover:bg-white/5 hover:text-zinc-400"
-          title="Hide explorer"
-        >
-          <PanelLeftClose className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger
+              type="button"
+              onClick={() => setExpansionTrigger({ type: 'expand', time: Date.now() })}
+              className="rounded p-1 text-zinc-500 hover:bg-white/5 hover:text-zinc-350 transition-colors outline-none cursor-pointer"
+            >
+              <FolderPlus className="h-3.5 w-3.5" />
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Expand All</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger
+              type="button"
+              onClick={() => setExpansionTrigger({ type: 'collapse', time: Date.now() })}
+              className="rounded p-1 text-zinc-500 hover:bg-white/5 hover:text-zinc-350 transition-colors outline-none cursor-pointer"
+            >
+              <FolderMinus className="h-3.5 w-3.5" />
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Collapse All</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger
+              type="button"
+              onClick={() => setExplorerOpen(false)}
+              className="rounded p-1 text-zinc-500 hover:bg-white/5 hover:text-zinc-350 transition-colors outline-none cursor-pointer"
+            >
+              <PanelLeftClose className="h-3.5 w-3.5" />
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Hide Explorer</TooltipContent>
+          </Tooltip>
+        </div>
       </header>
+
+      {/* Search Input */}
+      <div className="px-2 py-1.5 border-b border-white/[0.04] bg-zinc-950/40">
+        <div className="relative">
+          <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-zinc-600" />
+          <input
+            type="text"
+            placeholder="Filter files..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-md border border-white/[0.06] bg-zinc-900/40 py-1 pl-7 pr-6 text-xs text-zinc-200 placeholder-zinc-550 outline-none focus:border-violet-500/50 transition-colors font-sans"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-1.5 top-1.5 rounded-sm p-0.5 text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+      </div>
+
       <SmartFileExplorer
         tree={analysis.tree}
         rootLabel={rootLabel}
         selectedPath={selectedFilePath ?? undefined}
         onSelectFile={onSelectFile}
+        searchQuery={searchQuery}
+        expansionTrigger={expansionTrigger}
       />
     </div>
   );

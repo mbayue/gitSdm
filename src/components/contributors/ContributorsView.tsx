@@ -3,13 +3,13 @@ import { Users, Calendar, Flame, TrendingUp, GitCommit, ExternalLink, Trophy } f
 import type { RepoAnalysis } from '@/types';
 import { RepoTimeline } from '../timeline/RepoTimeline';
 
-interface FullContributorsViewProps {
+interface ContributorsViewProps {
   analysis: RepoAnalysis;
   owner: string;
   repo: string;
 }
 
-export function FullContributorsView({ analysis, owner, repo }: FullContributorsViewProps) {
+export function ContributorsView({ analysis, owner, repo }: ContributorsViewProps) {
   const { contributors, timeline } = analysis;
 
   const stats = useMemo(() => {

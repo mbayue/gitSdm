@@ -1,15 +1,18 @@
-import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { useLearningPath } from '@/features/ai/useAI';
+import { useEffect } from 'react';
+import { useLearningPath } from '@/features/ai/useAiTasks';
 import { useVizStore } from '@/stores/vizStore';
-import type { GraphNode, RepoAnalysis } from '@/types';
+import type { RepoAnalysis } from '@/types';
 import {
-  Play, Pause, Compass, Brain,
-  RefreshCw, Zap, ShieldAlert, Sparkles
+  Compass, RefreshCw, ShieldAlert, Sparkles
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
 
 import { AIErrorCard } from './AIErrorCard';
+
+// Decoupled subcomponents
+import { useTracerSimulation } from './learning-path/TracerSimulation';
+import { FocusLayers } from './learning-path/FocusLayers';
+import { TracerPlayer } from './learning-path/TracerPlayer';
 
 export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
   const { owner, repo } = analysis.meta;
@@ -23,114 +26,30 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
 
   const lp = useLearningPath(owner, repo, selectedBranch);
 
-  // Execution flow simulation state
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [activeStep, setActiveStep] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const data = lp.data;
+  const executionSteps = data?.executionFlow?.steps ?? [];
+
+  const {
+    isPlaying,
+    setIsPlaying,
+    activeStep,
+    setActiveStep,
+    focusFilePath,
+    resolveStepPath,
+  } = useTracerSimulation({
+    analysis,
+    executionSteps,
+    focusedFilePath,
+    setSelectedNodeId,
+    setHighlightedNodeIds,
+    setFocusedFilePath,
+  });
 
   // Reset simulation state when repo or branch changes
   useEffect(() => {
     setIsPlaying(false);
     setActiveStep(0);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [owner, repo, selectedBranch]);
-
-  const data = lp.data;
-  const executionSteps = useMemo(() => data?.executionFlow?.steps ?? [], [data?.executionFlow?.steps]);
-  type ExecutionStep = (typeof executionSteps)[number];
-
-  const connectedNodeIdsByNodeId = useMemo(() => {
-    const lookup = new Map<string, Set<string>>();
-    for (const edge of analysis.graph.edges) {
-      if (!lookup.has(edge.source)) lookup.set(edge.source, new Set([edge.source]));
-      if (!lookup.has(edge.target)) lookup.set(edge.target, new Set([edge.target]));
-      lookup.get(edge.source)?.add(edge.target);
-      lookup.get(edge.target)?.add(edge.source);
-    }
-    return lookup;
-  }, [analysis.graph.edges]);
-
-  const findFileNode = useCallback((path: string): GraphNode | undefined =>
-    analysis.graph.nodes.find((n) => n.type === 'file' && (n.data.path === path || (n.data.path && n.data.path.endsWith(path)))), [analysis.graph.nodes]);
-
-  const focusFilePath = useCallback((path: string) => {
-    const node = findFileNode(path);
-    const nodeId = node?.id ?? `file:${path}`;
-    setSelectedNodeId(nodeId);
-    setHighlightedNodeIds(new Set(connectedNodeIdsByNodeId.get(nodeId) ?? [nodeId]));
-    setFocusedFilePath(node?.data.path ?? path);
-  }, [connectedNodeIdsByNodeId, findFileNode, setFocusedFilePath, setHighlightedNodeIds, setSelectedNodeId]);
-
-  // Helper to extract a single valid graph node path from a step description
-  const resolveStepPath = useCallback((step: ExecutionStep): string => {
-    if (!step) return '';
-    const extractFiles = (text: string) => {
-      const matches = text.match(/[\w/.-]+\.[a-zA-Z0-9]+/g) || [];
-      return matches.map(m => m.trim()).filter(Boolean);
-    };
-
-    const toFiles = extractFiles(step.to);
-    for (const f of toFiles) {
-      const match = analysis.graph.nodes.find(n => 
-        n.data.path === f || (n.data.path && n.data.path.endsWith(f))
-      );
-      if (match?.data.path) return match.data.path;
-    }
-
-    const fromFiles = extractFiles(step.from);
-    for (const f of fromFiles) {
-      const match = analysis.graph.nodes.find(n => 
-        n.data.path === f || (n.data.path && n.data.path.endsWith(f))
-      );
-      if (match?.data.path) return match.data.path;
-    }
-
-    return step.to.split('(')[0].trim();
-  }, [analysis.graph.nodes]);
-
-  // Play/Pause execution tracer simulation
-  useEffect(() => {
-    if (isPlaying && executionSteps.length > 0) {
-      // Focus first step immediately
-      const currentStep = executionSteps[activeStep];
-      if (currentStep) {
-        const path = resolveStepPath(currentStep);
-        focusFilePath(path);
-      }
-
-      timerRef.current = setInterval(() => {
-        setActiveStep((prev) => {
-          const next = (prev + 1) % executionSteps.length;
-          const nextStep = executionSteps[next];
-          if (nextStep) {
-            const path = resolveStepPath(nextStep);
-            focusFilePath(path);
-          }
-          return next;
-        });
-      }, 3500);
-    } else {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    }
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isPlaying, executionSteps, activeStep, focusFilePath, resolveStepPath]);
-
-  // Sync activeStep with focusedFilePath when focusedFilePath changes
-  useEffect(() => {
-    if (!focusedFilePath || !executionSteps.length || isPlaying) return;
-    const index = executionSteps.findIndex((step) => resolveStepPath(step) === focusedFilePath);
-    if (index !== -1) {
-      setActiveStep(index);
-    }
-  }, [focusedFilePath, executionSteps, isPlaying, resolveStepPath]);
+  }, [owner, repo, selectedBranch, setIsPlaying, setActiveStep]);
 
   const handleStepClick = (index: number) => {
     setActiveStep(index);
@@ -203,66 +122,29 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
     );
   }
 
-  const focusLayers = [
-    { id: 'all' as const, label: 'All Files' },
-    { id: 'api' as const, label: 'API / Routes' },
-    { id: 'ui' as const, label: 'UI / Components' },
-    { id: 'core' as const, label: 'Core Services' },
-    { id: 'config' as const, label: 'Configuration' }
-  ];
-
   return (
-    <div className="flex flex-col gap-6 p-4 overflow-y-auto max-h-full pb-20 select-none">
+    <div className="space-y-5 select-none">
       {/* Mental Model Section */}
-      <div className="relative rounded-xl border border-white/[0.06] bg-zinc-950/40 p-4 backdrop-blur-md">
-        <div className="absolute top-0 right-0 p-2 opacity-30">
-          <Brain className="h-12 w-12 text-violet-400" />
+      <div className="rounded-xl border border-white/[0.04] bg-white/[0.015] p-4.5 shadow-sm">
+        <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-medium bg-black/20 border border-white/[0.03] rounded-md px-2.5 py-1 w-fit">
+          <Compass className="h-3 w-3 text-violet-400" />
+          <span>{data.mentalModel?.type || 'Repository Architecture'}</span>
         </div>
-        <span className="inline-flex items-center gap-1 rounded bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold text-violet-400 border border-violet-500/20">
-          <Compass className="h-3 w-3" />
-          {data.mentalModel?.type || 'Repository Architecture'}
-        </span>
-        <h3 className="text-sm font-semibold text-white mt-2 font-mono">
+        <h3 className="mt-3 text-[16px] font-semibold text-zinc-100 leading-tight text-left">
           {data.mentalModel?.concept || 'Ingestion Pipeline'}
         </h3>
-        <p className="text-xs text-zinc-400 mt-2.5 leading-relaxed">
+        <p className="mt-2 text-[11px] text-zinc-500 leading-relaxed text-left">
           {data.mentalModel?.description}
         </p>
       </div>
 
       {/* Smart Focus Filters */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-            Smart Focus Layers
-          </h4>
-          <span className="text-[10px] text-zinc-400 font-mono">Isolates graph modules</span>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {focusLayers.map((layer) => {
-            const isActive = activeFocusLayer === layer.id;
-            return (
-              <button
-                key={layer.id}
-                onClick={() => setActiveFocusLayer(layer.id)}
-                className={cn(
-                  'rounded-lg border px-2.5 py-1 text-xs font-medium transition-all duration-150',
-                  isActive
-                    ? 'border-violet-500/35 bg-violet-500/12 text-violet-300'
-                    : 'border-white/[0.05] bg-zinc-950/30 text-zinc-500 hover:border-white/10 hover:text-zinc-300'
-                )}
-              >
-                {layer.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <FocusLayers activeFocusLayer={activeFocusLayer} setActiveFocusLayer={setActiveFocusLayer} />
 
       {/* Recommended Learning Path */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+            <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
             Recommended learning order
           </h4>
           <span className="text-[10px] text-violet-400 font-semibold flex items-center gap-1">
@@ -278,10 +160,10 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
               onClick={() => handleFileClick(item.path)}
-              className="group flex gap-3.5 items-start rounded-xl border border-white/[0.04] bg-zinc-950/20 hover:bg-zinc-900/40 hover:border-white/10 p-3.5 cursor-pointer transition-all duration-200"
+              className="group flex gap-3.5 items-start rounded-xl border border-white/[0.04] bg-black/20 hover:bg-white/[0.03] hover:border-white/[0.08] p-3.5 cursor-pointer transition-all duration-200"
             >
               {/* Index & score circle */}
-              <div className="relative shrink-0 flex items-center justify-center h-8 w-8 rounded-lg bg-zinc-900 border border-white/[0.08] text-xs font-mono text-zinc-400 group-hover:border-violet-500/30 group-hover:text-violet-300 transition-colors">
+              <div className="relative shrink-0 flex items-center justify-center h-8 w-8 rounded-lg bg-black/20 border border-white/[0.04] text-xs font-mono text-zinc-400 group-hover:border-violet-500/25 group-hover:text-violet-300 transition-colors">
                 {idx + 1}
                 <div
                   className="absolute inset-0 rounded-lg border-2 border-violet-500/20"
@@ -292,12 +174,12 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
               </div>
 
               {/* Path and details */}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 text-left">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[11px] font-mono text-zinc-200 group-hover:text-white truncate">
                     {item.path.split('/').pop()}
                   </span>
-                  <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono">
+                  <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded bg-black/20 border border-white/[0.03] text-zinc-500 font-mono">
                     {item.role}
                   </span>
                 </div>
@@ -315,97 +197,30 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
 
       {/* Execution Flow simulation tracer */}
       {executionSteps.length > 0 && (
-        <div className="rounded-xl border border-white/[0.05] bg-zinc-950/40 p-4">
-          <div className="flex items-center justify-between mb-3.5">
-            <div className="flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5 text-amber-400" />
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                Runtime Execution Trace
-              </h4>
-            </div>
-            <button
-              onClick={() => {
-                if (!isPlaying && activeStep === -1) {
-                  setActiveStep(0);
-                }
-                setIsPlaying(!isPlaying);
-              }}
-              className={cn(
-                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[10px] font-semibold tracking-wide transition-all shadow-sm",
-                isPlaying
-                  ? "bg-amber-500/15 border border-amber-500/30 text-amber-300"
-                  : "bg-white text-zinc-950 hover:bg-zinc-100"
-              )}
-            >
-              {isPlaying ? (
-                <>
-                  <Pause className="h-3 w-3 fill-current" /> Pause Trace
-                </>
-              ) : (
-                <>
-                  <Play className="h-3 w-3 fill-current" /> Trace Flow
-                </>
-              )}
-            </button>
-          </div>
-
-          <p className="text-[11px] text-zinc-500 mb-4 leading-relaxed">
-            Animates the active runtime pipeline path on the graph canvas and steps through key component files.
-          </p>
-
-          {/* Timeline steps */}
-          <div className="relative border-l border-white/[0.06] ml-2.5 pl-4 space-y-4">
-            {data.executionFlow?.steps?.map((step, sIdx) => {
-              const isActive = activeStep === sIdx;
-              return (
-                <div
-                  key={sIdx}
-                  onClick={() => handleStepClick(sIdx)}
-                  className="relative group/step cursor-pointer"
-                >
-                  {/* Step node indicator */}
-                  <div
-                    className={cn(
-                      "absolute -left-[21.5px] top-0.5 h-2.5 w-2.5 rounded-full border transition-all duration-150",
-                      isActive
-                        ? "bg-amber-400 border-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.5)] scale-110"
-                        : "bg-zinc-950 border-white/20 group-hover/step:border-white/50"
-                    )}
-                  />
-                  <div className="min-w-0">
-                    <p
-                      className={cn(
-                        "text-[10px] font-mono leading-none transition-colors",
-                        isActive ? "text-amber-400 font-bold" : "text-zinc-400 group-hover/step:text-zinc-200"
-                      )}
-                    >
-                      {step.from} → {step.to}
-                    </p>
-                    <p className="text-[10px] text-zinc-500 mt-1 leading-relaxed">
-                      {step.description}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <TracerPlayer
+          executionSteps={executionSteps}
+          activeStep={activeStep}
+          isPlaying={isPlaying}
+          setIsPlaying={setIsPlaying}
+          setActiveStep={setActiveStep}
+          handleStepClick={handleStepClick}
+        />
       )}
 
       {/* Developer Insights, Risks & Suggestions */}
-      <div className="space-y-3.5">
+      <div className="space-y-3.5 text-left">
         <div>
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2.5">
+            <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2.5">
             Architecture Insights
           </h4>
-          <p className="text-xs text-zinc-400 leading-relaxed border-l-2 border-violet-500/30 pl-3">
+            <p className="text-[11px] text-zinc-500 leading-relaxed border-l-2 border-violet-500/20 pl-3">
             {data.insights?.architecture}
           </p>
         </div>
 
         {data.insights?.risks?.length > 0 && (
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-red-400/90 mb-2">
+            <h4 className="text-[10px] font-bold uppercase tracking-widest text-rose-400/90 mb-2">
               Detected Architecture Risks
             </h4>
             <ul className="space-y-1.5 pl-1.5">
@@ -421,7 +236,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
 
         {data.insights?.suggestions?.length > 0 && (
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-violet-400/90 mb-2">
+            <h4 className="text-[10px] font-bold uppercase tracking-widest text-violet-400/90 mb-2">
               Onboarding Suggestions
             </h4>
             <ul className="space-y-1.5 pl-1.5">

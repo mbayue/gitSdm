@@ -1,6 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Settings, X, Check, Eye, EyeOff, KeyRound, Github } from 'lucide-react';
+import { Settings, X, Check, Eye, EyeOff, KeyRound, GitBranch } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { buttonVariants } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const GEMINI_KEY = 'gitsdm_gemini_api_key';
 const PAT_KEY = 'gitsdm_github_pat';
@@ -76,25 +82,25 @@ export function SettingsPopover() {
 
   return (
     <div className="relative" ref={popoverRef}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        title="Settings & Credentials"
-        className={cn(
-          'relative flex h-8 w-8 items-center justify-center rounded-lg border outline-none focus:outline-none focus-visible:ring-1 focus-visible:ring-violet-500/50 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.05)] active:scale-[0.98]',
-          hasAnyKey
-            ? 'border-violet-500/40 bg-indigo-600/10 text-violet-400 hover:bg-violet-600/20'
-            : 'border-white/10 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-white',
-        )}
-      >
-        <Settings className={cn("h-4 w-4 transition-transform duration-300", open && "rotate-45")} />
-        {hasAnyKey && (
-          <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
-        )}
-      </button>
+      <Tooltip>
+        <TooltipTrigger
+          className={cn(
+            buttonVariants({ variant: "outline", size: "sm" }),
+            "h-7 w-7 rounded-md p-0 border-white/[0.06] bg-white/[0.02] text-zinc-400 hover:text-white hover:bg-white/5 hover:border-white/[0.1] transition-all duration-150 relative",
+            hasAnyKey && 'border-violet-500/30 text-violet-400 bg-violet-550/[0.02]'
+          )}
+          onClick={() => setOpen((o) => !o)}
+        >
+          <Settings className={cn("h-3.5 w-3.5 transition-transform duration-300", open && "rotate-45")} />
+          {hasAnyKey && (
+            <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
+          )}
+        </TooltipTrigger>
+        <TooltipContent>Settings &amp; Credentials</TooltipContent>
+      </Tooltip>
 
       {open && (
-        <div className="fixed left-2 right-2 top-14 w-auto sm:absolute sm:right-0 sm:left-auto sm:top-10 sm:w-80 z-50 rounded-xl border border-white/10 bg-zinc-950 p-4 shadow-2xl shadow-black/60 backdrop-blur-xl space-y-4"
+        <div className="fixed left-2 right-2 top-14 w-auto sm:absolute sm:right-0 sm:left-auto sm:top-10 sm:w-80 z-[70] rounded-xl border border-white/10 bg-zinc-950 p-4 shadow-2xl shadow-black/60 backdrop-blur-xl space-y-4"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/5 pb-2">
@@ -175,7 +181,7 @@ export function SettingsPopover() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5 text-zinc-300 text-xs font-medium">
-                <Github className="h-3.5 w-3.5 text-indigo-400" />
+                <GitBranch className="h-3.5 w-3.5 text-indigo-400" />
                 <span>GitHub PAT</span>
               </div>
               <a

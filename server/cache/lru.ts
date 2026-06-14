@@ -80,8 +80,11 @@ export function aiCacheKey(
   repo: string,
   sha: string,
   contextHash: string,
+  discriminator?: string,
 ): string {
-  return `ai:${kind}:${owner}/${repo}@${sha}:${contextHash}`;
+  return discriminator
+    ? `ai:${kind}:${owner}/${repo}@${sha}:${contextHash}:${discriminator}`
+    : `ai:${kind}:${owner}/${repo}@${sha}:${contextHash}`;
 }
 
 export function hashContext(input: string): string {

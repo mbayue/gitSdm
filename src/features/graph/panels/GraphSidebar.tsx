@@ -60,10 +60,7 @@ export function GraphSidebar({
   isEmpty,
   graphDiff,
   defaultBranch,
-  selectedNode,
-  neighbors,
-  onNodeClick,
-}: GraphSidebarProps) {
+}: Omit<GraphSidebarProps, 'selectedNode' | 'neighbors' | 'onNodeClick'>) {
   const {
     nodeTypeFilters,
     toggleNodeTypeFilter,
@@ -76,8 +73,7 @@ export function GraphSidebar({
     setCompareBranch,
     blastRadiusActive,
     setBlastRadiusActive,
-    highlightedNodeIds,
-    selectedNodeId,
+
     resetFilters,
     activeFocusLayer,
     searchQuery,
@@ -152,67 +148,6 @@ export function GraphSidebar({
       {/* Scrollable content */}
       <div className="flex-1 min-h-0 overflow-y-auto px-3 divide-y divide-white/[0.06]">
 
-        {/* Node Info Section */}
-        <div className="py-1">
-          <SectionHeader label="Node Info" isOpen={sections.nodeInfo} onToggle={() => toggle('nodeInfo')} />
-          {sections.nodeInfo && (
-            <div className="pb-2 space-y-1.5">
-              {selectedNode ? (
-                <>
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: selectedNode.color }} />
-                    <span className="text-[11px] font-semibold text-white truncate">{selectedNode.label}</span>
-                  </div>
-                  <dl className="space-y-0.5 font-mono text-[10px]">
-                    <div className="flex justify-between"><dt className="text-zinc-500">type</dt><dd className="text-zinc-300">{selectedNode.fileType}</dd></div>
-                    <div className="flex justify-between"><dt className="text-zinc-500">degree</dt><dd className="text-zinc-300">{selectedNode.degree}</dd></div>
-                    {selectedNode.sourceFile && <div><dt className="text-zinc-500">path</dt><dd className="text-zinc-300 truncate text-[9px]">{selectedNode.sourceFile}</dd></div>}
-                  </dl>
-
-                  {/* Neighbors / Blast Radius */}
-                  {blastRadiusActive ? (
-                    <div className="pt-1.5 border-t border-white/[0.06]">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[9px] font-mono text-cyan-400 uppercase font-bold">Blast Radius</span>
-                        <span className="text-[9px] font-mono px-1 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">{highlightedNodeIds.size - 1}</span>
-                      </div>
-                      <div className="space-y-0.5 max-h-24 overflow-y-auto">
-                        {Array.from(highlightedNodeIds).filter(id => id !== selectedNodeId).map(id => {
-                          const node = neighbors.find(n => n.id === id);
-                          if (!node) return null;
-                          return (
-                            <button key={id} onClick={() => onNodeClick(node)} className="flex w-full items-center gap-1.5 rounded px-1.5 py-0.5 text-left hover:bg-white/5 transition-colors">
-                              <span className="h-2 w-2 shrink-0 rounded-full bg-cyan-400" />
-                              <span className="text-[10px] text-zinc-300 truncate flex-1">{node.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : neighbors.length > 0 && (
-                    <div className="pt-1.5 border-t border-white/[0.06]">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[9px] font-mono text-zinc-500 uppercase font-bold">Neighbors</span>
-                        <span className="text-[9px] font-mono text-zinc-600">{neighbors.length}</span>
-                      </div>
-                      <div className="space-y-0.5 max-h-24 overflow-y-auto">
-                        {neighbors.map((n) => (
-                          <button key={n.id} onClick={() => onNodeClick(n)} className="flex w-full items-center gap-1.5 rounded px-1.5 py-0.5 text-left hover:bg-white/5 transition-colors">
-                            <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: n.color }} />
-                            <span className="text-[10px] text-zinc-300 truncate flex-1">{n.label}</span>
-                            <span className="text-[9px] font-mono text-zinc-600">{n.degree}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p className="text-[10px] text-zinc-600 italic pb-1">Click a node to inspect it</p>
-              )}
-            </div>
-          )}
-        </div>
 
         {/* Tools Section (Blast Radius) */}
         <div className="py-1">

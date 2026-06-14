@@ -6,7 +6,7 @@ import { logApi } from '../utils/logger';
 class PromiseQueue {
   private queue: (() => Promise<void>)[] = [];
   private activeCount = 0;
-  constructor(private maxConcurrency = 2) {}
+  constructor(private maxConcurrency = 2) { }
 
   add<T>(fn: () => Promise<T>): Promise<T> {
     return new Promise((resolve, reject) => {
@@ -36,6 +36,39 @@ class PromiseQueue {
 }
 
 const aiQueue = new PromiseQueue(2);
+
+function getAiCacheDiscriminator(apiKey?: string): string {
+  const provider = apiKey?.trim()
+    ? (apiKey.trim().startsWith('sk-ant-') ? 'anthropic' : apiKey.trim().startsWith('sk-') ? 'openai' : 'gemini')
+    : (process.env.AI_PROVIDER?.toLowerCase()
+      ?? (process.env.GEMINI_API_KEY?.trim()
+        ? 'gemini'
+        : process.env.OPENAI_API_KEY?.trim()
+          ? 'openai'
+          : process.env.ANTHROPIC_API_KEY?.trim()
+            ? 'anthropic'
+            : 'mock'));
+
+  const model = provider === 'gemini'
+    ? (process.env.GEMINI_MODEL ?? 'gemini-2.5-flash')
+    : provider === 'openai'
+      ? (process.env.OPENAI_MODEL ?? 'gpt-4o-mini')
+      : provider === 'anthropic'
+        ? (process.env.ANTHROPIC_MODEL ?? 'claude-3-5-haiku-latest')
+        : 'mock';
+
+  const keyScope = apiKey?.trim() ? `user-key:${hashKey(apiKey)}` : 'env-key';
+  return `${provider}:${model}:${keyScope}`;
+}
+
+function hashKey(input: string): string {
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    hash = (hash << 5) - hash + input.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
+}
 
 export function safeParseJSON<T>(raw: string): T {
   let cleaned = raw.trim();
@@ -89,10 +122,16 @@ export async function executeAiTask<T extends NonNullable<unknown>>(
     return { data: params.mockFallback(), cached: false };
   }
 
-  const key = aiCacheKey(params.taskName, params.owner, params.repo, params.sha, params.paramHash ?? 'v1');
-  const cached = cache.get<T>(key);
-  if (cached) {
-    return { data: cached, cached: true };
+  const key = aiCacheKey(
+    params.taskName,
+    params.owner,
+    params.repo,
+    params.sha,
+    params.paramHash ?? 'v1',
+    getAiCacheDiscriminator(params.apiKey)
+  );
+  if (cache.has(key)) {
+    return { data: cache.get<T>(key)!, cached: true };
   }
 
   const provider = await getAIProvider(params.apiKey);

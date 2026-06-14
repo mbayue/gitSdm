@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { ArrowRight, Github, Zap, ListTodo, Boxes, Atom, Triangle, Terminal, GitBranch } from 'lucide-react';
-import { Input } from '@/components/ui/Input';
+import { ArrowRight, Zap, ListTodo, Boxes, Atom, Triangle, Terminal, GitBranch } from 'lucide-react';
+const GithubIcon = GitBranch;
+import { Input } from '@/components/ui/input';
 import { GlowButton } from '@/components/ui/GlowButton';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { getVisibleRepoPresets } from '@/components/home/repoPresets';
@@ -84,7 +85,7 @@ export function RepoInput({ initialUrl = '' }: RepoInputProps) {
       <GlassCard className="p-2">
         <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row items-center w-full">
           <div className="relative flex-1 w-full">
-            <Github className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+            <GithubIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
             <Input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
@@ -119,7 +120,7 @@ export function RepoInput({ initialUrl = '' }: RepoInputProps) {
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="repo-preset-try text-[10px] font-semibold uppercase tracking-wider mr-1 text-zinc-500">TRY:</span>
             {presets.map((item) => {
-              const IconComponent = PRESET_ICONS[item.icon || ''] || Github;
+              const IconComponent = PRESET_ICONS[item.icon || ''] || GithubIcon;
               return (
                 <button
                   key={item.repo}

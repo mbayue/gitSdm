@@ -1,96 +1,16 @@
-import { z } from 'zod';
 import { getOctokit } from './github/client';
-import { parseRepoParams } from './github/parse-url';
 import type { RequestContext } from './utils/context';
-import {
-  explainArchitecture,
-  explainRepo,
-  generateOnboarding,
-  suggestFiles,
-  explainRepoELI5,
-  generateRefactorSuggestions,
-  generateHealthReport,
-  generateMermaidDiagram,
-  generateRepoRoast,
-  generateReadmeEnhancement,
-  generateLearningPath,
-} from './ai/summarizer';
-import { analyzeRepository } from './services/analyze-repo';
-import { getRepoFileContent } from './services/get-file';
 import { fetchTrending } from './services/trending';
-import { fetchRepoBranches, fetchRepoInfo } from './github/fetch-tree';
 import { logApi, logError } from './utils/logger';
 import { clearAllCaches } from './cache/lru';
 import { getPublicAppConfig } from './config/app-config';
-import { toErrorPayload, AppError } from './utils/errors';
-import { getSearchEngine } from './search/search-engine';
-import { getQAEngine } from './search/qa-engine';
-import { getIndexingPipeline } from './search/indexing-pipeline';
-import type {
-  RepoAnalysis,
-  TrendingRepo,
-  AIExplainResponse,
-  AIArchitectureResponse,
-  AISuggestFilesResponse,
-  AIOnboardingResponse,
-  AILearningPathResponse,
-  AIExplainNewResponse,
-  AIRefactorResponse,
-  AIHealthResponse,
-  AIMermaidResponse,
-  AIRoastResponse,
-  AIReadmeEnhanceResponse,
-} from '../src/types';
+import { toErrorPayload } from './utils/errors';
+import type { TrendingRepo } from '../src/types';
 
-const analyzeBodySchema = z.object({
-  url: z.string().optional(),
-  owner: z.string().optional(),
-  repo: z.string().optional(),
-  branch: z.string().optional(),
-});
-
-const aiExplainSchema = z.object({
-  owner: z.string(),
-  repo: z.string(),
-  branch: z.string().optional(),
-  sha: z.string().optional(),
-  scope: z.enum(['repo', 'node', 'file']).default('repo'),
-  nodeId: z.string().optional(),
-  filePath: z.string().optional(),
-  fileSnippet: z.string().optional(),
-  context: z.string().optional(),
-});
-
-const repoQuerySchema = z.object({
-  owner: z.string(),
-  repo: z.string(),
-  branch: z.string().optional(),
-});
-
-const fileQuerySchema = repoQuerySchema.extend({
-  path: z.string().min(1).max(500),
-});
-
-const searchBodySchema = z.object({
-  query: z.string().min(3).max(500),
-  owner: z.string(),
-  repo: z.string(),
-  branch: z.string().optional(),
-});
-
-const askBodySchema = z.object({
-  question: z.string().min(3).max(500),
-  owner: z.string(),
-  repo: z.string(),
-  branch: z.string().optional(),
-});
-
-const indexBodySchema = z.object({
-  owner: z.string(),
-  repo: z.string(),
-  branch: z.string().optional(),
-});
-
+// Decoupled Router Submodules
+import { handleAiRoutes } from './router/ai-routes';
+import { handleRepoRoutes } from './router/repo-routes';
+import { handleSearchRoutes } from './router/search-routes';
 
 export async function handleApiRequest(
   req: Request,
@@ -114,6 +34,7 @@ export async function handleApiRequest(
   };
 
   try {
+    // ── Global System Utilities ─────────────────────────────────────
     if (pathname === '/api/trending' && method === 'GET') {
       const repos: TrendingRepo[] = await fetchTrending();
       logApi('/api/trending', { durationMs: Date.now() - start, count: repos.length });
@@ -130,252 +51,17 @@ export async function handleApiRequest(
       return Response.json({ cleared: true }, { status: 200 });
     }
 
-    if (pathname === '/api/repo/analyze' && method === 'POST') {
-      const body = await req.json().catch(() => ({}));
-      const parsed = analyzeBodySchema.safeParse(body);
-      if (!parsed.success) {
-        throw new AppError(400, 'Invalid request body', 'VALIDATION_ERROR', false, parsed.error.flatten());
-      }
-      const repo = parseRepoParams(parsed.data.owner, parsed.data.repo, parsed.data.url);
-      if (!repo) {
-        throw new AppError(400, 'Invalid GitHub repository URL', 'INVALID_PARAMS');
-      }
-      const analysis: RepoAnalysis = await analyzeRepository({ ...repo, branch: parsed.data.branch }, ctx);
-      logApi('/api/repo/analyze', {
-        durationMs: Date.now() - start,
-        repo: `${repo.owner}/${repo.repo}`,
-        branch: parsed.data.branch || 'default',
-      });
-      return Response.json(analysis, { status: 200 });
-    }
+    // ── Repository Routes ───────────────────────────────────────────
+    const repoResponse = await handleRepoRoutes(pathname, req, query, ctx, start);
+    if (repoResponse) return repoResponse;
 
-    if (pathname === '/api/repo/branches' && method === 'GET') {
-      const q = repoQuerySchema.safeParse(query);
-      if (!q.success) {
-        throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
-      }
-      const branches: { name: string; protected: boolean }[] = await fetchRepoBranches(q.data.owner, q.data.repo, ctx);
-      return Response.json(branches, { status: 200 });
-    }
+    // ── AI Summary & Analysis Routes ────────────────────────────────
+    const aiResponse = await handleAiRoutes(pathname, req, userKey, gitHubToken, ctx);
+    if (aiResponse) return aiResponse;
 
-    if (pathname === '/api/repo/graph' && method === 'GET') {
-      const q = repoQuerySchema.safeParse(query);
-      if (!q.success) {
-        throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
-      }
-      const analysis: RepoAnalysis = await analyzeRepository(q.data, ctx);
-      return Response.json({ graph: analysis.graph, meta: analysis.meta }, { status: 200 });
-    }
-
-    if (pathname === '/api/repo/tree' && method === 'GET') {
-      const q = repoQuerySchema.safeParse(query);
-      if (!q.success) {
-        throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
-      }
-      const analysis: RepoAnalysis = await analyzeRepository(q.data, ctx);
-      return Response.json({
-        tree: analysis.tree,
-        truncated: analysis.treeTruncated,
-        importantFiles: analysis.importantFiles,
-      }, { status: 200 });
-    }
-
-    if (pathname === '/api/repo/file' && method === 'GET') {
-      const q = fileQuerySchema.safeParse(query);
-      if (!q.success) {
-        throw new AppError(400, 'owner, repo, and path required', 'INVALID_PARAMS');
-      }
-      const file: { content: string } = await getRepoFileContent(q.data.owner, q.data.repo, q.data.path, q.data.branch, ctx);
-      return Response.json(file, { status: 200 });
-    }
-
-    if (pathname === '/api/repo/contributors' && method === 'GET') {
-      const q = repoQuerySchema.safeParse(query);
-      if (!q.success) {
-        throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
-      }
-      const analysis: RepoAnalysis = await analyzeRepository(q.data, ctx);
-      return Response.json({ contributors: analysis.contributors }, { status: 200 });
-    }
-
-    if (pathname === '/api/ai/explain' && method === 'POST') {
-      const body = await req.json().catch(() => ({}));
-      const parsed = aiExplainSchema.safeParse(body);
-      if (!parsed.success) {
-        throw new AppError(400, 'Invalid request', 'VALIDATION_ERROR', false, parsed.error.flatten());
-      }
-      const result: AIExplainResponse = await explainRepo({ ...parsed.data, apiKey: userKey, gitHubToken }, ctx);
-      return Response.json(result, { status: 200 });
-    }
-
-    if (pathname === '/api/ai/architecture' && method === 'POST') {
-      const body = await req.json().catch(() => ({}));
-      const parsed = repoQuerySchema.safeParse(body);
-      if (!parsed.success) {
-        throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
-      }
-      const result: AIArchitectureResponse = await explainArchitecture(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
-      return Response.json(result, { status: 200 });
-    }
-
-    if (pathname === '/api/ai/suggest-files' && method === 'POST') {
-      const body = await req.json().catch(() => ({}));
-      const parsed = repoQuerySchema.safeParse(body);
-      if (!parsed.success) {
-        throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
-      }
-      const result: AISuggestFilesResponse = await suggestFiles(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
-      return Response.json(result, { status: 200 });
-    }
-
-    if (pathname === '/api/ai/onboarding' && method === 'POST') {
-      const body = await req.json().catch(() => ({}));
-      const parsed = repoQuerySchema.safeParse(body);
-      if (!parsed.success) {
-        throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
-      }
-      const result: AIOnboardingResponse = await generateOnboarding(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
-      return Response.json(result, { status: 200 });
-    }
-
-    if (pathname === '/api/ai/learning-path' && method === 'POST') {
-      const body = await req.json().catch(() => ({}));
-      const parsed = repoQuerySchema.safeParse(body);
-      if (!parsed.success) {
-        throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
-      }
-      const result: AILearningPathResponse = await generateLearningPath(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
-      return Response.json(result, { status: 200 });
-    }
-
-    if (pathname === '/api/ai/explain-new' && method === 'POST') {
-      const body = await req.json().catch(() => ({}));
-      const parsed = repoQuerySchema.safeParse(body);
-      if (!parsed.success) {
-        throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
-      }
-      const result: AIExplainNewResponse = await explainRepoELI5(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
-      return Response.json(result, { status: 200 });
-    }
-
-    if (pathname === '/api/ai/refactor' && method === 'POST') {
-      const body = await req.json().catch(() => ({}));
-      const parsed = repoQuerySchema.safeParse(body);
-      if (!parsed.success) {
-        throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
-      }
-      const result: AIRefactorResponse = await generateRefactorSuggestions(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
-      return Response.json(result, { status: 200 });
-    }
-
-    if (pathname === '/api/ai/health' && method === 'POST') {
-      const body = await req.json().catch(() => ({}));
-      const parsed = repoQuerySchema.safeParse(body);
-      if (!parsed.success) {
-        throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
-      }
-      const result: AIHealthResponse = await generateHealthReport(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
-      return Response.json(result, { status: 200 });
-    }
-
-    if (pathname === '/api/ai/mermaid' && method === 'POST') {
-      const body = await req.json().catch(() => ({}));
-      const parsed = repoQuerySchema.safeParse(body);
-      if (!parsed.success) {
-        throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
-      }
-      const result: AIMermaidResponse = await generateMermaidDiagram(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
-      return Response.json(result, { status: 200 });
-    }
-
-    if (pathname === '/api/ai/roast' && method === 'POST') {
-      const body = await req.json().catch(() => ({}));
-      const parsed = repoQuerySchema.safeParse(body);
-      if (!parsed.success) {
-        throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
-      }
-      const result: AIRoastResponse = await generateRepoRoast(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
-      return Response.json(result, { status: 200 });
-    }
-
-    if (pathname === '/api/ai/readme-enhance' && method === 'POST') {
-      const body = await req.json().catch(() => ({}));
-      const parsed = repoQuerySchema.safeParse(body);
-      if (!parsed.success) {
-        throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
-      }
-      const result: AIReadmeEnhanceResponse = await generateReadmeEnhancement(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
-      return Response.json(result, { status: 200 });
-    }
-
-    // ── Semantic Search Routes ──────────────────────────────────────────
-
-    if (pathname === '/api/search' && method === 'POST') {
-      const body = await req.json().catch(() => ({}));
-      const parsed = searchBodySchema.safeParse(body);
-      if (!parsed.success) {
-        throw new AppError(400, 'Invalid search request', 'VALIDATION_ERROR', false, parsed.error.flatten());
-      }
-      const info = await fetchRepoInfo(parsed.data.owner, parsed.data.repo, parsed.data.branch, ctx);
-      const engine = getSearchEngine();
-      const result = await engine.search({
-        query: parsed.data.query,
-        owner: parsed.data.owner,
-        repo: parsed.data.repo,
-        commitSha: info.sha,
-      });
-      logApi('/api/search', { durationMs: Date.now() - start, results: result.results.length });
-      return Response.json(result, { status: 200 });
-    }
-
-    if (pathname === '/api/search/ask' && method === 'POST') {
-      const body = await req.json().catch(() => ({}));
-      const parsed = askBodySchema.safeParse(body);
-      if (!parsed.success) {
-        throw new AppError(400, 'Invalid ask request', 'VALIDATION_ERROR', false, parsed.error.flatten());
-      }
-      const info = await fetchRepoInfo(parsed.data.owner, parsed.data.repo, parsed.data.branch, ctx);
-      const qaEngine = getQAEngine();
-      const result = await qaEngine.ask({
-        question: parsed.data.question,
-        owner: parsed.data.owner,
-        repo: parsed.data.repo,
-        commitSha: info.sha,
-        apiKey: userKey,
-      });
-      logApi('/api/search/ask', { durationMs: Date.now() - start, citations: result.citations.length });
-      return Response.json(result, { status: 200 });
-    }
-
-    if (pathname === '/api/search/index' && method === 'POST') {
-      const body = await req.json().catch(() => ({}));
-      const parsed = indexBodySchema.safeParse(body);
-      if (!parsed.success) {
-        throw new AppError(400, 'Invalid index request', 'VALIDATION_ERROR', false, parsed.error.flatten());
-      }
-      const info = await fetchRepoInfo(parsed.data.owner, parsed.data.repo, parsed.data.branch, ctx);
-      const pipeline = getIndexingPipeline();
-      // Fire-and-forget: start indexing in background
-      pipeline.startIndexing({
-        owner: parsed.data.owner,
-        repo: parsed.data.repo,
-        branch: parsed.data.branch,
-        commitSha: info.sha,
-      }, ctx).catch(() => { /* logged internally */ });
-      logApi('/api/search/index', { durationMs: Date.now() - start, repo: `${parsed.data.owner}/${parsed.data.repo}` });
-      return Response.json({ status: 'started' }, { status: 200 });
-    }
-
-    if (pathname === '/api/search/status' && method === 'GET') {
-      const owner = query.owner;
-      const repo = query.repo;
-      if (!owner || !repo) {
-        throw new AppError(400, 'owner and repo query params required', 'INVALID_PARAMS');
-      }
-      const pipeline = getIndexingPipeline();
-      const status = pipeline.getStatus(`${owner}/${repo}`);
-      return Response.json(status, { status: 200 });
-    }
+    // ── Semantic Search & Ingest Routes ─────────────────────────────
+    const searchResponse = await handleSearchRoutes(pathname, req, query, userKey, ctx, start);
+    if (searchResponse) return searchResponse;
 
     return null;
   } catch (error) {
