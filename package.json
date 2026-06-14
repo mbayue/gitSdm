@@ -10,9 +10,9 @@
     "build:docker": "bun run build && bun run build:server",
     "start": "bun dist-server/prod-server.js",
     "preview": "vite preview",
-    "test": "bun test",
-    "test:watch": "bun test --watch",
-    "test:coverage": "bun test --coverage",
+    "test": "bun test --isolate",
+    "test:watch": "bun test --isolate --watch",
+    "test:coverage": "bun test --isolate --coverage",
     "lint": "eslint .",
     "graphify:update": "graphify update . && python scripts/clean_graphify.py"
   },

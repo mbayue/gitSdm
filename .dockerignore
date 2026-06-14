@@ -4,8 +4,30 @@ dist-server
 .git
 .env
 .env.*
+!.env.example
 graphify-out
 coverage
 npm-debug.log*
+
+# Dev/CI files
 Dockerfile
 .dockerignore
+.eslintrc*
+eslint.config.*
+*.test.ts
+__tests__
+
+# Docs & assets
+README.md
+CONTRIBUTING.md
+LICENSE
+docs/
+assets/
+
+# IDE & agent configs
+.vscode
+.idea
+.agents
+.agent
+.gemini
+components.json

@@ -19,10 +19,12 @@ ENV PORT=3000
 
 WORKDIR /app
 
-COPY --from=build /app/package.json ./
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/dist-server ./dist-server
+COPY --from=build --chown=bun:bun /app/package.json ./
+COPY --from=build --chown=bun:bun /app/node_modules ./node_modules
+COPY --from=build --chown=bun:bun /app/dist ./dist
+COPY --from=build --chown=bun:bun /app/dist-server ./dist-server
+
+USER bun
 
 EXPOSE 3000
 

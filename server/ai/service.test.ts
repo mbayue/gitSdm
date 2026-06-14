@@ -3,7 +3,21 @@ import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import { clearAllCaches } from '../cache/lru';
 import { executeAiTask } from './service';
 
-const completeMock = mock(async () => '{"value":"live"}');
+const completeMock = mock(async (messages?: any[]) => {
+  const user = messages?.find?.((m) => m.role === 'user')?.content ?? '';
+  if (user.includes('architecture')) {
+    return JSON.stringify({
+      overview:
+        'This repository follows a modular architecture with clear separation between API routes, shared server logic, and a React frontend. The visualization layer uses React Flow for interactive dependency graphs.',
+      layers: [
+        { name: 'Presentation', description: 'React + Vite SPA with Tailwind and Framer Motion' },
+        { name: 'API', description: 'Serverless handlers for GitHub ingestion and AI' },
+        { name: 'Core', description: 'Parsers, graph builder, and GitHub client' },
+      ],
+    });
+  }
+  return '{"value":"live"}';
+});
 
 mock.module('./provider', () => ({
   getAIProvider: mock(async () => ({
