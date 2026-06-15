@@ -1,4 +1,4 @@
-<h1 align="center">gitSdm<sup>β</sup> (Git Software Dependency Map Beta v0.9.0)</h1>
+<h1 align="center">gitSdm (Git Software Dependency Map v1.0.0)</h1>
 
 <p align="center">
   <strong>AI-Powered Repository Intelligence & Architecture Visualization Platform</strong>
@@ -43,39 +43,41 @@
 ```
 gitSdm/
 ├── 📁 api/                    # Vercel serverless functions
-│   ├── ai/                    # AI endpoints (architecture, explain, suggest)
-│   ├── repo/                  # Repository data endpoints
-│   └── trending.ts            # Trending repositories
-├── 📁 server/                 # Backend services
-│   ├── ai/                    # AI provider & prompt management
+├── 📁 server/                 # Backend services & router
+│   ├── ai/                    # AI provider, prompt & task handlers
 │   ├── cache/                 # LRU caching layer
-│   ├── github/                # GitHub API integration
+│   ├── config/                # App configuration & env validation
+│   ├── github/                # GitHub API client
 │   ├── graph/                 # Graph building & layout algorithms
 │   ├── parser/                # Dependency & file analysis
+│   ├── router/                # Modular backend routers (AI, repo, search)
+│   ├── search/                # Semantic search, embeddings & QA engine
 │   ├── services/              # Business logic layer
 │   └── utils/                 # HTTP, logging utilities
 ├── 📁 src/                    # Frontend application
 │   ├── app/                   # App providers & routing
 │   ├── components/            # UI components
-│   │   ├── contributors/      # Contributor analytics
-│   │   ├── explorer/          # File explorer & code inspector
-│   │   ├── home/              # Landing page components
-│   │   ├── layout/            # Navigation & layout
-│   │   ├── theme/             # Theme synchronization
-│   │   ├── timeline/          # Repository timeline
-│   │   ├── ui/                # Reusable UI primitives
-│   │   └── viz/               # Visualization components
+│   │   ├── explorer/          # File explorer & code inspector dock
+│   │   ├── home/              # Modular landing page sections
+│   │   ├── ui/                # shadcn/ui primitives & styling wrapper
+│   │   └── viz/               # Visual workspace modules
+│   │       ├── ai-sidebar/    # Context-aware chat tabs & tools
+│   │       ├── architecture/  # Mermaid configs & interactive generators
+│   │       ├── layout/        # Viz sidebar & workspace layout
+│   │       ├── learning-path/ # Code learning simulation player
+│   │       └── top-nav/       # Branch switcher & stats menus
 │   ├── features/              # Feature modules
-│   │   ├── ai/                # AI integration hooks
-│   │   └── graph/             # Graph rendering engine
+│   │   ├── ai/                # AI task integration hooks
+│   │   └── graph/             # Graph rendering, styles & layout worker
+│   │       └── canvas/        # ReactFlow & D3-force engines
+│   │           └── force/     # Custom D3 minimap & canvas painters
 │   ├── hooks/                 # Custom React hooks
-│   ├── lib/                   # Utilities & API client
-│   ├── pages/                 # Route pages
-│   ├── stores/                # State management
-│   ├── styles/                # Global styles
+│   ├── lib/                   # Shared API client & utilities
+│   ├── pages/                 # Route-level page components
+│   ├── stores/                # Zustand global stores (e.g. vizStore)
+│   ├── styles/                # Tailwind CSS global styles
 │   └── types/                 # TypeScript definitions
-├── 📁 public/                 # Static assets
-├── 📁 assets/                 # Screenshots & media
+├── 📁 public/                 # Static assets (including layout worker)
 └── 📁 .agents/                # AI agent configurations
 ```
 
@@ -85,8 +87,8 @@ gitSdm/
 
 ### Prerequisites
 
-- **Node.js** ≥ 22 (Alpine)
-- **pnpm** ≥ 9 (recommended) or npm/yarn
+- **Bun** >= 1.1 (recommended runtime and package manager)
+- **Node.js** >= 22 (alternative backend support)
 - **GitHub Personal Access Token** (for API access)
 
 ### Installation
@@ -97,7 +99,7 @@ git clone https://github.com/bayue48/gitSdm.git
 cd gitSdm
 
 # Install dependencies
-pnpm install
+bun install
 
 # Copy environment variables
 cp .env.example .env
@@ -110,9 +112,9 @@ cp .env.example .env
 | `GITHUB_TOKEN`       | Optional. Increases GitHub API rate limits for public repos                  |
 | `AI_PROVIDER`        | `mock` (default), `gemini`,`openai`, or `anthropic`                          |
 | `OPENAI_API_KEY`     | Required when `AI_PROVIDER=openai`                                           |
-| `ANTHROPIC_API_KEY`  | Required when `AI_PROVIDER=anthropic`                                        |
+| `ANTHROPIC_API_KEY`  | Required when `AI_PROVIDER=anthropic` |
 | `GEMINI_API_KEY`     | Required when `AI_PROVIDER=gemini`                                           |
-| `GEMINI_MODEL`       | Optional when `AI_PROVIDER=gemini`; defaults to `gemini-1.5-flash`           |
+| `GEMINI_MODEL`       | Optional when `AI_PROVIDER=gemini`; defaults to `gemini-2.5-flash`           |
 | `GEMINI_API_VERSION` | Optional when `AI_PROVIDER=gemini`; defaults to `v1alpha`                    |
 | `OPENAI_MODEL`       | Optional when `AI_PROVIDER=openai`; defaults to `gpt-4o-mini`                |
 | `ANTHROPIC_MODEL`    | Optional when `AI_PROVIDER=anthropic`; defaults to `claude-3-5-haiku-latest` |
@@ -120,22 +122,18 @@ cp .env.example .env
 ### Development
 
 ```bash
-# Start development server (frontend + backend)
-pnpm dev
-
-# Or run separately:
-pnpm dev:frontend  # Vite dev server on :5173
-pnpm dev:backend   # Express dev server on :3001
+# Start development server
+bun dev
 ```
 
 ### Production Build
 
 ```bash
 # Build for production
-pnpm build
+bun run build
 
 # Preview production build
-pnpm preview
+bun run preview
 ```
 
 ### Docker Deployment
@@ -211,7 +209,8 @@ gcloud run deploy gitsdm \
 | @xyflow/react 12       | Graph visualization             |
 | Framer Motion 12       | Animations                      |
 | TanStack React Query 5 | Data fetching                   |
-| Tailwind CSS 3.4       | Styling                         |
+| Tailwind CSS 4.0       | Styling                         |
+| shadcn/ui 4            | Component primitives            |
 | Recharts 2             | Charts & analytics              |
 | Mermaid 11             | Diagram generation              |
 | html-to-image          | Element/SVG to image conversion |
@@ -236,8 +235,8 @@ gcloud run deploy gitsdm \
 | ---------------- | ------------------- |
 | Google Cloud Run | Deployment platform |
 | Docker           | Containerization    |
-| pnpm             | Package management  |
-| Vitest           | Testing framework   |
+| Bun              | Package management  |
+| Bun Test         | Testing framework   |
 | ESLint 9         | Code quality        |
 
 ---
@@ -274,23 +273,42 @@ Select branches → Visual diff → See architectural changes
 
 ```bash
 # Run all tests
-pnpm test
+bun test
 
 # Run with coverage
-pnpm test:coverage
+bun run test:coverage
 
 # Watch mode
-pnpm test:watch
+bun run test:watch
 ```
 
-Test files are co-located with source files:
+Test files are co-located with source files (25 test suites):
 
-- `server/parser/manifest-parsers/index.test.ts`
+- `server/ai/provider.test.ts`
+- `server/ai/service.test.ts`
+- `server/cache/lru.test.ts`
+- `server/config/app-config.test.ts`
+- `server/github/client.test.ts`
+- `server/github/fetch-tree.test.ts`
+- `server/github/mock-data.test.ts`
 - `server/github/parse-url.test.ts`
 - `server/graph/graph-builder.test.ts`
 - `server/graph/layout.test.ts`
 - `server/parser/dependency-analyzer.test.ts`
 - `server/parser/file-classifier.test.ts`
+- `server/parser/import-resolver.test.ts`
+- `server/parser/manifest-parsers/index.test.ts`
+- `server/search/chunker.test.ts`
+- `server/search/constants.test.ts`
+- `server/search/embedding-provider.test.ts`
+- `server/search/qa-engine.test.ts`
+- `server/search/search-engine.test.ts`
+- `server/search/vector-store.test.ts`
+- `server/services/analyze-repo.test.ts`
+- `server/services/get-file.test.ts`
+- `server/services/trending.test.ts`
+- `server/utils/errors.test.ts`
+- `server/utils/logger.test.ts`
 
 ---
 

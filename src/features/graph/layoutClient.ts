@@ -36,10 +36,13 @@ export function getLayoutedElements(
     // Clone nodes and seed them deterministically
     const simNodes: LayoutNode[] = nodes.map((n) => {
       const seed = getSeedPosition(n.id);
+      const isRepo = n.type === 'repo';
       return {
         ...n,
-        x: seed.x,
-        y: seed.y,
+        x: isRepo ? 400 : seed.x,
+        y: isRepo ? 400 : seed.y,
+        fx: isRepo ? 400 : undefined,
+        fy: isRepo ? 400 : undefined,
       };
     });
 
@@ -57,10 +60,10 @@ export function getLayoutedElements(
         'link',
         forceLink(simLinks)
           .id((d) => (d as LayoutNode).id)
-          .distance(70)
+          .distance(100)
       )
-      .force('charge', forceManyBody().strength(-150))
-      .force('collide', forceCollide().radius(45))
+      .force('charge', forceManyBody().strength(-200))
+      .force('collide', forceCollide().radius(60))
       .force('x', forceX(400).strength(0.08))
       .force('y', forceY(400).strength(0.08))
       .stop();
@@ -84,9 +87,9 @@ export function getLayoutedElements(
   g.setDefaultEdgeLabel(() => ({}));
 
   g.setGraph({
-    rankdir: layoutType,
-    nodesep: 40,
-    ranksep: 75,
+    rankdir: 'TB',
+    nodesep: 60,
+    ranksep: 110,
   });
 
   nodes.forEach((node) => {

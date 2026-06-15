@@ -103,6 +103,7 @@ export async function fetchRepoInfo(
     };
   } catch (e) {
     handleOctokitError(e);
+    return undefined as never;
   }
 }
 
@@ -124,21 +125,26 @@ export async function fetchFlatTree(
       recursive: '1',
     });
 
-    const blobs = (data.tree ?? [])
-      .filter((item) => item.path && item.type === 'blob')
-      .slice(0, MAX_TREE_ITEMS)
-      .map((item) => ({
-        path: item.path!,
-        type: 'blob' as const,
-        sha: item.sha!,
-        size: item.size,
-      }));
+    const blobs: FlatTreeItem[] = [];
+    const tree = data.tree ?? [];
+    for (const item of tree) {
+      if (item.path && item.type === 'blob') {
+        blobs.push({
+          path: item.path,
+          type: 'blob',
+          sha: item.sha!,
+          size: item.size,
+        });
+        if (blobs.length >= MAX_TREE_ITEMS) break;
+      }
+    }
 
-    const truncated = (data.tree?.length ?? 0) > MAX_TREE_ITEMS || data.truncated === true;
+    const truncated = tree.length > MAX_TREE_ITEMS || data.truncated === true;
 
     return { items: blobs, truncated };
   } catch (e) {
     handleOctokitError(e);
+    return undefined as never;
   }
 }
 
@@ -201,13 +207,15 @@ const MANIFEST_PATHS = [
 ];
 
 export function findManifestPaths(items: FlatTreeItem[]): string[] {
-  return items
-    .map((i) => i.path)
-    .filter((path) => {
-      const base = path.split('/').pop() ?? '';
-      return MANIFEST_PATHS.includes(base) || base === 'package.json';
-    })
-    .slice(0, 20);
+  const paths: string[] = [];
+  for (const item of items) {
+    const base = item.path.split('/').pop() ?? '';
+    if (MANIFEST_PATHS.includes(base)) {
+      paths.push(item.path);
+      if (paths.length >= 20) break;
+    }
+  }
+  return paths;
 }
 
 export async function fetchFileContents(
@@ -259,13 +267,17 @@ export async function fetchContributors(
       repo,
       per_page: 15,
     });
-    return data
-      .filter((c) => c.login)
-      .map((c) => ({
-        login: c.login!,
-        avatarUrl: c.avatar_url ?? '',
-        contributions: c.contributions ?? 0,
-      }));
+    const result: { login: string; avatarUrl: string; contributions: number }[] = [];
+    for (const c of data) {
+      if (c.login) {
+        result.push({
+          login: c.login,
+          avatarUrl: c.avatar_url ?? '',
+          contributions: c.contributions ?? 0,
+        });
+      }
+    }
+    return result;
   } catch {
     return [];
   }
@@ -317,9 +329,12 @@ export async function fetchTimeline(
       weeks.set(weekKey, entry);
     }
 
-    return Array.from(weeks.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([week, v]) => ({ week, ...v }));
+    const result: TimelineWeek[] = [];
+    const sortedEntries = Array.from(weeks.entries()).sort(([a], [b]) => a.localeCompare(b));
+    for (const [week, v] of sortedEntries) {
+      result.push({ week, ...v });
+    }
+    return result;
   } catch {
     return [];
   }

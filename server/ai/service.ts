@@ -1,12 +1,12 @@
 import { getAIProvider } from './provider';
-import { aiCacheKey, cache } from '../cache/lru';
+import { aiCacheKey, cache, hashContext } from '../cache/lru';
 import { logApi } from '../utils/logger';
 
 // Concurrency queue to control/batch AI API requests
 class PromiseQueue {
   private queue: (() => Promise<void>)[] = [];
   private activeCount = 0;
-  constructor(private maxConcurrency = 2) {}
+  constructor(private maxConcurrency = 2) { }
 
   add<T>(fn: () => Promise<T>): Promise<T> {
     return new Promise((resolve, reject) => {
@@ -36,6 +36,32 @@ class PromiseQueue {
 }
 
 const aiQueue = new PromiseQueue(2);
+
+function getAiCacheDiscriminator(apiKey?: string): string {
+  const envProvider = process.env.AI_PROVIDER?.trim().toLowerCase();
+  const provider = apiKey?.trim()
+    ? (apiKey.trim().startsWith('sk-ant-') ? 'anthropic' : apiKey.trim().startsWith('sk-') ? 'openai' : 'gemini')
+    : (envProvider && envProvider.length > 0
+      ? envProvider
+      : (process.env.GEMINI_API_KEY?.trim()
+        ? 'gemini'
+        : process.env.OPENAI_API_KEY?.trim()
+          ? 'openai'
+          : process.env.ANTHROPIC_API_KEY?.trim()
+            ? 'anthropic'
+            : 'mock'));
+
+  const model = provider === 'gemini'
+    ? (process.env.GEMINI_MODEL ?? 'gemini-2.5-flash')
+    : provider === 'openai'
+      ? (process.env.OPENAI_MODEL ?? 'gpt-4o-mini')
+      : provider === 'anthropic'
+        ? (process.env.ANTHROPIC_MODEL ?? 'claude-3-5-haiku-latest')
+        : 'mock';
+
+  const keyScope = apiKey?.trim() ? `user-key:${hashContext(apiKey)}` : 'env-key';
+  return `${provider}:${model}:${keyScope}`;
+}
 
 export function safeParseJSON<T>(raw: string): T {
   let cleaned = raw.trim();
@@ -83,16 +109,24 @@ export interface AiTaskParams<T extends NonNullable<unknown>> {
 export async function executeAiTask<T extends NonNullable<unknown>>(
   params: AiTaskParams<T>
 ): Promise<{ data: T; cached: boolean }> {
-  const isMock = (process.env.AI_PROVIDER ?? 'mock').toLowerCase() === 'mock';
+  const providerEnv = process.env.AI_PROVIDER?.trim().toLowerCase();
+  const hasApiKey = params.apiKey?.trim();
+  const isMock = !hasApiKey && (!providerEnv || providerEnv === 'mock');
 
   if (isMock) {
     return { data: params.mockFallback(), cached: false };
   }
 
-  const key = aiCacheKey(params.taskName, params.owner, params.repo, params.sha, params.paramHash ?? 'v1');
-  const cached = cache.get<T>(key);
-  if (cached) {
-    return { data: cached, cached: true };
+  const key = aiCacheKey(
+    params.taskName,
+    params.owner,
+    params.repo,
+    params.sha,
+    params.paramHash ?? 'v1',
+    getAiCacheDiscriminator(params.apiKey)
+  );
+  if (cache.has(key)) {
+    return { data: cache.get<T>(key)!, cached: true };
   }
 
   const provider = await getAIProvider(params.apiKey);

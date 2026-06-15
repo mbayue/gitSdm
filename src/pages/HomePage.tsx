@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
-import { Hero } from '@/components/home/Hero';
-import { RepoInput } from '@/components/home/RepoInput';
-import { PreviewGraph } from '@/components/home/PreviewGraph';
+import { HeroSection } from '@/components/home/HeroSection';
+import { StatsStrip } from '@/components/home/StatsStrip';
+import { HowItWorks } from '@/components/home/HowItWorks';
 import { Trending } from '@/components/home/Trending';
-import { FeatureShowcase } from '@/components/home/FeatureShowcase';
+import { CapabilityGroups } from '@/components/home/CapabilityGroups';
 import { LAST_REPO_KEY } from '@/lib/utils';
 
 export function HomePage() {
@@ -25,18 +25,18 @@ export function HomePage() {
   }, []);
 
   return (
-    <div className="mesh-bg min-h-screen">
+    <div className="min-h-screen" style={{ background: '#050509' }}>
       <Navbar />
-      <Hero />
-      <RepoInput initialUrl={repoUrl} />
-      <PreviewGraph />
+      <HeroSection initialUrl={repoUrl} />
+      <StatsStrip />
+      <HowItWorks />
       <Trending onSelect={setRepoUrl} />
-      <FeatureShowcase />
-      <footer className="border-t border-white/5 py-10 text-center">
-        <p className="text-xs text-zinc-600">
-          <span className="font-semibold text-zinc-500">gitSdm<sup>β</sup></span> — AI-powered repository intelligence platform · Built for the Juara Vibe Coding challenge
+      <CapabilityGroups />
+      <footer className="border-t border-[#272233] py-12 text-center">
+        <p className="text-sm text-[#a1a1aa]">
+          <span className="font-semibold text-[#f8fafc]">gitSdm</span> — AI-powered repository intelligence platform
         </p>
-        <p className="mt-1 text-[10px] text-zinc-700">
+        <p className="mt-2 text-xs text-[#a1a1aa]/60">
           Public & private repositories supported · Powered by Google Gemini
         </p>
       </footer>

@@ -1,11 +1,15 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { GitBranch } from 'lucide-react';
-import { GlowButton } from '@/components/ui/GlowButton';
-import { SettingsPopover } from '@/components/viz/SettingsPopover';
-// import { useVizStore } from '@/stores/vizStore';
+import { GitBranch, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+
+const NAV_LINKS = [
+  { id: 'features', label: 'Features' },
+  { id: 'trending', label: 'Trending' },
+  { id: 'how-it-works', label: 'Demo' },
+];
 
 export function Navbar() {
-  // const { theme, toggleTheme } = useVizStore();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -30,36 +34,52 @@ export function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 z-50 w-full border-b border-white/5 bg-zinc-950/60 shadow-[0_8px_18px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+    <nav className="fixed top-0 z-50 w-full border-b border-[#272233] bg-[#050509]/80 backdrop-blur-xl">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <Link to="/" className="flex items-center gap-2 text-white">
-          <div className="logo-bg flex h-8 w-8 items-center justify-center rounded-lg">
-            <GitBranch className="h-4 w-4" />
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2.5 text-[#f8fafc]">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#8b5cf6] to-[#22d3ee]">
+            <GitBranch className="h-4 w-4 text-white" />
           </div>
-          <span className="font-semibold tracking-tight">
-            git<span className="gradient-text">Sdm</span>
+          <span className="text-base font-bold tracking-tight">
+            git<span className="bg-gradient-to-r from-[#8b5cf6] to-[#22d3ee] bg-clip-text text-transparent">Sdm</span>
           </span>
         </Link>
-        <div className="flex items-center gap-3">
-          {/* Theme toggle disabled/hidden for now
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/5 bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white transition-colors"
-            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+
+        {/* Center nav links - hidden on mobile */}
+        <div className="hidden md:flex items-center gap-1">
+          {NAV_LINKS.map((link) => (
+            <button
+              key={link.id}
+              type="button"
+              onClick={() => goToSection(link.id)}
+              className="px-3 py-1.5 text-sm text-[#a1a1aa] hover:text-[#f8fafc] transition-colors rounded-md hover:bg-white/5 cursor-pointer"
+            >
+              {link.label}
+            </button>
+          ))}
+          <a
+            href="https://github.com/bayue48/gitSdm"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1.5 text-sm text-[#a1a1aa] hover:text-[#f8fafc] transition-colors rounded-md hover:bg-white/5"
           >
-            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </button>
-          */}
-          <SettingsPopover />
-          <GlowButton
-            type="button"
-            variant="ghost"
-            className="h-8 !py-0 !px-3 text-xs"
+            GitHub
+          </a>
+        </div>
+
+        {/* Right actions */}
+        <div className="flex items-center gap-2">
+          <Separator orientation="vertical" className="h-5 hidden md:block bg-[#272233]" />
+          <Button
+            variant="default"
+            size="sm"
             onClick={() => goToSection('analyze')}
+            className="gap-1.5 bg-gradient-to-r from-[#8b5cf6] to-[#22d3ee] text-white border-0 hover:opacity-90 shadow-[0_0_20px_rgba(139,92,246,0.3)]"
           >
+            <Sparkles className="h-3.5 w-3.5" />
             Analyze
-          </GlowButton>
+          </Button>
         </div>
       </div>
     </nav>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TreeNode } from '@/types';
@@ -9,6 +9,44 @@ interface SmartFileExplorerProps {
   rootLabel: string;
   onSelectFile?: (path: string) => void;
   selectedPath?: string;
+  searchQuery?: string;
+  expansionTrigger?: { type: 'expand' | 'collapse'; time: number } | null;
+}
+
+// Recursive function to filter the file tree based on query
+function filterTree(nodes: TreeNode[], query: string): TreeNode[] {
+  if (!query) return nodes;
+  const lowerQuery = query.toLowerCase();
+
+  const filterNode = (node: TreeNode): TreeNode | null => {
+    if (node.type === 'file') {
+      return node.name.toLowerCase().includes(lowerQuery) ? node : null;
+    }
+
+    const filteredChildren: TreeNode[] = [];
+    if (node.children) {
+      for (const child of node.children) {
+        const res = filterNode(child);
+        if (res) filteredChildren.push(res);
+      }
+    }
+
+    if (filteredChildren.length > 0 || node.name.toLowerCase().includes(lowerQuery)) {
+      return {
+        ...node,
+        children: filteredChildren,
+      };
+    }
+
+    return null;
+  };
+
+  const result: TreeNode[] = [];
+  for (const node of nodes) {
+    const res = filterNode(node);
+    if (res) result.push(res);
+  }
+  return result;
 }
 
 export function SmartFileExplorer({
@@ -16,8 +54,15 @@ export function SmartFileExplorer({
   rootLabel,
   onSelectFile,
   selectedPath,
+  searchQuery = '',
+  expansionTrigger = null,
 }: SmartFileExplorerProps) {
   const [rootOpen, setRootOpen] = useState(true);
+
+  // Filter the tree based on search query
+  const filteredTree = useMemo(() => {
+    return filterTree(tree, searchQuery);
+  }, [tree, searchQuery]);
 
   useEffect(() => {
     if (selectedPath && !rootOpen) {
@@ -26,30 +71,51 @@ export function SmartFileExplorer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPath]);
 
+  // Keep root folder open when filtering
+  useEffect(() => {
+    if (searchQuery) {
+      setRootOpen(true);
+    }
+  }, [searchQuery]);
+
+  // Sync root open state with expansion triggers
+  useEffect(() => {
+    if (expansionTrigger) {
+      setRootOpen(expansionTrigger.type === 'expand');
+    }
+  }, [expansionTrigger]);
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto py-1 text-[13px]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto py-2 text-xs select-none">
       <button
         type="button"
         onClick={() => setRootOpen(!rootOpen)}
-        className="flex w-full items-center gap-1 px-2 py-1 text-left text-zinc-300 hover:bg-white/[0.03]"
+        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-zinc-300 hover:bg-white/[0.03] hover:text-white transition-colors duration-150 outline-none"
       >
         <ChevronRight
-          className={cn('h-3.5 w-3.5 shrink-0 text-zinc-500 transition-transform', rootOpen && 'rotate-90')}
+          className={cn('h-3.5 w-3.5 shrink-0 text-zinc-500 transition-transform duration-150', rootOpen && 'rotate-90')}
         />
         <FolderIcon open={rootOpen} />
-        <span className="truncate font-medium text-zinc-200">{rootLabel}</span>
+        <span className="truncate font-semibold text-zinc-200">{rootLabel}</span>
       </button>
       {rootOpen && (
-        <div className="ml-2 border-l border-white/[0.06] pl-1">
-          {tree.map((node) => (
+        <div className="ml-3.5 border-l border-white/[0.04] pl-0.5">
+          {filteredTree.map((node) => (
             <TreeRow
               key={node.path}
               node={node}
               depth={0}
               onSelectFile={onSelectFile}
               selectedPath={selectedPath}
+              searchQuery={searchQuery}
+              expansionTrigger={expansionTrigger}
             />
           ))}
+          {filteredTree.length === 0 && (
+            <div className="px-3 py-6 text-center text-xs text-zinc-500 font-medium">
+              No files match filter.
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -61,14 +127,33 @@ function TreeRow({
   depth,
   onSelectFile,
   selectedPath,
+  searchQuery,
+  expansionTrigger,
 }: {
   node: TreeNode;
   depth: number;
   onSelectFile?: (path: string) => void;
   selectedPath?: string;
+  searchQuery: string;
+  expansionTrigger: { type: 'expand' | 'collapse'; time: number } | null;
 }) {
   const [open, setOpen] = useState(depth < 1);
 
+  // Auto expand when search query is typed
+  useEffect(() => {
+    if (searchQuery) {
+      setOpen(true);
+    }
+  }, [searchQuery]);
+
+  // Sync with global expansion triggers
+  useEffect(() => {
+    if (expansionTrigger) {
+      setOpen(expansionTrigger.type === 'expand');
+    }
+  }, [expansionTrigger]);
+
+  // Sync with active selection
   useEffect(() => {
     if (selectedPath && (selectedPath === node.path || selectedPath.startsWith(node.path + '/')) && !open) {
       setOpen(true);
@@ -76,24 +161,23 @@ function TreeRow({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPath, node.path]);
 
-
   if (node.type === 'dir') {
     return (
       <div className="relative">
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className="flex w-full items-center gap-1.5 rounded-md px-2 py-[3px] text-left text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"
+          className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 transition-colors duration-150 outline-none"
           style={{ paddingLeft: 8 + depth * 12 }}
         >
           <ChevronRight
-            className={cn('h-3.5 w-3.5 shrink-0 text-zinc-600 transition-transform', open && 'rotate-90')}
+            className={cn('h-3.5 w-3.5 shrink-0 text-zinc-600 transition-transform duration-150', open && 'rotate-90')}
           />
           <FolderIcon open={open} />
-          <span className="truncate">{node.name}</span>
+          <span className="truncate font-medium">{node.name}</span>
         </button>
         {open && node.children && (
-          <div className="ml-3 border-l border-white/[0.06]">
+          <div className="ml-3.5 border-l border-white/[0.04] pl-0.5">
             {node.children.map((child) => (
               <TreeRow
                 key={child.path}
@@ -101,6 +185,8 @@ function TreeRow({
                 depth={depth + 1}
                 onSelectFile={onSelectFile}
                 selectedPath={selectedPath}
+                searchQuery={searchQuery}
+                expansionTrigger={expansionTrigger}
               />
             ))}
           </div>
@@ -110,19 +196,16 @@ function TreeRow({
   }
 
   const selected = selectedPath === node.path;
-  const isHtml = node.name.endsWith('.html') || node.name.endsWith('.htm');
 
   return (
     <button
       type="button"
       onClick={() => onSelectFile?.(node.path)}
       className={cn(
-        'flex w-full items-center gap-1.5 rounded-md py-[3px] pr-2 text-left',
-        selected && isHtml &&
-          'mx-1 border border-rose-500/50 bg-rose-500/20 text-white shadow-[0_0_14px_rgba(244,114,182,0.2)]',
-        selected && !isHtml &&
-          'mx-1 border border-violet-500/40 bg-violet-500/20 text-white shadow-[0_0_12px_rgba(139,92,246,0.15)]',
-        !selected && 'text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200',
+        'flex w-full items-center gap-2 py-1.5 px-2 text-xs transition-all duration-150 select-none border-l-2 outline-none',
+        selected
+          ? 'bg-violet-600/10 border-violet-500 text-violet-300 font-semibold'
+          : 'border-transparent text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200',
       )}
       style={{ paddingLeft: 22 + depth * 12 }}
     >
