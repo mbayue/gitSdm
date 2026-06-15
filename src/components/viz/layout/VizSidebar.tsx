@@ -1,4 +1,4 @@
-import { ReactNode, useCallback } from "react";
+import { ReactNode, useCallback, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 interface VizSidebarProps {
@@ -24,6 +24,9 @@ export function VizSidebar({
 }: VizSidebarProps) {
   const isLeft = side === "left";
   
+  const mouseMoveHandlerRef = useRef<((e: MouseEvent) => void) | null>(null);
+  const mouseUpHandlerRef = useRef<(() => void) | null>(null);
+
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -41,13 +44,29 @@ export function VizSidebar({
       const handleMouseUp = () => {
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);
+        mouseMoveHandlerRef.current = null;
+        mouseUpHandlerRef.current = null;
       };
+
+      mouseMoveHandlerRef.current = handleMouseMove;
+      mouseUpHandlerRef.current = handleMouseUp;
       
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
     },
     [isLeft, minWidth, maxWidth, onWidthChange]
   );
+
+  useEffect(() => {
+    return () => {
+      if (mouseMoveHandlerRef.current) {
+        document.removeEventListener("mousemove", mouseMoveHandlerRef.current);
+      }
+      if (mouseUpHandlerRef.current) {
+        document.removeEventListener("mouseup", mouseUpHandlerRef.current);
+      }
+    };
+  }, []);
 
   const shadowClass = isLeft 
     ? "shadow-[4px_0_24px_rgba(0,0,0,0.5)] lg:shadow-none" 
@@ -57,7 +76,7 @@ export function VizSidebar({
     <div
       style={{ width: isOpen ? width : "40px" }}
       className={cn(
-        "absolute lg:relative z-40 shrink-0 flex h-full transition-all",
+        "hidden lg:relative z-40 shrink-0 h-full transition-all lg:flex",
         isLeft ? "left-0" : "right-0",
         shadowClass,
         className

@@ -33,8 +33,8 @@ export function useGraphCentering({
       if (activeId) return;
 
       const timer = setTimeout(() => {
-        fitView({ duration: 450, padding: 0.35 });
-      }, 80);
+        fitView({ duration: 800, padding: 0.35 });
+      }, 100);
       return () => clearTimeout(timer);
     }
   }, [layoutType, nodes, isCalculatingLayout, fitView, selectedNodeId, focusedFilePath]);
@@ -57,15 +57,21 @@ export function useGraphCentering({
     );
     if (targetNode) {
       lastCenteredIdRef.current = activeId;
-      const x =
-        targetNode.position.x +
-        (targetNode.measured?.width ?? targetNode.width ?? 120) / 2;
-      const y =
-        targetNode.position.y +
-        (targetNode.measured?.height ?? targetNode.height ?? 36) / 2;
+      const width =
+        typeof targetNode.measured?.width === "number"
+          ? targetNode.measured.width
+          : targetNode.width ?? 0;
+      const height =
+        typeof targetNode.measured?.height === "number"
+          ? targetNode.measured.height
+          : targetNode.height ?? 0;
       const timer = setTimeout(() => {
-        setCenter(x, y, { zoom: 1.3, duration: 300 });
-      }, 10);
+        setCenter(
+          targetNode.position.x + width / 2,
+          targetNode.position.y + height / 2,
+          { zoom: 1.3, duration: 480 }
+        );
+      }, 50);
       return () => clearTimeout(timer);
     }
   }, [selectedNodeId, focusedFilePath, nodes, setCenter]);

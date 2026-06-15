@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { forceCollide, forceRadial } from 'd3-force';
 import type { ForceGraphMethods } from 'react-force-graph-2d';
 import type { ForceGraphNode, ForceGraphLink } from '../../force/forceGraphConstants';
@@ -11,17 +11,21 @@ interface D3PhysicsProps {
 }
 
 export function useD3Physics({ layoutType, forceGraphRef, nodes }: D3PhysicsProps) {
+  const nodeCount = nodes.length;
+  const maxDegree = useMemo(
+    () => Math.max(1, ...nodes.map((n) => n.degree)),
+    [nodes],
+  );
+
   useEffect(() => {
     if (layoutType !== "network") return;
     const ref = forceGraphRef.current;
     if (!ref) return;
-    const nodeCount = nodes.length;
     const radius = Math.max(80, Math.sqrt(nodeCount) * 18);
 
     ref.d3Force("charge")?.strength(-100);
     ref.d3Force("link")?.distance(30).strength(0.8);
 
-    const maxDegree = Math.max(1, ...nodes.map((n) => n.degree));
     ref.d3Force(
       "radial",
       forceRadial(
@@ -36,7 +40,7 @@ export function useD3Physics({ layoutType, forceGraphRef, nodes }: D3PhysicsProp
     );
 
     ref.d3ReheatSimulation();
-  }, [layoutType, nodes, forceGraphRef]);
+  }, [layoutType, nodeCount, maxDegree, forceGraphRef]);
 
   useEffect(() => {
     if (layoutType !== "network" || !forceGraphRef.current) return;

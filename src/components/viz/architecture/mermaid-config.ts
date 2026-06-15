@@ -4,7 +4,7 @@ import mermaid from 'mermaid';
 mermaid.initialize({
   startOnLoad: false,
   theme: 'base',
-  securityLevel: 'loose',
+  securityLevel: 'strict',
   flowchart: {
     useMaxWidth: true,
     htmlLabels: true,

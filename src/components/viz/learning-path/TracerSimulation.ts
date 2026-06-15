@@ -48,10 +48,11 @@ export function useTracerSimulation({
   const focusFilePath = useCallback(
     (path: string) => {
       const node = findFileNode(path);
-      const nodeId = node?.id ?? `file:${path}`;
+      if (!node) return;
+      const nodeId = node.id;
       setSelectedNodeId(nodeId);
       setHighlightedNodeIds(new Set(connectedNodeIdsByNodeId.get(nodeId) ?? [nodeId]));
-      setFocusedFilePath(node?.data.path ?? path);
+      setFocusedFilePath(node.data.path ?? path);
     },
     [connectedNodeIdsByNodeId, findFileNode, setFocusedFilePath, setHighlightedNodeIds, setSelectedNodeId]
   );
@@ -87,22 +88,8 @@ export function useTracerSimulation({
 
   useEffect(() => {
     if (isPlaying && executionSteps.length > 0) {
-      const currentStep = executionSteps[activeStep];
-      if (currentStep) {
-        const path = resolveStepPath(currentStep);
-        focusFilePath(path);
-      }
-
       timerRef.current = setInterval(() => {
-        setActiveStep((prev) => {
-          const next = (prev + 1) % executionSteps.length;
-          const nextStep = executionSteps[next];
-          if (nextStep) {
-            const path = resolveStepPath(nextStep);
-            focusFilePath(path);
-          }
-          return next;
-        });
+        setActiveStep((prev) => (prev + 1) % executionSteps.length);
       }, 3500);
     } else {
       if (timerRef.current) {
@@ -114,7 +101,17 @@ export function useTracerSimulation({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPlaying, executionSteps, activeStep, focusFilePath, resolveStepPath]);
+  }, [isPlaying, executionSteps.length]);
+
+  useEffect(() => {
+    if (isPlaying && executionSteps.length > 0) {
+      const currentStep = executionSteps[activeStep];
+      if (currentStep) {
+        const path = resolveStepPath(currentStep);
+        focusFilePath(path);
+      }
+    }
+  }, [activeStep, isPlaying, executionSteps, focusFilePath, resolveStepPath]);
 
   useEffect(() => {
     if (!focusedFilePath || !executionSteps.length || isPlaying) return;

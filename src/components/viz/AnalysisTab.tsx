@@ -1,5 +1,7 @@
+import { useReactFlow } from '@xyflow/react';
 import { cn } from '@/lib/utils';
-import type { RepoAnalysis } from '@/types';
+import { useVizStore } from '@/stores/vizStore';
+import type { GraphNode, RepoAnalysis } from '@/types';
 import { Layers, Network } from 'lucide-react';
 
 interface AnalysisTabProps {
@@ -24,9 +26,40 @@ export function AnalysisTab({
   architecture,
   architectureLoading = false,
 }: AnalysisTabProps) {
+  const setFocusedFilePath = useVizStore((s) => s.setFocusedFilePath);
+  const { getNode, setCenter } = useReactFlow();
+
   const selectedNode = selectedNodeId
     ? analysis.graph.nodes.find((n) => n.id === selectedNodeId)
     : null;
+
+  const focusRelatedNode = (node: GraphNode) => {
+    setSelectedNodeId(node.id);
+    setFocusedFilePath(typeof node.data.path === 'string' ? node.data.path : null);
+
+    window.setTimeout(() => {
+      const target =
+        getNode(node.id) ||
+        (typeof node.data.path === 'string' ? getNode(`file:${node.data.path}`) : undefined) ||
+        (typeof node.data.path === 'string' ? getNode(`folder:${node.data.path}`) : undefined);
+
+      if (!target) return;
+
+      const width =
+        typeof target.measured?.width === "number"
+          ? target.measured.width
+          : target.width ?? 0;
+      const height =
+        typeof target.measured?.height === "number"
+          ? target.measured.height
+          : target.height ?? 0;
+
+      setCenter(target.position.x + width / 2, target.position.y + height / 2, {
+        duration: 480,
+        zoom: 1.3,
+      });
+    }, 50);
+  };
 
   return (
     <div className="space-y-6">
@@ -94,7 +127,7 @@ export function AnalysisTab({
                       return (
                         <button
                           key={id}
-                          onClick={() => setSelectedNodeId(node.id)}
+                          onClick={() => focusRelatedNode(node)}
                           className="w-full flex items-center justify-between p-2 rounded-xl bg-white/[0.015] border border-white/[0.03] hover:bg-white/[0.04] transition-colors group text-left"
                         >
                           <div className="flex items-center gap-2 truncate">
@@ -124,7 +157,7 @@ export function AnalysisTab({
                         return (
                           <button
                             key={e.id}
-                            onClick={() => setSelectedNodeId(target.id)}
+                            onClick={() => focusRelatedNode(target)}
                             className="w-full flex items-center justify-between p-2 rounded-xl bg-white/[0.015] border border-white/[0.03] hover:bg-white/[0.04] transition-colors group text-left"
                           >
                             <div className="flex items-center gap-2 truncate">
@@ -141,7 +174,7 @@ export function AnalysisTab({
                         return (
                           <button
                             key={e.id}
-                            onClick={() => setSelectedNodeId(source.id)}
+                            onClick={() => focusRelatedNode(source)}
                             className="w-full flex items-center justify-between p-2 rounded-xl bg-white/[0.015] border border-white/[0.03] hover:bg-white/[0.04] transition-colors group text-left"
                           >
                             <div className="flex items-center gap-2 truncate">

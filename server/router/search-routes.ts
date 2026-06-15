@@ -61,12 +61,20 @@ export async function handleSearchRoutes(
     const info = await fetchRepoInfo(parsed.data.owner, parsed.data.repo, parsed.data.branch, ctx);
     const pipeline = getIndexingPipeline();
     // Fire-and-forget background indexing pipeline
-    pipeline.startIndexing({
-      owner: parsed.data.owner,
-      repo: parsed.data.repo,
-      branch: parsed.data.branch,
-      commitSha: info.sha,
-    }, ctx).catch(() => { /* logged internally */ });
+    try {
+      await pipeline.startIndexing({
+        owner: parsed.data.owner,
+        repo: parsed.data.repo,
+        branch: parsed.data.branch,
+        commitSha: info.sha,
+      }, ctx);
+    } catch (err) {
+      if (err instanceof AppError && err.status === 409) {
+        return Response.json({ status: 'rejected', error: 'Indexing already in progress' }, { status: 409 });
+      }
+      throw err;
+    }
+
     logApi('/api/search/index', { durationMs: Date.now() - start, repo: `${parsed.data.owner}/${parsed.data.repo}` });
     return Response.json({ status: 'started' }, { status: 200 });
   }

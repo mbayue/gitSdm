@@ -47,10 +47,11 @@ export function generateProgrammaticMermaid(analysis: RepoAnalysis): string {
   let folderIdCounter = 0;
   foldersMap.forEach((files, folderPath) => {
     const folderId = `dir_${folderIdCounter++}`;
-    lines.push(`  subgraph ${folderId} ["${folderPath}"]`);
+    const escapedFolderPath = folderPath.replace(/"/g, '#quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    lines.push(`  subgraph ${folderId} ["${escapedFolderPath}"]`);
     files.forEach((node) => {
-      const label = (node.data?.label || '').replace(/"/g, '\\"');
-      const mermaidId = node.id.replace(/[^a-zA-Z0-9_]/g, '_');
+      const label = (node.data?.label || '').replace(/"/g, '#quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const mermaidId = node.id.replace(/[^a-zA-Z0-9]/g, '_');
       lines.push(`    ${mermaidId}["${label}"]`);
     });
     lines.push('  end');
@@ -61,8 +62,8 @@ export function generateProgrammaticMermaid(analysis: RepoAnalysis): string {
     const srcId = edge.source;
     const tgtId = edge.target;
     if (keptNodeIds.has(srcId) && keptNodeIds.has(tgtId)) {
-      const srcMermaidId = srcId.replace(/[^a-zA-Z0-9_]/g, '_');
-      const tgtMermaidId = tgtId.replace(/[^a-zA-Z0-9_]/g, '_');
+      const srcMermaidId = srcId.replace(/[^a-zA-Z0-9]/g, '_');
+      const tgtMermaidId = tgtId.replace(/[^a-zA-Z0-9]/g, '_');
       const edgeKey = `${srcMermaidId}-->${tgtMermaidId}`;
       if (!addedEdges.has(edgeKey)) {
         lines.push(`  ${srcMermaidId} --> ${tgtMermaidId}`);
@@ -72,7 +73,7 @@ export function generateProgrammaticMermaid(analysis: RepoAnalysis): string {
   });
 
   keptNodes.forEach((node) => {
-    const mermaidId = node.id.replace(/[^a-zA-Z0-9_]/g, '_');
+    const mermaidId = node.id.replace(/[^a-zA-Z0-9]/g, '_');
     let cls = 'service';
     if (node.data?.fileClass === 'entry') cls = 'entry';
     else if (node.data?.fileClass === 'config') cls = 'config';

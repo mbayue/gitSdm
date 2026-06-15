@@ -84,6 +84,34 @@ export function useForceCanvasState({
   }, [blastRadiusActive, selectedNodeId, forceNodeById, graph.edges]);
 
   useEffect(() => {
+    if (layoutType !== "network" || !focusedFilePath) return;
+
+    const focusedNodeIds = [
+      `file:${focusedFilePath}`,
+      `folder:${focusedFilePath}`,
+      focusedFilePath,
+    ];
+    const focusedNode =
+      focusedNodeIds.map((id) => forceNodeById.get(id)).find(Boolean) ??
+      forceGraphData.nodes.find(
+        (node) =>
+          node.sourceFile === focusedFilePath ||
+          focusedNodeIds.includes(node.id),
+      );
+
+    if (focusedNode && selectedNodeId !== focusedNode.id) {
+      setSelectedNodeId(focusedNode.id);
+    }
+  }, [
+    focusedFilePath,
+    forceGraphData.nodes,
+    forceNodeById,
+    layoutType,
+    selectedNodeId,
+    setSelectedNodeId,
+  ]);
+
+  useEffect(() => {
     if (!selectedNodeId) {
       setHighlightedNodeIds(new Set());
       return;

@@ -87,6 +87,7 @@ export function useArchitectureExport(
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(svgUrl);
     } catch (err) {
       console.error('Download failed', err);
     }

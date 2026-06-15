@@ -24,6 +24,7 @@ export function ToolCard({
 }: ToolCardProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       className={cn(

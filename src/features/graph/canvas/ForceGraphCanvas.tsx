@@ -40,6 +40,7 @@ export function NetworkCanvas({
   >(undefined);
   const forceHostRef = useRef<HTMLDivElement | null>(null);
   const forceInitialViewDoneRef = useRef(false);
+  const lastMinimapTickRef = useRef(0);
 
   const {
     selectedNodeId,
@@ -47,7 +48,6 @@ export function NetworkCanvas({
     highlightedNodeIds,
     setHighlightedNodeIds,
     setFocusedFilePath,
-    focusedFilePath,
     compareBranch,
     setActiveDropdown,
     forceSize,
@@ -104,6 +104,85 @@ export function NetworkCanvas({
     setFocusedFilePath(null);
   }, [setHighlightedNodeIds, setSelectedNodeId, setFocusedFilePath, prevFocusRef, setHoveredForceNode]);
 
+  const handleEngineTick = useCallback(() => {
+    if (!showMinimap) return;
+
+    const now = performance.now();
+    if (now - lastMinimapTickRef.current < 140) return;
+
+    lastMinimapTickRef.current = now;
+    setTick((t) => t + 1);
+  }, [showMinimap]);
+
+  const handleEngineStop = useCallback(() => {
+    if (showMinimap) setTick((t) => t + 1);
+    forceInitialViewDoneRef.current = true;
+  }, [showMinimap]);
+
+  const getLinkWidth = useCallback((link: ForceGraphLink) => {
+    const sourceId =
+      typeof link.source === "string" ? link.source : link.source.id;
+    const targetId =
+      typeof link.target === "string" ? link.target : link.target.id;
+    if (
+      blastRadiusActive &&
+      highlightedNodeIds.has(sourceId) &&
+      highlightedNodeIds.has(targetId)
+    )
+      return 2.8;
+    if (compareBranch) {
+      const src =
+        typeof link.source === "object"
+          ? link.source
+          : forceNodeById.get(sourceId);
+      const tgt =
+        typeof link.target === "object"
+          ? link.target
+          : forceNodeById.get(targetId);
+      if (src?.diffStatus || tgt?.diffStatus) return 1.4;
+    }
+    return selectedNodeId &&
+      (sourceId === selectedNodeId || targetId === selectedNodeId)
+      ? 2.4
+      : 0.9;
+  }, [blastRadiusActive, compareBranch, forceNodeById, highlightedNodeIds, selectedNodeId]);
+
+  const getLinkColor = useCallback((link: ForceGraphLink) =>
+    getForceLinkColor(
+      link,
+      selectedNodeId,
+      blastRadiusActive,
+      highlightedNodeIds,
+      compareBranch,
+    ), [blastRadiusActive, compareBranch, highlightedNodeIds, selectedNodeId]);
+
+  const drawNodePointerArea = useCallback((node: ForceGraphNode, color: string, ctx: CanvasRenderingContext2D) => {
+    drawForcePointerArea(node, color, ctx);
+  }, []);
+
+  const drawNodeCanvasObject = useCallback((node: ForceGraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
+    drawForceNode({
+      node,
+      ctx,
+      globalScale,
+      selectedNodeId,
+      highlightedNodeIds,
+      blastRadiusActive,
+      compareBranch: !!compareBranch,
+      hoveredForceNode,
+    });
+  }, [blastRadiusActive, compareBranch, highlightedNodeIds, hoveredForceNode, selectedNodeId]);
+
+  const handleNodeClick = useCallback((node: ForceGraphNode) => {
+    if (!readOnly) focusForceNode(node);
+  }, [focusForceNode, readOnly]);
+
+  const handleNodeHover = useCallback((node: ForceGraphNode | null) => {
+    setHoveredForceNode(node ?? null);
+    if (forceHostRef.current)
+      forceHostRef.current.style.cursor = node ? "pointer" : "grab";
+  }, [setHoveredForceNode]);
+
   // --- Render ---
   const isLoading = !graph || !graph.nodes;
   const isEmpty = graph.nodes.length === 0;
@@ -156,107 +235,21 @@ export function NetworkCanvas({
           linkCurvature={0.18}
           linkDirectionalArrowLength={6}
           linkDirectionalArrowRelPos={0.96}
-          linkDirectionalArrowColor={(link) =>
-            getForceLinkColor(
-              link,
-              selectedNodeId,
-              blastRadiusActive,
-              highlightedNodeIds,
-              compareBranch,
-            )
-          }
-          cooldownTicks={160}
-          d3AlphaDecay={0.025}
-          d3VelocityDecay={0.32}
-          onEngineStop={() => {
-            if (forceInitialViewDoneRef.current) return;
-            forceInitialViewDoneRef.current = true;
-            const fg = forceGraphRef.current;
-            if (!fg) return;
-
-            const activeId = selectedNodeId || (focusedFilePath ? `file:${focusedFilePath}` : null);
-            if (activeId) return;
-
-            const nodeCount = forceGraphData.nodes.length;
-            if (nodeCount <= 3) {
-              const firstNode = forceGraphData.nodes[0];
-              fg.centerAt(
-                firstNode.x ?? 0,
-                firstNode.y ?? 0,
-                nodeCount <= 1 ? 1.0 : 1.5,
-              );
-            } else {
-              fg.zoomToFit(650, 90);
-            }
-          }}
+          linkDirectionalArrowColor={getLinkColor}
+          cooldownTicks={120}
+          d3AlphaDecay={0.028}
+          d3VelocityDecay={0.5}
+          onEngineStop={handleEngineStop}
           linkDirectionalParticles={0}
-          linkWidth={(link) => {
-            const sourceId =
-              typeof link.source === "string" ? link.source : link.source.id;
-            const targetId =
-              typeof link.target === "string" ? link.target : link.target.id;
-            if (
-              blastRadiusActive &&
-              highlightedNodeIds.has(sourceId) &&
-              highlightedNodeIds.has(targetId)
-            )
-              return 2.8;
-            if (compareBranch) {
-              const src =
-                typeof link.source === "object"
-                  ? link.source
-                  : forceNodeById.get(sourceId);
-              const tgt =
-                typeof link.target === "object"
-                  ? link.target
-                  : forceNodeById.get(targetId);
-              if (src?.diffStatus || tgt?.diffStatus) return 1.4;
-            }
-            return selectedNodeId &&
-              (sourceId === selectedNodeId || targetId === selectedNodeId)
-              ? 2.4
-              : 0.9;
-          }}
-          linkColor={(link) =>
-            getForceLinkColor(
-              link,
-              selectedNodeId,
-              blastRadiusActive,
-              highlightedNodeIds,
-              compareBranch,
-            )
-          }
-          nodePointerAreaPaint={(node, color, ctx) => {
-            drawForcePointerArea(node, color, ctx);
-          }}
-          nodeCanvasObject={(node, ctx, globalScale) => {
-            drawForceNode({
-              node,
-              ctx,
-              globalScale,
-              selectedNodeId,
-              highlightedNodeIds,
-              blastRadiusActive,
-              compareBranch: !!compareBranch,
-              hoveredForceNode,
-            });
-          }}
-          onNodeClick={(node) => {
-            if (!readOnly) focusForceNode(node);
-          }}
-          onNodeHover={(node) => {
-            setHoveredForceNode(node ?? null);
-            if (forceHostRef.current)
-              forceHostRef.current.style.cursor = node ? "pointer" : "grab";
-          }}
+          linkWidth={getLinkWidth}
+          linkColor={getLinkColor}
+          nodePointerAreaPaint={drawNodePointerArea}
+          nodeCanvasObject={drawNodeCanvasObject}
+          onNodeClick={handleNodeClick}
+          onNodeHover={handleNodeHover}
           onBackgroundClick={onForceBackgroundClick}
-           onZoom={(viewport) => {
-            useVizStore.getState().setZoom(viewport.k);
-            setTick((t) => t + 1);
-          }}
-          onEngineTick={() => {
-            setTick((t) => t + 1);
-          }}
+          onZoom={undefined}
+          onEngineTick={handleEngineTick}
           enablePointerInteraction
           enableNodeDrag
           enablePanInteraction

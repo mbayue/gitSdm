@@ -16,10 +16,10 @@ export function useArchitectureState(
   const [mode, setMode] = useState<'code' | 'ai'>('code');
 
   useEffect(() => {
-    if (mode === 'ai' && !data) {
+    if (mode === 'ai') {
       generate({ owner, repo });
     }
-  }, [mode, data, owner, repo, generate]);
+  }, [mode, owner, repo, generate]);
 
   useEffect(() => {
     let code = '';
@@ -75,7 +75,7 @@ export function useArchitectureState(
     return () => {
       active = false;
     };
-  }, [mode, data, analysis, resetView]);
+  }, [mode, data, analysis]);
 
   return {
     generate,

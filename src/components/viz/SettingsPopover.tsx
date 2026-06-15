@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
 import { Settings, X, Check, Eye, EyeOff, KeyRound, GitBranch } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
@@ -26,8 +26,30 @@ function setStoredKey(key: string, val: string | null) {
   } catch { /* ignore */ }
 }
 
-export function SettingsPopover() {
-  const [open, setOpen] = useState(false);
+interface SettingsPopoverProps {
+  triggerClassName?: string;
+  triggerChildren?: ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
+}
+
+export function SettingsPopover({
+  triggerClassName,
+  triggerChildren,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
+}: SettingsPopoverProps) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = useCallback((next: boolean | ((open: boolean) => boolean)) => {
+    const resolved = typeof next === 'function' ? next(open) : next;
+    if (controlledOpen === undefined) {
+      setUncontrolledOpen(resolved);
+    }
+    onOpenChange?.(resolved);
+  }, [controlledOpen, onOpenChange, open]);
   const popoverRef = useRef<HTMLDivElement>(null);
 
   // Gemini State
@@ -52,7 +74,7 @@ export function SettingsPopover() {
     }
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
+  }, [open, setOpen]);
 
   const saveGemini = useCallback(() => {
     const trimmed = geminiValue.trim();
@@ -82,22 +104,33 @@ export function SettingsPopover() {
 
   return (
     <div className="relative" ref={popoverRef}>
-      <Tooltip>
-        <TooltipTrigger
-          className={cn(
-            buttonVariants({ variant: "outline", size: "sm" }),
-            "h-7 w-7 rounded-md p-0 border-white/[0.06] bg-white/[0.02] text-zinc-400 hover:text-white hover:bg-white/5 hover:border-white/[0.1] transition-all duration-150 relative",
-            hasAnyKey && 'border-violet-500/30 text-violet-400 bg-violet-550/[0.02]'
-          )}
-          onClick={() => setOpen((o) => !o)}
-        >
-          <Settings className={cn("h-3.5 w-3.5 transition-transform duration-300", open && "rotate-45")} />
-          {hasAnyKey && (
-            <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
-          )}
-        </TooltipTrigger>
-        <TooltipContent>Settings &amp; Credentials</TooltipContent>
-      </Tooltip>
+      {!hideTrigger && (
+        <Tooltip>
+          <TooltipTrigger
+            type="button"
+            className={
+              triggerClassName
+                ? cn(triggerClassName, hasAnyKey && 'text-violet-300')
+                : cn(
+                    buttonVariants({ variant: "outline", size: "sm" }),
+                    "h-7 w-7 rounded-md p-0 border-white/[0.06] bg-white/[0.02] text-zinc-400 hover:text-white hover:bg-white/5 hover:border-white/[0.1] transition-all duration-150 relative",
+                    hasAnyKey && 'border-violet-500/30 text-violet-400 bg-violet-550/[0.02]'
+                  )
+            }
+            onClick={() => setOpen((o) => !o)}
+          >
+            {triggerChildren ?? (
+              <>
+                <Settings className={cn("h-3.5 w-3.5 transition-transform duration-300", open && "rotate-45")} />
+                {hasAnyKey && (
+                  <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
+                )}
+              </>
+            )}
+          </TooltipTrigger>
+          <TooltipContent>Settings & Credentials</TooltipContent>
+        </Tooltip>
+      )}
 
       {open && (
         <div className="fixed left-2 right-2 top-14 w-auto sm:absolute sm:right-0 sm:left-auto sm:top-10 sm:w-80 z-[70] rounded-xl border border-white/10 bg-zinc-950 p-4 shadow-2xl shadow-black/60 backdrop-blur-xl space-y-4"

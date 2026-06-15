@@ -21,8 +21,8 @@ export const aiExplainSchema = z.object({
 });
 
 export const repoQuerySchema = z.object({
-  owner: z.string(),
-  repo: z.string(),
+  owner: z.string().min(1).max(100).regex(/^[a-zA-Z0-9-._]+$/),
+  repo: z.string().min(1).max(100).regex(/^[a-zA-Z0-9-._]+$/),
   branch: z.string().optional(),
 });
 

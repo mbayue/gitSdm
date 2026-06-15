@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useReactFlow, getConnectedEdges } from '@xyflow/react';
 import { useVizStore } from '@/stores/vizStore';
 
-/** Pans/zooms the graph to the file node when a path is selected in the explorer. */
+/** Pans/zooms the graph to the focused file/folder node when a path is selected in the explorer. */
 export function GraphFocusSync() {
   const focusedFilePath = useVizStore((s) => s.focusedFilePath);
   const setSelectedNodeId = useVizStore((s) => s.setSelectedNodeId);
@@ -19,8 +19,12 @@ export function GraphFocusSync() {
       return;
     }
 
-    const nodeId = `file:${focusedFilePath}`;
-    const target = getNode(nodeId);
+    const candidateNodeIds = [
+      `file:${focusedFilePath}`,
+      `folder:${focusedFilePath}`,
+      focusedFilePath,
+    ];
+    const target = candidateNodeIds.map((id) => getNode(id)).find(Boolean);
 
     // If node not found yet, retry up to 3 times with increasing delay
     // (nodes may not be laid out on first mount)

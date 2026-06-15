@@ -101,30 +101,30 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
   const hasResults = current.length > 0 || recent.length > 0 || feature.length > 0 || other.length > 0;
 
   return (
-    <div className="relative z-50 min-w-0 font-sans" ref={containerRef}>
+    <div className="relative z-50 min-w-0 max-w-full shrink font-sans" ref={containerRef}>
       {/* Trigger Button or Compare Pill */}
       {compareBranch ? (
-        <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-semibold py-0.5 pl-2.5 pr-1.5 rounded-full select-none shadow-sm transition-all duration-200 hover:border-amber-500/40">
+        <div className="flex max-w-full min-w-0 items-center gap-0.5 sm:gap-1 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-semibold py-0.5 pl-1.5 sm:pl-2.5 pr-1 rounded-full select-none shadow-sm transition-all duration-200 hover:border-amber-500/40">
           <button
             type="button"
             onClick={() => {
               setMode('compare');
               setIsOpen(!isOpen);
             }}
-            className="flex items-center gap-1.5 cursor-pointer outline-none hover:text-amber-300"
+            className="flex min-w-0 items-center gap-0.5 sm:gap-1.5 cursor-pointer outline-none hover:text-amber-300"
           >
             <ArrowLeftRight className="h-3 w-3 shrink-0" />
-            <span className="font-normal font-sans">Comparing:</span>
-            <span className="font-mono bg-amber-500/15 px-1.5 py-0.5 rounded truncate max-w-[80px] sm:max-w-[120px]">{activeBranch}</span>
+            <span className="hidden lg:inline font-normal font-sans">Comparing:</span>
+            <span className="font-mono bg-amber-500/15 px-1 sm:px-1.5 py-0.5 rounded truncate max-w-[34px] sm:max-w-[80px] lg:max-w-[120px]">{activeBranch}</span>
             <span className="text-amber-500/60 font-sans font-light">→</span>
-            <span className="font-mono bg-amber-500/15 px-1.5 py-0.5 rounded truncate max-w-[80px] sm:max-w-[120px]">{compareBranch}</span>
+            <span className="font-mono bg-amber-500/15 px-1 sm:px-1.5 py-0.5 rounded truncate max-w-[34px] sm:max-w-[80px] lg:max-w-[120px]">{compareBranch}</span>
             <ChevronDown className="h-3 w-3 opacity-60" />
           </button>
-          <div className="w-px h-3 bg-amber-500/25 mx-1" />
+          <div className="hidden sm:block w-px h-3 bg-amber-500/25 mx-1 shrink-0" />
           <button
             type="button"
             onClick={() => setCompareBranch(null)}
-            className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-amber-500/20 text-amber-500 hover:text-amber-200 transition-colors cursor-pointer"
+            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full hover:bg-amber-500/20 text-amber-500 hover:text-amber-200 transition-colors cursor-pointer"
             title="Exit Compare"
           >
             <X className="h-3 w-3" />
@@ -138,11 +138,11 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
             setIsOpen(!isOpen);
           }}
           className={cn(
-            'flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-zinc-900 px-3 py-1 text-xs font-medium text-zinc-300 hover:text-white hover:border-white/[0.12] transition-all duration-200 select-none active:scale-[0.97] cursor-pointer'
+             'flex min-w-0 items-center gap-1 rounded-full border border-white/[0.06] bg-zinc-900 px-2 sm:px-3 py-1 text-xs font-medium text-zinc-300 hover:text-white hover:border-white/[0.12] transition-all duration-200 select-none active:scale-[0.97] cursor-pointer'
           )}
         >
           <GitBranch className="h-3.5 w-3.5 text-violet-400" />
-          <span className="max-w-[140px] truncate font-mono">{activeBranch}</span>
+          <span className="max-w-[56px] sm:max-w-[140px] truncate font-mono">{activeBranch}</span>
           <ChevronDown className={cn('h-3 w-3 transition-transform duration-200 opacity-60', isOpen && 'rotate-180')} />
         </button>
       )}
@@ -155,7 +155,7 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.97 }}
             transition={{ duration: 0.12, ease: 'easeOut' }}
-            className="absolute left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 mt-2 w-72 z-[100] rounded-xl border border-white/10 bg-zinc-950 p-2 shadow-2xl backdrop-blur-xl"
+            className="fixed left-2 right-2 top-14 z-[100] max-h-[calc(100dvh-4rem)] rounded-xl border border-white/10 bg-zinc-950 p-2 shadow-2xl backdrop-blur-xl sm:absolute sm:left-0 sm:right-auto sm:top-auto sm:mt-2 sm:w-[min(18rem,calc(100vw-1rem))]"
           >
             {/* Tabs */}
             <div className="mb-2 flex rounded-lg bg-zinc-900 p-0.5">

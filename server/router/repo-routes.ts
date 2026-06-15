@@ -2,7 +2,7 @@ import type { RequestContext } from '../utils/context';
 import { AppError } from '../utils/errors';
 import { analyzeBodySchema, repoQuerySchema, fileQuerySchema } from './schemas';
 import { analyzeRepository } from '../services/analyze-repo';
-import { fetchRepoBranches } from '../github/fetch-tree';
+import { fetchRepoBranches, fetchContributors } from '../github/fetch-tree';
 import { getRepoFileContent } from '../services/get-file';
 import { parseRepoParams } from '../github/parse-url';
 import { logApi } from '../utils/logger';
@@ -37,16 +37,18 @@ export async function handleRepoRoutes(
   if (pathname === '/api/repo/branches') {
     const q = repoQuerySchema.safeParse(query);
     if (!q.success) {
-      throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
+      throw new AppError(400, 'Invalid owner/repo', 'INVALID_PARAMS');
     }
-    const branches: { name: string; protected: boolean }[] = await fetchRepoBranches(q.data.owner, q.data.repo, ctx);
+    const branches = await fetchRepoBranches(q.data.owner, q.data.repo, ctx).catch(err => {
+      throw new AppError(400, 'Failed to fetch branches: ' + err.message, 'FETCH_ERROR');
+    });
     return Response.json(branches, { status: 200 });
   }
 
   if (pathname === '/api/repo/graph') {
     const q = repoQuerySchema.safeParse(query);
     if (!q.success) {
-      throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
+      throw new AppError(400, 'Invalid owner/repo', 'INVALID_PARAMS');
     }
     const analysis: RepoAnalysis = await analyzeRepository(q.data, ctx);
     return Response.json({ graph: analysis.graph, meta: analysis.meta }, { status: 200 });
@@ -55,7 +57,7 @@ export async function handleRepoRoutes(
   if (pathname === '/api/repo/tree') {
     const q = repoQuerySchema.safeParse(query);
     if (!q.success) {
-      throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
+      throw new AppError(400, 'Invalid owner/repo', 'INVALID_PARAMS');
     }
     const analysis: RepoAnalysis = await analyzeRepository(q.data, ctx);
     return Response.json({
@@ -68,7 +70,7 @@ export async function handleRepoRoutes(
   if (pathname === '/api/repo/file') {
     const q = fileQuerySchema.safeParse(query);
     if (!q.success) {
-      throw new AppError(400, 'owner, repo, and path required', 'INVALID_PARAMS');
+      throw new AppError(400, 'Invalid owner, repo, or path', 'INVALID_PARAMS');
     }
     const file: { content: string } = await getRepoFileContent(q.data.owner, q.data.repo, q.data.path, q.data.branch, ctx);
     return Response.json(file, { status: 200 });
@@ -77,10 +79,10 @@ export async function handleRepoRoutes(
   if (pathname === '/api/repo/contributors') {
     const q = repoQuerySchema.safeParse(query);
     if (!q.success) {
-      throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
+      throw new AppError(400, 'Invalid owner/repo', 'INVALID_PARAMS');
     }
-    const analysis: RepoAnalysis = await analyzeRepository(q.data, ctx);
-    return Response.json({ contributors: analysis.contributors }, { status: 200 });
+    const contributors = await fetchContributors(q.data.owner, q.data.repo, ctx);
+    return Response.json({ contributors }, { status: 200 });
   }
 
   return null;

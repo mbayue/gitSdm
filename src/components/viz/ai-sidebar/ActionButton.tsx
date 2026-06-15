@@ -20,6 +20,7 @@ export function ActionButton({
 }: ActionButtonProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={cn(
         "group relative flex items-center bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.05] hover:border-white/[0.1] rounded-2xl transition-all duration-300 active:scale-[0.98] overflow-hidden w-full",

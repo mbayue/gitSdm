@@ -172,14 +172,30 @@ export function GraphCanvas({
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
       if (readOnly) return;
+
       setSelectedNodeId(node.id);
       if (node.type === "file" && node.data?.path) {
         setFocusedFilePath(node.data.path as string);
       } else {
         setFocusedFilePath(null);
       }
+
+      window.setTimeout(() => {
+        const width =
+          typeof node.measured?.width === "number"
+            ? node.measured.width
+            : node.width ?? 0;
+        const height =
+          typeof node.measured?.height === "number"
+            ? node.measured.height
+            : node.height ?? 0;
+        setCenter(node.position.x + width / 2, node.position.y + height / 2, {
+          duration: 480,
+          zoom: 1.3,
+        });
+      }, 50);
     },
-    [readOnly, setSelectedNodeId, setFocusedFilePath],
+    [readOnly, setCenter, setSelectedNodeId, setFocusedFilePath],
   );
 
   const onPaneClick = useCallback(() => {
@@ -297,9 +313,7 @@ export function GraphCanvas({
             onEdgesChange={readOnly ? undefined : onEdgesChange}
             onNodeClick={onNodeClick}
             onPaneClick={onPaneClick}
-            onMove={(_, viewport) => {
-              useVizStore.getState().setZoom(viewport.zoom);
-            }}
+            onMove={undefined}
             nodeTypes={nodeTypes}
             defaultEdgeOptions={defaultEdgeOptions}
             fitView
