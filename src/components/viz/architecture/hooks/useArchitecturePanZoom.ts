@@ -29,8 +29,10 @@ export function useArchitecturePanZoom() {
       e.preventDefault();
     }
     const zoomFactor = 1.08;
-    const nextZoom = e.deltaY < 0 ? zoom * zoomFactor : zoom / zoomFactor;
-    setZoom(Math.max(0.15, Math.min(5, nextZoom)));
+    setZoom((prevZoom) => {
+      const nextZoom = e.deltaY < 0 ? prevZoom * zoomFactor : prevZoom / zoomFactor;
+      return Math.max(0.15, Math.min(5, nextZoom));
+    });
   };
 
   const resetView = () => {

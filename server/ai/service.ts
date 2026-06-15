@@ -38,10 +38,12 @@ class PromiseQueue {
 const aiQueue = new PromiseQueue(2);
 
 function getAiCacheDiscriminator(apiKey?: string): string {
+  const envProvider = process.env.AI_PROVIDER?.trim().toLowerCase();
   const provider = apiKey?.trim()
     ? (apiKey.trim().startsWith('sk-ant-') ? 'anthropic' : apiKey.trim().startsWith('sk-') ? 'openai' : 'gemini')
-    : (process.env.AI_PROVIDER?.trim().toLowerCase()
-      ?? (process.env.GEMINI_API_KEY?.trim()
+    : (envProvider && envProvider.length > 0
+      ? envProvider
+      : (process.env.GEMINI_API_KEY?.trim()
         ? 'gemini'
         : process.env.OPENAI_API_KEY?.trim()
           ? 'openai'

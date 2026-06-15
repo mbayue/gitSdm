@@ -4,12 +4,11 @@ export const getBlastRadiusIds = (nodeId: string, analysis: RepoAnalysis) => {
   const visited = new Set<string>();
   const startNodes = [nodeId];
 
-  // If it's a folder, start from all children inside it
   const targetNode = analysis.graph.nodes.find(n => n.id === nodeId);
   if (targetNode?.type === 'folder' && targetNode.data.path) {
     const folderPath = targetNode.data.path;
     analysis.graph.nodes.forEach(n => {
-      if (n.data.path?.startsWith(folderPath + '/')) {
+      if (n.type === 'file' && n.data.path?.startsWith(folderPath + '/')) {
         startNodes.push(n.id);
       }
     });

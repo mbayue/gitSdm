@@ -8,8 +8,8 @@ export const analyzeBodySchema = z.object({
 });
 
 export const aiExplainSchema = z.object({
-  owner: z.string(),
-  repo: z.string(),
+  owner: z.string().min(1).max(100).regex(/^[a-zA-Z0-9-._]+$/),
+  repo: z.string().min(1).max(100).regex(/^[a-zA-Z0-9-._]+$/),
   branch: z.string().optional(),
   sha: z.string().optional(),
   scope: z.enum(['repo', 'node', 'file']).default('repo'),
@@ -32,20 +32,20 @@ export const fileQuerySchema = repoQuerySchema.extend({
 
 export const searchBodySchema = z.object({
   query: z.string().min(3).max(500),
-  owner: z.string(),
-  repo: z.string(),
+  owner: z.string().min(1).max(100).regex(/^[a-zA-Z0-9-._]+$/),
+  repo: z.string().min(1).max(100).regex(/^[a-zA-Z0-9-._]+$/),
   branch: z.string().optional(),
 });
 
 export const askBodySchema = z.object({
   question: z.string().min(3).max(500),
-  owner: z.string(),
-  repo: z.string(),
+  owner: z.string().min(1).max(100).regex(/^[a-zA-Z0-9-._]+$/),
+  repo: z.string().min(1).max(100).regex(/^[a-zA-Z0-9-._]+$/),
   branch: z.string().optional(),
 });
 
 export const indexBodySchema = z.object({
-  owner: z.string(),
-  repo: z.string(),
+  owner: z.string().min(1).max(100).regex(/^[a-zA-Z0-9-._]+$/),
+  repo: z.string().min(1).max(100).regex(/^[a-zA-Z0-9-._]+$/),
   branch: z.string().optional(),
 });

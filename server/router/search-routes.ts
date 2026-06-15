@@ -60,14 +60,20 @@ export async function handleSearchRoutes(
     }
     const info = await fetchRepoInfo(parsed.data.owner, parsed.data.repo, parsed.data.branch, ctx);
     const pipeline = getIndexingPipeline();
-    // Fire-and-forget background indexing pipeline
+
     try {
-      await pipeline.startIndexing({
+      const indexingPromise = pipeline.startIndexing({
         owner: parsed.data.owner,
         repo: parsed.data.repo,
         branch: parsed.data.branch,
         commitSha: info.sha,
       }, ctx);
+
+      indexingPromise.catch((err) => {
+        if (!(err instanceof AppError && err.status === 409)) {
+          console.error('Background indexing error:', err);
+        }
+      });
     } catch (err) {
       if (err instanceof AppError && err.status === 409) {
         return Response.json({ status: 'rejected', error: 'Indexing already in progress' }, { status: 409 });

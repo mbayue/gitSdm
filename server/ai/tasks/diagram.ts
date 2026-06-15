@@ -59,8 +59,8 @@ ${buildRepoContext(analysis)}`,
   });
 
   const sanitizedDiagram = result.data
-    .replace(/click\s+\w+\s+[^;]*/gi, '') // Remove click directives
-    .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, ''); // Remove script tags
+    .replace(/click\s+\w+\s+[^\n;]*/gi, '')
+    .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, '');
 
   return { diagram: sanitizedDiagram, cached: result.cached };
 }
