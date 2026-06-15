@@ -62,18 +62,12 @@ export async function handleSearchRoutes(
     const pipeline = getIndexingPipeline();
 
     try {
-      const indexingPromise = pipeline.startIndexing({
+      await pipeline.startIndexing({
         owner: parsed.data.owner,
         repo: parsed.data.repo,
         branch: parsed.data.branch,
         commitSha: info.sha,
       }, ctx);
-
-      indexingPromise.catch((err) => {
-        if (!(err instanceof AppError && err.status === 409)) {
-          console.error('Background indexing error:', err);
-        }
-      });
     } catch (err) {
       if (err instanceof AppError && err.status === 409) {
         return Response.json({ status: 'rejected', error: 'Indexing already in progress' }, { status: 409 });
