@@ -65,8 +65,7 @@ export function TracerPlayer({
               onClick={() => handleStepClick(sIdx)}
               className="relative group/step cursor-pointer w-full text-left"
             >
-              {/* Step node indicator */}
-              <div
+              <span
                 className={cn(
                   "absolute -left-[21.5px] top-0.5 h-2.5 w-2.5 rounded-full border transition-all duration-150",
                   isActive
@@ -74,19 +73,19 @@ export function TracerPlayer({
                     : "bg-zinc-950 border-white/20 group-hover/step:border-white/50"
                 )}
               />
-              <div className="min-w-0">
-                <p
+              <span className="min-w-0 block">
+                <span
                   className={cn(
-                    "text-[10px] font-mono leading-none transition-colors",
+                    "text-[10px] font-mono leading-none transition-colors block",
                     isActive ? "text-amber-400 font-bold" : "text-zinc-400 group-hover/step:text-zinc-200"
                   )}
                 >
                   {step.from} → {step.to}
-                </p>
-                <p className="text-[10px] text-zinc-500 mt-1 leading-relaxed">
+                </span>
+                <span className="text-[10px] text-zinc-500 mt-1 leading-relaxed block">
                   {step.description}
-                </p>
-              </div>
+                </span>
+              </span>
             </button>
           );
         })}
