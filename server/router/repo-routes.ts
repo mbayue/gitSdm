@@ -25,6 +25,10 @@ export async function handleRepoRoutes(
     if (!repo) {
       throw new AppError(400, 'Invalid GitHub repository URL', 'INVALID_PARAMS');
     }
+    const validated = repoQuerySchema.safeParse(repo);
+    if (!validated.success) {
+      throw new AppError(400, 'Invalid owner/repo identifiers', 'INVALID_PARAMS');
+    }
     const analysis: RepoAnalysis = await analyzeRepository({ ...repo, branch: parsed.data.branch }, ctx);
     logApi('/api/repo/analyze', {
       durationMs: Date.now() - start,

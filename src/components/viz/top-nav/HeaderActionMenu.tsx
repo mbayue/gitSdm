@@ -9,9 +9,6 @@ import {
   Star,
   RotateCcw,
   Settings,
-  Network,
-  Users,
-  GitBranch,
 } from 'lucide-react';
 import { useVizStore } from '@/stores/vizStore';
 import { SettingsPopover } from '../SettingsPopover';
@@ -19,6 +16,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { formatStars } from '@/lib/utils';
 import type { RepoMeta, RepoAnalysis } from '@/types';
 import { cn } from '@/lib/utils';
+import { getTotalCommits } from './getRepoStats';
+import { VIEW_TABS } from './viewTabs';
 
 interface HeaderActionMenuProps {
   owner: string;
@@ -27,13 +26,6 @@ interface HeaderActionMenuProps {
   meta?: RepoMeta;
   onSearch?: () => void;
 }
-
-const VIEW_ITEMS = [
-  { id: 'graph' as const, label: 'Dependency Graph', icon: GitBranch },
-  { id: 'architecture' as const, label: 'Architecture', icon: Network },
-  { id: 'contributors' as const, label: 'Contributors', icon: Users },
-  { id: 'commits' as const, label: 'Commits', icon: History },
-];
 
 export function HeaderActionMenu({ analysis, meta: propsMeta, onSearch }: HeaderActionMenuProps) {
   const [copied, setCopied] = useState(false);
@@ -64,10 +56,7 @@ export function HeaderActionMenu({ analysis, meta: propsMeta, onSearch }: Header
   };
 
   const meta = propsMeta ?? analysis?.meta;
-  const totalCommits =
-    analysis?.timeline?.reduce((sum, w) => sum + w.count, 0) ??
-    analysis?.contributors?.reduce((sum, c) => sum + c.contributions, 0) ??
-    0;
+  const totalCommits = getTotalCommits(analysis);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -230,7 +219,7 @@ export function HeaderActionMenu({ analysis, meta: propsMeta, onSearch }: Header
             <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500 select-none">
               View mode
             </div>
-            {VIEW_ITEMS.map((item) => {
+            {VIEW_TABS.map((item) => {
               const isSelected = activeView === item.id;
               return (
                 <button

@@ -15,6 +15,7 @@ export function GraphZoomControls({ onZoomIn, onZoomOut, onFitView, className = 
         <TooltipTrigger
           className="flex h-7 w-7 items-center justify-center rounded text-zinc-400 hover:bg-white/5 hover:text-white transition-colors"
           onClick={onZoomIn}
+          aria-label="Zoom In"
         >
           <Plus className="h-3.5 w-3.5" />
         </TooltipTrigger>
@@ -25,6 +26,7 @@ export function GraphZoomControls({ onZoomIn, onZoomOut, onFitView, className = 
         <TooltipTrigger
           className="flex h-7 w-7 items-center justify-center rounded text-zinc-400 hover:bg-white/5 hover:text-white transition-colors"
           onClick={onZoomOut}
+          aria-label="Zoom Out"
         >
           <Minus className="h-3.5 w-3.5" />
         </TooltipTrigger>
@@ -35,6 +37,7 @@ export function GraphZoomControls({ onZoomIn, onZoomOut, onFitView, className = 
         <TooltipTrigger
           className="flex h-7 w-7 items-center justify-center rounded text-zinc-400 hover:bg-white/5 hover:text-white transition-colors"
           onClick={onFitView}
+          aria-label="Fit View"
         >
           <Maximize2 className="h-3.5 w-3.5" />
         </TooltipTrigger>

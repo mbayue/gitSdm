@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { GitBranch, ChevronDown, Share2, Network, Users, History, Check } from 'lucide-react';
+import { GitBranch, ChevronDown, Check } from 'lucide-react';
 import { useVizStore } from '@/stores/vizStore';
 import {
   DropdownMenu,
@@ -8,18 +8,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { VIEW_TABS } from './viewTabs';
 
 interface RepoIdentityProps {
   owner: string;
   repoName: string;
 }
-
-const VIEW_TABS = [
-  { id: 'graph' as const, label: 'Dependency Graph', icon: Share2 },
-  { id: 'architecture' as const, label: 'Architecture', icon: Network },
-  { id: 'contributors' as const, label: 'Contributors', icon: Users },
-  { id: 'commits' as const, label: 'Commits', icon: History },
-];
 
 export function RepoIdentity({ owner, repoName }: RepoIdentityProps) {
   const { activeView, setActiveView } = useVizStore();
@@ -28,7 +22,7 @@ export function RepoIdentity({ owner, repoName }: RepoIdentityProps) {
 
   return (
     <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 shrink select-none">
-      <Link to="/" className="flex items-center gap-2 shrink-0">
+      <Link to="/" className="flex items-center gap-2 shrink-0" aria-label="Home">
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20 hover:border-violet-500/35 transition-all shadow-sm">
           <GitBranch className="h-4 w-4" />
         </div>

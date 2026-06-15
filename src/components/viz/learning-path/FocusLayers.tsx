@@ -14,8 +14,8 @@ export const focusLayers: FocusLayer[] = [
 ];
 
 interface FocusLayersProps {
-  activeFocusLayer: string | null;
-  setActiveFocusLayer: (id: 'all' | 'api' | 'ui' | 'core' | 'config') => void;
+  activeFocusLayer: FocusLayer['id'] | null;
+  setActiveFocusLayer: (id: FocusLayer['id']) => void;
 }
 
 export function FocusLayers({ activeFocusLayer, setActiveFocusLayer }: FocusLayersProps) {
@@ -35,6 +35,7 @@ export function FocusLayers({ activeFocusLayer, setActiveFocusLayer }: FocusLaye
               type="button"
               key={layer.id}
               onClick={() => setActiveFocusLayer(layer.id)}
+              aria-pressed={isActive}
               className={cn(
                 'rounded-lg border px-2.5 py-1 text-xs font-medium transition-all duration-150',
                 isActive

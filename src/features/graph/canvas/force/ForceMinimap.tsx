@@ -35,12 +35,18 @@ export function ForceMinimap({ nodes, forceGraphRef, width, height, isDark, tick
     // Calculate graph bounds
     let minX = -100, maxX = 100, minY = -100, maxY = 100;
     if (nodes.length > 0) {
-      const xs = nodes.map(n => n.x ?? 0);
-      const ys = nodes.map(n => n.y ?? 0);
-      minX = Math.min(...xs);
-      maxX = Math.max(...xs);
-      minY = Math.min(...ys);
-      maxY = Math.max(...ys);
+      minX = Infinity;
+      maxX = -Infinity;
+      minY = Infinity;
+      maxY = -Infinity;
+      for (const node of nodes) {
+        const x = node.x ?? 0;
+        const y = node.y ?? 0;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
     }
     const padding = 60;
     minX -= padding;

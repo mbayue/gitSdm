@@ -29,6 +29,7 @@ export function VizSidebar({
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
+      if (e.button !== 0) return;
       e.preventDefault();
       
       const handleMouseMove = (moveEvent: MouseEvent) => {
@@ -44,15 +45,17 @@ export function VizSidebar({
       const handleMouseUp = () => {
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);
+        window.removeEventListener("mouseup", handleMouseUp);
         mouseMoveHandlerRef.current = null;
         mouseUpHandlerRef.current = null;
       };
 
       mouseMoveHandlerRef.current = handleMouseMove;
       mouseUpHandlerRef.current = handleMouseUp;
-      
+
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
+      window.addEventListener("mouseup", handleMouseUp);
     },
     [isLeft, minWidth, maxWidth, onWidthChange]
   );
@@ -64,6 +67,7 @@ export function VizSidebar({
       }
       if (mouseUpHandlerRef.current) {
         document.removeEventListener("mouseup", mouseUpHandlerRef.current);
+        window.removeEventListener("mouseup", mouseUpHandlerRef.current);
       }
     };
   }, []);

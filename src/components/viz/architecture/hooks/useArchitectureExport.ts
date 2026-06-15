@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { toPng } from 'html-to-image';
 import { generateProgrammaticMermaid } from '../mermaid-generator';
 import type { RepoAnalysis } from '@/types';
+import { stripMermaidFences } from '../stripMermaidFences';
 
 export function useArchitectureExport(
   analysis: RepoAnalysis,
@@ -26,16 +27,7 @@ export function useArchitectureExport(
     let rawCode = mode === 'ai' ? data?.diagram : generateProgrammaticMermaid(analysis);
     if (!rawCode) return;
 
-    rawCode = rawCode.trim();
-    if (rawCode.startsWith('```mermaid')) {
-      rawCode = rawCode.slice(10);
-    } else if (rawCode.startsWith('```')) {
-      rawCode = rawCode.slice(3);
-    }
-    if (rawCode.endsWith('```')) {
-      rawCode = rawCode.slice(0, -3);
-    }
-    rawCode = rawCode.trim();
+    rawCode = stripMermaidFences(rawCode);
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {

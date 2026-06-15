@@ -3,6 +3,7 @@ import { useMermaid } from '@/features/ai/useAiTasks';
 import type { RepoAnalysis } from '@/types';
 import { generateProgrammaticMermaid } from '../mermaid-generator';
 import mermaid from '../mermaid-config';
+import { stripMermaidFences } from '../stripMermaidFences';
 
 export function useArchitectureState(
   analysis: RepoAnalysis,
@@ -27,17 +28,12 @@ export function useArchitectureState(
       if (!analysis) return;
       code = generateProgrammaticMermaid(analysis);
     } else {
-      if (!data?.diagram) return;
-      code = data.diagram.trim();
-      if (code.startsWith('```mermaid')) {
-        code = code.slice(10);
-      } else if (code.startsWith('```')) {
-        code = code.slice(3);
+      if (!data?.diagram) {
+        setSvg('');
+        setRenderError(null);
+        return;
       }
-      if (code.endsWith('```')) {
-        code = code.slice(0, -3);
-      }
-      code = code.trim();
+      code = stripMermaidFences(data.diagram);
     }
 
     if (!code) return;

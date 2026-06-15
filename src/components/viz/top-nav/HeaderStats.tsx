@@ -1,6 +1,7 @@
 import type { RepoMeta, RepoAnalysis } from '@/types';
 import { formatStars } from '@/lib/utils';
 import { History, Star } from 'lucide-react';
+import { getTotalCommits } from './getRepoStats';
 
 interface HeaderStatsProps {
   analysis?: RepoAnalysis;
@@ -9,10 +10,7 @@ interface HeaderStatsProps {
 
 export function HeaderStats({ analysis, meta: propsMeta }: HeaderStatsProps) {
   const meta = propsMeta ?? analysis?.meta;
-  const totalCommits =
-    analysis?.timeline?.reduce((sum, w) => sum + w.count, 0) ??
-    analysis?.contributors?.reduce((sum, c) => sum + c.contributions, 0) ??
-    0;
+  const totalCommits = getTotalCommits(analysis);
 
   return (
     <div className="hidden md:flex items-center gap-2 select-none shrink-0">

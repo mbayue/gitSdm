@@ -98,6 +98,7 @@ export function IntelligenceCard({
             <button
               type="button"
               onClick={() => setExpanded(!expanded)}
+              aria-expanded={expanded}
               className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-white font-semibold transition-colors"
             >
               {expanded ? (

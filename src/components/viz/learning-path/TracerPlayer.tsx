@@ -7,7 +7,6 @@ interface TracerPlayerProps {
   activeStep: number;
   isPlaying: boolean;
   setIsPlaying: (playing: boolean) => void;
-  setActiveStep: (step: number) => void;
   handleStepClick: (index: number) => void;
 }
 
@@ -16,7 +15,6 @@ export function TracerPlayer({
   activeStep,
   isPlaying,
   setIsPlaying,
-  setActiveStep,
   handleStepClick,
 }: TracerPlayerProps) {
   return (
@@ -29,10 +27,8 @@ export function TracerPlayer({
           </h4>
         </div>
         <button
+          type="button"
           onClick={() => {
-            if (!isPlaying && activeStep === -1) {
-              setActiveStep(0);
-            }
             setIsPlaying(!isPlaying);
           }}
           className={cn(
@@ -63,10 +59,11 @@ export function TracerPlayer({
         {executionSteps.map((step, sIdx) => {
           const isActive = activeStep === sIdx;
           return (
-            <div
+            <button
+              type="button"
               key={sIdx}
               onClick={() => handleStepClick(sIdx)}
-              className="relative group/step cursor-pointer"
+              className="relative group/step cursor-pointer w-full text-left"
             >
               {/* Step node indicator */}
               <div
@@ -90,7 +87,7 @@ export function TracerPlayer({
                   {step.description}
                 </p>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

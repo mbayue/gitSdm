@@ -14,7 +14,7 @@ import { AnalysisTab } from './AnalysisTab';
 import { AiCenterTab } from './ai-sidebar/AiCenterTab';
 
 // Subcomponents & Helpers
-import { getBlastRadiusIds } from './ai-sidebar/getBlastRadiusIds';
+import { getBlastRadiusNodeIds } from '@/features/graph/canvas/helpers/blastRadiusLayout';
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -175,7 +175,7 @@ export function AISidebar({
 
   const blastRadiusIds = useMemo(() => {
     if (!selectedNode) return new Set<string>();
-    return getBlastRadiusIds(selectedNode.id, analysis);
+    return getBlastRadiusNodeIds(selectedNode.id, analysis.graph.nodes, analysis.graph.edges);
   }, [selectedNode, analysis]);
 
   if (!aiSidebarOpen) {

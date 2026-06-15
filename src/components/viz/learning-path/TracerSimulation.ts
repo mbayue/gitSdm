@@ -10,6 +10,7 @@ export interface ExecutionStep {
 export function useTracerSimulation({
   analysis,
   executionSteps,
+  visualSteps,
   focusedFilePath,
   setSelectedNodeId,
   setHighlightedNodeIds,
@@ -17,6 +18,7 @@ export function useTracerSimulation({
 }: {
   analysis: RepoAnalysis;
   executionSteps: ExecutionStep[];
+  visualSteps?: string[];
   focusedFilePath: string | null;
   setSelectedNodeId: (id: string | null) => void;
   setHighlightedNodeIds: (ids: Set<string>) => void;
@@ -38,10 +40,17 @@ export function useTracerSimulation({
   }, [analysis.graph.edges]);
 
   const findFileNode = useCallback(
-    (path: string): GraphNode | undefined =>
-      analysis.graph.nodes.find(
-        (n) => n.type === 'file' && (n.data.path === path || (n.data.path && n.data.path.endsWith(path)))
-      ),
+    (path: string): GraphNode | undefined => {
+      const exactMatch = analysis.graph.nodes.find((n) => n.type === 'file' && n.data.path === path);
+      if (exactMatch) return exactMatch;
+
+      const endsWithMatches = analysis.graph.nodes.filter(
+        (n) => n.type === 'file' && n.data.path && n.data.path.endsWith(path)
+      );
+      if (endsWithMatches.length === 1) return endsWithMatches[0];
+
+      return endsWithMatches.find((n) => n.data.path === `/${path}` || n.data.path === `./${path}`);
+    },
     [analysis.graph.nodes]
   );
 
@@ -58,8 +67,15 @@ export function useTracerSimulation({
   );
 
   const resolveStepPath = useCallback(
-    (step: ExecutionStep): string => {
+    (step: ExecutionStep, stepIndex: number): string => {
       if (!step) return '';
+
+      if (visualSteps && visualSteps[stepIndex]) {
+        const visualPath = visualSteps[stepIndex];
+        const node = findFileNode(visualPath);
+        if (node?.data.path) return node.data.path;
+      }
+
       const extractFiles = (text: string) => {
         const matches = text.match(/[\w/.-]+\.[a-zA-Z0-9]+/g) || [];
         return matches.map((m) => m.trim()).filter(Boolean);
@@ -67,23 +83,19 @@ export function useTracerSimulation({
 
       const toFiles = extractFiles(step.to);
       for (const f of toFiles) {
-        const match = analysis.graph.nodes.find(
-          (n) => n.data.path === f || (n.data.path && n.data.path.endsWith(f))
-        );
-        if (match?.data.path) return match.data.path;
+        const node = findFileNode(f);
+        if (node?.data.path) return node.data.path;
       }
 
       const fromFiles = extractFiles(step.from);
       for (const f of fromFiles) {
-        const match = analysis.graph.nodes.find(
-          (n) => n.data.path === f || (n.data.path && n.data.path.endsWith(f))
-        );
-        if (match?.data.path) return match.data.path;
+        const node = findFileNode(f);
+        if (node?.data.path) return node.data.path;
       }
 
       return step.to.split('(')[0].trim();
     },
-    [analysis.graph.nodes]
+    [visualSteps, findFileNode]
   );
 
   useEffect(() => {
@@ -107,7 +119,7 @@ export function useTracerSimulation({
     if (isPlaying && executionSteps.length > 0) {
       const currentStep = executionSteps[activeStep];
       if (currentStep) {
-        const path = resolveStepPath(currentStep);
+        const path = resolveStepPath(currentStep, activeStep);
         focusFilePath(path);
       }
     }
@@ -115,7 +127,7 @@ export function useTracerSimulation({
 
   useEffect(() => {
     if (!focusedFilePath || !executionSteps.length || isPlaying) return;
-    const index = executionSteps.findIndex((step) => resolveStepPath(step) === focusedFilePath);
+    const index = executionSteps.findIndex((step, idx) => resolveStepPath(step, idx) === focusedFilePath);
     if (index !== -1) {
       setActiveStep(index);
     }

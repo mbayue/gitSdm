@@ -28,6 +28,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
 
   const data = lp.data;
   const executionSteps = data?.executionFlow?.steps ?? [];
+  const visualSteps = data?.executionFlow?.visualSteps;
 
   const {
     isPlaying,
@@ -39,6 +40,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
   } = useTracerSimulation({
     analysis,
     executionSteps,
+    visualSteps,
     focusedFilePath,
     setSelectedNodeId,
     setHighlightedNodeIds,
@@ -55,7 +57,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
     setActiveStep(index);
     const step = executionSteps[index];
     if (step) {
-      const path = resolveStepPath(step);
+      const path = resolveStepPath(step, index);
       focusFilePath(path);
     }
   };
@@ -202,7 +204,6 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
           activeStep={activeStep}
           isPlaying={isPlaying}
           setIsPlaying={setIsPlaying}
-          setActiveStep={setActiveStep}
           handleStepClick={handleStepClick}
         />
       )}
