@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const HomePage = lazy(() => import('@/pages/HomePage').then((module) => ({ default: module.HomePage })));
 const VizPage = lazy(() => import('@/pages/VizPage').then((module) => ({ default: module.VizPage })));
@@ -9,14 +10,16 @@ const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then((module) => 
 export function AppRouter() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<div className="min-h-screen bg-[#050509]" />}>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/:owner/:repo" element={<VizPage />} />
-          <Route path="/:owner/:repo/search" element={<SearchPage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </Suspense>
+      <ErrorBoundary>
+        <Suspense fallback={<div className="min-h-screen bg-[#050509]" />}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/:owner/:repo" element={<VizPage />} />
+            <Route path="/:owner/:repo/search" element={<SearchPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }

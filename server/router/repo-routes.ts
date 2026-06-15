@@ -39,9 +39,7 @@ export async function handleRepoRoutes(
     if (!q.success) {
       throw new AppError(400, 'Invalid owner/repo', 'INVALID_PARAMS');
     }
-    const branches = await fetchRepoBranches(q.data.owner, q.data.repo, ctx).catch(err => {
-      throw new AppError(400, 'Failed to fetch branches: ' + err.message, 'FETCH_ERROR');
-    });
+    const branches = await fetchRepoBranches(q.data.owner, q.data.repo, ctx);
     return Response.json(branches, { status: 200 });
   }
 

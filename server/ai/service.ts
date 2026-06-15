@@ -1,5 +1,5 @@
 import { getAIProvider } from './provider';
-import { aiCacheKey, cache } from '../cache/lru';
+import { aiCacheKey, cache, hashContext } from '../cache/lru';
 import { logApi } from '../utils/logger';
 
 // Concurrency queue to control/batch AI API requests
@@ -59,17 +59,8 @@ function getAiCacheDiscriminator(apiKey?: string): string {
         ? (process.env.ANTHROPIC_MODEL ?? 'claude-3-5-haiku-latest')
         : 'mock';
 
-  const keyScope = apiKey?.trim() ? `user-key:${hashKey(apiKey)}` : 'env-key';
+  const keyScope = apiKey?.trim() ? `user-key:${hashContext(apiKey)}` : 'env-key';
   return `${provider}:${model}:${keyScope}`;
-}
-
-function hashKey(input: string): string {
-  let hash = 0;
-  for (let i = 0; i < input.length; i++) {
-    hash = (hash << 5) - hash + input.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash).toString(36);
 }
 
 export function safeParseJSON<T>(raw: string): T {
@@ -118,7 +109,9 @@ export interface AiTaskParams<T extends NonNullable<unknown>> {
 export async function executeAiTask<T extends NonNullable<unknown>>(
   params: AiTaskParams<T>
 ): Promise<{ data: T; cached: boolean }> {
-  const isMock = (process.env.AI_PROVIDER ?? 'mock').toLowerCase() === 'mock';
+  const providerEnv = process.env.AI_PROVIDER?.trim().toLowerCase();
+  const hasApiKey = params.apiKey?.trim();
+  const isMock = !hasApiKey && (!providerEnv || providerEnv === 'mock');
 
   if (isMock) {
     return { data: params.mockFallback(), cached: false };

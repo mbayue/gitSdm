@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { GitBranch, Zap, Network, Brain } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -42,13 +43,24 @@ const steps = [
 ];
 
 export function HowItWorks() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+
+    const handleChange = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
   return (
     <section id="how-it-works" className="mx-auto max-w-5xl scroll-mt-20 px-4 py-20">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        transition={{ duration: 0.5 }}
+        transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.5 }}
         className="text-center mb-12"
       >
         <span className="text-xs font-bold uppercase tracking-widest text-[#8b5cf6] mb-3 block">How it works</span>
@@ -60,14 +72,14 @@ export function HowItWorks() {
         </p>
       </motion.div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 list-none">
         {steps.map((s, i) => (
-          <motion.div
+          <motion.li
             key={s.step}
-            initial={{ opacity: 0, y: 20 }}
+            initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: i * 0.1, duration: 0.4 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { delay: i * 0.1, duration: 0.4 }}
           >
             <Card className="h-full p-5 border-[#272233] bg-[#0f0f17] hover:border-[#272233]/80 hover:-translate-y-0.5 transition-all cursor-default">
               <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${s.bg} border ${s.border} mb-4`}>
@@ -77,9 +89,9 @@ export function HowItWorks() {
               <h3 className="text-sm font-semibold text-[#f8fafc] mb-1.5">{s.title}</h3>
               <p className="text-xs text-[#a1a1aa] leading-relaxed">{s.description}</p>
             </Card>
-          </motion.div>
+          </motion.li>
         ))}
-      </div>
+      </ol>
     </section>
   );
 }

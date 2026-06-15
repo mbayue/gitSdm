@@ -8,6 +8,9 @@ export function useArchitecturePanZoom() {
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
+    const target = e.target as HTMLElement;
+    const isInteractiveElement = target.closest('button, a, input, select, textarea, [role="button"]');
+    if (isInteractiveElement) return;
     setIsDragging(true);
     setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
   };

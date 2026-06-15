@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toPng } from 'html-to-image';
 import { generateProgrammaticMermaid } from '../mermaid-generator';
 import type { RepoAnalysis } from '@/types';
@@ -12,6 +12,15 @@ export function useArchitectureExport(
 ) {
   const [copied, setCopied] = useState(false);
   const [copiedSvg, setCopiedSvg] = useState(false);
+  const copiedTimerRef = useRef<NodeJS.Timeout>();
+  const copiedSvgTimerRef = useRef<NodeJS.Timeout>();
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+      if (copiedSvgTimerRef.current) clearTimeout(copiedSvgTimerRef.current);
+    };
+  }, []);
 
   const handleCopyCode = async () => {
     let rawCode = mode === 'ai' ? data?.diagram : generateProgrammaticMermaid(analysis);
@@ -42,7 +51,8 @@ export function useArchitectureExport(
         document.body.removeChild(textarea);
       }
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+      copiedTimerRef.current = setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error(err);
     }
@@ -67,7 +77,8 @@ export function useArchitectureExport(
         document.body.removeChild(textarea);
       }
       setCopiedSvg(true);
-      setTimeout(() => setCopiedSvg(false), 2000);
+      if (copiedSvgTimerRef.current) clearTimeout(copiedSvgTimerRef.current);
+      copiedSvgTimerRef.current = setTimeout(() => setCopiedSvg(false), 2000);
     } catch (err) {
       console.error(err);
     }
@@ -87,7 +98,7 @@ export function useArchitectureExport(
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(svgUrl);
+      setTimeout(() => URL.revokeObjectURL(svgUrl), 100);
     } catch (err) {
       console.error('Download failed', err);
     }

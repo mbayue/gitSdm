@@ -58,9 +58,21 @@ ${buildRepoContext(analysis)}`,
     },
   });
 
-  const sanitizedDiagram = result.data
+  let diagram = result.data.trim();
+
+  const codeBlockMatch = diagram.match(/^```mermaid\s*([\s\S]*?)\s*```$/i);
+  if (codeBlockMatch) {
+    diagram = codeBlockMatch[1].trim();
+  } else {
+    const anyCodeBlockMatch = diagram.match(/^```\s*([\s\S]*?)\s*```$/);
+    if (anyCodeBlockMatch) {
+      diagram = anyCodeBlockMatch[1].trim();
+    }
+  }
+
+  diagram = diagram
     .replace(/click\s+\w+\s+[^\n;]*/gi, '')
     .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, '');
 
-  return { diagram: sanitizedDiagram, cached: result.cached };
+  return { diagram, cached: result.cached };
 }

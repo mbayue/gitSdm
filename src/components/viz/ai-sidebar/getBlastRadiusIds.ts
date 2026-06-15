@@ -1,29 +1,45 @@
 import type { RepoAnalysis } from '@/types';
 
 export const getBlastRadiusIds = (nodeId: string, analysis: RepoAnalysis) => {
-  const visited = new Set<string>();
-  const startNodes = [nodeId];
+  const visited = new Set<string>([nodeId]);
+  const queue: string[] = [];
 
   const targetNode = analysis.graph.nodes.find(n => n.id === nodeId);
-  if (targetNode?.type === 'folder' && targetNode.data.path) {
+  if (!targetNode) return visited;
+
+  if (targetNode.type === 'file') {
+    queue.push(nodeId);
+  } else if (targetNode.type === 'folder' && targetNode.data.path) {
     const folderPath = targetNode.data.path;
-    analysis.graph.nodes.forEach(n => {
+    for (const n of analysis.graph.nodes) {
       if (n.type === 'file' && n.data.path?.startsWith(folderPath + '/')) {
-        startNodes.push(n.id);
+        visited.add(n.id);
+        queue.push(n.id);
       }
-    });
+    }
   }
 
-  const queue = [...startNodes];
+  const edgesByTarget = new Map<string, string[]>();
+  for (const edge of analysis.graph.edges) {
+    if (edge.type === 'imports') {
+      if (!edgesByTarget.has(edge.target)) {
+        edgesByTarget.set(edge.target, []);
+      }
+      edgesByTarget.get(edge.target)!.push(edge.source);
+    }
+  }
+
   while (queue.length > 0) {
     const curr = queue.shift()!;
-    if (visited.has(curr)) continue;
-    visited.add(curr);
-
-    // Sync with GraphCanvas: only follow 'imports' type edges
-    analysis.graph.edges
-      .filter(e => e.target === curr && e.type === 'imports')
-      .forEach(e => queue.push(e.source));
+    const sources = edgesByTarget.get(curr);
+    if (sources) {
+      for (const source of sources) {
+        if (!visited.has(source)) {
+          visited.add(source);
+          queue.push(source);
+        }
+      }
+    }
   }
   return visited;
 };

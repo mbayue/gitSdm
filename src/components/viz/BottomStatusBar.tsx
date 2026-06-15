@@ -16,7 +16,10 @@ export function BottomStatusBar({
   showMinimap,
   activeView,
 }: BottomStatusBarProps) {
-  const { selectedNodeId, focusedFilePath, selectedBranch, zoom } = useVizStore();
+  const selectedNodeId = useVizStore((state) => state.selectedNodeId);
+  const focusedFilePath = useVizStore((state) => state.focusedFilePath);
+  const selectedBranch = useVizStore((state) => state.selectedBranch);
+  const zoom = useVizStore((state) => state.zoom);
 
   const nodeCount = analysis?.graph?.nodes?.length ?? 0;
   const edgeCount = analysis?.graph?.edges?.length ?? 0;
@@ -26,7 +29,7 @@ export function BottomStatusBar({
   const zoomPct = activeView === 'graph' ? Math.round(zoom * 100) : 100;
 
   return (
-    <footer className="relative z-40 flex h-8 shrink-0 items-center justify-between border-t border-white/[0.05] bg-zinc-950 px-4 text-[11px] font-mono text-zinc-500 select-none font-sans">
+    <footer className="relative z-40 flex h-8 shrink-0 items-center justify-between border-t border-white/[0.05] bg-zinc-950 px-4 text-[11px] text-zinc-500 select-none">
       {/* Left Group */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
         {/* Branch chip */}
