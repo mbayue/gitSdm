@@ -32,6 +32,7 @@ export function FocusLayers({ activeFocusLayer, setActiveFocusLayer }: FocusLaye
           const isActive = activeFocusLayer === layer.id;
           return (
             <button
+              type="button"
               key={layer.id}
               onClick={() => setActiveFocusLayer(layer.id)}
               className={cn(
