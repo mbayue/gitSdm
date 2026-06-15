@@ -1,14 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { Star, ArrowRight } from 'lucide-react';
-import { fetchTrending } from '@/lib/apiClient';
 import { useNavigate } from 'react-router-dom';
-import { formatStars } from '@/lib/utils';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { useQuery } from '@tanstack/react-query';
+import { Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { fetchTrending } from '@/lib/apiClient';
+import { formatStars } from '@/lib/utils';
 
 interface TrendingProps {
   onSelect: (url: string) => void;
@@ -23,97 +19,76 @@ export function Trending({ onSelect }: TrendingProps) {
   const [navigating, setNavigating] = useState<string | null>(null);
 
   return (
-    <section id="trending" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-20">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5 }}
-        className="text-center mb-10"
-      >
-        <span className="text-xs font-bold uppercase tracking-widest text-[#22d3ee] mb-3 block">Trending</span>
-        <h2 className="text-3xl font-bold text-[#f8fafc] sm:text-4xl">Popular repositories</h2>
-        <p className="mt-3 text-[#a1a1aa] max-w-md mx-auto">
-          Explore trending open-source projects analyzed by the community.
-        </p>
-      </motion.div>
+    <section id="examples" className="mx-auto max-w-7xl scroll-mt-20 px-4 sm:px-6 py-12 sm:py-20">
+      <div className="mb-12">
+        <h2 className="text-xl font-bold text-[#e6edf3] mb-2">Example repositories</h2>
+        <p className="text-sm text-[#8b949e]">Select a project to explore its architecture.</p>
+      </div>
 
       {isLoading && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-36 rounded-xl bg-[#161622]" />
+        <div className="border border-[rgba(240,246,252,0.1)] rounded-lg divide-y divide-[rgba(240,246,252,0.1)]">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-14 bg-[#161b22]/50 animate-pulse" />
           ))}
         </div>
       )}
 
       {error && (
-        <p className="text-center text-sm text-[#a1a1aa]">Could not load trending repos</p>
+        <div className="p-4 rounded border border-[#f85149]/20 bg-[#f85149]/5 text-center text-xs text-[#f85149]">
+          Could not load trending repositories.
+        </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {data?.map((repo, i) => (
-          <motion.div
+      <div className="border border-[rgba(240,246,252,0.1)] rounded-lg overflow-hidden divide-y divide-[rgba(240,246,252,0.1)]">
+        {data?.slice(0, 5).map((repo) => (
+          <div
             key={repo.fullName}
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: i * 0.05 }}
+            className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 p-4 bg-[#161b22] hover:bg-[#1c2128] transition-colors cursor-pointer"
+            onClick={async () => {
+              setNavigating(repo.fullName);
+              await new Promise((r) => setTimeout(r, 220));
+              onSelect?.(repo.url);
+              navigate(`/${repo.owner}/${repo.repo}`);
+            }}
           >
-            <Card
-              className="group h-full p-5 border-[#272233] bg-[#0f0f17] hover:border-[#8b5cf6]/30 hover:-translate-y-0.5 transition-all cursor-pointer relative"
-              onClick={async () => {
-                setNavigating(repo.fullName);
-                await new Promise((r) => setTimeout(r, 220));
-                onSelect?.(repo.url);
-                navigate(`/${repo.owner}/${repo.repo}`);
-              }}
-            >
-              {navigating === repo.fullName && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-[#050509]/60 backdrop-blur-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent border-[#8b5cf6]" />
-                    <span className="text-xs text-[#f8fafc]">Analyzing...</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Header row: name + stars */}
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <h3 className="font-mono text-sm font-semibold text-[#f8fafc] group-hover:text-[#c4b5fd] transition-colors truncate">
+            <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h3 className="text-sm font-bold text-[#e6edf3] font-mono truncate">
                   {repo.fullName}
                 </h3>
-                <div className="flex shrink-0 items-center gap-1 text-xs text-[#fbbf24]">
-                  <Star className="h-3 w-3" />
-                  <span className="font-mono">{formatStars(repo.stars)}</span>
-                </div>
+                {repo.language && (
+                  <span className="text-[10px] text-[#8b949e] border border-[rgba(240,246,252,0.1)] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider shrink-0">
+                    {repo.language}
+                  </span>
+                )}
               </div>
-
-              {/* Description */}
-              <p className="text-xs text-[#a1a1aa] leading-relaxed line-clamp-2 mb-3">
+              <p className="text-xs text-[#8b949e] line-clamp-2 sm:line-clamp-1 pr-2">
                 {repo.description ?? 'No description available'}
               </p>
+            </div>
 
-              {/* Footer: language badge + CTA */}
-              <div className="flex items-center justify-between mt-auto">
-                {repo.language ? (
-                  <Badge variant="secondary" className="text-[10px] border-[#272233] bg-[#161622] text-[#a1a1aa]">
-                    {repo.language}
-                  </Badge>
-                ) : (
-                  <span />
-                )}
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  className="gap-1 text-[10px] text-[#8b5cf6] opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  Analyze
-                  <ArrowRight className="h-3 w-3" />
-                </Button>
+            <div className="flex items-center justify-between sm:justify-end gap-6 shrink-0 mt-2 sm:mt-0">
+              <div className="flex items-center gap-1.5 text-xs text-[#8b949e] font-mono">
+                <Star className="h-3.5 w-3.5" />
+                <span>{formatStars(repo.stars)}</span>
               </div>
-            </Card>
-          </motion.div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 border-[rgba(240,246,252,0.1)] bg-[#0d1117] text-[#e6edf3] hover:bg-[#1c2128] text-[10px] font-bold uppercase tracking-wider px-4 sm:px-3 w-auto"
+              >
+                {navigating === repo.fullName ? 'Analyzing...' : 'Analyze'}
+              </Button>
+            </div>
+          </div>
         ))}
+      </div>
+
+      <div className="mt-8 flex justify-center w-full">
+        <a href="https://github.com/bayue48/gitSdm" target="_blank" rel="noopener noreferrer" className="text-xs text-[#8b949e] hover:text-[#e6edf3] transition-colors underline decoration-[rgba(240,246,252,0.2)] underline-offset-4 px-4 py-2 text-center whitespace-normal">
+          View more examples on GitHub
+        </a>
       </div>
     </section>
   );

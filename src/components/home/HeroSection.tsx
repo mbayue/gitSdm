@@ -1,194 +1,183 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { AlertTriangle, ArrowRight, Zap, GitBranch, Brain, Network } from 'lucide-react';
+import { GitBranch } from 'lucide-react';
 import { ReactFlowProvider } from '@xyflow/react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
 import { GraphCanvas } from '@/features/graph/canvas/GraphCanvas';
 import { demoGraph } from '@/features/graph/demoGraph';
-import { getVisibleRepoPresets } from '@/components/home/repoPresets';
+import { RepoInput } from '@/components/home/RepoInput';
 import { fetchAppConfig } from '@/lib/apiClient';
-import { parseRepoFromUrl, LAST_REPO_KEY } from '@/lib/utils';
 
 interface HeroSectionProps {
   initialUrl?: string;
 }
 
 export function HeroSection({ initialUrl = '' }: HeroSectionProps) {
-  const [url, setUrl] = useState(initialUrl);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [url] = useState(initialUrl);
 
-  const { data: config } = useQuery({
+  useQuery({
     queryKey: ['appConfig'],
     queryFn: fetchAppConfig,
     staleTime: 1000 * 60 * 60,
   });
 
-  const showMockPresets = config?.aiProvider === 'mock';
-  const presets = useMemo(
-    () => getVisibleRepoPresets(showMockPresets).slice(0, 5),
-    [showMockPresets],
-  );
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    const parsed = parseRepoFromUrl(url);
-    if (!parsed) {
-      setError('Enter a valid GitHub URL or owner/repo (e.g. facebook/react)');
-      return;
-    }
-    localStorage.setItem(LAST_REPO_KEY, url);
-    setLoading(true);
-    try {
-      navigate(`/${parsed.owner}/${parsed.repo}`, { state: { pendingUrl: url } });
-    } catch {
-      setError('Failed to navigate');
-      setLoading(false);
-    }
-  };
 
   return (
-    <section className="relative pt-24 pb-8 overflow-hidden" id="analyze">
-      {/* Ambient glows */}
-      <div className="absolute top-0 left-1/2 -z-10 h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-[#8b5cf6]/8 blur-[160px]" />
-      <div className="absolute top-1/3 right-0 -z-10 h-[400px] w-[400px] rounded-full bg-[#22d3ee]/5 blur-[120px]" />
-
+    <section className="relative pt-8 sm:pt-12 pb-12 sm:pb-20 border-b border-[rgba(240,246,252,0.1)] overflow-hidden" id="analyze">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center">
-          {/* Left column: headline + input */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          >
-            {/* Badge */}
+        <div className="flex flex-col gap-12">
+          {/* Top: Headline + Subtitle + Input */}
+          <div className="max-w-3xl">
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="mb-6"
+              transition={{ duration: 0.5 }}
             >
-              <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-xs border border-[#8b5cf6]/30 bg-[#8b5cf6]/10 text-[#c4b5fd]">
-                <Brain className="h-3 w-3" />
-                AI-native repository intelligence
-              </Badge>
-            </motion.div>
-
-            {/* Headline */}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#f8fafc] leading-[1.1] mb-5">
-              Understand any
-              <br />
-              <span className="bg-gradient-to-r from-[#8b5cf6] via-[#a78bfa] to-[#22d3ee] bg-clip-text text-transparent">
-                codebase instantly
+              <span className="inline-block mb-4 px-2 py-0.5 rounded border border-[rgba(240,246,252,0.1)] bg-[#161b22] text-[10px] font-bold text-[#8b949e] uppercase tracking-widest">
+                Graph-first codebase analysis
               </span>
-            </h1>
+              <h1 className="text-3xl sm:text-4xl font-bold text-[#e6edf3] tracking-tight mb-4">
+                Map repository architecture from a GitHub URL.
+              </h1>
+              <p className="text-base text-[#8b949e] leading-relaxed mb-8 max-w-2xl">
+                Paste a public repository and inspect its files, dependencies, module boundaries, and architecture notes in one graph-first workspace.
+              </p>
 
-            <p className="text-lg text-[#a1a1aa] leading-relaxed mb-8 max-w-lg">
-              Paste a GitHub repo, get a dependency graph, architecture map, and AI-powered walkthrough in seconds.
-            </p>
+              <RepoInput initialUrl={url} />
+            </motion.div>
+          </div>
 
-            {/* Repo input */}
-            <form onSubmit={handleSubmit} className="mb-4">
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <GitBranch className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a1a1aa]/60" />
-                  <input
-                    type="text"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    placeholder="github.com/owner/repo or owner/repo"
-                    disabled={loading}
-                    className="h-12 w-full rounded-xl border border-[#272233] bg-[#0f0f17] pl-10 pr-4 text-sm text-[#f8fafc] placeholder-[#a1a1aa]/50 outline-none focus:border-[#8b5cf6]/50 focus:ring-2 focus:ring-[#8b5cf6]/20 transition-all"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="h-12 px-6 bg-gradient-to-r from-[#8b5cf6] to-[#22d3ee] text-white border-0 hover:opacity-90 shadow-[0_0_24px_rgba(139,92,246,0.25)] text-sm font-semibold gap-2"
-                >
-                  {loading ? (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  ) : (
-                    <Zap className="h-4 w-4" />
-                  )}
-                  Analyze
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
-              {error && (
-                <p className="mt-2 text-sm text-red-400">{error}</p>
-              )}
-            </form>
-
-            {/* Example chips */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-[#a1a1aa]/60">Try:</span>
-              {presets.map((item) => (
-                <button
-                  key={item.repo}
-                  type="button"
-                  onClick={() => { setUrl(`https://github.com/${item.repo}`); setError(''); }}
-                  className="rounded-lg border border-[#272233] bg-[#0f0f17] px-2.5 py-1 text-[11px] font-medium text-[#a1a1aa] hover:border-[#8b5cf6]/40 hover:text-[#f8fafc] hover:bg-[#8b5cf6]/5 transition-all cursor-pointer"
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Right column: live preview card */}
+          {/* Bottom: Product Preview */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="hidden lg:block"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="w-full"
           >
-            <Card className="relative overflow-hidden border-[#272233] bg-background p-0">
-              {/* Graph preview */}
-              <div className="relative h-[320px] w-full overflow-hidden bg-background">
-                <ReactFlowProvider>
-                  <GraphCanvas graph={demoGraph} readOnly hideChrome />
-                </ReactFlowProvider>
+            <div className="rounded-lg border border-[rgba(240,246,252,0.1)] bg-[#161b22] overflow-hidden shadow-2xl">
+              {/* Fake IDE Header */}
+              <div className="h-9 border-b border-[rgba(240,246,252,0.1)] bg-[#1c2128] flex items-center justify-between px-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1.5">
+                    <GitBranch className="h-3.5 w-3.5 text-[#8b949e]" />
+                    <span className="text-[11px] font-mono text-[#e6edf3]">bayue48/gitSdm</span>
+                  </div>
+                  <div className="h-3 w-[1px] bg-[rgba(240,246,252,0.1)]" />
+                  <span className="text-[11px] font-mono text-[#8b949e]">branch: main</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-[#3fb950]" />
+                  <span className="text-[10px] text-[#8b949e] uppercase font-bold tracking-wider">Parsed</span>
+                </div>
               </div>
 
-              {/* Info panel below graph */}
-              <div className="border-t border-[#272233] bg-[#0f0f17]/80 p-5 space-y-4">
-                {/* Mini AI summary */}
-                <div className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#8b5cf6]/10 border border-[#8b5cf6]/20">
-                    <Brain className="h-4 w-4 text-[#8b5cf6]" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-[#f8fafc] mb-0.5">AI Summary</p>
-                    <p className="text-[11px] text-[#a1a1aa] leading-relaxed">
-                      React-based SPA with Express API layer. 47 modules, 3 circular deps detected. Entry: src/main.tsx
-                    </p>
+              <div className="flex h-[480px]">
+                {/* Left Sidebar */}
+                <div className="w-56 border-r border-[rgba(240,246,252,0.1)] bg-[#0d1117] p-3 hidden md:flex flex-col">
+                  <div className="text-[10px] font-bold text-[#8b949e] uppercase tracking-wider mb-3 px-1">Explorer</div>
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-1.5 text-xs text-[#e6edf3] py-1 px-2 rounded bg-[#1c2128]">
+                      <span className="text-[#8b949e]">▼</span>
+                      <span>src</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-[#8b949e] py-1 px-2 pl-6 hover:text-[#e6edf3] cursor-default">
+                      <span>▶</span>
+                      <span>api</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-[#8b949e] py-1 px-2 pl-6 hover:text-[#e6edf3] cursor-default">
+                      <span>▶</span>
+                      <span>core</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-[#8b949e] py-1 px-2 pl-6 hover:text-[#e6edf3] cursor-default">
+                      <span>▶</span>
+                      <span>ui</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-[#8b949e] py-1 px-2 pl-6 hover:text-[#e6edf3] cursor-default">
+                      <span className="w-2.5" />
+                      <span>App.tsx</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-[#8b949e] py-1 px-2 pl-6 hover:text-[#e6edf3] cursor-default">
+                      <span className="w-2.5" />
+                      <span>index.ts</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-[#8b949e] py-1 px-2 hover:text-[#e6edf3] cursor-default mt-2">
+                      <span className="w-2.5" />
+                      <span>package.json</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Stats row */}
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5 rounded-md bg-[#161622] px-2.5 py-1.5 border border-[#272233]">
-                    <Network className="h-3 w-3 text-[#22d3ee]" />
-                    <span className="text-[11px] font-mono text-[#f8fafc]">47 nodes</span>
+                {/* Center Panel (Graph) */}
+                <div className="flex-1 bg-[#0d1117] relative overflow-hidden">
+                  <ReactFlowProvider>
+                    <GraphCanvas graph={demoGraph} readOnly hideChrome />
+                  </ReactFlowProvider>
+                  
+                  {/* Selected Node State overlay */}
+                  <div className="absolute top-4 right-4 p-3 rounded-md border border-[rgba(240,246,252,0.1)] bg-[#1c2128]/90 backdrop-blur-sm max-w-[200px] shadow-lg">
+                    <div className="text-[10px] font-bold text-[#8b949e] uppercase tracking-wider mb-1">Selected Module</div>
+                    <div className="text-[11px] font-mono text-[#e6edf3] truncate">src/core</div>
+                    <div className="mt-2 flex gap-2 text-[10px] text-[#8b949e]">
+                      <span className="px-1.5 py-0.5 rounded bg-[#0d1117] border border-[rgba(240,246,252,0.1)]">2 files</span>
+                      <span className="px-1.5 py-0.5 rounded bg-[#0d1117] border border-[rgba(240,246,252,0.1)]">4 edges</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5 rounded-md bg-[#161622] px-2.5 py-1.5 border border-[#272233]">
-                    <GitBranch className="h-3 w-3 text-[#34d399]" />
-                    <span className="text-[11px] font-mono text-[#f8fafc]">12 edges</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 rounded-md bg-[#161622] px-2.5 py-1.5 border border-[#272233]">
-                    <AlertTriangle className="h-3 w-3 text-[#fbbf24]" />
-                    <span className="text-[11px] font-mono text-[#f8fafc]">2 risks</span>
+                </div>
+
+                {/* Right Panel */}
+                <div className="w-64 border-l border-[rgba(240,246,252,0.1)] bg-[#0d1117] p-4 hidden lg:block overflow-y-auto no-scrollbar">
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <div className="text-[10px] font-bold text-[#8b949e] uppercase tracking-wider">Entry Points</div>
+                      <div className="text-[11px] font-mono text-[#e6edf3] truncate hover:text-[#58a6ff] cursor-pointer">src/index.ts</div>
+                      <div className="text-[11px] font-mono text-[#e6edf3] truncate hover:text-[#58a6ff] cursor-pointer">src/api/routes.ts</div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="text-[10px] font-bold text-[#8b949e] uppercase tracking-wider">High Coupling</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#f85149]" />
+                        <span className="text-[11px] font-mono text-[#e6edf3] hover:underline cursor-pointer">src/core/auth.ts</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#d29922]" />
+                        <span className="text-[11px] font-mono text-[#e6edf3] hover:underline cursor-pointer">src/ui/Button.tsx</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="text-[10px] font-bold text-[#8b949e] uppercase tracking-wider">Suggested Reading</div>
+                      <div className="flex flex-col gap-1 text-[11px] font-mono text-[#8b949e]">
+                        <span className="flex items-center gap-2"><span className="text-[#30363d]">1.</span> <span className="text-[#e6edf3] hover:text-[#58a6ff] cursor-pointer">src/index.ts</span></span>
+                        <span className="flex items-center gap-2"><span className="text-[#30363d]">2.</span> <span className="text-[#e6edf3] hover:text-[#58a6ff] cursor-pointer">src/App.tsx</span></span>
+                        <span className="flex items-center gap-2"><span className="text-[#30363d]">3.</span> <span className="text-[#e6edf3] hover:text-[#58a6ff] cursor-pointer">src/core/auth.ts</span></span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="text-[10px] font-bold text-[#8b949e] uppercase tracking-wider">Architecture Notes</div>
+                      <p className="text-[11px] text-[#8b949e] leading-relaxed">
+                        Core handles business logic and DB connections. UI components are isolated and depend heavily on React. API routes tie auth and DB together.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </Card>
+
+              {/* Fake Status Bar */}
+              <div className="h-7 border-t border-[rgba(240,246,252,0.1)] bg-[#0d1117] flex items-center justify-between px-4 text-[10px] text-[#8b949e] font-mono">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1.5">
+                    <span>318 files</span>
+                    <span className="text-[#30363d]">·</span>
+                    <span>742 imports</span>
+                    <span className="text-[#30363d]">·</span>
+                    <span>41 modules</span>
+                  </div>
+                </div>
+                <div>dagre layout</div>
+              </div>
+            </div>
           </motion.div>
         </div>
       </div>

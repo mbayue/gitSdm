@@ -5,7 +5,7 @@ export interface FocusLayer {
   label: string;
 }
 
-export const focusLayers: FocusLayer[] = [
+const focusLayers: FocusLayer[] = [
   { id: 'all', label: 'All Files' },
   { id: 'api', label: 'API / Routes' },
   { id: 'ui', label: 'UI / Components' },

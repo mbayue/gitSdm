@@ -1,11 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { ArrowRight, Zap, ListTodo, Boxes, Atom, Triangle, Terminal, GitBranch, Github } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { GlowButton } from '@/components/ui/GlowButton';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { GitBranch } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { getVisibleRepoPresets } from '@/components/home/repoPresets';
 import { fetchAppConfig } from '@/lib/apiClient';
 import { parseRepoFromUrl, LAST_REPO_KEY } from '@/lib/utils';
@@ -15,17 +12,6 @@ interface RepoInputProps {
 }
 
 export { REPO_PRESETS as PRESETS } from '@/components/home/repoPresets';
-
-const PRESET_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  ListTodo,
-  Boxes,
-  Atom,
-  Triangle,
-  Terminal,
-  Zap,
-  GitBranch,
-};
-
 
 export function RepoInput({ initialUrl = '' }: RepoInputProps) {
   const [url, setUrl] = useState(initialUrl);
@@ -74,69 +60,53 @@ export function RepoInput({ initialUrl = '' }: RepoInputProps) {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.25, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      id="analyze"
-      className="mx-auto max-w-2xl scroll-mt-20 px-4"
-    >
-      <GlassCard className="p-2">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row items-center w-full">
-          <div className="relative flex-1 w-full">
-            <Github className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-            <Input
+    <div className="w-full max-w-2xl scroll-mt-20 px-0">
+      <div className="flex flex-col gap-3">
+        <form onSubmit={handleSubmit} className="flex gap-2 items-center w-full">
+          <div className="relative flex-1">
+            <GitBranch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8b949e]" />
+            <input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://github.com/owner/repo  or  owner/repo"
-              className="pl-10 w-full"
+              placeholder="github.com/owner/repo"
+              className="h-10 w-full rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] pl-10 pr-4 text-sm text-[#e6edf3] placeholder-[#30363d] outline-none focus:border-[#1f6feb] transition-all"
               disabled={loading}
             />
           </div>
-          <GlowButton
+          <Button
             type="submit"
-            loading={loading}
-            className="h-[46px] w-full sm:w-auto shrink-0"
+            disabled={loading}
+            className="h-10 bg-[#238636] hover:bg-[#2ea043] text-white border-0 text-sm font-semibold px-6"
           >
-            <Zap className="h-4 w-4" />
-            Analyze
-            <ArrowRight className="h-4 w-4" />
-          </GlowButton>
+            {loading ? (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+            ) : (
+              'Analyze'
+            )}
+          </Button>
         </form>
 
         {error && (
-          <motion.p
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-2 px-2 text-sm text-red-400"
-          >
+          <p className="px-1 text-xs text-[#f85149]">
             {error}
-          </motion.p>
+          </p>
         )}
 
-        {/* Preset pills */}
-        <div className="mt-3 border-t border-white/5 pt-3 px-1">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="repo-preset-try text-[10px] font-semibold uppercase tracking-wider mr-1 text-zinc-500">TRY:</span>
-            {presets.map((item) => {
-              const IconComponent = PRESET_ICONS[item.icon || ''] || Github;
-              return (
-                <button
-                  key={item.repo}
-                  type="button"
-                  onClick={() => handlePreset(item.repo)}
-                  title={item.repo}
-                  className="repo-preset-pill group flex items-center gap-1.5 rounded-lg border px-2.5 py-0.5 text-[11px] transition-all duration-150 font-medium cursor-pointer"
-                >
-                  <IconComponent className="h-3 w-3 text-zinc-400 group-hover:text-violet-400 transition-colors" />
-                  <span className="repo-preset-label text-zinc-300 group-hover:text-white transition-colors">{item.label}</span>
-                  <span className="repo-preset-desc text-[9px] font-mono text-zinc-500 group-hover:text-violet-300/60 transition-colors">{item.desc}</span>
-                </button>
-              );
-            })}
-          </div>
+        {/* Example chips */}
+        <div className="flex flex-wrap items-center gap-2 px-1">
+          <span className="text-[10px] font-bold text-[#8b949e] uppercase tracking-wider mr-1">Examples:</span>
+          {presets.slice(0, 3).map((item) => (
+            <button
+              key={item.repo}
+              type="button"
+              onClick={() => handlePreset(item.repo)}
+              className="px-2 py-0.5 rounded border border-[rgba(240,246,252,0.1)] bg-[#161b22] text-[11px] text-[#8b949e] hover:text-[#e6edf3] hover:border-[#8b949e] transition-all cursor-pointer"
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
-      </GlassCard>
-    </motion.div>
+      </div>
+    </div>
   );
 }

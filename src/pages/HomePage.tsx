@@ -25,20 +25,26 @@ export function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen" style={{ background: '#050509' }}>
+    <div className="min-h-screen flex flex-col overflow-x-hidden" style={{ background: '#0d1117' }}>
       <Navbar />
       <HeroSection initialUrl={repoUrl} />
       <StatsStrip />
       <HowItWorks />
       <Trending onSelect={setRepoUrl} />
       <CapabilityGroups />
-      <footer className="border-t border-[#272233] py-12 text-center">
-        <p className="text-sm text-[#a1a1aa]">
-          <span className="font-semibold text-[#f8fafc]">gitSdm</span> — AI-powered repository intelligence platform
-        </p>
-        <p className="mt-2 text-xs text-[#a1a1aa]/60">
-          Public & private repositories supported · Powered by Google Gemini
-        </p>
+      <footer className="mt-auto border-t border-[rgba(240,246,252,0.1)] py-8 px-4">
+        <div className="mx-auto max-w-7xl flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-semibold text-[#e6edf3]">gitSdm</span>
+            <span className="text-xs text-[#8b949e]">© 2026</span>
+          </div>
+          <div className="flex items-center gap-6">
+            <a href="https://github.com/bayue48/gitSdm" className="text-xs text-[#8b949e] hover:text-[#e6edf3] transition-colors">GitHub</a>
+            <a href="/docs" className="text-xs text-[#8b949e] hover:text-[#e6edf3] transition-colors">Docs</a>
+            <a href="https://github.com/bayue48/gitSdm/issues" className="text-xs text-[#8b949e] hover:text-[#e6edf3] transition-colors">Issues</a>
+            <span className="text-xs text-[#8b949e]">MIT License</span>
+          </div>
+        </div>
       </footer>
     </div>
   );

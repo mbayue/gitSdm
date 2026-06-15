@@ -1,33 +1,33 @@
 import { motion } from 'framer-motion';
-import { Zap, Brain, Network, Shield } from 'lucide-react';
 
 const stats = [
-  { icon: Zap, value: '< 10s', label: 'Onboarding time', color: 'text-[#22d3ee]' },
-  { icon: Brain, value: 'AI', label: 'Roadmap generation', color: 'text-[#8b5cf6]' },
-  { icon: Network, value: '∞', label: 'Dependency mapping', color: 'text-[#34d399]' },
-  { icon: Shield, value: 'Auto', label: 'Risk scanning', color: 'text-[#fbbf24]' },
+  { value: '318', label: 'Files parsed' },
+  { value: '742', label: 'Imports resolved' },
+  { value: '41', label: 'Modules detected' },
+  { value: 'force / dagre', label: 'Layout engines' },
+  { value: 'PNG / PDF / Mermaid', label: 'Export formats' },
 ];
 
 export function StatsStrip() {
   return (
     <motion.section
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5 }}
-      className="border-y border-[#272233] bg-[#0f0f17]/50 py-6"
+      className="border-b border-[rgba(240,246,252,0.1)] bg-[#0d1117] py-4"
     >
-      <div className="mx-auto max-w-5xl px-4">
-        <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
-          {stats.map((s) => (
-            <div key={s.label} className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#161622] border border-[#272233]">
-                <s.icon className={`h-5 w-5 ${s.color}`} />
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-6 overflow-x-auto no-scrollbar">
+          {stats.map((s, idx) => (
+            <div key={s.label} className="flex items-center gap-6">
+              <div className="flex flex-col gap-0.5 min-w-fit">
+                <div className="text-[11px] font-mono font-bold text-[#e6edf3] whitespace-nowrap">{s.value}</div>
+                <div className="text-[10px] text-[#8b949e] uppercase tracking-wider whitespace-nowrap">{s.label}</div>
               </div>
-              <div>
-                <div className="text-lg font-bold font-mono text-[#f8fafc]">{s.value}</div>
-                <div className="text-[11px] text-[#a1a1aa]">{s.label}</div>
-              </div>
+              {idx < stats.length - 1 && (
+                <div className="h-6 w-[1px] bg-[rgba(240,246,252,0.1)] hidden sm:block" />
+              )}
             </div>
           ))}
         </div>
