@@ -100,6 +100,7 @@ export interface RepoAnalysis {
   contributors: Contributor[];
   timeline: TimelineWeek[];
   importantFiles: string[];
+  totalFiles?: number;
 }
 
 export interface TrendingRepo {

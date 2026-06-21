@@ -9,6 +9,8 @@ interface UseNodeFilteringProps {
   diffStatusFilters: Set<string>;
   fileTypeFilters: Set<string>;
   activeFocusLayer: string | null;
+  graphScope?: string;
+  contentFilters?: Set<string>;
 }
 
 export function useNodeFiltering({
@@ -19,6 +21,8 @@ export function useNodeFiltering({
   diffStatusFilters,
   fileTypeFilters,
   activeFocusLayer,
+  graphScope,
+  contentFilters,
 }: UseNodeFilteringProps) {
   return useMemo(() => {
     if (readOnly) return graph;
@@ -117,6 +121,40 @@ export function useNodeFiltering({
       });
     }
 
+    if (contentFilters) {
+      nodes = nodes.filter((n) => {
+        if (n.type === 'repo') return true;
+        const p = n.data.path ? String(n.data.path).toLowerCase() : "";
+        const isDocs = p.includes('docs/') || p.includes('doc/');
+        const isTests = p.includes('test/') || p.includes('tests/') || p.includes('spec/') || p.includes('__tests__');
+        const isGithub = p.includes('.github/');
+        const isExamples = p.includes('example/') || p.includes('examples/');
+        const isGenerated = p.includes('dist/') || p.includes('build/') || p.includes('out/') || (n.data as any).isGenerated;
+        const isLocales = p.includes('locales/') || p.includes('i18n/') || p.includes('translations/');
+        const isConfig = p.includes('config') || p.endsWith('.json') || p.endsWith('.yaml') || p.endsWith('.yml') || p.endsWith('.toml');
+        
+        if (isDocs && !contentFilters.has('docs')) return false;
+        if (isTests && !contentFilters.has('tests')) return false;
+        if (isGithub && !contentFilters.has('github')) return false;
+        if (isExamples && !contentFilters.has('examples')) return false;
+        if (isGenerated && !contentFilters.has('generated')) return false;
+        if (isLocales && !contentFilters.has('translations')) return false;
+        if (isConfig && !contentFilters.has('config') && !isDocs && !isTests && !isGithub) return false;
+        
+        return true;
+      });
+    }
+
+    if (graphScope) {
+      if (graphScope === 'important') {
+        nodes = nodes.filter(n => n.type === 'repo' || n.type === 'folder' || n.data.fileClass === 'entry' || n.data.fileClass === 'source');
+      } else if (graphScope === 'grouped') {
+        nodes = nodes.filter(n => n.type === 'repo' || n.type === 'folder');
+      }
+      // 'source' and 'full' mostly rely on contentFilters defaults, 
+      // where 'full' would ideally enable all contentFilters in the UI.
+    }
+
     const nodeIds = new Set(nodes.map((n) => n.id));
     const edges = graph.edges.filter(
       (e) => nodeIds.has(e.source) && nodeIds.has(e.target),
@@ -130,5 +168,7 @@ export function useNodeFiltering({
     fileTypeFilters,
     readOnly,
     activeFocusLayer,
+    graphScope,
+    contentFilters,
   ]);
 }

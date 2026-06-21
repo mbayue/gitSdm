@@ -58,8 +58,6 @@ export function buildForceGraphData(
         degree: degreeById.get(node.id) ?? 0,
         color: node.data.nodeColor || NODE_TYPE_COLORS[node.type] || getCommunityColor(community),
         diffStatus: node.data.diffStatus,
-        fx: isRepo ? 0 : undefined,
-        fy: isRepo ? 0 : undefined,
       };
     });
 

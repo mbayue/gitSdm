@@ -25,7 +25,7 @@ export function CodeInspectorDock({ state, setState, filePath, owner, repo }: Co
   const { data, isLoading, error } = useQuery({
     queryKey: ['file', owner, repo, selectedBranch, filePath],
     queryFn: () => fetchRepoFile(owner, repo, filePath, selectedBranch || undefined),
-    enabled: !!filePath,
+    enabled: !!filePath && !filePath.startsWith('repo:'),
     staleTime: 1000 * 60 * 10,
   });
 
@@ -40,15 +40,15 @@ export function CodeInspectorDock({ state, setState, filePath, owner, repo }: Co
     return data.content;
   }, [data?.content, state]);
 
-  // Copy Path action
-  const handleCopyPath = async () => {
+  // Copy code action
+  const handleCopyCode = async () => {
     try {
-      await navigator.clipboard.writeText(filePath);
+      await navigator.clipboard.writeText(data?.content ?? displayContent);
       setCopied(true);
-      setToastMessage('Copied path to clipboard');
+      setToastMessage('Copied code to clipboard');
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy path: ', err);
+      console.error('Failed to copy code: ', err);
     }
   };
 
@@ -104,16 +104,16 @@ export function CodeInspectorDock({ state, setState, filePath, owner, repo }: Co
 
         {/* Right Side: Action buttons */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Copy path button */}
+          {/* Copy code button */}
           <Tooltip>
             <TooltipTrigger
               type="button"
               className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-white/5 hover:text-white transition-colors"
-              onClick={handleCopyPath}
+              onClick={handleCopyCode}
             >
               {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
             </TooltipTrigger>
-            <TooltipContent side="top">Copy Path</TooltipContent>
+            <TooltipContent side="top">Copy Code</TooltipContent>
           </Tooltip>
 
           <div className="h-4 w-px bg-white/[0.08] mx-1" />

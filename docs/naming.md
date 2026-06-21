@@ -219,7 +219,7 @@ Examples:
 
 - `gitsdm:search:recent`
 - `gitsdm:last-repo`
-- `ai:bayue48/gitSdm@main:architecture`
-- `search:bayue48/gitSdm@main:index`
+- `ai:mbayue/gitSdm@main:architecture`
+- `search:mbayue/gitSdm@main:index`
 
 Avoid mixing underscores and colons in new keys.

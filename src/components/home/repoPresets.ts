@@ -5,7 +5,7 @@ export const REPO_PRESETS = [
   { label: 'Next.js', repo: 'vercel/next.js', desc: 'React framework', icon: 'Triangle' },
   { label: 'FastAPI', repo: 'tiangolo/fastapi', desc: 'Python API', icon: 'Terminal' },
   { label: 'Vite', repo: 'vitejs/vite', desc: 'Build tool', icon: 'Zap' },
-  { label: 'gitSdm', repo: 'bayue48/gitSdm', desc: 'This app', icon: 'GitBranch' },
+  { label: 'gitSdm', repo: 'mbayue/gitSdm', desc: 'This app', icon: 'GitBranch' },
 ];
 
 export function getVisibleRepoPresets(showMockPresets: boolean) {

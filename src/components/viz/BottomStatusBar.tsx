@@ -20,9 +20,12 @@ export function BottomStatusBar({
   const focusedFilePath = useVizStore((state) => state.focusedFilePath);
   const selectedBranch = useVizStore((state) => state.selectedBranch);
   const zoom = useVizStore((state) => state.zoom);
+  const setActiveDropdown = useVizStore((state) => state.setActiveDropdown);
+  const visibleNodeCount = useVizStore((state) => state.visibleNodeCount);
+  const visibleEdgeCount = useVizStore((state) => state.visibleEdgeCount);
 
-  const nodeCount = analysis?.graph?.nodes?.length ?? 0;
-  const edgeCount = analysis?.graph?.edges?.length ?? 0;
+  const totalNodeCount = analysis?.graph?.nodes?.length ?? 0;
+  const totalEdgeCount = analysis?.graph?.edges?.length ?? 0;
   const branchName = selectedBranch || analysis?.meta?.defaultBranch || 'main';
 
   // Passive zoom percentage calculation
@@ -43,10 +46,20 @@ export function BottomStatusBar({
         {/* Tree truncated warning */}
         {treeTruncated && (
           <>
-            <div className="flex items-center gap-1 rounded bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 text-[9px] font-semibold text-amber-400 font-sans uppercase">
+            <button
+              type="button"
+              onClick={() => setActiveDropdown('filter')}
+              className="flex items-center gap-1.5 rounded bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 px-1.5 py-0.5 text-[9px] text-amber-400 font-sans transition-colors cursor-pointer"
+              title="Graph is truncated for performance. Click to adjust filter scope."
+            >
               <ShieldAlert className="h-3 w-3 shrink-0" />
-              <span>Truncated</span>
-            </div>
+              <span className="font-bold uppercase tracking-wider">Truncated</span>
+              {visibleNodeCount > 0 && (
+                <span className="font-medium lowercase">
+                  · {totalNodeCount > 0 ? `${visibleNodeCount} / ${analysis?.totalFiles || totalNodeCount}` : visibleNodeCount} nodes
+                </span>
+              )}
+            </button>
             <span className="text-[#30363d] font-light select-none">|</span>
           </>
         )}
@@ -74,11 +87,11 @@ export function BottomStatusBar({
       {/* Right Group */}
       <div className="flex items-center gap-3 shrink-0">
         {/* Graph Node/Edge Stats */}
-        {nodeCount > 0 && (
+        {totalNodeCount > 0 && (
           <div className="hidden sm:flex items-center gap-1.5 text-[#8b949e] text-[10px]">
-            <span>{nodeCount} nodes</span>
+            <span>{visibleNodeCount} / {totalNodeCount} nodes</span>
             <span className="text-[#30363d] font-light">·</span>
-            <span>{edgeCount} edges</span>
+            <span>{visibleEdgeCount} / {totalEdgeCount} edges</span>
           </div>
         )}
 

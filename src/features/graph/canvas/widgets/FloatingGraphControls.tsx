@@ -1,5 +1,5 @@
-import { useReactFlow } from '@xyflow/react';
-import { ZoomIn, ZoomOut, Maximize, Map, Crosshair, RefreshCcw } from 'lucide-react';
+
+import { ZoomIn, ZoomOut, Maximize, Map, Crosshair, RefreshCcw, Target } from 'lucide-react';
 import { useVizStore } from '@/stores/vizStore';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -12,61 +12,32 @@ export function FloatingGraphControls({
   showMinimap,
   setShowMinimap,
 }: FloatingGraphControlsProps) {
-  const reactFlow = useReactFlow();
-  const { triggerGraphAction } = useVizStore();
+  const { triggerGraphAction, resetFilters } = useVizStore();
 
   const handleZoomIn = () => {
     triggerGraphAction('zoomIn');
-    reactFlow.zoomIn({ duration: 250 });
   };
 
   const handleZoomOut = () => {
     triggerGraphAction('zoomOut');
-    reactFlow.zoomOut({ duration: 250 });
   };
 
   const handleFitView = () => {
     triggerGraphAction('fitView');
-    reactFlow.fitView({ duration: 400, padding: 0.35 });
   };
 
-  const handleCenterView = () => {
-    triggerGraphAction('centerView');
-    const { selectedNodeId } = useVizStore.getState();
-    if (selectedNodeId) {
-      const node = reactFlow.getNode(selectedNodeId);
-      if (node) {
-        const width = node.measured?.width ?? node.width ?? 0;
-        const height = node.measured?.height ?? node.height ?? 0;
-        reactFlow.setCenter(node.position.x + width / 2, node.position.y + height / 2, {
-          duration: 400,
-          zoom: 1.2,
-        });
-        return;
-      }
-    }
-    
-    // Find the repository root node and center on it
-    const nodes = reactFlow.getNodes();
-    const repoNode = nodes.find((n) => n.type === 'repo');
-    if (repoNode) {
-      const width = repoNode.measured?.width ?? repoNode.width ?? 0;
-      const height = repoNode.measured?.height ?? repoNode.height ?? 0;
-      reactFlow.setCenter(repoNode.position.x + width / 2, repoNode.position.y + height / 2, {
-        duration: 400,
-        zoom: 1.0,
-      });
-      return;
-    }
-
-    reactFlow.setCenter(0, 0, { zoom: 1, duration: 400 });
+  const handleFocusGraph = () => {
+    triggerGraphAction('focusGraph');
   };
 
   const handleResetView = () => {
+    resetFilters();
     triggerGraphAction('reset');
-    reactFlow.setViewport({ x: 0, y: 0, zoom: 1 }, { duration: 400 });
-    // Also try to fit the graph
-    reactFlow.fitView({ duration: 400, padding: 0.35 });
+    
+    const { setSelectedNodeId, setFocusedFilePath, setHighlightedNodeIds } = useVizStore.getState();
+    setSelectedNodeId(null);
+    setFocusedFilePath(null);
+    setHighlightedNodeIds(new Set());
   };
 
   return (
@@ -107,16 +78,16 @@ export function FloatingGraphControls({
         <TooltipContent side="top">Fit View</TooltipContent>
       </Tooltip>
 
-      {/* Center View */}
+      {/* Focus Graph */}
       <Tooltip>
         <TooltipTrigger
           type="button"
-          onClick={handleCenterView}
+          onClick={handleFocusGraph}
           className="flex h-7 w-7 items-center justify-center rounded-full text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] active:scale-95 transition-all outline-none cursor-pointer"
         >
-          <Crosshair className="h-3.5 w-3.5" />
+          <Target className="h-3.5 w-3.5" />
         </TooltipTrigger>
-        <TooltipContent side="top">Focus Selected</TooltipContent>
+        <TooltipContent side="top">Focus Graph</TooltipContent>
       </Tooltip>
 
       {/* Reset View */}

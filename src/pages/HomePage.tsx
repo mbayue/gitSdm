@@ -39,9 +39,9 @@ export function HomePage() {
             <span className="text-xs text-[#8b949e]">© 2026</span>
           </div>
           <div className="flex items-center gap-6">
-            <a href="https://github.com/bayue48/gitSdm" className="text-xs text-[#8b949e] hover:text-[#e6edf3] transition-colors">GitHub</a>
+            <a href="https://github.com/mbayue/gitSdm" className="text-xs text-[#8b949e] hover:text-[#e6edf3] transition-colors">GitHub</a>
             <a href="/docs" className="text-xs text-[#8b949e] hover:text-[#e6edf3] transition-colors">Docs</a>
-            <a href="https://github.com/bayue48/gitSdm/issues" className="text-xs text-[#8b949e] hover:text-[#e6edf3] transition-colors">Issues</a>
+            <a href="https://github.com/mbayue/gitSdm/issues" className="text-xs text-[#8b949e] hover:text-[#e6edf3] transition-colors">Issues</a>
             <span className="text-xs text-[#8b949e]">MIT License</span>
           </div>
         </div>

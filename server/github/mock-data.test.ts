@@ -60,7 +60,7 @@ describe('github/mock-data', () => {
   it('fetchMockContributors: returns contributors list', async () => {
     const list = await fetchMockContributors();
     expect(list.length).toBeGreaterThan(0);
-    expect(list[0].login).toBe('bayue48');
+    expect(list[0].login).toBe('mbayue');
     expect(list[0].contributions).toBe(84);
   });
 

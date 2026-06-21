@@ -60,7 +60,7 @@ export function HeroSection({ initialUrl = '' }: HeroSectionProps) {
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1.5">
                     <GitBranch className="h-3.5 w-3.5 text-[#8b949e]" />
-                    <span className="text-[11px] font-mono text-[#e6edf3]">bayue48/gitSdm</span>
+                    <span className="text-[11px] font-mono text-[#e6edf3]">mbayue/gitSdm</span>
                   </div>
                   <div className="h-3 w-[1px] bg-[rgba(240,246,252,0.1)]" />
                   <span className="text-[11px] font-mono text-[#8b949e]">branch: main</span>

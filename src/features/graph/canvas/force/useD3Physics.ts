@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { forceCollide, forceRadial } from 'd3-force';
+import { forceCollide, forceRadial, forceCenter } from 'd3-force';
 import type { ForceGraphMethods } from 'react-force-graph-2d';
 import type { ForceGraphNode, ForceGraphLink } from '../../force/forceGraphConstants';
 import { getForceNodeRadius } from '../../force/forceGraphUtils';
@@ -18,13 +18,14 @@ export function useD3Physics({ layoutType, forceGraphRef, nodes }: D3PhysicsProp
   );
 
   useEffect(() => {
-    if (layoutType !== "network") return;
+    if (layoutType !== "force") return;
     const ref = forceGraphRef.current;
     if (!ref) return;
-    const radius = Math.max(80, Math.sqrt(nodeCount) * 18);
+    const radius = Math.max(80, Math.sqrt(nodeCount) * 25);
 
-    ref.d3Force("charge")?.strength(-100);
-    ref.d3Force("link")?.distance(30).strength(0.8);
+    ref.d3Force("charge")?.strength(-150);
+    ref.d3Force("link")?.distance(45).strength(0.8);
+    ref.d3Force("center", forceCenter(0, 0));
 
     ref.d3Force(
       "radial",
@@ -35,15 +36,15 @@ export function useD3Physics({ layoutType, forceGraphRef, nodes }: D3PhysicsProp
           return radius * 0.2 + radius * 0.8 * normalized;
         },
         0,
-        0,
-      ).strength(0.3),
+        0
+      ).strength(0.35),
     );
 
     ref.d3ReheatSimulation();
   }, [layoutType, nodeCount, maxDegree, forceGraphRef]);
 
   useEffect(() => {
-    if (layoutType !== "network" || !forceGraphRef.current) return;
+    if (layoutType !== "force" || !forceGraphRef.current) return;
     const timeout = window.setTimeout(() => {
       const g = forceGraphRef.current;
       if (!g) return;
@@ -51,9 +52,9 @@ export function useD3Physics({ layoutType, forceGraphRef, nodes }: D3PhysicsProp
         "collide",
         forceCollide()
           .radius(
-            (node: unknown) => getForceNodeRadius(node as ForceGraphNode) + 4,
+            (node: unknown) => getForceNodeRadius(node as ForceGraphNode) + 6,
           )
-          .strength(0.35),
+          .strength(0.5),
       );
       g.d3ReheatSimulation();
     }, 0);

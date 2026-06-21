@@ -36,7 +36,7 @@ export async function analyzeRepository(
   const cached = cache.get<RepoAnalysis>(cacheKey);
   if (cached) return cached;
 
-  const [{ items, truncated }, contributors, timeline] = await Promise.all([
+  const [{ items, truncated, totalFiles }, contributors, timeline] = await Promise.all([
     fetchFlatTree(owner, repo, info.sha, tokenOrCtx),
     fetchContributors(owner, repo, tokenOrCtx),
     fetchTimeline(owner, repo, branch, tokenOrCtx),
@@ -89,6 +89,7 @@ export async function analyzeRepository(
     contributors,
     timeline,
     importantFiles,
+    totalFiles,
   };
 
   cache.set(cacheKey, analysis);

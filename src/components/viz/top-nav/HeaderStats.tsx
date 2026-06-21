@@ -17,7 +17,7 @@ export function HeaderStats({ analysis, meta: propsMeta }: HeaderStatsProps) {
       {totalCommits > 0 && (
         <div className="flex items-center gap-1" title="Total commits">
           <History className="h-3 w-3 shrink-0" />
-          <span>{totalCommits.toLocaleString()}</span>
+          <span>{totalCommits.toLocaleString()} total</span>
         </div>
       )}
 

@@ -36,6 +36,7 @@ export function useForceCanvasState({
     fileTypeFilters,
     compareBranch,
     setActiveDropdown,
+    resetFilters,
     graphActionTrigger,
   } = useVizStore();
 
@@ -43,7 +44,7 @@ export function useForceCanvasState({
   const [hoveredForceNode, setHoveredForceNode] = useState<ForceGraphNode | null>(null);
   const { owner = "", repo = "" } = useParams();
 
-  const { isExporting, exportFormat } = useGraphExport({
+  const { isExporting, exportFormat, handleExport } = useGraphExport({
     mode: "force",
     forceGraphRef,
     forceHostRef,
@@ -176,11 +177,13 @@ export function useForceCanvasState({
     focusedFilePath,
     compareBranch,
     setActiveDropdown,
+    resetFilters,
     forceSize,
     hoveredForceNode,
     setHoveredForceNode,
     isExporting,
     exportFormat,
+    handleExport,
     forceGraphData,
     forceNodeById,
     blastRadiusActive,

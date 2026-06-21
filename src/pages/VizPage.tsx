@@ -56,6 +56,8 @@ export function VizPage() {
     setSidebarTab,
     setAiSidebarOpen,
     setExplorerOpen,
+    activeRepoKey,
+    setActiveRepoKey,
   } = useVizStore();
 
   const selectedFilePath = focusedFilePath;
@@ -74,6 +76,21 @@ export function VizPage() {
 
   // Workspace layout and global shortcut integration
   useWorkspaceShortcuts();
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1023px)");
+
+    const closeMobileSidebars = () => {
+      if (!media.matches) return;
+      setExplorerOpen(false);
+      setAiSidebarOpen(false);
+    };
+
+    closeMobileSidebars();
+    media.addEventListener("change", closeMobileSidebars);
+
+    return () => media.removeEventListener("change", closeMobileSidebars);
+  }, [setAiSidebarOpen, setExplorerOpen]);
 
   // Compute file map structures, repository graphs, and branch diff calculations
   const { graphDiff, combinedGraph } = useVizDiff(data, compareBranch, compareData);
@@ -95,14 +112,13 @@ export function VizPage() {
   );
 
   // Reset state when navigating to a different repo
-  const prevRepoRef = useRef(`${owner}/${repo}`);
   useEffect(() => {
     const key = `${owner}/${repo}`;
-    if (key !== prevRepoRef.current) {
-      prevRepoRef.current = key;
+    if (activeRepoKey !== key) {
       reset();
+      setActiveRepoKey(key);
     }
-  }, [owner, repo, reset]);
+  }, [owner, repo, activeRepoKey, reset, setActiveRepoKey]);
 
   const selectedNode = useMemo<GraphNode | null>(() => {
     if (!data || !selectedNodeId) return null;
@@ -112,7 +128,7 @@ export function VizPage() {
   useEffect(() => {
     if (selectedNode?.type === "file" && selectedNode.data.path) {
       setFocusedFilePath(selectedNode.data.path);
-    } else if (selectedNode) {
+    } else {
       setFocusedFilePath(null);
     }
   }, [selectedNode, setFocusedFilePath]);
@@ -160,9 +176,8 @@ export function VizPage() {
               >
                 <div className="flex-1 min-h-0 relative">
                   <div
-                    className={`h-full w-full relative ${
-                      activeView !== "graph" ? "hidden" : ""
-                    }`}
+                    className={`h-full w-full relative ${activeView !== "graph" ? "hidden" : ""
+                      }`}
                   >
                     <GraphFocusSync />
                     <GraphCanvas

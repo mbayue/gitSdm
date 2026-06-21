@@ -15,12 +15,19 @@ export function useTriggerIndexing() {
       repo: string;
       branch?: string;
     }) => triggerIndexing(owner, repo, branch),
-    onSuccess: () => {
+    onMutate: () => {
       setIndexingStatus({
         state: 'indexing',
         progress: 0,
         filesProcessed: 0,
         totalFiles: 0,
+      });
+    },
+    onError: (error) => {
+      setIndexingStatus({
+        state: 'failed',
+        error: error instanceof Error ? error.message : 'Failed to start indexing',
+        failedFiles: 0,
       });
     },
   });

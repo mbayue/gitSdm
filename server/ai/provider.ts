@@ -280,7 +280,7 @@ Let's look at the structure:
 > Instantly visualize, understand, and optimize codebase architecture.
 
 [![Vercel Deployment](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel)](https://vercel.com)
-[![GitHub Stars](https://img.shields.io/github/stars/bayue48/gitSdm?style=flat&color=violet)](https://github.com/bayue48/gitSdm)
+[![GitHub Stars](https://img.shields.io/github/stars/mbayue/gitSdm?style=flat&color=violet)](https://github.com/mbayue/gitSdm)
 [![MIT License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 
 ---

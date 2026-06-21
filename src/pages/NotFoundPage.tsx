@@ -71,7 +71,7 @@ export function NotFoundPage() {
         {/* Helper text */}
         <p className="mt-7 text-xs text-[#a1a1aa]/70">
           Can't find what you need? Try checking our{' '}
-          <a href="https://github.com/bayue48/gitSdm" target="_blank" rel="noopener noreferrer" className="text-[#8b5cf6] hover:underline">
+          <a href="https://github.com/mbayue/gitSdm" target="_blank" rel="noopener noreferrer" className="text-[#8b5cf6] hover:underline">
             documentation
           </a>.
         </p>

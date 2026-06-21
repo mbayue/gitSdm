@@ -86,7 +86,7 @@ export function Trending({ onSelect }: TrendingProps) {
       </div>
 
       <div className="mt-8 flex justify-center w-full">
-        <a href="https://github.com/bayue48/gitSdm" target="_blank" rel="noopener noreferrer" className="text-xs text-[#8b949e] hover:text-[#e6edf3] transition-colors underline decoration-[rgba(240,246,252,0.2)] underline-offset-4 px-4 py-2 text-center whitespace-normal">
+        <a href="https://github.com/mbayue/gitSdm" target="_blank" rel="noopener noreferrer" className="text-xs text-[#8b949e] hover:text-[#e6edf3] transition-colors underline decoration-[rgba(240,246,252,0.2)] underline-offset-4 px-4 py-2 text-center whitespace-normal">
           View more examples on GitHub
         </a>
       </div>

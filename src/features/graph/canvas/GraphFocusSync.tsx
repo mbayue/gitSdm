@@ -21,7 +21,7 @@ export function GraphFocusSync() {
 
     // Build candidate IDs: if focusedFilePath already has a type prefix, use it directly
     const candidateNodeIds: string[] = [];
-    if (focusedFilePath.startsWith('file:') || focusedFilePath.startsWith('folder:')) {
+    if (focusedFilePath.startsWith('file:') || focusedFilePath.startsWith('folder:') || focusedFilePath.startsWith('repo:')) {
       candidateNodeIds.push(focusedFilePath);
     } else {
       candidateNodeIds.push(

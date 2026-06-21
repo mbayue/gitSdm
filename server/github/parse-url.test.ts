@@ -4,18 +4,18 @@ import { parseGitHubUrl, parseRepoParams } from './parse-url';
 describe('parse-url', () => {
   describe('parseGitHubUrl', () => {
     it('parses standard https url', () => {
-      const result = parseGitHubUrl('https://github.com/bayue48/gitSdm');
-      expect(result).toEqual({ owner: 'bayue48', repo: 'gitSdm' });
+      const result = parseGitHubUrl('https://github.com/mbayue/gitSdm');
+      expect(result).toEqual({ owner: 'mbayue', repo: 'gitSdm' });
     });
 
     it('parses url with .git extension', () => {
-      const result = parseGitHubUrl('https://github.com/bayue48/gitSdm.git');
-      expect(result).toEqual({ owner: 'bayue48', repo: 'gitSdm' });
+      const result = parseGitHubUrl('https://github.com/mbayue/gitSdm.git');
+      expect(result).toEqual({ owner: 'mbayue', repo: 'gitSdm' });
     });
 
     it('parses owner/repo shorthand format', () => {
-      const result = parseGitHubUrl('bayue48/gitSdm');
-      expect(result).toEqual({ owner: 'bayue48', repo: 'gitSdm' });
+      const result = parseGitHubUrl('mbayue/gitSdm');
+      expect(result).toEqual({ owner: 'mbayue', repo: 'gitSdm' });
     });
 
     it('returns null for invalid urls', () => {
@@ -24,8 +24,8 @@ describe('parse-url', () => {
     });
 
     it('handles git trailing slashes safely', () => {
-      const result = parseGitHubUrl('https://github.com/bayue48/gitSdm/');
-      expect(result).toEqual({ owner: 'bayue48', repo: 'gitSdm' });
+      const result = parseGitHubUrl('https://github.com/mbayue/gitSdm/');
+      expect(result).toEqual({ owner: 'mbayue', repo: 'gitSdm' });
     });
   });
 

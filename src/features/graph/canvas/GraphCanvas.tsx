@@ -1,49 +1,21 @@
 import {
   useEffect,
-  useMemo,
   useRef,
-  useCallback,
-  type CSSProperties,
 } from "react";
-import {
-  ReactFlow,
-  Background,
-  BackgroundVariant,
-  useReactFlow,
-  type Node,
-  MiniMap,
-} from "@xyflow/react";
 import { Loader2 } from "lucide-react";
 import { useParams } from "react-router-dom";
-import "@xyflow/react/dist/style.css";
-import {
-  RepoNode,
-  FolderNode,
-  FileNode,
-  PackageNode,
-  ContributorNode,
-} from "../nodes/GraphNodes";
+
 import type { GraphData } from "@/types";
 import { useVizStore } from "@/stores/vizStore";
 import { NetworkCanvas } from "./ForceGraphCanvas";
 
-import { useGraphExport } from "../useGraphExport";
+import { useGraphCanvasState } from "./hooks/useGraphCanvasState";
 import { ToolbarDropdowns } from "./ToolbarDropdowns";
-
-// Subcomponents & Helpers
 import { LegendPanel } from "./widgets/LegendPanel";
 import { FloatingGraphControls } from "./widgets/FloatingGraphControls";
-import { useGraphCanvasState } from "./hooks/useGraphCanvasState";
-import { useGraphLayout } from "./hooks/useGraphLayout";
-import { useGraphCentering } from "./hooks/useGraphCentering";
-
-const nodeTypes = {
-  repo: RepoNode,
-  folder: FolderNode,
-  file: FileNode,
-  package: PackageNode,
-  contributor: ContributorNode,
-};
+import { useGraphExport } from "../useGraphExport";
+import type { ForceGraphMethods } from "react-force-graph-2d";
+import type { ForceGraphNode, ForceGraphLink } from "./force/forceGraphConstants";
 
 interface GraphCanvasProps {
   graph: GraphData;
@@ -61,20 +33,11 @@ export function GraphCanvas({
   hideChrome,
 }: GraphCanvasProps) {
   const {
-    setSelectedNodeId,
-    setHighlightedNodeIds,
-    setFocusedFilePath,
     toggleNodeTypeFilter,
     toggleDiffStatusFilter,
     setActiveFocusLayer,
     setBlastRadiusActive,
-    setLayoutType,
     setActiveDropdown,
-    selectedNodeId,
-    highlightedNodeIds,
-    focusedFilePath,
-    layoutType,
-    theme,
     activeFocusLayer,
     blastRadiusActive,
     nodeTypeFilters,
@@ -83,9 +46,17 @@ export function GraphCanvas({
     activeDropdown,
     legendOpen,
     setLegendOpen,
+    graphScope,
+    setGraphScope,
+    contentFilters,
+    toggleContentFilter,
+    setVisibleCounts,
   } = useVizStore();
 
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const forceGraphRef = useRef<ForceGraphMethods<ForceGraphNode, ForceGraphLink> | undefined>(undefined);
+  const forceHostRef = useRef<HTMLDivElement | null>(null);
+  const { owner = "", repo = "" } = useParams();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -93,146 +64,27 @@ export function GraphCanvas({
         setActiveDropdown(null);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside, true);
+    return () => document.removeEventListener("mousedown", handleClickOutside, true);
   }, [setActiveDropdown]);
 
-  const reactFlowInstance = useReactFlow();
-  const { fitView, setCenter } = reactFlowInstance;
-  const isDark = theme === "dark";
 
-  const flowStyle = useMemo(
-    () =>
-      ({
-        "--xy-background-color": isDark ? "#0b0f14" : "#f9fafb",
-        "--xy-controls-button-background-color": isDark
-          ? "rgba(24, 24, 27, 0.72)"
-          : "rgba(255, 255, 255, 0.86)",
-        "--xy-controls-button-background-color-hover": isDark
-          ? "rgba(39, 39, 42, 0.95)"
-          : "rgba(244, 244, 245, 0.95)",
-        "--xy-controls-button-color": isDark
-          ? "rgba(244, 244, 245, 0.78)"
-          : "rgba(39, 39, 42, 0.78)",
-        "--xy-controls-button-color-hover": isDark
-          ? "rgb(250, 250, 250)"
-          : "rgb(9, 9, 11)",
-      }) as CSSProperties,
-    [isDark],
-  );
 
   // --- Filtering & Helper states ---
   const {
-    defaultEdgeOptions,
     filtered,
-    connectedNodeIdsByNodeId,
   } = useGraphCanvasState(graph, readOnly);
 
-  // --- Layout Hook ---
-  const {
-    nodes,
-    edges,
-    onNodesChange,
-    onEdgesChange,
-    isCalculatingLayout,
-  } = useGraphLayout({
-    filtered,
-    layoutType,
-    theme,
-    selectedNodeId,
-    highlightedNodeIds,
-    blastRadiusActive,
-  });
-
-  // --- View Centering / Zoom Hook ---
-  useGraphCentering({
-    nodes,
-    layoutType,
-    isCalculatingLayout,
-    selectedNodeId,
-    focusedFilePath,
-    fitView,
-    setCenter,
-  });
-
-  // --- Blast radius updates ---
-  useEffect(() => {
-    if (!selectedNodeId) {
-      setHighlightedNodeIds(new Set());
-      return;
-    }
-    setHighlightedNodeIds(
-      new Set(
-        connectedNodeIdsByNodeId.get(selectedNodeId) ?? [selectedNodeId]
-      )
-    );
-  }, [selectedNodeId, connectedNodeIdsByNodeId, setHighlightedNodeIds]);
-
-  // --- Event handlers ---
-  const onNodeClick = useCallback(
-    (_: React.MouseEvent, node: Node) => {
-      if (readOnly) return;
-
-      setSelectedNodeId(node.id);
-      if (node.type === "file" && node.data?.path) {
-        setFocusedFilePath(node.data.path as string);
-      } else {
-        setFocusedFilePath(null);
-      }
-
-      window.setTimeout(() => {
-        const width =
-          typeof node.measured?.width === "number"
-            ? node.measured.width
-            : node.width ?? 0;
-        const height =
-          typeof node.measured?.height === "number"
-            ? node.measured.height
-            : node.height ?? 0;
-        setCenter(node.position.x + width / 2, node.position.y + height / 2, {
-          duration: 480,
-          zoom: 1.3,
-        });
-      }, 50);
-    },
-    [readOnly, setCenter, setSelectedNodeId, setFocusedFilePath],
-  );
-
-  const onPaneClick = useCallback(() => {
-    setSelectedNodeId(null);
-    setHighlightedNodeIds(new Set());
-    setFocusedFilePath(null);
-  }, [setSelectedNodeId, setHighlightedNodeIds, setFocusedFilePath]);
-
-  // --- Export ---
-  const { owner = "", repo = "" } = useParams();
-  const exportViewportRef = useRef<{
-    x: number;
-    y: number;
-    zoom: number;
-  } | null>(null);
-  const { handleExport, isExporting, exportFormat } = useGraphExport({
-    mode: "dom",
+  const { isExporting, exportFormat, handleExport } = useGraphExport({
+    mode: "force",
+    forceGraphRef,
+    forceHostRef,
     owner,
     repo,
-    filenameSuffix: "dependency_map",
-    backgroundColor: isDark ? "#0f0f1a" : "#f9fafb",
-    getElement: () =>
-      document.querySelector(".react-flow") as HTMLElement | null,
-    beforeExport: async () => {
-      exportViewportRef.current = {
-        ...reactFlowInstance.getViewport(),
-        zoom: reactFlowInstance.getZoom(),
-      };
-      reactFlowInstance.fitView({ padding: 0.1 });
-      await new Promise((resolve) => setTimeout(resolve, 250));
-    },
-    afterExport: () => {
-      const viewport = exportViewportRef.current;
-      if (viewport) reactFlowInstance.setViewport(viewport, { duration: 150 });
-      exportViewportRef.current = null;
-    },
+    filenameSuffix: "graph",
   });
+
+  const isCalculatingLayout = false; // Layout calculation is handled by ForceGraph
 
   // --- Render states ---
   const isLoading = !graph || !graph.nodes || isCalculatingLayout;
@@ -245,8 +97,8 @@ export function GraphCanvas({
           {/* Attached Main Graph Action Toolbar */}
           <div ref={toolbarRef} className="absolute top-0 left-0 z-30 flex h-10 items-center gap-1 border-r border-b border-[rgba(240,246,252,0.1)] bg-[#0d1117] px-3 rounded-br-md select-none font-sans">
             <ToolbarDropdowns
-              activeDropdown={activeDropdown}
-              setActiveDropdown={setActiveDropdown}
+              activeDropdown={activeDropdown as any}
+              setActiveDropdown={setActiveDropdown as any}
               nodeTypeFilters={nodeTypeFilters}
               toggleNodeTypeFilter={toggleNodeTypeFilter}
               compareBranch={!!compareBranch}
@@ -256,9 +108,11 @@ export function GraphCanvas({
               setActiveFocusLayer={setActiveFocusLayer}
               blastRadiusActive={blastRadiusActive}
               setBlastRadiusActive={setBlastRadiusActive}
-              layoutType={layoutType}
-              setLayoutType={setLayoutType}
               handleExport={handleExport}
+              graphScope={graphScope}
+              setGraphScope={setGraphScope}
+              contentFilters={contentFilters}
+              toggleContentFilter={toggleContentFilter}
             />
           </div>
 
@@ -270,91 +124,44 @@ export function GraphCanvas({
         </>
       )}
 
-      {layoutType === "network" ? (
-        <NetworkCanvas graph={filtered} readOnly={readOnly} showMinimap={showMinimap} />
-      ) : (
-        <>
-          {isLoading && (
-            <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-sm select-none">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-ui-active-text-green border-t-transparent" />
-              <span className="mt-3 text-xs text-zinc-400 font-medium">
-                Laying out dependency graph...
-              </span>
-            </div>
-          )}
-          {isExporting && (
-            <div className="absolute inset-0 z-[200] flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-md select-none">
-              <Loader2 className="h-8 w-8 animate-spin text-ui-active-text-green" />
-              <span className="mt-3 text-xs text-zinc-400 font-medium font-mono">
-                Generating high-res {exportFormat?.toUpperCase()}...
-              </span>
-            </div>
-          )}
-          {!isLoading && isEmpty && (
-            <div className="absolute inset-0 z-[5] flex flex-col items-center justify-center bg-[#0f0f1a]">
-              <div className="pointer-events-none rounded-xl border border-white/10 bg-[#1a1a2e]/80 px-6 py-5 text-center backdrop-blur-md select-none">
-                <div className="text-sm font-semibold text-zinc-300">
-                  No nodes match current filters
-                </div>
-                <div className="mt-1.5 text-[11px] text-zinc-500 font-mono">
-                  Try re-enabling node type or diff status filters in the analysis
-                  panel.
-                </div>
+      <>
+        {isLoading && (
+          <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-sm select-none">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-ui-active-text-green border-t-transparent" />
+            <span className="mt-3 text-xs text-zinc-400 font-medium">
+              Laying out dependency graph...
+            </span>
+          </div>
+        )}
+        {isExporting && (
+          <div className="absolute inset-0 z-[200] flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-md select-none">
+            <Loader2 className="h-8 w-8 animate-spin text-ui-active-text-green" />
+            <span className="mt-3 text-xs text-zinc-400 font-medium font-mono">
+              Generating high-res {exportFormat?.toUpperCase()}...
+            </span>
+          </div>
+        )}
+        {!isLoading && isEmpty && (
+          <div className="absolute inset-0 z-[5] flex flex-col items-center justify-center bg-[#0f0f1a]">
+            <div className="pointer-events-none rounded-xl border border-white/10 bg-[#1a1a2e]/80 px-6 py-5 text-center backdrop-blur-md select-none">
+              <div className="text-sm font-semibold text-zinc-300">
+                No nodes match current filters
+              </div>
+              <div className="mt-1.5 text-[11px] text-zinc-500 font-mono">
+                Try re-enabling node type or diff status filters in the analysis
+                panel.
               </div>
             </div>
-          )}
-
-          <ReactFlow
-            className="canvas-flow-bg"
-            colorMode={theme}
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={readOnly ? undefined : onNodesChange}
-            onEdgesChange={readOnly ? undefined : onEdgesChange}
-            onNodeClick={onNodeClick}
-            onPaneClick={onPaneClick}
-            onMove={undefined}
-            nodeTypes={nodeTypes}
-            defaultEdgeOptions={defaultEdgeOptions}
-            fitView
-            fitViewOptions={{ padding: 0.35, maxZoom: 1.1 }}
-            minZoom={0.05}
-            maxZoom={2.5}
-            proOptions={{ hideAttribution: true }}
-            nodesDraggable={!readOnly}
-            nodesConnectable={false}
-            onlyRenderVisibleElements
-            panOnDrag
-            panOnScroll={false}
-            zoomOnScroll
-            zoomOnPinch
-            selectionOnDrag={false}
-            style={flowStyle}
-          >
-            <Background
-              variant={BackgroundVariant.Dots}
-              gap={16}
-              size={1}
-              color={isDark ? "rgba(255, 255, 255, 0.085)" : "rgba(0, 0, 0, 0.08)"}
-            />
-            {showMinimap && (
-              <MiniMap
-                style={{
-                  bottom: 68,
-                  right: 16,
-                  margin: 0,
-                  background: isDark ? "#161b22" : "rgba(255, 255, 255, 0.85)",
-                  border: isDark ? "1px solid rgba(240,246,252,0.1)" : "1px solid rgba(0, 0, 0, 0.08)",
-                  borderRadius: "6px",
-                }}
-                nodeColor={(node) => (node.data?.nodeColor as string) ?? "#58a6ff"}
-                zoomable
-                pannable
-              />
-            )}
-          </ReactFlow>
-        </>
-      )}
+          </div>
+        )}
+        <NetworkCanvas 
+          graph={filtered} 
+          readOnly={readOnly} 
+          showMinimap={showMinimap}
+          forceGraphRef={forceGraphRef}
+          forceHostRef={forceHostRef}
+        />
+      </>
     </div>
   );
 }

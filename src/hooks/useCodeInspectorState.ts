@@ -11,7 +11,9 @@ export function useCodeInspectorState(focusedFilePath: string | null) {
 
   // Auto-open in preferred mode when a file is selected or inspector is triggered
   useEffect(() => {
-    if (focusedFilePath) {
+    // Only auto-open for actual file paths, not repo: or folder: identifiers
+    const isFilePath = focusedFilePath && !focusedFilePath.startsWith('repo:');
+    if (isFilePath) {
       if (inspectorOpen) {
         setCodeInspectorState('expanded');
         setPreferredOpenState('expanded');

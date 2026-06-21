@@ -24,23 +24,33 @@ interface NetworkCanvasProps {
   graph: NetworkGraphData;
   readOnly?: boolean;
   showMinimap?: boolean;
+  forceGraphRef?: React.MutableRefObject<ForceGraphMethods<ForceGraphNode, ForceGraphLink> | undefined>;
+  forceHostRef?: React.MutableRefObject<HTMLDivElement | null>;
 }
 
 export function NetworkCanvas({
   graph,
   readOnly,
   showMinimap,
+  forceGraphRef: externalForceGraphRef,
+  forceHostRef: externalForceHostRef,
 }: NetworkCanvasProps) {
   const [tick, setTick] = useState(0);
   const theme = useVizStore((s) => s.theme);
 
-  const toolbarRef = useRef<HTMLDivElement>(null);
-  const forceGraphRef = useRef<
+  const internalForceGraphRef = useRef<
     ForceGraphMethods<ForceGraphNode, ForceGraphLink> | undefined
   >(undefined);
-  const forceHostRef = useRef<HTMLDivElement | null>(null);
+  const internalForceHostRef = useRef<HTMLDivElement | null>(null);
+
+  const forceGraphRef = externalForceGraphRef || internalForceGraphRef;
+  const forceHostRef = externalForceHostRef || internalForceHostRef;
   const forceInitialViewDoneRef = useRef(false);
   const lastMinimapTickRef = useRef(0);
+  const pendingResetFitRef = useRef(false);
+  const resetFitTimeoutRef = useRef<number | null>(null);
+  const clickTimeoutRef = useRef<number | null>(null);
+  const lastGraphActionTimestampRef = useRef<number | null>(null);
 
   const {
     selectedNodeId,
@@ -53,6 +63,7 @@ export function NetworkCanvas({
     forceSize,
     hoveredForceNode,
     setHoveredForceNode,
+    resetFilters,
     isExporting,
     exportFormat,
     forceGraphData,
@@ -66,35 +77,167 @@ export function NetworkCanvas({
     forceInitialViewDoneRef,
   });
 
+  const graphActionTrigger = useVizStore((s) => s.graphActionTrigger);
+  const zoomIn = useCallback(() => {
+    const fg = forceGraphRef.current;
+    if (!fg) return;
+    const currentZoom = fg.zoom();
+    fg.zoom(currentZoom * 1.3, 300);
+  }, []);
+
+  const zoomOut = useCallback(() => {
+    const fg = forceGraphRef.current;
+    if (!fg) return;
+    const currentZoom = fg.zoom();
+    fg.zoom(currentZoom / 1.3, 300);
+  }, []);
+
+  const fitVisibleNodes = useCallback(
+    (duration = 400, maxZoom = 4) => {
+      const fg = forceGraphRef.current;
+      const positionedNodes = forceGraphData.nodes.filter(
+        (node) => typeof node.x === "number" && typeof node.y === "number",
+      );
+      if (!fg || positionedNodes.length === 0) return;
+
+      const xs = positionedNodes.map((node) => node.x as number);
+      const ys = positionedNodes.map((node) => node.y as number);
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      const minY = Math.min(...ys);
+      const maxY = Math.max(...ys);
+      const width = Math.max(1, maxX - minX);
+      const height = Math.max(1, maxY - minY);
+      const padding = 80;
+      const zoom = Math.min(
+        maxZoom,
+        forceSize.width / (width + padding * 2),
+        forceSize.height / (height + padding * 2),
+      );
+
+      fg.centerAt((minX + maxX) / 2, (minY + maxY) / 2, duration);
+      fg.zoom(zoom, duration);
+    },
+    [forceGraphData.nodes, forceSize.height, forceSize.width],
+  );
+
+  const resetView = useCallback(() => {
+    prevFocusRef.current = null;
+    setSelectedNodeId(null);
+    setHighlightedNodeIds(new Set());
+    setHoveredForceNode(null);
+    setFocusedFilePath(null);
+    resetFilters();
+    pendingResetFitRef.current = true;
+    fitVisibleNodes(400, 1);
+  }, [
+    fitVisibleNodes,
+    prevFocusRef,
+    resetFilters,
+    setFocusedFilePath,
+    setHighlightedNodeIds,
+    setHoveredForceNode,
+    setSelectedNodeId,
+  ]);
+
+  const fitView = useCallback(() => {
+    fitVisibleNodes(400);
+  }, [fitVisibleNodes]);
+
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (toolbarRef.current && !toolbarRef.current.contains(event.target as Node)) {
-        setActiveDropdown(null);
-      }
+    if (!pendingResetFitRef.current) return;
+    if (!forceGraphRef.current || forceGraphData.nodes.length === 0) return;
+
+    pendingResetFitRef.current = false;
+    if (resetFitTimeoutRef.current !== null) {
+      window.clearTimeout(resetFitTimeoutRef.current);
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [setActiveDropdown]);
+
+    // ponytail: wait one force tick after filter reset; upgrade to layout-settled event if reset gains one.
+    resetFitTimeoutRef.current = window.setTimeout(() => {
+      fitVisibleNodes(0, 1);
+      resetFitTimeoutRef.current = null;
+    }, 120);
+  }, [
+    forceGraphData.nodes.length,
+    forceGraphData.links.length,
+    forceSize.width,
+    forceSize.height,
+    fitVisibleNodes,
+  ]);
+
+
 
   // --- Callbacks ---
+
   const focusForceNode = useCallback(
     (node: ForceGraphNode) => {
-      prevFocusRef.current = node.id; // prevent double centering sync
+      prevFocusRef.current = node.id;
       setSelectedNodeId(node.id);
-      setFocusedFilePath(
-        node.nodeType === "file" && node.sourceFile ? node.sourceFile : null,
-      );
+      if (node.nodeType === "file" && node.sourceFile) {
+        setFocusedFilePath(node.sourceFile);
+      } else {
+        setFocusedFilePath(null);
+      }
       if (typeof node.x === "number" && typeof node.y === "number") {
-        forceGraphRef.current?.centerAt(node.x, node.y, 300);
-        forceGraphRef.current?.zoom(3.2, 300);
+        forceGraphRef.current?.centerAt(node.x, node.y, 400);
+        forceGraphRef.current?.zoom(3.5, 400);
       }
     },
-    [
-      setFocusedFilePath,
-      setSelectedNodeId,
-      prevFocusRef,
-    ],
+    [setFocusedFilePath, setSelectedNodeId, prevFocusRef],
   );
+
+  const focusSelectedNode = useCallback(() => {
+    if (!selectedNodeId) return;
+
+    const node = forceNodeById.get(selectedNodeId);
+    if (!node) return;
+
+    focusForceNode(node);
+  }, [focusForceNode, forceNodeById, selectedNodeId]);
+
+  useEffect(() => {
+    if (!selectedNodeId) return;
+
+    const node = forceNodeById.get(selectedNodeId);
+    if (!node) return;
+    if (typeof node.x !== "number" || typeof node.y !== "number") return;
+
+    forceGraphRef.current?.centerAt(node.x, node.y, 300);
+  }, [forceNodeById, selectedNodeId]);
+
+  useEffect(() => {
+    if (!graphActionTrigger) return;
+    if (lastGraphActionTimestampRef.current === graphActionTrigger.timestamp)
+      return;
+
+    lastGraphActionTimestampRef.current = graphActionTrigger.timestamp;
+    const { action } = graphActionTrigger;
+    switch (action) {
+      case "zoomIn":
+        zoomIn();
+        break;
+      case "zoomOut":
+        zoomOut();
+        break;
+      case "fitView":
+        fitView();
+        break;
+      case "focusGraph":
+        focusSelectedNode();
+        break;
+      case "reset":
+        resetView();
+        break;
+    }
+  }, [
+    graphActionTrigger,
+    zoomIn,
+    zoomOut,
+    fitView,
+    focusSelectedNode,
+    resetView,
+  ]);
 
   const onForceBackgroundClick = useCallback(() => {
     prevFocusRef.current = null;
@@ -102,7 +245,13 @@ export function NetworkCanvas({
     setHighlightedNodeIds(new Set());
     setHoveredForceNode(null);
     setFocusedFilePath(null);
-  }, [setHighlightedNodeIds, setSelectedNodeId, setFocusedFilePath, prevFocusRef, setHoveredForceNode]);
+  }, [
+    setHighlightedNodeIds,
+    setSelectedNodeId,
+    setFocusedFilePath,
+    prevFocusRef,
+    setHoveredForceNode,
+  ]);
 
   const handleEngineTick = useCallback(() => {
     if (!showMinimap) return;
@@ -119,69 +268,132 @@ export function NetworkCanvas({
     forceInitialViewDoneRef.current = true;
   }, [showMinimap]);
 
-  const getLinkWidth = useCallback((link: ForceGraphLink) => {
-    const sourceId =
-      typeof link.source === "string" ? link.source : link.source.id;
-    const targetId =
-      typeof link.target === "string" ? link.target : link.target.id;
-    if (
-      blastRadiusActive &&
-      highlightedNodeIds.has(sourceId) &&
-      highlightedNodeIds.has(targetId)
-    )
-      return 2.8;
-    if (compareBranch) {
-      const src =
-        typeof link.source === "object"
-          ? link.source
-          : forceNodeById.get(sourceId);
-      const tgt =
-        typeof link.target === "object"
-          ? link.target
-          : forceNodeById.get(targetId);
-      if (src?.diffStatus || tgt?.diffStatus) return 1.4;
-    }
-    return selectedNodeId &&
-      (sourceId === selectedNodeId || targetId === selectedNodeId)
-      ? 2.4
-      : 0.9;
-  }, [blastRadiusActive, compareBranch, forceNodeById, highlightedNodeIds, selectedNodeId]);
-
-  const getLinkColor = useCallback((link: ForceGraphLink) =>
-    getForceLinkColor(
-      link,
-      selectedNodeId,
+  const getLinkWidth = useCallback(
+    (link: ForceGraphLink) => {
+      const sourceId =
+        typeof link.source === "string" ? link.source : link.source.id;
+      const targetId =
+        typeof link.target === "string" ? link.target : link.target.id;
+      if (
+        blastRadiusActive &&
+        highlightedNodeIds.has(sourceId) &&
+        highlightedNodeIds.has(targetId)
+      )
+        return 2.8;
+      if (compareBranch) {
+        const src =
+          typeof link.source === "object"
+            ? link.source
+            : forceNodeById.get(sourceId);
+        const tgt =
+          typeof link.target === "object"
+            ? link.target
+            : forceNodeById.get(targetId);
+        if (src?.diffStatus || tgt?.diffStatus) return 1.4;
+      }
+      return selectedNodeId &&
+        (sourceId === selectedNodeId || targetId === selectedNodeId)
+        ? 2.4
+        : 0.9;
+    },
+    [
       blastRadiusActive,
-      highlightedNodeIds,
       compareBranch,
-    ), [blastRadiusActive, compareBranch, highlightedNodeIds, selectedNodeId]);
+      forceNodeById,
+      highlightedNodeIds,
+      selectedNodeId,
+    ],
+  );
 
-  const drawNodePointerArea = useCallback((node: ForceGraphNode, color: string, ctx: CanvasRenderingContext2D) => {
-    drawForcePointerArea(node, color, ctx);
+  const getLinkColor = useCallback(
+    (link: ForceGraphLink) =>
+      getForceLinkColor(
+        link,
+        selectedNodeId,
+        blastRadiusActive,
+        highlightedNodeIds,
+        compareBranch,
+      ),
+    [blastRadiusActive, compareBranch, highlightedNodeIds, selectedNodeId],
+  );
+
+  const drawNodePointerArea = useCallback(
+    (node: ForceGraphNode, color: string, ctx: CanvasRenderingContext2D) => {
+      drawForcePointerArea(node, color, ctx);
+    },
+    [],
+  );
+
+  const drawNodeCanvasObject = useCallback(
+    (node: ForceGraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
+      drawForceNode({
+        node,
+        ctx,
+        globalScale,
+        selectedNodeId,
+        highlightedNodeIds,
+        blastRadiusActive,
+        compareBranch: !!compareBranch,
+        hoveredForceNode,
+      });
+    },
+    [
+      blastRadiusActive,
+      compareBranch,
+      highlightedNodeIds,
+      hoveredForceNode,
+      selectedNodeId,
+    ],
+  );
+
+  const handleNodeClick = useCallback(
+    (node: ForceGraphNode, event: MouseEvent) => {
+      if (readOnly) return;
+
+      if (event.detail > 1) {
+        if (clickTimeoutRef.current !== null) {
+          window.clearTimeout(clickTimeoutRef.current);
+          clickTimeoutRef.current = null;
+        }
+        focusForceNode(node);
+        return;
+      }
+
+      clickTimeoutRef.current = window.setTimeout(() => {
+        setSelectedNodeId(node.id);
+        if (node.nodeType === "file" && node.sourceFile) {
+          setFocusedFilePath(node.sourceFile);
+        } else {
+          setFocusedFilePath(null);
+        }
+        if (typeof node.x === "number" && typeof node.y === "number") {
+          forceGraphRef.current?.centerAt(node.x, node.y, 300);
+        }
+        clickTimeoutRef.current = null;
+      }, 180);
+    },
+    [focusForceNode, readOnly, setSelectedNodeId, setFocusedFilePath],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (clickTimeoutRef.current !== null) {
+        window.clearTimeout(clickTimeoutRef.current);
+      }
+      if (resetFitTimeoutRef.current !== null) {
+        window.clearTimeout(resetFitTimeoutRef.current);
+      }
+    };
   }, []);
 
-  const drawNodeCanvasObject = useCallback((node: ForceGraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
-    drawForceNode({
-      node,
-      ctx,
-      globalScale,
-      selectedNodeId,
-      highlightedNodeIds,
-      blastRadiusActive,
-      compareBranch: !!compareBranch,
-      hoveredForceNode,
-    });
-  }, [blastRadiusActive, compareBranch, highlightedNodeIds, hoveredForceNode, selectedNodeId]);
-
-  const handleNodeClick = useCallback((node: ForceGraphNode) => {
-    if (!readOnly) focusForceNode(node);
-  }, [focusForceNode, readOnly]);
-
-  const handleNodeHover = useCallback((node: ForceGraphNode | null) => {
-    setHoveredForceNode(node ?? null);
-    if (forceHostRef.current)
-      forceHostRef.current.style.cursor = node ? "pointer" : "grab";
-  }, [setHoveredForceNode]);
+  const handleNodeHover = useCallback(
+    (node: ForceGraphNode | null) => {
+      setHoveredForceNode(node ?? null);
+      if (forceHostRef.current)
+        forceHostRef.current.style.cursor = node ? "pointer" : "grab";
+    },
+    [setHoveredForceNode],
+  );
 
   // --- Render ---
   const isLoading = !graph || !graph.nodes;
@@ -248,7 +460,6 @@ export function NetworkCanvas({
           onNodeClick={handleNodeClick}
           onNodeHover={handleNodeHover}
           onBackgroundClick={onForceBackgroundClick}
-          onZoom={undefined}
           onEngineTick={handleEngineTick}
           enablePointerInteraction
           enableNodeDrag
@@ -263,8 +474,14 @@ export function NetworkCanvas({
           style={{
             bottom: 68,
             right: 16,
-            background: theme === "dark" ? "rgba(9, 9, 11, 0.85)" : "rgba(255, 255, 255, 0.85)",
-            border: theme === "dark" ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.08)",
+            background:
+              theme === "dark"
+                ? "rgba(9, 9, 11, 0.85)"
+                : "rgba(255, 255, 255, 0.85)",
+            border:
+              theme === "dark"
+                ? "1px solid rgba(255, 255, 255, 0.08)"
+                : "1px solid rgba(0, 0, 0, 0.08)",
             borderRadius: "8px",
             overflow: "hidden",
           }}

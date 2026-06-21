@@ -1,4 +1,3 @@
-import { useReactFlow } from '@xyflow/react';
 import { cn } from '@/lib/utils';
 import { useVizStore } from '@/stores/vizStore';
 import type { GraphNode, RepoAnalysis } from '@/types';
@@ -20,7 +19,6 @@ export function AnalysisTab({
   blastRadiusIds,
 }: AnalysisTabProps) {
   const setFocusedFilePath = useVizStore((s) => s.setFocusedFilePath);
-  const { getNode, setCenter } = useReactFlow();
 
   const selectedNode = selectedNodeId
     ? analysis.graph.nodes.find((n) => n.id === selectedNodeId)
@@ -28,30 +26,11 @@ export function AnalysisTab({
 
   const focusRelatedNode = (node: GraphNode) => {
     setSelectedNodeId(node.id);
-    setFocusedFilePath(typeof node.data.path === 'string' ? node.data.path : null);
-
-    window.setTimeout(() => {
-      const target =
-        getNode(node.id) ||
-        (typeof node.data.path === 'string' ? getNode(`file:${node.data.path}`) : undefined) ||
-        (typeof node.data.path === 'string' ? getNode(`folder:${node.data.path}`) : undefined);
-
-      if (!target) return;
-
-      const width =
-        typeof target.measured?.width === "number"
-          ? target.measured.width
-          : target.width ?? 0;
-      const height =
-        typeof target.measured?.height === "number"
-          ? target.measured.height
-          : target.height ?? 0;
-
-      setCenter(target.position.x + width / 2, target.position.y + height / 2, {
-        duration: 480,
-        zoom: 1.3,
-      });
-    }, 50);
+    setFocusedFilePath(
+      node.type === "file" && typeof node.data.path === "string"
+        ? node.data.path
+        : null,
+    );
   };
 
   return (

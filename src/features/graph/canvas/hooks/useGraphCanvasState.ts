@@ -10,6 +10,8 @@ export function useGraphCanvasState(graph: GraphData, readOnly?: boolean) {
     diffStatusFilters,
     fileTypeFilters,
     activeFocusLayer,
+    graphScope,
+    contentFilters,
     layoutType,
     theme,
   } = useVizStore();
@@ -32,6 +34,8 @@ export function useGraphCanvasState(graph: GraphData, readOnly?: boolean) {
     diffStatusFilters,
     fileTypeFilters,
     activeFocusLayer,
+    graphScope,
+    contentFilters,
   });
 
   const connectedNodeIdsByNodeId = useMemo(() => {

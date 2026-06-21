@@ -1,9 +1,9 @@
-import { Filter, ChevronDown, Check, FolderGit2, Folder, FileCode, Network, GitFork, Download } from 'lucide-react';
-import type { LayoutType } from '@/stores/vizStore';
+import { Filter, ChevronDown, Check, FolderGit2, Folder, FileCode, Download, AlertTriangle } from 'lucide-react';
+import type { GraphScope, ContentFilter } from '@/stores/vizStore';
 
 interface ToolbarDropdownProps {
-  activeDropdown: 'filter' | 'layout' | 'export' | null;
-  setActiveDropdown: (dropdown: 'filter' | 'layout' | 'export' | null) => void;
+  activeDropdown: 'filter' | 'export' | null;
+  setActiveDropdown: (dropdown: 'filter' | 'export' | null) => void;
   nodeTypeFilters: Set<string>;
   toggleNodeTypeFilter: (type: 'repo' | 'folder' | 'file') => void;
   compareBranch: boolean;
@@ -13,9 +13,11 @@ interface ToolbarDropdownProps {
   setActiveFocusLayer: (layer: 'all' | 'api' | 'ui' | 'core' | 'config') => void;
   blastRadiusActive: boolean;
   setBlastRadiusActive: (active: boolean) => void;
-  layoutType: LayoutType;
-  setLayoutType: (type: LayoutType) => void;
   handleExport: (format: 'png' | 'pdf') => void;
+  graphScope: GraphScope;
+  setGraphScope: (scope: GraphScope) => void;
+  contentFilters: Set<ContentFilter>;
+  toggleContentFilter: (filter: ContentFilter) => void;
 }
 
 export function ToolbarDropdowns({
@@ -30,9 +32,11 @@ export function ToolbarDropdowns({
   setActiveFocusLayer,
   blastRadiusActive,
   setBlastRadiusActive,
-  layoutType,
-  setLayoutType,
   handleExport,
+  graphScope,
+  setGraphScope,
+  contentFilters,
+  toggleContentFilter,
 }: ToolbarDropdownProps) {
   return (
     <>
@@ -78,6 +82,81 @@ export function ToolbarDropdowns({
                           <span>{type.label}</span>
                         </div>
                         {active && <Check className="h-3.5 w-3.5 text-ui-active-text-green" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Graph Scope Section */}
+              <div>
+                <div className="text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider mb-2 font-mono flex items-center gap-1">
+                  Graph Scope
+                  {graphScope === 'full' && (
+                    <span title="Full graph may be slow for large repositories">
+                      <AlertTriangle className="h-3 w-3 text-amber-500" />
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-1">
+                  {[
+                    { id: 'important' as const, label: 'Important' },
+                    { id: 'source' as const, label: 'Source Only' },
+                    { id: 'grouped' as const, label: 'Grouped' },
+                    { id: 'full' as const, label: 'Full Graph' },
+                  ].map((scope) => {
+                    const active = graphScope === scope.id;
+                    return (
+                      <button
+                        key={scope.id}
+                        type="button"
+                        onClick={() => setGraphScope(scope.id)}
+                        className={`rounded-sm px-1.5 py-1 text-center text-[10px] font-semibold transition-all ${
+                          active
+                            ? "bg-[#1c2128] text-[#e6edf3] border border-[rgba(240,246,252,0.1)] shadow-sm"
+                            : "bg-transparent text-[#8b949e] border border-transparent hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3]"
+                        }`}
+                      >
+                        {scope.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {graphScope === 'full' && (
+                  <p className="mt-1 text-[9px] text-amber-500/80 leading-tight px-1">
+                    Full graph may be slow for large repositories.
+                  </p>
+                )}
+              </div>
+
+              {/* Content Filters Section */}
+              <div>
+                <div className="text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider mb-2 font-mono">Content</div>
+                <div className="grid grid-cols-2 gap-1 gap-y-1">
+                  {[
+                    { id: 'source' as const, label: 'Source' },
+                    { id: 'config' as const, label: 'Config' },
+                    { id: 'docs' as const, label: 'Docs' },
+                    { id: 'tests' as const, label: 'Tests' },
+                    { id: 'github' as const, label: '.github' },
+                    { id: 'examples' as const, label: 'Examples' },
+                    { id: 'generated' as const, label: 'Generated' },
+                    { id: 'translations' as const, label: 'Locales' },
+                  ].map((filter) => {
+                    const active = contentFilters.has(filter.id);
+                    return (
+                      <button
+                        key={filter.id}
+                        type="button"
+                        onClick={() => toggleContentFilter(filter.id)}
+                        className={`flex items-center justify-between rounded-sm px-1.5 py-1 text-left text-[10px] transition-colors ${
+                          active
+                            ? "text-[#e6edf3]"
+                            : "text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3]"
+                        }`}
+                      >
+                        <span className={!active ? "line-through opacity-60" : ""}>{filter.label}</span>
+                        {active && <Check className="h-3 w-3 text-ui-active-text-green shrink-0" />}
                       </button>
                     );
                   })}
@@ -161,67 +240,6 @@ export function ToolbarDropdowns({
         )}
       </div>
 
-      {/* Layout Dropdown Toggle */}
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setActiveDropdown(activeDropdown === 'layout' ? null : 'layout')}
-          className={`flex h-8 px-2.5 items-center gap-1.5 rounded-lg text-xs font-medium transition-all active:scale-[0.95] ${
-            activeDropdown === 'layout'
-              ? "bg-[#161b22] text-[#e6edf3] border-[rgba(240,246,252,0.1)]"
-              : "text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3] border-transparent"
-          }`}
-        >
-          {layoutType === "force" ? <Network className="h-3.5 w-3.5" /> : <GitFork className="h-3.5 w-3.5" />}
-          <span>Layout</span>
-          <ChevronDown className="h-3 w-3 opacity-60" />
-        </button>
-
-        {activeDropdown === 'layout' && (
-          <div className="absolute left-0 mt-2 w-48 rounded-md border border-[rgba(240,246,252,0.1)] bg-[#161b22] p-1.5 shadow-2xl animate-in fade-in slide-in-from-top-1 duration-150">
-            <button
-              type="button"
-              onClick={() => {
-                setLayoutType("force");
-                setActiveDropdown(null);
-              }}
-              className={`flex w-full items-center justify-between rounded-sm px-2.5 py-1.5 text-left text-xs ${
-                layoutType === "force"
-                  ? "bg-[#1c2128] text-[#e6edf3] font-medium"
-                  : "text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)]"
-              }`}
-            >
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2">
-                  <Network className="h-3.5 w-3.5 text-[#8b949e]" />
-                  <span>Force Directed</span>
-                </div>
-                {layoutType === "force" && <Check className="h-3.5 w-3.5 text-ui-active-text-green" />}
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setLayoutType("network");
-                setActiveDropdown(null);
-              }}
-              className={`flex w-full items-center justify-between rounded-sm px-2.5 py-1.5 text-left text-xs ${
-                layoutType === "network"
-                  ? "bg-[#1c2128] text-[#e6edf3] font-medium"
-                  : "text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)]"
-              }`}
-            >
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2">
-                  <GitFork className="h-3.5 w-3.5 text-[#8b949e]" />
-                  <span>Hierarchical</span>
-                </div>
-                {layoutType === "network" && <Check className="h-3.5 w-3.5 text-ui-active-text-green" />}
-              </div>
-            </button>
-          </div>
-        )}
-      </div>
 
       {/* Export Dropdown Toggle */}
       <div className="relative">

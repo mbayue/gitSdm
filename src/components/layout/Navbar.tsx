@@ -58,7 +58,7 @@ export function Navbar() {
             </button>
           ))}
           <a
-            href="https://github.com/bayue48/gitSdm"
+            href="https://github.com/mbayue/gitSdm"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-[#8b949e] hover:text-[#e6edf3] transition-colors"

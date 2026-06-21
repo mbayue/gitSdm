@@ -90,7 +90,7 @@ mock.module('./mock-data', () => ({
   isMockRepo: (owner: string) => owner === 'mock-owner',
   fetchMockRepoBranches: async () => [{ name: 'mock-main', protected: true }],
   fetchMockRepoInfo: async () => ({ sha: 'mock-sha' } as any),
-  fetchMockFlatTree: async () => ({ items: [], truncated: false }),
+  fetchMockFlatTree: async () => ({ items: [], truncated: false, totalFiles: 0 }),
   fetchMockFileContents: async () => ({}),
   fetchMockContributors: async () => [],
   fetchMockTimeline: async () => [],

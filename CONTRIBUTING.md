@@ -13,7 +13,7 @@ Please review this guide to get started.
 - **pnpm** ≥ 9 (recommended)
 
 ### 2. Fork & Clone
-1. Fork the [gitSdm repository](https://github.com/bayue48/gitSdm).
+1. Fork the [gitSdm repository](https://github.com/mbayue/gitSdm).
 2. Clone your fork locally:
    ```bash
    git clone https://github.com/YOUR-USERNAME/gitSdm.git

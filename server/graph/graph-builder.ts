@@ -10,8 +10,8 @@ import { applyDagreLayout } from './layout';
 import { getNodeCircleColor, getNodeCircleSize } from './node-colors';
 import { buildImportEdges } from '../parser/import-resolver';
 
-const MAX_FOLDER_NODES = 60;
-const MAX_FILE_NODES = 200;
+const MAX_FOLDER_NODES = 200;
+const MAX_FILE_NODES = 800;
 
 export interface GraphBuildInput {
   owner: string;
@@ -113,7 +113,7 @@ export function buildGraph(input: GraphBuildInput): GraphData {
   // Extract all file paths from registered file nodes
   const fileNodes = nodes.filter((n) => n.type === 'file');
   const allFilePaths = fileNodes.map((n) => n.id.replace(/^file:/, ''));
-  
+
   if (input.fileContents) {
     const importEdges = buildImportEdges(input.fileContents, allFilePaths);
     edges.push(...importEdges);

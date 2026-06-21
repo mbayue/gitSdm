@@ -242,16 +242,19 @@ export async function fetchMockRepoInfo(owner: string, repo: string, branchName?
   };
 }
 
-export async function fetchMockFlatTree(_owner: string, repo: string): Promise<{ items: FlatTreeItem[]; truncated: boolean }> {
+export async function fetchMockFlatTree(_owner: string, repo: string): Promise<{ items: FlatTreeItem[]; truncated: boolean; totalFiles: number }> {
   const files = repo.toLowerCase() === 'gitsdm' ? GITSDM_FILES : TODO_APP_FILES;
+  const data = files.map((file, idx) => ({
+    path: file.path,
+    type: 'blob' as const,
+    sha: `mock_file_sha_${idx}_${file.path.replace(/\//g, '_')}`,
+    size: file.size,
+  }));
+
   return {
-    items: files.map((file, idx) => ({
-      path: file.path,
-      type: 'blob' as const,
-      sha: `mock_file_sha_${idx}_${file.path.replace(/\//g, '_')}`,
-      size: file.size,
-    })),
+    items: data,
     truncated: false,
+    totalFiles: data.length,
   };
 }
 
@@ -277,7 +280,7 @@ export async function fetchMockFileContents(
 
 export async function fetchMockContributors(): Promise<Contributor[]> {
   return [
-    { login: 'bayue48', avatarUrl: 'https://github.com/bayue48.png', contributions: 84 },
+    { login: 'mbayue', avatarUrl: 'https://github.com/mbayue.png', contributions: 84 },
     { login: 'octocat', avatarUrl: 'https://github.com/octocat.png', contributions: 12 },
     { login: 'antigravity-ai', avatarUrl: 'https://github.com/github.png', contributions: 9 },
   ];
@@ -301,8 +304,8 @@ export async function fetchMockTimeline(): Promise<TimelineWeek[]> {
           message: i === 0 ? 'docs: Update README with deployment badges' : `feat: Core module refactor phase ${i}`,
           date: weekStart.toISOString(),
           authorName: 'Bayu Erich',
-          authorLogin: 'bayue48',
-          authorAvatar: 'https://github.com/bayue48.png',
+          authorLogin: 'mbayue',
+          authorAvatar: 'https://github.com/mbayue.png',
         },
         {
           sha: `mock${i}b`,

@@ -11,7 +11,7 @@ import {
   fetchMockTimeline,
 } from './mock-data';
 
-const MAX_TREE_ITEMS = 2000;
+const MAX_TREE_ITEMS = 10000;
 
 function resolveOctokit(tokenOrCtx?: string | RequestContext) {
   if (tokenOrCtx && typeof tokenOrCtx === 'object' && 'octokit' in tokenOrCtx) {
@@ -56,19 +56,14 @@ export async function fetchRepoBranches(
   try {
     const { data } = await octokit.repos.listBranches({ owner, repo, per_page: 100 });
     return data.map((b) => ({ name: b.name, protected: b.protected }));
-  } catch {
-    return [
-      { name: 'main', protected: true },
-      { name: 'develop', protected: false },
-      { name: 'feature/auth-refactor', protected: false },
-      { name: 'feature/refactor-parser', protected: false },
-    ];
+  } catch (e) {
+    handleOctokitError(e);
   }
 }
 
 export async function fetchRepoInfo(
-  owner: string, 
-  repo: string, 
+  owner: string,
+  repo: string,
   branchName?: string,
   tokenOrCtx?: string | RequestContext,
 ): Promise<RepoInfo> {
@@ -76,9 +71,19 @@ export async function fetchRepoInfo(
     return fetchMockRepoInfo(owner, repo, branchName);
   }
   const octokit = resolveOctokit(tokenOrCtx);
+
+  // Step 1: Get repo metadata (separate try/catch for precise errors)
+  let data;
   try {
-    const { data } = await octokit.repos.get({ owner, repo });
-    const targetBranch = branchName || data.default_branch;
+    ({ data } = await octokit.repos.get({ owner, repo }));
+  } catch (e) {
+    handleOctokitError(e);
+    return undefined as never;
+  }
+
+  // Step 2: Resolve branch (fall back to default if specified branch doesn't exist)
+  const targetBranch = branchName || data.default_branch;
+  try {
     const { data: branch } = await octokit.repos.getBranch({
       owner,
       repo,
@@ -94,7 +99,7 @@ export async function fetchRepoInfo(
       stars: data.stargazers_count,
       forks: data.forks_count,
       language: data.language,
-      defaultBranch: targetBranch, // Return targetBranch as the default branch for active rendering context
+      defaultBranch: targetBranch,
       sha: branch.commit.sha,
       topics: data.topics ?? [],
       license: data.license?.spdx_id ?? null,
@@ -102,6 +107,35 @@ export async function fetchRepoInfo(
       updatedAt: data.updated_at,
     };
   } catch (e) {
+    // If the requested branch doesn't exist, fall back to default branch
+    if (branchName && e && typeof e === 'object' && 'status' in e && (e as { status: number }).status === 404) {
+      try {
+        const { data: branch } = await octokit.repos.getBranch({
+          owner,
+          repo,
+          branch: data.default_branch,
+        });
+        return {
+          owner,
+          repo,
+          fullName: data.full_name,
+          url: data.html_url,
+          description: data.description,
+          stars: data.stargazers_count,
+          forks: data.forks_count,
+          language: data.language,
+          defaultBranch: data.default_branch,
+          sha: branch.commit.sha,
+          topics: data.topics ?? [],
+          license: data.license?.spdx_id ?? null,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+        };
+      } catch (fallbackErr) {
+        handleOctokitError(fallbackErr);
+        return undefined as never;
+      }
+    }
     handleOctokitError(e);
     return undefined as never;
   }
@@ -112,7 +146,7 @@ export async function fetchFlatTree(
   repo: string,
   sha: string,
   tokenOrCtx?: string | RequestContext,
-): Promise<{ items: FlatTreeItem[]; truncated: boolean }> {
+): Promise<{ items: FlatTreeItem[]; truncated: boolean; totalFiles: number }> {
   if (isMockRepo(owner)) {
     return fetchMockFlatTree(owner, repo);
   }
@@ -125,23 +159,44 @@ export async function fetchFlatTree(
       recursive: '1',
     });
 
-    const blobs: FlatTreeItem[] = [];
+    let allBlobs: FlatTreeItem[] = [];
     const tree = data.tree ?? [];
     for (const item of tree) {
       if (item.path && item.type === 'blob') {
-        blobs.push({
+        allBlobs.push({
           path: item.path,
           type: 'blob',
           sha: item.sha!,
           size: item.size,
         });
-        if (blobs.length >= MAX_TREE_ITEMS) break;
       }
     }
 
+    let totalFiles = allBlobs.length;
+
+    // Prioritize source code over noise (docs, tests, generated)
+    const isNoise = (p: string) => {
+      const lower = p.toLowerCase();
+      // Match explicit noise folders
+      if (lower.includes('docs/') || lower.includes('test/') || lower.includes('tests/') || lower.includes('spec/') || lower.includes('dist/') || lower.includes('build/') || lower.includes('example/')) return true;
+      // Match any hidden folder starting with a dot (e.g., .github, .vscode, .husky)
+      if (lower.includes('/.') || lower.startsWith('.')) return true;
+      return false;
+    };
+
+    allBlobs.sort((a, b) => {
+      const aNoise = isNoise(a.path);
+      const bNoise = isNoise(b.path);
+      if (!aNoise && bNoise) return -1;
+      if (aNoise && !bNoise) return 1;
+      return a.path.localeCompare(b.path);
+    });
+
+    const blobs = allBlobs.slice(0, MAX_TREE_ITEMS);
+
     const truncated = tree.length > MAX_TREE_ITEMS || data.truncated === true;
 
-    return { items: blobs, truncated };
+    return { items: blobs, truncated, totalFiles };
   } catch (e) {
     handleOctokitError(e);
     return undefined as never;
