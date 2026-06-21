@@ -28,7 +28,7 @@ function getFileIconSpec(name: string): { Icon: LucideIcon; className: string } 
   if (lower.endsWith('.md'))
     return { Icon: FileText, className: 'text-sky-300' };
   if (lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png') || lower.endsWith('.svg'))
-    return { Icon: FileText, className: 'text-violet-400' };
+    return { Icon: FileText, className: 'text-[#e6edf3]' };
   if (lower.includes('dockerfile') || lower.endsWith('.dockerfile'))
     return { Icon: Box, className: 'text-blue-400' };
   if (lower.endsWith('.ts') || lower.endsWith('.tsx'))
@@ -53,7 +53,7 @@ export function FileTypeIcon({ name, className }: FileIconProps) {
 
 export function FolderIcon({ open, className }: { open?: boolean; className?: string }) {
   if (open) {
-    return <FolderOpen className={cn('h-4 w-4 shrink-0 text-violet-400 dark:text-violet-400/90', className)} />;
+    return <FolderOpen className={cn('h-4 w-4 shrink-0 text-blue-400 dark:text-blue-400/90', className)} />;
   }
   return <Folder className={cn('h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-500/80', className)} />;
 }

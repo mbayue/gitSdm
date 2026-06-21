@@ -9,6 +9,7 @@ interface VizSidebarProps {
   minWidth?: number;
   maxWidth?: number;
   className?: string;
+  onClose?: () => void;
   children: ReactNode;
 }
 
@@ -20,6 +21,7 @@ export function VizSidebar({
   minWidth = 200,
   maxWidth = 600,
   className,
+  onClose,
   children,
 }: VizSidebarProps) {
   const isLeft = side === "left";
@@ -72,20 +74,31 @@ export function VizSidebar({
     };
   }, []);
 
-  const shadowClass = isLeft 
-    ? "shadow-[4px_0_24px_rgba(0,0,0,0.5)] lg:shadow-none" 
-    : "shadow-[-4px_0_24px_rgba(0,0,0,0.5)] lg:shadow-none";
+  const shadowClass = "";
 
   return (
-    <div
-      style={{ width: isOpen ? width : "40px" }}
-      className={cn(
-        "hidden lg:relative z-40 shrink-0 h-full transition-all lg:flex",
-        isLeft ? "left-0" : "right-0",
-        shadowClass,
-        className
-      )}
-    >
+    <>
+      {/* Mobile Backdrop */}
+      <div 
+        className={cn(
+          "fixed inset-0 bg-black/60 z-[50] backdrop-blur-sm lg:hidden transition-opacity duration-300",
+          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
+        onClick={() => onClose?.()}
+      />
+
+      <div
+        style={{ width: isOpen ? width : "40px" }}
+        className={cn(
+          "z-40 shrink-0 h-full transition-all flex flex-col",
+          "max-lg:!w-[85vw] sm:max-lg:!w-[360px] max-lg:fixed max-lg:top-0 max-lg:bottom-0 max-lg:bg-[#0d1117] max-lg:shadow-2xl max-lg:z-[60]",
+          isLeft ? "max-lg:left-0 lg:left-0 lg:relative max-lg:border-r max-lg:border-[rgba(240,246,252,0.1)]" : "max-lg:right-0 lg:right-0 lg:relative max-lg:border-l max-lg:border-[rgba(240,246,252,0.1)]",
+          !isOpen && (isLeft ? "max-lg:-translate-x-full" : "max-lg:translate-x-full"),
+          !isOpen && "max-lg:!w-0 max-lg:opacity-0 max-lg:hidden",
+          shadowClass,
+          className
+        )}
+      >
       {/* Content wrapper */}
       <div className="flex-1 w-full h-full overflow-hidden flex flex-col relative">
         {children}
@@ -96,11 +109,12 @@ export function VizSidebar({
         <div
           onMouseDown={handleMouseDown}
           className={cn(
-            "absolute top-0 bottom-0 w-1 cursor-col-resize hover:bg-violet-500/50 bg-transparent transition-colors z-50 select-none hidden lg:block",
+            "absolute top-0 bottom-0 w-1 cursor-col-resize hover:bg-[#58a6ff]/50 bg-transparent transition-colors z-50 select-none hidden lg:block",
             isLeft ? "right-0" : "left-0"
           )}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 }

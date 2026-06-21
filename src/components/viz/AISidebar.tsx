@@ -1,12 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Brain, FileText, Sparkles, PanelRightClose, PanelRightOpen, Info, GraduationCap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useVizStore, type SidebarTab } from '@/stores/vizStore';
-import { aiArchitecture } from '@/lib/apiClient';
-import type { AIArchitectureResponse, RepoAnalysis } from '@/types';
+import type { RepoAnalysis } from '@/types';
 
 import { LearningPathTab } from './LearningPathTab';
 import { OverviewTab } from './OverviewTab';
@@ -18,11 +17,10 @@ import { getBlastRadiusNodeIds } from '@/features/graph/canvas/helpers/blastRadi
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
-// Tabs definition matching Segmented Tab specifications
 const tabs = [
   { id: 'overview' as SidebarTab, label: 'Overview', icon: Info },
   { id: 'analysis' as SidebarTab, label: 'Detail', icon: FileText },
-  { id: 'ai' as SidebarTab, label: 'AI', icon: Brain },
+  { id: 'ai' as SidebarTab, label: 'Analysis', icon: Brain },
   { id: 'learning' as SidebarTab, label: 'Learn', icon: GraduationCap },
 ];
 
@@ -43,10 +41,10 @@ interface SidebarHeaderProps {
 
 function SidebarHeader({ onClose }: SidebarHeaderProps) {
   return (
-    <div className="flex items-center justify-between shrink-0 border-b border-white/[0.05] bg-zinc-950/80 px-4 py-3.5 backdrop-blur-md">
+    <div className="flex items-center justify-between shrink-0 border-b border-[rgba(240,246,252,0.1)] bg-[#0d1117] px-4 py-3.5">
       <div className="flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-violet-400 animate-pulse" />
-        <h2 className="text-[10px] font-bold uppercase tracking-widest text-zinc-200 font-mono">
+        <Sparkles className="h-4 w-4 text-[#8b949e]" />
+        <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#e6edf3] font-mono">
           Contextual Analysis
         </h2>
       </div>
@@ -54,9 +52,9 @@ function SidebarHeader({ onClose }: SidebarHeaderProps) {
         <TooltipTrigger
           type="button"
           onClick={onClose}
-          className="rounded-lg p-1 text-zinc-500 hover:bg-white/5 hover:text-zinc-300 transition-colors outline-none cursor-pointer"
+          className="rounded-lg p-1 text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3] transition-colors outline-none cursor-pointer"
         >
-          <PanelRightClose className="h-4.5 w-4.5" />
+          <PanelRightClose className="h-4 w-4" />
         </TooltipTrigger>
         <TooltipContent side="left">Hide sidebar panel</TooltipContent>
       </Tooltip>
@@ -72,7 +70,7 @@ interface TabNavigationProps {
 
 function TabNavigation({ activeTab, setActiveTab }: TabNavigationProps) {
   return (
-    <div className="flex items-center gap-0.5 p-1 bg-zinc-950/65 rounded-xl border border-white/[0.04] w-full overflow-x-auto [&::-webkit-scrollbar]:hidden">
+    <div className="flex items-center gap-0.5 p-1 bg-[#0d1117] rounded-md border border-[rgba(240,246,252,0.1)] w-full overflow-x-auto [&::-webkit-scrollbar]:hidden">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -82,13 +80,13 @@ function TabNavigation({ activeTab, setActiveTab }: TabNavigationProps) {
             type="button"
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              "flex-1 min-w-[62px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all duration-200 outline-none select-none shrink-0",
+              "flex-1 min-w-[62px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-sm text-xs font-semibold transition-all duration-200 outline-none select-none shrink-0",
               isActive
-                ? "bg-violet-600/10 text-violet-350 border border-violet-500/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)]"
-                : "text-zinc-500 hover:text-zinc-350 hover:bg-white/[0.02] border border-transparent"
+                ? "bg-[#161b22] text-[#e6edf3] border-[rgba(240,246,252,0.1)]"
+                : "text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.05)] border border-transparent"
             )}
           >
-            <Icon className={cn("h-3.5 w-3.5 shrink-0 transition-colors", isActive ? "text-violet-400" : "text-zinc-650")} />
+            <Icon className={cn("h-3.5 w-3.5 shrink-0 transition-colors", isActive ? "text-[#e6edf3]" : "text-[#8b949e]")} />
             <span className="truncate">{tab.label}</span>
           </button>
         );
@@ -112,66 +110,15 @@ export function AISidebar({
     aiSidebarOpen,
     setAiSidebarOpen,
     blastRadiusActive,
-    focusedFilePath,
   } = useVizStore();
-
-  const architectureRequestKeyRef = useRef<string | null>(null);
-  const architectureRequestSeqRef = useRef(0);
-  const [architectureData, setArchitectureData] = useState<AIArchitectureResponse | null>(null);
-  const [architectureLoading, setArchitectureLoading] = useState(false);
-  const { owner, repo } = analysis.meta;
 
   const selectedNode = selectedNodeId
     ? analysis.graph.nodes.find((n) => n.id === selectedNodeId)
     : null;
 
-  const prevSelectedNodeIdRef = useRef<string | null>(null);
 
-  // Auto-switch to Detail tab when a graph node is first selected, but keep Learn tab interactions in place.
-  useEffect(() => {
-    if (
-      selectedNodeId &&
-      selectedNodeId !== prevSelectedNodeIdRef.current &&
-      sidebarTab !== 'learning' &&
-      !useVizStore.getState().compareBranch
-    ) {
-      setSidebarTab('analysis');
-    }
-    prevSelectedNodeIdRef.current = selectedNodeId;
-  }, [selectedNodeId, sidebarTab, setSidebarTab]);
 
-  // Pre-fetch architecture descriptions on route change
-  useEffect(() => {
-    if (sidebarTab !== 'analysis' || focusedFilePath) return;
 
-    const requestKey = `${owner}/${repo}`;
-    if (architectureRequestKeyRef.current === requestKey) return;
-
-    const requestSeq = architectureRequestSeqRef.current + 1;
-    architectureRequestSeqRef.current = requestSeq;
-    architectureRequestKeyRef.current = requestKey;
-    setArchitectureData(null);
-    setArchitectureLoading(true);
-
-    void aiArchitecture(owner, repo)
-      .then((data) => {
-        if (architectureRequestSeqRef.current !== requestSeq) return;
-        setArchitectureData(data);
-      })
-      .catch(() => {
-        if (architectureRequestSeqRef.current !== requestSeq) return;
-        architectureRequestKeyRef.current = null;
-      })
-      .finally(() => {
-        if (architectureRequestSeqRef.current !== requestSeq) return;
-        setArchitectureLoading(false);
-      });
-  }, [
-    sidebarTab,
-    owner,
-    repo,
-    focusedFilePath,
-  ]);
 
   const blastRadiusIds = useMemo(() => {
     if (!selectedNode) return new Set<string>();
@@ -180,12 +127,12 @@ export function AISidebar({
 
   if (!aiSidebarOpen) {
     return (
-      <div className="flex h-full w-10 shrink-0 flex-col items-center border-l border-white/[0.06] bg-zinc-950 py-2 select-none">
+      <div className="flex h-full w-10 shrink-0 flex-col items-center border-l border-[rgba(240,246,252,0.1)] bg-[#0d1117] py-2 select-none">
         <Tooltip>
           <TooltipTrigger
             type="button"
             onClick={() => setAiSidebarOpen(true)}
-            className="rounded p-1.5 text-zinc-500 hover:bg-white/5 hover:text-zinc-350 transition-colors outline-none cursor-pointer"
+            className="rounded p-1.5 text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3] transition-colors outline-none cursor-pointer"
           >
             <PanelRightOpen className="h-4 w-4" />
           </TooltipTrigger>
@@ -198,13 +145,13 @@ export function AISidebar({
   return (
     <aside
       style={style}
-      className="flex h-full w-full shrink-0 flex-col border-l border-white/[0.04] bg-[#09080d] shadow-2xl relative select-none"
+      className="flex h-full w-full shrink-0 flex-col border-l border-[rgba(240,246,252,0.1)] bg-[#161b22] relative select-none"
     >
       {/* 1. Header with spark icon & collapse triggers */}
       <SidebarHeader onClose={() => setAiSidebarOpen(false)} />
 
       {/* 2. Navigation Tabs Container */}
-      <div className="px-4 pt-3.5 pb-2 bg-zinc-950/20 shrink-0">
+      <div className="px-4 pt-3.5 pb-2 bg-[#0d1117] shrink-0 border-b border-[rgba(240,246,252,0.1)]">
         <TabNavigation activeTab={sidebarTab} setActiveTab={setSidebarTab} />
       </div>
 
@@ -231,8 +178,6 @@ export function AISidebar({
                 setSelectedNodeId={setSelectedNodeId}
                 blastRadiusActive={blastRadiusActive}
                 blastRadiusIds={blastRadiusIds}
-                architecture={architectureData}
-                architectureLoading={architectureLoading}
               />
             </TabPanel>
           )}

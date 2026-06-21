@@ -134,9 +134,9 @@ export function VizError({ error, message }: VizErrorProps) {
         </div>
 
         {isPrivateError && (
-          <div className="mt-6 rounded-xl border border-indigo-500/20 bg-gradient-to-b from-indigo-950/10 to-zinc-950/40 p-5 text-left shadow-lg shadow-black/20">
+          <div className="mt-6 rounded-xl border border-ui-active/35 bg-gradient-to-b from-ui-active/[0.05] to-zinc-950/40 p-5 text-left shadow-lg shadow-black/20">
             <div className="flex items-center gap-2 mb-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-ui-active/15 text-ui-active-text-green">
                 <GitBranch className="h-3.5 w-3.5" />
               </div>
               <span className="text-xs font-semibold text-white">Access Private Repository</span>
@@ -148,11 +148,11 @@ export function VizError({ error, message }: VizErrorProps) {
                 href="https://github.com/settings/tokens/new?scopes=repo&description=gitSdm%20Token"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-indigo-400 hover:underline font-medium inline-flex items-center gap-0.5"
+                className="text-ui-active-text-green hover:underline font-medium inline-flex items-center gap-0.5"
               >
                 GitHub Personal Access Token (PAT)
               </a>{' '}
-              with <code className="text-[10px] text-indigo-300 bg-indigo-500/10 px-1 py-0.5 rounded font-mono">repo</code> scope.
+              with <code className="text-[10px] text-[#e6edf3] bg-ui-active/15 px-1 py-0.5 rounded font-mono">repo</code> scope.
             </p>
 
             <div className="relative mb-3">
@@ -161,7 +161,7 @@ export function VizError({ error, message }: VizErrorProps) {
                 value={tokenValue}
                 onChange={(e) => setTokenValue(e.target.value)}
                 placeholder="github_pat_... or ghp_..."
-                className="w-full rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-3 pr-8 font-mono text-xs text-white placeholder-zinc-600 outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                className="w-full rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-3 pr-8 font-mono text-xs text-white placeholder-zinc-600 outline-none focus:border-ui-focus/50 focus:ring-1 focus:ring-ui-focus/30 transition-all"
               />
               <button
                 type="button"
@@ -186,7 +186,7 @@ export function VizError({ error, message }: VizErrorProps) {
                 }}
                 className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-all ${
                   tokenValue.trim()
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-md shadow-indigo-600/20 active:scale-[0.98]'
+                    ? 'bg-[#238636] text-white hover:bg-[#2ea043] shadow-md shadow-[#238636]/20 active:scale-[0.98]'
                     : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
                 }`}
                 disabled={!tokenValue.trim()}

@@ -1,7 +1,7 @@
 <h1 align="center">gitSdm (Git Software Dependency Map v1.0.0)</h1>
 
 <p align="center">
-  <strong>AI-Powered Repository Intelligence & Architecture Visualization Platform</strong>
+  <strong>Graph-first repository analysis for exploring files, dependencies, modules, and architecture notes.</strong>
 </p>
 
 <p align="center">
@@ -9,8 +9,8 @@
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React" /></a>
   <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License" /></a>
-  <a href="https://github.com/bayue48/gitSdm/pulls"><img src="https://img.shields.io/badge/PRs-Welcome-brightgreen?style=for-the-badge" alt="PRs Welcome" /></a>
-  <a href="https://github.com/bayue48/gitSdm/actions"><img src="https://img.shields.io/badge/Build-Passing-success?style=for-the-badge" alt="Build" /></a>
+  <a href="https://github.com/mbayue/gitSdm/pulls"><img src="https://img.shields.io/badge/PRs-Welcome-brightgreen?style=for-the-badge" alt="PRs Welcome" /></a>
+  <a href="https://github.com/mbayue/gitSdm/actions"><img src="https://img.shields.io/badge/Build-Passing-success?style=for-the-badge" alt="Build" /></a>
 </p>
 
 ---
@@ -95,7 +95,7 @@ gitSdm/
 
 ```bash
 # Clone the repository
-git clone https://github.com/bayue48/gitSdm.git
+git clone https://github.com/mbayue/gitSdm.git
 cd gitSdm
 
 # Install dependencies
@@ -192,7 +192,7 @@ gcloud run deploy gitsdm \
 - **Contributor analytics** with `recharts` visualizations
 - **Commit timeline** and activity patterns
 - **Trending repositories** discovery
-- **File explorer** with syntax highlighting via `highlight.js`
+- **File explorer** with syntax showing via `highlight.js`
 - **Dynamic presets** that automatically adjust based on active AI provider configurations
 
 ---
@@ -322,7 +322,7 @@ Test files are co-located with source files (25 test suites):
 - [x] **Private repository support** — Secure OAuth authentication and credential storage to map private codebases.
 - [ ] **Monorepo-aware dependency grouping** — Automatic workspace detection (npm/pnpm/yarn) and cross-package mapping.
 - [x] **AI-powered semantic search & Q&A** — Context-aware vector search to ask code questions and locate entry points. (Beta)
-- [x] **Change impact analysis (Blast Radius)** — Visualizer highlighting transitive dependents to predict edit breakages.
+- [x] **Change impact analysis (Blast Radius)** — Visualizer showing transitive dependents to predict edit breakages.
 - [ ] **CI/CD integration** — GitHub Action to automatically comment visual architecture diffs on PR updates.
 - [ ] **Interactive path pruning & editing** — Tools to manually prune/group nodes and export tailored subgraphs.
 - [ ] **Multi-repository mapping** — Cross-repo mapping to trace frontend-to-backend API and SDK dependencies.

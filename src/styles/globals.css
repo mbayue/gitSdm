@@ -42,6 +42,21 @@
   --radius-xl: calc(var(--radius) + 4px);
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, monospace;
+  
+  /* UI Colors */
+  --color-ui-primary: var(--ui-primary);
+  --color-ui-primary-hover: var(--ui-primary-hover);
+  --color-ui-focus: var(--ui-focus);
+  --color-ui-active: var(--ui-active);
+  --color-ui-active-text: var(--ui-active-text);
+  --color-ui-active-text-green: var(--ui-active-text-green);
+  --color-ui-bg: var(--ui-bg);
+  --color-ui-surface: var(--ui-surface);
+  --color-ui-elevated: var(--ui-elevated);
+  --color-ui-border: var(--ui-border);
+  --color-ui-text: var(--ui-text);
+  --color-ui-muted: var(--ui-muted);
+  
   --animate-shimmer: shimmer 2s linear infinite;
   --animate-float: float 6s ease-in-out infinite;
 
@@ -85,6 +100,23 @@
   --bg-glow-cyan: transparent;
   --glass-bg: #161b22;
   --glass-border: rgba(240,246,252,0.1);
+  --ui-primary: #e6edf3;
+  --ui-primary-hover: #ffffff;
+  --ui-focus: #1f6feb;
+  --ui-active: #e6edf3;
+  --ui-active-text: #e6edf3;
+  --ui-active-text-green: #e6edf3;
+  --ui-bg: #0d1117;
+  --ui-surface: #161b22;
+  --ui-elevated: #1c2128;
+  --ui-border: rgba(240,246,252,0.1);
+  --ui-text: #e6edf3;
+  --ui-muted: #8b949e;
+  
+  /* Semantic Graph Colors (Do not touch these in components, they are strictly for graphs) */
+  --graph-node-repo: #c4b5fd;
+  --graph-node-repo-border: #8b5cf6;
+  --graph-node-repo-bg: rgba(139, 92, 246, 0.1);
 }
 
 .light {
@@ -112,6 +144,18 @@
   --bg-base: #f6f8fa;
   --glass-bg: #ffffff;
   --glass-border: #d0d7de;
+  --ui-primary: #24292f;
+  --ui-primary-hover: #000000;
+  --ui-focus: #0969da;
+  --ui-active: #24292f;
+  --ui-active-text: #24292f;
+  --ui-active-text-green: #24292f;
+  --ui-bg: #f6f8fa;
+  --ui-surface: #ffffff;
+  --ui-elevated: #ffffff;
+  --ui-border: #d0d7de;
+  --ui-text: #24292f;
+  --ui-muted: #57606a;
 }
 
 /* === Base layer === */
@@ -326,7 +370,7 @@ svg { fill: none; }
 
 /* Scrollbar */
 html {
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
   scrollbar-color: #30363d #0d1117;
   scrollbar-width: auto;
 }

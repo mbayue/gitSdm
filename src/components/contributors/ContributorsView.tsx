@@ -40,7 +40,7 @@ export function ContributorsView({ analysis, owner, repo }: ContributorsViewProp
       <div className="mb-6 flex flex-col justify-between gap-4 border-b border-white/5 pb-5 sm:flex-row sm:items-center select-none">
         <div>
           <h2 className="text-xl font-semibold tracking-tight text-white flex items-center gap-2">
-            <Users className="h-5 w-5 text-violet-400 animate-pulse" />
+            <Users className="h-5 w-5 text-ui-active-text-green animate-pulse" />
             Contributors & Repository Activity
           </h2>
           <p className="mt-1 text-xs text-zinc-400">
@@ -53,9 +53,9 @@ export function ContributorsView({ analysis, owner, repo }: ContributorsViewProp
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 select-none">
         {/* Total Contributors */}
         <div className="group relative rounded-xl border border-white/[0.04] bg-zinc-900/20 p-4 transition-all duration-350 hover:bg-zinc-900/40 hover:-translate-y-0.5 overflow-hidden">
-          <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-violet-500/0 via-violet-500/30 to-violet-500/0 transition-opacity opacity-0 group-hover:opacity-100" />
-          <div className="flex items-center gap-3.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-400 group-hover:scale-105 transition-transform">
+          <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-ui-active/0 via-ui-active/30 to-ui-active/0 transition-opacity opacity-0 group-hover:opacity-100" />
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-ui-active/15 border border-ui-active/35 text-ui-active-text-green group-hover:scale-105 transition-transform">
               <Users className="h-5 w-5" />
             </div>
             <div>
@@ -115,7 +115,7 @@ export function ContributorsView({ analysis, owner, repo }: ContributorsViewProp
         {/* Left Column: Contributor Leaderboard */}
         <div className="lg:col-span-5 rounded-xl border border-white/[0.04] bg-zinc-900/10 p-5 flex flex-col h-full overflow-hidden">
           <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-1.5 select-none shrink-0">
-            <TrendingUp className="h-4 w-4 text-violet-400" />
+            <TrendingUp className="h-4 w-4 text-ui-active-text-green" />
             Leaderboard & Commit Share
           </h3>
           <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-zinc-800 space-y-3">
@@ -149,9 +149,9 @@ export function ContributorsView({ analysis, owner, repo }: ContributorsViewProp
                     <img
                       src={c.avatarUrl}
                       alt={c.login}
-                      className="h-10 w-10 rounded-full object-cover ring-2 ring-white/5 group-hover:ring-violet-500 transition-all duration-200"
+                      className="h-10 w-10 rounded-full object-cover ring-2 ring-white/5 group-hover:ring-ui-active-text-green transition-all duration-200"
                     />
-                    <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-violet-600 border border-zinc-950 text-[8px] text-white">
+                    <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-ui-active-text-green border border-zinc-950 text-[8px] text-zinc-950">
                       <ExternalLink className="h-2 w-2" />
                     </div>
                   </a>
@@ -163,7 +163,7 @@ export function ContributorsView({ analysis, owner, repo }: ContributorsViewProp
                         href={`https://github.com/${c.login}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm font-semibold text-zinc-200 hover:text-violet-400 transition-colors truncate"
+                        className="text-sm font-semibold text-zinc-200 hover:text-ui-active-text-green transition-colors truncate"
                       >
                         {c.login}
                       </a>
@@ -176,7 +176,7 @@ export function ContributorsView({ analysis, owner, repo }: ContributorsViewProp
                     <div className="mt-2.5 flex items-center gap-3">
                       <div className="relative flex-1 h-1.5 rounded-full bg-zinc-950 overflow-hidden border border-white/[0.02]">
                         <div 
-                          className="h-full rounded-full bg-gradient-to-r from-violet-600 to-indigo-500 shadow-[0_0_8px_rgba(139,92,246,0.3)] transition-all duration-500"
+                          className="h-full rounded-full bg-gradient-to-r from-ui-active-text-green to-[#58a6ff] shadow-md shadow-ui-active-text-green/20 transition-all duration-500"
                           style={{ width: `${sharePercent}%` }}
                         />
                       </div>
@@ -194,7 +194,7 @@ export function ContributorsView({ analysis, owner, repo }: ContributorsViewProp
         {/* Right Column: Commit Timeline & Chart */}
         <div className="lg:col-span-7 rounded-xl border border-white/[0.04] bg-zinc-900/10 p-5 flex flex-col h-full overflow-hidden">
           <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-1.5 select-none shrink-0">
-            <Calendar className="h-4 w-4 text-violet-400" />
+            <Calendar className="h-4 w-4 text-ui-active-text-green" />
             Commit Activity Timeline
           </h3>
           <div className="flex-1 flex items-center justify-center bg-zinc-900/5 rounded-xl border border-white/[0.02] p-4">

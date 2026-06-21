@@ -13,11 +13,11 @@ export function HeaderStats({ analysis, meta: propsMeta }: HeaderStatsProps) {
   const totalCommits = getTotalCommits(analysis);
 
   return (
-    <div className="hidden md:flex items-center gap-2 select-none shrink-0">
+    <div className="hidden md:flex items-center gap-3 select-none shrink-0 text-[10px] text-zinc-500 font-medium">
       {totalCommits > 0 && (
-        <div className="flex items-center gap-1.5 h-7 px-3 rounded-full border border-white/[0.04] bg-white/[0.01] text-[10px] font-mono font-medium text-zinc-400">
-          <History className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
-          <span>{totalCommits.toLocaleString()} commits</span>
+        <div className="flex items-center gap-1" title="Total commits">
+          <History className="h-3 w-3 shrink-0" />
+          <span>{totalCommits.toLocaleString()}</span>
         </div>
       )}
 
@@ -26,10 +26,11 @@ export function HeaderStats({ analysis, meta: propsMeta }: HeaderStatsProps) {
           href={`https://github.com/${meta.fullName}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 h-7 px-3 rounded-full border border-white/[0.04] bg-white/[0.01] text-[10px] font-medium text-zinc-400 hover:text-white hover:bg-white/5 hover:border-white/[0.1] transition-all duration-200"
+          className="flex items-center gap-1 hover:text-[#e6edf3] transition-colors duration-200"
+          title="GitHub Stars"
         >
-          <Star className="h-3.5 w-3.5 text-amber-500/80 shrink-0 fill-amber-500/10" />
-          <span>{formatStars(meta.stars)} stars</span>
+          <Star className="h-3 w-3 shrink-0" />
+          <span>{formatStars(meta.stars)}</span>
         </a>
       )}
     </div>

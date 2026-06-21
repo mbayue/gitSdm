@@ -56,7 +56,7 @@ export function ActionButton({
       {!compact && (
         <div className="flex items-center gap-3">
           <div className="h-6 w-px bg-white/[0.04]" />
-          <Sparkles className="h-4 w-4 text-zinc-700 group-hover:text-violet-400 group-hover:animate-pulse transition-colors" />
+          <Sparkles className="h-4 w-4 text-zinc-700 group-hover:text-ui-active-text-green group-hover:animate-pulse transition-colors" />
         </div>
       )}
     </button>

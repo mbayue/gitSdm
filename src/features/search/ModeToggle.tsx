@@ -12,7 +12,7 @@ export function ModeToggle() {
   ];
 
   return (
-    <div className="inline-flex rounded-xl border border-white/[0.08] bg-white/[0.02] p-0.5" role="tablist">
+    <div className="inline-flex rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] p-0.5" role="tablist">
       {modes.map((m) => (
         <button
           key={m.value}
@@ -20,10 +20,10 @@ export function ModeToggle() {
           aria-selected={mode === m.value}
           onClick={() => setMode(m.value)}
           className={clsx(
-            'flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200',
+            'flex cursor-pointer items-center gap-1.5 rounded-sm px-3 py-1 text-xs font-medium transition-all duration-200',
             mode === m.value
-              ? 'bg-violet-600/80 text-white shadow-sm'
-              : 'text-zinc-400 hover:text-zinc-200',
+              ? 'bg-[#161b22] text-[#e6edf3] shadow-sm'
+              : 'text-[#8b949e] hover:text-[#e6edf3]',
           )}
         >
           {m.icon}

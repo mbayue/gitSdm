@@ -69,12 +69,24 @@ export function createQAEngine(): QAEngine {
   };
 }
 
-const SYSTEM_PROMPT = `You are a code analysis assistant. Answer questions about a codebase using ONLY the provided code context. Rules:
-- Only reference files and code present in the provided context
-- Include file paths and line numbers when citing specific code
-- Format your answer in Markdown with code blocks where appropriate
-- If the context does not contain enough information, say so clearly
-- Be concise but thorough`;
+const SYSTEM_PROMPT = `You are a codebase analysis assistant. Answer questions about the codebase using ONLY the provided code context.
+
+Structure your answer using EXACTLY these Markdown headers:
+### Summary
+A direct, 1-2 sentence high-level answer.
+
+### How it works
+A concise explanation. Use numbered steps for processes. Use short paragraphs.
+Visually distinguish code references by using \`inline code\` for variables, functions, or file names.
+Do not write giant walls of text. Keep it scannable.
+
+### Related files
+A bulleted list of the relevant files discussed.
+
+Rules:
+- Only reference files and code present in the context
+- If the context lacks sufficient information, state that clearly under Summary and skip the other sections
+- Do not add a Sources section (citations are handled by the UI)`;
 
 function buildQAPrompt(question: string, context: string): string {
   return `## Question

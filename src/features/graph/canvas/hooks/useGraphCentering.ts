@@ -29,7 +29,7 @@ export function useGraphCentering({
     if (lastFittedLayoutRef.current !== layoutType) {
       lastFittedLayoutRef.current = layoutType;
       
-      const activeId = selectedNodeId || (focusedFilePath ? `file:${focusedFilePath}` : null);
+      const activeId = selectedNodeId || focusedFilePath || null;
       if (activeId) return;
 
       const timer = setTimeout(() => {
@@ -44,7 +44,7 @@ export function useGraphCentering({
   useEffect(() => {
     if (!nodes || nodes.length === 0) return;
     const activeId =
-      selectedNodeId || (focusedFilePath ? `file:${focusedFilePath}` : null);
+      selectedNodeId || (focusedFilePath ? focusedFilePath : null);
     if (!activeId) {
       lastCenteredIdRef.current = null;
       return;
@@ -53,7 +53,10 @@ export function useGraphCentering({
 
     const targetNode = nodes.find(
       (n) =>
-        n.id === activeId || (n.data?.path && n.data.path === focusedFilePath)
+        n.id === activeId ||
+        n.id === `file:${focusedFilePath}` ||
+        n.id === `folder:${focusedFilePath}` ||
+        (n.data?.path && n.data.path === focusedFilePath)
     );
     if (targetNode) {
       lastCenteredIdRef.current = activeId;

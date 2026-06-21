@@ -1,6 +1,13 @@
 import { useRef } from 'react';
-import { RefreshCw, Network, Check, CodeXml, Code, FileImage, FileCode2 } from 'lucide-react';
+import { RefreshCw, Network, Check, CodeXml, Code, FileImage, FileCode2, ChevronDown, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import type { RepoAnalysis } from '@/types';
 import { useArchitecturePanZoom } from './architecture/hooks/useArchitecturePanZoom';
 import { useArchitectureExport } from './architecture/hooks/useArchitectureExport';
@@ -55,8 +62,8 @@ export function ArchitectureView({ analysis, owner, repo, compact }: Architectur
         <div className="mb-6 flex flex-col justify-between gap-4 border-b border-white/5 pb-5 sm:flex-row sm:items-center select-none">
           <div>
             <h2 className="text-xl font-semibold tracking-tight text-white flex items-center gap-2">
-              <Network className="h-5 w-5 text-violet-400 animate-pulse" />
-              System Architecture Flowchart
+              <Network className="h-5 w-5 text-zinc-400" />
+              Architecture View
             </h2>
             <p className="mt-1 text-xs text-zinc-400">
               Interactive block diagram mapping the structure of <span className="font-mono text-zinc-300">{owner}/{repo}</span>
@@ -92,55 +99,39 @@ export function ArchitectureView({ analysis, owner, repo, compact }: Architectur
                 AI Enhanced
               </button>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={handleCopySvg}
-                disabled={!svg}
-                className={cn(
-                  "flex items-center justify-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 h-8 px-2 sm:px-3 text-xs text-zinc-300 transition-all",
-                  svg ? "hover:bg-zinc-800 hover:text-white active:scale-[0.98]" : "opacity-50 cursor-not-allowed"
-                )}
-                title="Copy SVG">
-                {copiedSvg ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <CodeXml className="h-3.5 w-3.5 text-zinc-400" />}
-                <span className="hidden sm:inline">{copiedSvg ? 'Copied SVG!' : 'Copy SVG'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleCopyCode}
-                disabled={!svg}
-                className={cn(
-                  "flex items-center justify-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 h-8 px-2 sm:px-3 text-xs text-zinc-300 transition-all",
-                  svg ? "hover:bg-zinc-800 hover:text-white active:scale-[0.98]" : "opacity-50 cursor-not-allowed"
-                )}
-                title="Copy Code">
-                {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Code className="h-3.5 w-3.5 text-zinc-400" />}
-                <span className="hidden sm:inline">{copied ? 'Copied Code!' : 'Copy Code'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleDownloadSvg}
-                disabled={!svg}
-                className={cn(
-                  "flex items-center justify-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 h-8 px-2 sm:px-3.5 text-xs font-semibold text-zinc-300 transition-all",
-                  svg ? "hover:bg-zinc-800 hover:text-white active:scale-[0.98]" : "opacity-50 cursor-not-allowed"
-                )}
-                title="Download SVG">
-                <FileCode2 className="h-3.5 w-3.5 text-zinc-400" />
-                <span className="hidden sm:inline">Download SVG</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleDownloadPng}
-                disabled={!svg}
-                className={cn(
-                  "flex items-center justify-center gap-1.5 rounded-lg h-8 px-2 sm:px-3.5 text-xs font-semibold text-white transition-all",
-                  svg ? "bg-violet-600 hover:bg-violet-500 active:scale-[0.98] shadow-[0_0_15px_rgba(109,40,217,0.25)]" : "bg-violet-600/50 opacity-50 cursor-not-allowed"
-                )}
-                title="Download PNG">
-                <FileImage className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Download PNG</span>
-              </button>
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  disabled={!svg}
+                  className={cn(
+                    "flex items-center justify-center gap-1.5 rounded-lg border h-8 px-3 text-xs font-semibold transition-all outline-none focus:ring-2 focus:ring-[#238636]/30",
+                    svg ? "border-[#238636] bg-[#238636] text-white hover:bg-[#2ea043] hover:border-[rgba(240,246,252,0.1)] active:scale-[0.98] shadow-md shadow-[#238636]/20" : "border-zinc-800 bg-zinc-900 text-zinc-500 opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span>Export</span>
+                  <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-[#161b22] border-[rgba(240,246,252,0.1)] shadow-xl rounded-md p-1 z-50">
+                  <DropdownMenuItem onClick={handleCopySvg} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-300 hover:text-white hover:bg-zinc-800/80 rounded cursor-pointer outline-none">
+                    {copiedSvg ? <Check className="h-4 w-4 text-[#3fb950]" /> : <CodeXml className="h-4 w-4 text-zinc-400" />}
+                    <span>{copiedSvg ? 'Copied SVG!' : 'Copy SVG'}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleCopyCode} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-300 hover:text-white hover:bg-zinc-800/80 rounded cursor-pointer outline-none">
+                    {copied ? <Check className="h-4 w-4 text-[#3fb950]" /> : <Code className="h-4 w-4 text-zinc-400" />}
+                    <span>{copied ? 'Copied Code!' : 'Copy Mermaid Code'}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-white/5 my-1" />
+                  <DropdownMenuItem onClick={handleDownloadSvg} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-300 hover:text-white hover:bg-zinc-800/80 rounded cursor-pointer outline-none">
+                    <FileCode2 className="h-4 w-4 text-zinc-400" />
+                    <span>Download SVG</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDownloadPng} className="flex items-center gap-2 px-2 py-1.5 text-xs font-semibold text-[#3fb950] hover:text-[#56d364] hover:bg-zinc-800/80 rounded cursor-pointer outline-none">
+                    <FileImage className="h-4 w-4" />
+                    <span>Download PNG</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -175,33 +166,35 @@ export function ArchitectureView({ analysis, owner, repo, compact }: Architectur
           </div>
 
           <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={handleCopySvg}
-              disabled={!svg}
-              className="rounded bg-zinc-900 border border-zinc-800 p-1 text-zinc-400 hover:text-white"
-              title="Copy SVG"
-            >
-              {copiedSvg ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <CodeXml className="h-3.5 w-3.5" />}
-            </button>
-            <button
-              type="button"
-              onClick={handleCopyCode}
-              disabled={!svg}
-              className="rounded bg-zinc-900 border border-zinc-800 p-1 text-zinc-400 hover:text-white"
-              title="Copy Mermaid Code"
-            >
-              {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Code className="h-3.5 w-3.5" />}
-            </button>
-            <button
-              type="button"
-              onClick={handleDownloadSvg}
-              disabled={!svg}
-              className="rounded bg-zinc-900 border border-zinc-800 p-1 text-zinc-400 hover:text-white"
-              title="Download SVG"
-            >
-              <FileCode2 className="h-3.5 w-3.5" />
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                disabled={!svg}
+                className="flex items-center justify-center rounded bg-zinc-900 border border-zinc-800 h-6 px-2 text-zinc-400 hover:text-white transition-colors outline-none"
+                title="Export Diagram"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <ChevronDown className="h-3 w-3 ml-1 opacity-70" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-[#161b22] border-[rgba(240,246,252,0.1)] shadow-xl rounded-md p-1 z-50">
+                <DropdownMenuItem onClick={handleCopySvg} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-300 hover:text-white hover:bg-zinc-800/80 rounded cursor-pointer outline-none">
+                  {copiedSvg ? <Check className="h-4 w-4 text-[#3fb950]" /> : <CodeXml className="h-4 w-4 text-zinc-400" />}
+                  <span>{copiedSvg ? 'Copied SVG!' : 'Copy SVG'}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCopyCode} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-300 hover:text-white hover:bg-zinc-800/80 rounded cursor-pointer outline-none">
+                  {copied ? <Check className="h-4 w-4 text-[#3fb950]" /> : <Code className="h-4 w-4 text-zinc-400" />}
+                  <span>{copied ? 'Copied Code!' : 'Copy Mermaid Code'}</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-white/5 my-1" />
+                <DropdownMenuItem onClick={handleDownloadSvg} className="flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-300 hover:text-white hover:bg-zinc-800/80 rounded cursor-pointer outline-none">
+                  <FileCode2 className="h-4 w-4 text-zinc-400" />
+                  <span>Download SVG</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDownloadPng} className="flex items-center gap-2 px-2 py-1.5 text-xs font-semibold text-[#3fb950] hover:text-[#56d364] hover:bg-zinc-800/80 rounded cursor-pointer outline-none">
+                  <FileImage className="h-4 w-4" />
+                  <span>Download PNG</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       )}
@@ -210,7 +203,7 @@ export function ArchitectureView({ analysis, owner, repo, compact }: Architectur
       <div className="flex-1 min-h-0 flex flex-col bg-zinc-900/10 border border-white/[0.03] rounded-xl overflow-hidden">
         {mode === 'code' && !analysis && (
           <div className="flex flex-col items-center justify-center h-full flex-1 space-y-4">
-            <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-violet-500 border-t-transparent" />
+            <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-ui-active-text-green border-t-transparent" />
             <div className="text-center">
               <span className="text-xs text-zinc-400 font-semibold tracking-wider uppercase block">Loading Codebase Graph</span>
               <span className="text-[10px] text-zinc-500 block mt-1">Reading parsed AST topology...</span>
@@ -220,7 +213,7 @@ export function ArchitectureView({ analysis, owner, repo, compact }: Architectur
 
         {mode === 'ai' && isPending && (
           <div className="flex flex-col items-center justify-center h-full flex-1 space-y-4">
-            <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-violet-500 border-t-transparent" />
+            <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-ui-active-text-green border-t-transparent" />
             <div className="text-center">
               <span className="text-xs text-zinc-400 font-semibold tracking-wider uppercase block">Analyzing Codebase Flow (AI)</span>
               <span className="text-[10px] text-zinc-500 block mt-1">Generating visual relationship graph...</span>
@@ -258,7 +251,7 @@ export function ArchitectureView({ analysis, owner, repo, compact }: Architectur
               </div>
             ) : !svg ? (
               <div className="flex flex-col items-center justify-center flex-1 space-y-3">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-ui-active-text-green border-t-transparent" />
                 <span className="text-xs text-zinc-500 font-medium">Laying out SVG flowchart...</span>
               </div>
             ) : (
@@ -282,33 +275,33 @@ export function ArchitectureView({ analysis, owner, repo, compact }: Architectur
                   />
 
                   {/* Zoom Controls Overlay */}
-                  <div className="absolute bottom-4 right-4 flex items-center gap-1 bg-zinc-950/80 border border-white/5 rounded-lg p-1 shadow-lg backdrop-blur-sm z-20">
+                  <div className="absolute bottom-4 right-4 flex items-center gap-0.5 bg-[#161b22] border border-white/5 rounded-md p-1 shadow-xl z-20">
                     <button
                       type="button"
                       onClick={() => setZoom(z => Math.max(0.15, z - 0.1))}
-                      className="flex h-7 w-7 items-center justify-center rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                      className="flex h-6 w-6 items-center justify-center rounded text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
                       title="Zoom Out"
                     >
-                      <span className="text-sm leading-none font-bold select-none">-</span>
+                      <span className="text-lg leading-none font-medium select-none mb-0.5">-</span>
                     </button>
-                    <span className="text-[10px] font-mono text-zinc-500 px-1 select-none min-w-[36px] text-center">
+                    <span className="text-[10px] font-mono font-medium text-zinc-400 px-1 select-none w-9 text-center">
                       {Math.round(zoom * 100)}%
                     </span>
                     <button
                       type="button"
                       onClick={() => setZoom(z => Math.min(5, z + 0.1))}
-                      className="flex h-7 w-7 items-center justify-center rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                      className="flex h-6 w-6 items-center justify-center rounded text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
                       title="Zoom In"
                     >
-                      <span className="text-sm leading-none font-bold select-none">+</span>
+                      <span className="text-sm leading-none font-medium select-none">+</span>
                     </button>
-                    <div className="w-px h-4 bg-zinc-850 mx-1" />
+                    <div className="w-px h-3.5 bg-zinc-800 mx-1" />
                     <button
                       type="button"
                       onClick={() => {
                         resetView();
                       }}
-                      className="flex h-7 px-2 items-center justify-center rounded hover:bg-zinc-800 text-[10px] font-semibold text-zinc-400 hover:text-white transition-colors"
+                      className="flex h-6 px-2 items-center justify-center rounded text-[10px] font-semibold text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
                       title="Reset view"
                     >
                       Reset
@@ -317,17 +310,19 @@ export function ArchitectureView({ analysis, owner, repo, compact }: Architectur
                 </div>
 
                 {!compact && (
-                  <div className="bg-zinc-950/40 border-t border-white/5 p-4 rounded-b-xl select-none">
-                    <h5 className="text-[11px] font-bold text-white uppercase tracking-wider mb-1">
-                      {mode === 'code' ? 'Code Graph Architecture Tip' : 'AI Enhanced Architecture Tip'}
-                    </h5>
-                    <p className="text-[10px] text-zinc-400 leading-relaxed">
-                      {mode === 'code' ? (
-                        'This diagram is programmatically built client-side by analyzing static file imports, grouped inside bounding boxes named after directory subfolders. Zoom and pan to inspect module boundaries.'
-                      ) : (
-                        'This diagram represents the logical system architecture and dependencies summarized by the Gemini LLM. You can download the rendered SVG or copy/paste the Mermaid raw markdown.'
-                      )}
-                    </p>
+                  <div className="bg-zinc-900/50 border-t border-white/[0.03] p-3 sm:px-4 sm:py-3 rounded-b-xl select-none flex items-center justify-between">
+                    <div>
+                      <h5 className="text-[11px] font-semibold text-zinc-300 mb-0.5">
+                        {mode === 'code' ? 'Code Graph Diagram' : 'AI Enhanced Architecture'}
+                      </h5>
+                      <p className="text-[10px] text-zinc-500 max-w-2xl">
+                        {mode === 'code' ? (
+                          'Programmatically built by analyzing static file imports. Pan and zoom to inspect boundaries.'
+                        ) : (
+                          'Logical system architecture summarized by AI.'
+                        )}
+                      </p>
+                    </div>
                   </div>
                 )}
               </>

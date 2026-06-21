@@ -61,7 +61,7 @@ describe('ai provider', () => {
     expect(await provider.complete([{ role: 'user', content: 'scores (0 to 100)' }])).toContain('maintainability');
     expect(await provider.complete([{ role: 'user', content: 'Mermaid.js flowchart' }])).toContain('mermaid');
     expect(await provider.complete([{ role: 'user', content: 'developer "roast"' }])).toContain('Roast');
-    expect(await provider.complete([{ role: 'user', content: 'enhanced, professional, and visually stunning README.md' }])).toContain('gitSdm');
+    expect(await provider.complete([{ role: 'user', content: 'enhanced, professional, and clean README.md' }])).toContain('gitSdm');
     expect(await provider.complete([{ role: 'user', content: 'other text' }])).toContain('mock AI explanation');
   });
 

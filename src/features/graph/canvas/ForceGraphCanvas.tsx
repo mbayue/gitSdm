@@ -194,7 +194,7 @@ export function NetworkCanvas({
     >
       {isLoading && (
         <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-sm select-none">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-ui-active-text-green border-t-transparent" />
           <span className="mt-3 text-xs text-zinc-400 font-medium">
             Laying out dependency graph...
           </span>
@@ -203,7 +203,7 @@ export function NetworkCanvas({
 
       {isExporting && (
         <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-md select-none">
-          <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+          <Loader2 className="h-8 w-8 animate-spin text-ui-active-text-green" />
           <span className="mt-3 text-xs text-zinc-400 font-medium font-mono">
             Generating high-res {exportFormat?.toUpperCase()}...
           </span>

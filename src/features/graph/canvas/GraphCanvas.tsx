@@ -104,7 +104,7 @@ export function GraphCanvas({
   const flowStyle = useMemo(
     () =>
       ({
-        "--xy-background-color": isDark ? "#0f1015" : "#f9fafb",
+        "--xy-background-color": isDark ? "#0b0f14" : "#f9fafb",
         "--xy-controls-button-background-color": isDark
           ? "rgba(24, 24, 27, 0.72)"
           : "rgba(255, 255, 255, 0.86)",
@@ -243,7 +243,7 @@ export function GraphCanvas({
       {!hideChrome && (
         <>
           {/* Attached Main Graph Action Toolbar */}
-          <div ref={toolbarRef} className="absolute top-0 left-0 z-30 flex h-10 items-center gap-1 border-r border-b border-white/[0.05] bg-zinc-950/85 px-3 rounded-br-xl shadow-md backdrop-blur-md select-none font-sans">
+          <div ref={toolbarRef} className="absolute top-0 left-0 z-30 flex h-10 items-center gap-1 border-r border-b border-[rgba(240,246,252,0.1)] bg-[#0d1117] px-3 rounded-br-md select-none font-sans">
             <ToolbarDropdowns
               activeDropdown={activeDropdown}
               setActiveDropdown={setActiveDropdown}
@@ -276,7 +276,7 @@ export function GraphCanvas({
         <>
           {isLoading && (
             <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-sm select-none">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-ui-active-text-green border-t-transparent" />
               <span className="mt-3 text-xs text-zinc-400 font-medium">
                 Laying out dependency graph...
               </span>
@@ -284,7 +284,7 @@ export function GraphCanvas({
           )}
           {isExporting && (
             <div className="absolute inset-0 z-[200] flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-md select-none">
-              <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+              <Loader2 className="h-8 w-8 animate-spin text-ui-active-text-green" />
               <span className="mt-3 text-xs text-zinc-400 font-medium font-mono">
                 Generating high-res {exportFormat?.toUpperCase()}...
               </span>
@@ -343,11 +343,11 @@ export function GraphCanvas({
                   bottom: 68,
                   right: 16,
                   margin: 0,
-                  background: isDark ? "rgba(9, 9, 11, 0.85)" : "rgba(255, 255, 255, 0.85)",
-                  border: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.08)",
-                  borderRadius: "8px",
+                  background: isDark ? "#161b22" : "rgba(255, 255, 255, 0.85)",
+                  border: isDark ? "1px solid rgba(240,246,252,0.1)" : "1px solid rgba(0, 0, 0, 0.08)",
+                  borderRadius: "6px",
                 }}
-                nodeColor={(node) => (node.data?.nodeColor as string) ?? "#8b5cf6"}
+                nodeColor={(node) => (node.data?.nodeColor as string) ?? "#58a6ff"}
                 zoomable
                 pannable
               />

@@ -58,7 +58,7 @@ export function StagedLoader({ owner, repo }: StagedLoaderProps) {
     <div className="flex flex-1 flex-col items-center justify-center bg-zinc-950 p-6">
       {/* Ambient glow */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="h-80 w-80 rounded-full bg-violet-600/8 blur-[100px]" />
+        <div className="h-80 w-80 rounded-full bg-ui-active/10 blur-[100px]" />
       </div>
 
       <motion.div
@@ -68,13 +68,13 @@ export function StagedLoader({ owner, repo }: StagedLoaderProps) {
         className="relative w-full max-w-[420px]"
       >
         {/* Glow border */}
-        <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-violet-500/20 via-transparent to-cyan-500/20 blur-sm" />
+        <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-ui-active/20 via-transparent to-[#58a6ff]/20 blur-sm" />
 
         <div className="relative rounded-2xl border border-white/[0.07] bg-zinc-900/70 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-xl">
           {/* Header */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-bold tracking-widest text-violet-400 uppercase">
+              <span className="text-[10px] font-bold tracking-widest text-ui-active-text-green uppercase">
                 AI Analysis Pipeline
               </span>
               <span className="text-[10px] font-mono text-zinc-500">{Math.floor(progress)}%</span>
@@ -82,13 +82,13 @@ export function StagedLoader({ owner, repo }: StagedLoaderProps) {
 
             <h3 className="text-base font-semibold text-white truncate">
               Analyzing{' '}
-              <span className="text-violet-300 font-mono">{owner}/{repo}</span>
+              <span className="text-[#e6edf3] font-mono">{owner}/{repo}</span>
             </h3>
 
             {/* Progress bar */}
             <div className="mt-3 h-1 w-full rounded-full bg-white/5 overflow-hidden">
               <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-400"
+                className="h-full rounded-full bg-gradient-to-r from-ui-active-text-green via-[#388bfd] to-[#58a6ff]"
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
                 transition={{ ease: 'easeOut' }}
@@ -104,16 +104,16 @@ export function StagedLoader({ owner, repo }: StagedLoaderProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.25 }}
-              className="mb-5 flex items-center gap-3 rounded-xl border border-violet-500/15 bg-violet-500/8 px-3.5 py-3"
+              className="mb-5 flex items-center gap-3 rounded-xl border border-ui-active/35 bg-ui-active/10 px-3.5 py-3"
             >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15">
-                <StageIcon className="h-4 w-4 text-violet-300" />
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ui-active/15">
+                <StageIcon className="h-4 w-4 text-ui-active-text-green" />
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-white">{currentStage.label}</p>
                 <p className="text-[10px] text-zinc-500 mt-0.5 truncate">{currentStage.sublabel}</p>
               </div>
-              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-violet-400 ml-auto" />
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-ui-active-text-green ml-auto" />
             </motion.div>
           </AnimatePresence>
 
@@ -138,7 +138,7 @@ export function StagedLoader({ owner, repo }: StagedLoaderProps) {
                     {isDone ? (
                       <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                     ) : isActive ? (
-                      <div className="h-4 w-4 rounded-full border-2 border-violet-500/30 border-t-violet-400 animate-spin" />
+                      <div className="h-4 w-4 rounded-full border-2 border-ui-active-text-green/30 border-t-ui-active-text-green animate-spin" />
                     ) : (
                       <Icon className="h-4 w-4 text-zinc-700" />
                     )}

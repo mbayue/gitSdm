@@ -11,7 +11,7 @@ mermaid.initialize({
   },
   themeVariables: {
     background: '#09090b',
-    primaryColor: '#6d28d9',
+    primaryColor: '#238636',
     primaryTextColor: '#f4f4f5',
     lineColor: '#3f3f46',
     nodeBorder: '#3f3f46',
@@ -42,8 +42,8 @@ mermaid.initialize({
     
     .node:hover rect, .node:hover polygon, .node:hover circle, .node:hover path {
       fill: #242427 !important;
-      stroke: #8b5cf6 !important;
-      filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.45));
+      stroke: #3fb950 !important;
+      filter: drop-shadow(0 0 8px rgba(63, 185, 80, 0.45));
       cursor: pointer;
     }
 
@@ -53,7 +53,7 @@ mermaid.initialize({
       transition: all 0.2s ease-in-out;
     }
     .edgePath:hover .path {
-      stroke: #a78bfa !important;
+      stroke: #3fb950 !important;
       stroke-width: 2px !important;
     }
     .edgePath .markerPath {
@@ -62,7 +62,7 @@ mermaid.initialize({
       transition: all 0.2s ease-in-out;
     }
     .edgePath:hover .markerPath {
-      fill: #a78bfa !important;
+      fill: #3fb950 !important;
     }
 
     .cluster rect {
@@ -101,33 +101,33 @@ mermaid.initialize({
     }
 
     .node.entry rect, .node.entry polygon {
-      fill: #1e1b4b !important;
-      stroke: #8b5cf6 !important;
+      fill: #052e16 !important;
+      stroke: #10b981 !important;
       stroke-width: 2px !important;
     }
     .node.router rect, .node.router polygon {
-      fill: #064e3b !important;
-      stroke: #10b981 !important;
+      fill: #18181b !important;
+      stroke: #3f3f46 !important;
     }
     .node.service rect, .node.service polygon {
-      fill: #172554 !important;
-      stroke: #3b82f6 !important;
+      fill: #18181b !important;
+      stroke: #52525b !important;
     }
     .node.util rect, .node.util polygon {
       fill: #18181b !important;
       stroke: #71717a !important;
     }
     .node.db rect, .node.db polygon {
-      fill: #581c87 !important;
-      stroke: #d946ef !important;
+      fill: #451a03 !important;
+      stroke: #d97706 !important;
     }
     .node.config rect, .node.config polygon {
-      fill: #451a03 !important;
-      stroke: #f59e0b !important;
+      fill: #18181b !important;
+      stroke: #a1a1aa !important;
     }
     .node.test rect, .node.test polygon {
-      fill: #0c4a6e !important;
-      stroke: #0284c7 !important;
+      fill: #18181b !important;
+      stroke: #52525b !important;
     }
   `,
 });

@@ -10,21 +10,21 @@ export function IndexingStatusPanel({ onRetry }: IndexingStatusProps) {
 
   if (indexingStatus.state === 'idle') {
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
-          <Database className="h-4 w-4 text-amber-400" />
+      <div className="flex items-center gap-3 rounded-md border border-[rgba(240,246,252,0.1)] bg-[#161b22] px-4 py-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-[#0d1117] border border-[rgba(240,246,252,0.1)]">
+          <Database className="h-4 w-4 text-[#8b949e]" />
         </div>
         <div className="flex-1">
-          <p className="text-xs font-medium text-amber-200">No index exists for this repository</p>
-          <p className="text-[11px] text-amber-300/60">Build vector embeddings to enable semantic search</p>
+          <p className="text-xs font-semibold text-[#e6edf3]">Index missing</p>
+          <p className="text-[11px] text-[#8b949e]">Build an index to search this repository by meaning</p>
         </div>
         {onRetry && (
           <button
             onClick={onRetry}
-            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-1.5 text-xs font-medium text-violet-300 transition-all duration-200 hover:border-violet-500/50 hover:bg-violet-500/20 hover:text-violet-200"
+            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] px-3 py-1.5 text-[11px] font-semibold text-[#e6edf3] transition-all hover:border-[#58a6ff] hover:bg-[#58a6ff]/10 hover:text-[#58a6ff]"
           >
             <Zap className="h-3.5 w-3.5" />
-            Index Now
+            Build Index
           </button>
         )}
       </div>
@@ -35,28 +35,28 @@ export function IndexingStatusPanel({ onRetry }: IndexingStatusProps) {
     const progress = indexingStatus.progress;
     const hasFileCount = indexingStatus.totalFiles > 0;
     return (
-      <div className="space-y-2.5 rounded-xl border border-violet-500/20 bg-violet-500/5 px-4 py-3">
-        <div className="flex items-center gap-2.5 text-xs text-violet-300">
+      <div className="space-y-2.5 rounded-md border border-[#58a6ff]/30 bg-[#58a6ff]/5 px-4 py-3">
+        <div className="flex items-center gap-2.5 text-xs text-[#58a6ff]">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span className="font-medium">
-            {hasFileCount ? 'Indexing repository…' : 'Scanning repository…'}
+          <span className="font-semibold">
+            {hasFileCount ? 'Indexing...' : 'Scanning repository...'}
           </span>
           {hasFileCount && (
-            <span className="ml-auto font-mono text-[10px] tabular-nums text-violet-400">
+            <span className="ml-auto font-mono text-[10px] tabular-nums text-[#58a6ff]/80">
               {indexingStatus.filesProcessed}/{indexingStatus.totalFiles} files
             </span>
           )}
         </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+        <div className="h-1.5 overflow-hidden rounded-full bg-[#0d1117] border border-[rgba(240,246,252,0.1)]">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-violet-600 to-violet-400 transition-all duration-500 ease-out"
+            className="h-full rounded-full bg-[#58a6ff] transition-all duration-500 ease-out"
             style={{ width: `${Math.max(progress, 2)}%` }}
           />
         </div>
-        <p className="text-[10px] text-violet-400/60">
+        <p className="text-[10px] text-[#8b949e]">
           {hasFileCount
-            ? 'This may take a moment for large repositories'
-            : 'Counting files and preparing embeddings…'}
+            ? 'Building semantic embeddings...'
+            : 'Preparing files...'}
         </p>
       </div>
     );
@@ -64,26 +64,26 @@ export function IndexingStatusPanel({ onRetry }: IndexingStatusProps) {
 
   if (indexingStatus.state === 'complete') {
     return (
-      <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-xs text-emerald-300">
-        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-        <span className="font-medium">Index ready</span>
-        <span className="text-emerald-400/60">— {indexingStatus.chunkCount} chunks indexed</span>
+      <div className="flex items-center gap-2.5 rounded-md border border-[rgba(240,246,252,0.1)] bg-[#161b22] px-4 py-3 text-xs">
+        <CheckCircle2 className="h-4 w-4 shrink-0 text-[#3fb950]" />
+        <span className="font-semibold text-[#e6edf3]">Index ready</span>
+        <span className="text-[#8b949e] font-mono ml-auto">{indexingStatus.chunkCount} chunks</span>
       </div>
     );
   }
 
   if (indexingStatus.state === 'failed') {
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3">
-        <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
+      <div className="flex items-center gap-3 rounded-md border border-[#f85149]/30 bg-[#f85149]/5 px-4 py-3">
+        <AlertCircle className="h-4 w-4 shrink-0 text-[#f85149]" />
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-red-300">Indexing failed</p>
-          <p className="truncate text-[11px] text-red-400/60">{indexingStatus.error}</p>
+          <p className="text-xs font-semibold text-[#f85149]">Index failed</p>
+          <p className="truncate text-[11px] text-[#f85149]/80">{indexingStatus.error}</p>
         </div>
         {onRetry && (
           <button
             onClick={onRetry}
-            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-300 transition-all duration-200 hover:border-red-500/50 hover:bg-red-500/20"
+            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-[#f85149]/30 bg-[#f85149]/10 px-3 py-1.5 text-[11px] font-semibold text-[#f85149] transition-all hover:bg-[#f85149]/20"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             Retry

@@ -204,7 +204,7 @@ function TreeRow({
       className={cn(
         'flex w-full items-center gap-2 py-1.5 px-2 text-xs transition-all duration-150 select-none border-l-2 outline-none',
         selected
-          ? 'bg-violet-600/10 border-violet-500 text-violet-300 font-semibold'
+          ? 'bg-ui-active/15 border-ui-active/35 text-ui-active-text-green font-semibold'
           : 'border-transparent text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200',
       )}
       style={{ paddingLeft: 22 + depth * 12 }}

@@ -52,7 +52,9 @@ export function useArchitectureState(
           if (renderedSvg.includes('width=')) {
             styled = renderedSvg
               .replace(/width="[^"]+"/, 'width="100%"')
-              .replace(/height="[^"]+"/, 'style="max-height: 100%; max-width: 100%; width: 100%; height: auto;"');
+              .replace(/height="[^"]+"/, 'height="100%"')
+              .replace(/style="[^"]*"/, '')
+              .replace(/<svg/, '<svg style="max-width: 100%; max-height: 100%;"');
           }
           setSvg(styled);
         }

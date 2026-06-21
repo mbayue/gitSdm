@@ -43,8 +43,8 @@ export function ToolbarDropdowns({
           onClick={() => setActiveDropdown(activeDropdown === 'filter' ? null : 'filter')}
           className={`flex h-8 px-2.5 items-center gap-1.5 rounded-lg text-xs font-medium transition-all active:scale-[0.95] ${
             activeDropdown === 'filter'
-              ? "bg-violet-600/20 text-violet-200 border border-violet-500/30"
-              : "text-zinc-400 hover:bg-white/5 hover:text-white border border-transparent"
+              ? "bg-[#161b22] text-[#e6edf3] border-[rgba(240,246,252,0.1)]"
+              : "text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3] border-transparent"
           }`}
         >
           <Filter className="h-3.5 w-3.5" />
@@ -53,11 +53,11 @@ export function ToolbarDropdowns({
         </button>
 
         {activeDropdown === 'filter' && (
-          <div className="absolute left-0 mt-2 w-56 rounded-xl border border-white/[0.08] bg-zinc-950/95 p-3 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="absolute left-0 mt-2 w-56 rounded-md border border-[rgba(240,246,252,0.1)] bg-[#161b22] p-3 shadow-2xl animate-in fade-in slide-in-from-top-1 duration-150 max-h-[80vh] overflow-y-auto">
             <div className="space-y-3.5">
               {/* Node Types Section */}
               <div>
-                <div className="text-[9px] font-semibold text-zinc-500 uppercase tracking-wider mb-2 font-mono">Node Types</div>
+                <div className="text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider mb-2 font-mono">Node Types</div>
                 <div className="space-y-1">
                   {[
                     { id: 'repo' as const, label: 'Repository', icon: FolderGit2, color: 'text-violet-400' },
@@ -71,13 +71,13 @@ export function ToolbarDropdowns({
                         key={type.id}
                         type="button"
                         onClick={() => toggleNodeTypeFilter(type.id)}
-                        className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left text-xs text-zinc-300 hover:bg-white/5 transition-colors"
+                        className="flex w-full items-center justify-between rounded-sm px-2 py-1 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors"
                       >
                         <div className="flex items-center gap-2">
                           <Icon className={`h-3.5 w-3.5 ${type.color}`} />
                           <span>{type.label}</span>
                         </div>
-                        {active && <Check className="h-3.5 w-3.5 text-violet-400" />}
+                        {active && <Check className="h-3.5 w-3.5 text-ui-active-text-green" />}
                       </button>
                     );
                   })}
@@ -87,7 +87,7 @@ export function ToolbarDropdowns({
               {/* Diff Status (if compare mode) */}
               {compareBranch && (
                 <div>
-                  <div className="text-[9px] font-semibold text-zinc-500 uppercase tracking-wider mb-2 font-mono">Diff Status</div>
+                  <div className="text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider mb-2 font-mono">Diff Status</div>
                   <div className="space-y-1">
                     {[
                       { id: 'added' as const, label: 'Added', symbol: '+', color: 'text-green-400' },
@@ -100,13 +100,13 @@ export function ToolbarDropdowns({
                           key={status.id}
                           type="button"
                           onClick={() => toggleDiffStatusFilter(status.id)}
-                          className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left text-xs text-zinc-300 hover:bg-white/5 transition-colors"
+                          className="flex w-full items-center justify-between rounded-sm px-2 py-1 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors"
                         >
                           <div className="flex items-center gap-2">
                             <span className={`w-3.5 text-center font-bold font-mono ${status.color}`}>{status.symbol}</span>
                             <span>{status.label}</span>
                           </div>
-                          {active && <Check className="h-3.5 w-3.5 text-violet-400" />}
+                          {active && <Check className="h-3.5 w-3.5 text-ui-active-text-green" />}
                         </button>
                       );
                     })}
@@ -116,7 +116,7 @@ export function ToolbarDropdowns({
 
               {/* Layers Focus */}
               <div>
-                <div className="text-[9px] font-semibold text-zinc-500 uppercase tracking-wider mb-2 font-mono">Focus Layer</div>
+                <div className="text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider mb-2 font-mono">Focus Layer</div>
                 <div className="grid grid-cols-2 gap-1">
                   {(['all', 'api', 'ui', 'core', 'config'] as const).map((layer) => {
                     const active = activeFocusLayer === layer;
@@ -125,10 +125,10 @@ export function ToolbarDropdowns({
                         key={layer}
                         type="button"
                         onClick={() => setActiveFocusLayer(layer)}
-                        className={`rounded px-1.5 py-0.5 text-center text-[10px] font-semibold font-mono border transition-all ${
+                        className={`rounded-sm px-1.5 py-0.5 text-center text-[10px] font-semibold font-mono border transition-all ${
                           active
-                            ? "bg-violet-600/20 text-violet-200 border-violet-500/30 shadow-sm"
-                            : "bg-white/[0.02] text-zinc-400 border-transparent hover:bg-white/5 hover:text-white"
+                            ? "bg-[#1c2128] text-[#e6edf3] border-[rgba(240,246,252,0.1)] shadow-sm"
+                            : "bg-transparent text-[#8b949e] border-transparent hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3]"
                         }`}
                       >
                         {layer.toUpperCase()}
@@ -139,21 +139,21 @@ export function ToolbarDropdowns({
               </div>
 
               {/* Blast Radius Toggle */}
-              <div className="border-t border-white/[0.06] pt-2.5">
+              <div className="border-t border-[rgba(240,246,252,0.1)] pt-2.5">
                 <button
                   type="button"
                   onClick={() => setBlastRadiusActive(!blastRadiusActive)}
-                  className={`flex w-full items-center justify-between rounded-lg px-2 py-1 text-left text-xs transition-colors ${
+                  className={`flex w-full items-center justify-between rounded-sm px-2 py-1 text-left text-xs transition-colors ${
                     blastRadiusActive
-                      ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
-                      : "text-zinc-400 hover:bg-white/5 hover:text-white"
+                      ? "bg-[#1c2128] text-[#e6edf3] border border-[rgba(240,246,252,0.1)]"
+                      : "text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3]"
                   }`}
                 >
                   <div className="flex flex-col text-left">
                     <span className="font-semibold">Blast Radius</span>
                     <span className="text-[9px] text-zinc-500 font-mono">Trace change impact</span>
                   </div>
-                  {blastRadiusActive && <Check className="h-3.5 w-3.5 text-cyan-400" />}
+                  {blastRadiusActive && <Check className="h-3.5 w-3.5 text-[#58a6ff]" />}
                 </button>
               </div>
             </div>
@@ -168,8 +168,8 @@ export function ToolbarDropdowns({
           onClick={() => setActiveDropdown(activeDropdown === 'layout' ? null : 'layout')}
           className={`flex h-8 px-2.5 items-center gap-1.5 rounded-lg text-xs font-medium transition-all active:scale-[0.95] ${
             activeDropdown === 'layout'
-              ? "bg-violet-600/20 text-violet-200 border border-violet-500/30"
-              : "text-zinc-400 hover:bg-white/5 hover:text-white border border-transparent"
+              ? "bg-[#161b22] text-[#e6edf3] border-[rgba(240,246,252,0.1)]"
+              : "text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3] border-transparent"
           }`}
         >
           {layoutType === "force" ? <Network className="h-3.5 w-3.5" /> : <GitFork className="h-3.5 w-3.5" />}
@@ -178,24 +178,26 @@ export function ToolbarDropdowns({
         </button>
 
         {activeDropdown === 'layout' && (
-          <div className="absolute left-0 mt-2 w-48 rounded-xl border border-white/[0.08] bg-zinc-950/95 p-1.5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="absolute left-0 mt-2 w-48 rounded-md border border-[rgba(240,246,252,0.1)] bg-[#161b22] p-1.5 shadow-2xl animate-in fade-in slide-in-from-top-1 duration-150">
             <button
               type="button"
               onClick={() => {
                 setLayoutType("force");
                 setActiveDropdown(null);
               }}
-              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs ${
+              className={`flex w-full items-center justify-between rounded-sm px-2.5 py-1.5 text-left text-xs ${
                 layoutType === "force"
-                  ? "bg-violet-600/10 text-violet-200 font-medium"
-                  : "text-zinc-300 hover:bg-white/5"
+                  ? "bg-[#1c2128] text-[#e6edf3] font-medium"
+                  : "text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)]"
               }`}
             >
-              <div className="flex items-center gap-2">
-                <Network className="h-3.5 w-3.5 text-violet-400" />
-                <span>Organic Cluster</span>
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <Network className="h-3.5 w-3.5 text-[#8b949e]" />
+                  <span>Force Directed</span>
+                </div>
+                {layoutType === "force" && <Check className="h-3.5 w-3.5 text-ui-active-text-green" />}
               </div>
-              {layoutType === "force" && <Check className="h-3.5 w-3.5 text-violet-400" />}
             </button>
             <button
               type="button"
@@ -203,17 +205,19 @@ export function ToolbarDropdowns({
                 setLayoutType("network");
                 setActiveDropdown(null);
               }}
-              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs ${
+              className={`flex w-full items-center justify-between rounded-sm px-2.5 py-1.5 text-left text-xs ${
                 layoutType === "network"
-                  ? "bg-violet-600/10 text-violet-200 font-medium"
-                  : "text-zinc-300 hover:bg-white/5"
+                  ? "bg-[#1c2128] text-[#e6edf3] font-medium"
+                  : "text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)]"
               }`}
             >
-              <div className="flex items-center gap-2">
-                <GitFork className="h-3.5 w-3.5 text-violet-400" />
-                <span>Hierarchical Network</span>
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <GitFork className="h-3.5 w-3.5 text-[#8b949e]" />
+                  <span>Hierarchical</span>
+                </div>
+                {layoutType === "network" && <Check className="h-3.5 w-3.5 text-ui-active-text-green" />}
               </div>
-              {layoutType === "network" && <Check className="h-3.5 w-3.5 text-violet-400" />}
             </button>
           </div>
         )}
@@ -226,8 +230,8 @@ export function ToolbarDropdowns({
           onClick={() => setActiveDropdown(activeDropdown === 'export' ? null : 'export')}
           className={`flex h-8 px-2.5 items-center gap-1.5 rounded-lg text-xs font-medium transition-all active:scale-[0.95] ${
             activeDropdown === 'export'
-              ? "bg-violet-600/20 text-violet-200 border border-violet-500/30"
-              : "text-zinc-400 hover:bg-white/5 hover:text-white border border-transparent"
+              ? "bg-[#161b22] text-[#e6edf3] border-[rgba(240,246,252,0.1)]"
+              : "text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3] border-transparent"
           }`}
         >
           <Download className="h-3.5 w-3.5" />
@@ -236,14 +240,14 @@ export function ToolbarDropdowns({
         </button>
 
         {activeDropdown === 'export' && (
-          <div className="absolute left-0 mt-2 w-40 rounded-xl border border-white/[0.08] bg-zinc-950/95 p-1.5 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="absolute left-0 mt-2 w-40 rounded-md border border-[rgba(240,246,252,0.1)] bg-[#161b22] p-1.5 shadow-2xl animate-in fade-in slide-in-from-top-1 duration-150">
             <button
               type="button"
               onClick={() => {
                 handleExport("png");
                 setActiveDropdown(null);
               }}
-              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-zinc-300 hover:bg-white/5 transition-colors"
+              className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors"
             >
               <Download className="h-3.5 w-3.5 text-zinc-400" />
               <span>PNG Image</span>
@@ -254,7 +258,7 @@ export function ToolbarDropdowns({
                 handleExport("pdf");
                 setActiveDropdown(null);
               }}
-              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-zinc-300 hover:bg-white/5 transition-colors"
+              className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors"
             >
               <Download className="h-3.5 w-3.5 text-zinc-400" />
               <span>PDF Document</span>

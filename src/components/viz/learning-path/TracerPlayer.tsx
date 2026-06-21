@@ -21,7 +21,7 @@ export function TracerPlayer({
     <div className="rounded-xl border border-white/[0.05] bg-zinc-950/40 p-4">
       <div className="flex items-center justify-between mb-3.5">
         <div className="flex items-center gap-1.5">
-          <Zap className="h-3.5 w-3.5 text-amber-400" />
+          <Zap className="h-3.5 w-3.5 text-ui-active-text-green" />
           <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
             Runtime Execution Trace
           </h4>
@@ -34,7 +34,7 @@ export function TracerPlayer({
           className={cn(
             "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[10px] font-semibold tracking-wide transition-all shadow-sm",
             isPlaying
-              ? "bg-amber-500/15 border border-amber-500/30 text-amber-300"
+              ? "bg-white/5 border border-white/10 text-[#e6edf3]"
               : "bg-white text-zinc-950 hover:bg-zinc-100"
           )}
         >
@@ -69,7 +69,7 @@ export function TracerPlayer({
                 className={cn(
                   "absolute -left-[21.5px] top-0.5 h-2.5 w-2.5 rounded-full border transition-all duration-150",
                   isActive
-                    ? "bg-amber-400 border-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.5)] scale-110"
+                    ? "bg-[#e6edf3] border-[#e6edf3] shadow-[0_0_8px_rgba(230,237,243,0.4)] scale-110"
                     : "bg-zinc-950 border-white/20 group-hover/step:border-white/50"
                 )}
               />
@@ -77,7 +77,7 @@ export function TracerPlayer({
                 <span
                   className={cn(
                     "text-[10px] font-mono leading-none transition-colors block",
-                    isActive ? "text-amber-400 font-bold" : "text-zinc-400 group-hover/step:text-zinc-200"
+                    isActive ? "text-[#e6edf3] font-bold" : "text-zinc-400 group-hover/step:text-zinc-200"
                   )}
                 >
                   {step.from} → {step.to}

@@ -104,45 +104,46 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
     <div className="relative z-50 min-w-0 max-w-full shrink font-sans" ref={containerRef}>
       {/* Trigger Button or Compare Pill */}
       {compareBranch ? (
-        <div className="flex max-w-full min-w-0 items-center gap-0.5 sm:gap-1 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-semibold py-0.5 pl-1.5 sm:pl-2.5 pr-1 rounded-full select-none shadow-sm transition-all duration-200 hover:border-amber-500/40">
+        <div className="flex max-w-full min-w-0 items-center gap-0.5 sm:gap-1 rounded-md border border-[#58a6ff]/20 bg-[#58a6ff]/5 text-[#58a6ff] text-xs py-0.5 pl-1.5 sm:pl-2.5 pr-0.5 select-none transition-colors hover:border-[#58a6ff]/40">
           <button
             type="button"
             onClick={() => {
               setMode('compare');
               setIsOpen(!isOpen);
             }}
-            className="flex min-w-0 items-center gap-0.5 sm:gap-1.5 cursor-pointer outline-none hover:text-amber-300"
+            className="flex min-w-0 items-center gap-0.5 sm:gap-1.5 cursor-pointer outline-none hover:text-[#79c0ff] transition-colors"
           >
             <ArrowLeftRight className="h-3 w-3 shrink-0" />
-            <span className="hidden lg:inline font-normal font-sans">Comparing:</span>
-            <span className="font-mono bg-amber-500/15 px-1 sm:px-1.5 py-0.5 rounded truncate max-w-[34px] sm:max-w-[80px] lg:max-w-[120px]">{activeBranch}</span>
-            <span className="text-amber-500/60 font-sans font-light">→</span>
-            <span className="font-mono bg-amber-500/15 px-1 sm:px-1.5 py-0.5 rounded truncate max-w-[34px] sm:max-w-[80px] lg:max-w-[120px]">{compareBranch}</span>
+            <span className="hidden lg:inline font-sans">Comparing:</span>
+            <span className="font-mono text-[#e6edf3] truncate max-w-[34px] sm:max-w-[80px] lg:max-w-[120px]">{activeBranch}</span>
+            <span className="text-[#58a6ff]/60 font-sans font-light">→</span>
+            <span className="font-mono text-[#e6edf3] truncate max-w-[34px] sm:max-w-[80px] lg:max-w-[120px]">{compareBranch}</span>
             <ChevronDown className="h-3 w-3 opacity-60" />
           </button>
-          <div className="hidden sm:block w-px h-3 bg-amber-500/25 mx-1 shrink-0" />
+          <div className="hidden sm:block w-px h-3.5 bg-[#58a6ff]/30 mx-1 shrink-0" />
           <button
             type="button"
             onClick={() => setCompareBranch(null)}
-            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full hover:bg-amber-500/20 text-amber-500 hover:text-amber-200 transition-colors cursor-pointer"
+            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm hover:bg-[#58a6ff]/20 text-[#58a6ff]/70 hover:text-[#79c0ff] transition-colors cursor-pointer"
             title="Exit Compare"
           >
-            <X className="h-3 w-3" />
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
       ) : (
         <button
           type="button"
+          title={activeBranch}
           onClick={() => {
             setMode('switch');
             setIsOpen(!isOpen);
           }}
           className={cn(
-             'flex min-w-0 items-center gap-1 rounded-full border border-white/[0.06] bg-zinc-900 px-2 sm:px-3 py-1 text-xs font-medium text-zinc-300 hover:text-white hover:border-white/[0.12] transition-all duration-200 select-none active:scale-[0.97] cursor-pointer'
+             'flex min-w-0 items-center gap-1.5 rounded-md px-2 sm:px-2.5 py-1 text-xs font-medium text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors select-none cursor-pointer'
           )}
         >
-          <GitBranch className="h-3.5 w-3.5 text-violet-400" />
-          <span className="max-w-[56px] sm:max-w-[140px] truncate font-mono">{activeBranch}</span>
+          <GitBranch className="h-3.5 w-3.5 text-[#8b949e]" />
+          <span className="max-w-[56px] sm:max-w-[140px] truncate font-sans text-[#e6edf3]">{activeBranch}</span>
           <ChevronDown className={cn('h-3 w-3 transition-transform duration-200 opacity-60', isOpen && 'rotate-180')} />
         </button>
       )}
@@ -155,18 +156,18 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.97 }}
             transition={{ duration: 0.12, ease: 'easeOut' }}
-            className="fixed left-2 right-2 top-14 z-[100] max-h-[calc(100dvh-4rem)] rounded-xl border border-white/10 bg-zinc-950 p-2 shadow-2xl backdrop-blur-xl sm:absolute sm:left-0 sm:right-auto sm:top-auto sm:mt-2 sm:w-[min(18rem,calc(100vw-1rem))]"
+            className="fixed left-2 right-2 top-14 z-[100] max-h-[calc(100dvh-4rem)] rounded-md border border-[rgba(240,246,252,0.1)] bg-[#161b22] p-1.5 shadow-2xl sm:absolute sm:left-0 sm:right-auto sm:top-auto sm:mt-2 sm:w-[min(18rem,calc(100vw-1rem))]"
           >
             {/* Tabs */}
-            <div className="mb-2 flex rounded-lg bg-zinc-900 p-0.5">
+            <div className="mb-2 flex rounded-md bg-[#0d1117] p-0.5 border border-[rgba(240,246,252,0.1)]">
               <button
                 type="button"
                 onClick={() => setMode('switch')}
                 className={cn(
-                  'flex-1 rounded-md py-1 text-[11px] font-medium transition-all duration-150 cursor-pointer',
+                  'flex-1 rounded-sm py-1 text-[11px] font-medium transition-all duration-150 cursor-pointer',
                   mode === 'switch'
-                    ? 'bg-zinc-800 text-zinc-100 shadow-sm'
-                    : 'text-zinc-500 hover:text-zinc-300'
+                    ? 'bg-[#1c2128] text-[#e6edf3] shadow-sm'
+                    : 'text-[#8b949e] hover:text-[#e6edf3]'
                 )}
               >
                 Switch Branch
@@ -175,10 +176,10 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
                 type="button"
                 onClick={() => setMode('compare')}
                 className={cn(
-                  'flex-1 rounded-md py-1 text-[11px] font-medium transition-all duration-150 cursor-pointer',
+                  'flex-1 rounded-sm py-1 text-[11px] font-medium transition-all duration-150 cursor-pointer',
                   mode === 'compare'
-                    ? 'bg-zinc-800 text-amber-400 shadow-sm font-semibold'
-                    : 'text-zinc-500 hover:text-zinc-300'
+                    ? 'bg-[#1c2128] text-[#58a6ff] shadow-sm'
+                    : 'text-[#8b949e] hover:text-[#e6edf3]'
                 )}
               >
                 Compare Mode
@@ -187,13 +188,13 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
 
             {/* Search Input */}
             <div className="relative mb-2">
-              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-500" />
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#8b949e]" />
               <input
                 type="text"
                 placeholder={mode === 'switch' ? 'Filter branches...' : 'Select branch to compare...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-white/[0.04] bg-zinc-900/60 py-1.5 pl-8 pr-3 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-violet-500/50 transition-colors font-sans"
+                className="w-full rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] py-1.5 pl-8 pr-3 text-xs text-[#e6edf3] placeholder-[#8b949e] focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff]/50 transition-colors font-sans"
                 autoFocus
               />
             </div>
@@ -202,7 +203,7 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
             <div className="max-h-60 overflow-y-auto space-y-3 custom-scrollbar pr-1">
               {isLoading && (
                 <div className="flex items-center justify-center py-6 text-xs text-zinc-500 gap-2">
-                  <span className="h-3.5 w-3.5 animate-spin rounded-full border border-current border-t-transparent text-violet-500" />
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border border-current border-t-transparent text-[#e6edf3]" />
                   <span>Loading branches...</span>
                 </div>
               )}
@@ -223,7 +224,7 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
                   {/* Category: Current */}
                   {current.length > 0 && (
                     <div>
-                      <div className="px-2 pb-1 text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Current</div>
+                      <div className="px-2 pb-1 text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider font-mono">Current</div>
                       {current.map((b) => (
                         <BranchItem key={b.name} branch={b} isCurrent isCompared={compareBranch === b.name} mode={mode} onSelect={handleBranchSelect} />
                       ))}
@@ -233,7 +234,7 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
                   {/* Category: Recent */}
                   {recent.length > 0 && (
                     <div>
-                      <div className="px-2 pb-1 text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Recent</div>
+                      <div className="px-2 pb-1 text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider font-mono">Recent</div>
                       {recent.map((b) => (
                         <BranchItem key={b.name} branch={b} isCurrent={false} isCompared={compareBranch === b.name} mode={mode} onSelect={handleBranchSelect} />
                       ))}
@@ -243,7 +244,7 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
                   {/* Category: Feature */}
                   {feature.length > 0 && (
                     <div>
-                      <div className="px-2 pb-1 text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Feature</div>
+                      <div className="px-2 pb-1 text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider font-mono">Feature</div>
                       {feature.map((b) => (
                         <BranchItem key={b.name} branch={b} isCurrent={false} isCompared={compareBranch === b.name} mode={mode} onSelect={handleBranchSelect} />
                       ))}
@@ -253,7 +254,7 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
                   {/* Category: Other */}
                   {other.length > 0 && (
                     <div>
-                      <div className="px-2 pb-1 text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Other</div>
+                      <div className="px-2 pb-1 text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider font-mono">Other</div>
                       {other.map((b) => (
                         <BranchItem key={b.name} branch={b} isCurrent={false} isCompared={compareBranch === b.name} mode={mode} onSelect={handleBranchSelect} />
                       ))}
@@ -286,19 +287,19 @@ function BranchItem({ branch, isCurrent, isCompared, mode, onSelect }: BranchIte
       disabled={isDisabled}
       onClick={() => onSelect(branch.name)}
       className={cn(
-        'flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-xs font-mono transition-all duration-150 cursor-pointer',
+        'flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left text-xs font-mono transition-colors cursor-pointer',
         isDisabled
-          ? 'opacity-30 cursor-not-allowed text-zinc-650'
+          ? 'opacity-30 cursor-not-allowed text-[#8b949e]'
           : isCurrent && mode === 'switch'
-            ? 'bg-violet-600/15 text-violet-400 font-semibold'
-            : isCompared && mode === 'compare'
-              ? 'bg-amber-500/15 text-amber-400 font-semibold'
-              : 'text-zinc-300 hover:bg-white/5 hover:text-white'
+            ? 'bg-[#1c2128] text-[#e6edf3] font-medium'
+              : isCompared && mode === 'compare'
+                ? 'bg-[#1c2128] text-[#58a6ff] font-medium'
+              : 'text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3]'
       )}
     >
       <span className="truncate pr-4">{branch.name}</span>
-      {mode === 'switch' && isCurrent && <Check className="h-3.5 w-3.5 text-violet-500 shrink-0" />}
-      {mode === 'compare' && isCompared && <Check className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
+      {mode === 'switch' && isCurrent && <Check className="h-3.5 w-3.5 text-[#e6edf3] shrink-0" />}
+      {mode === 'compare' && isCompared && <Check className="h-3.5 w-3.5 text-[#58a6ff] shrink-0" />}
     </button>
   );
 }

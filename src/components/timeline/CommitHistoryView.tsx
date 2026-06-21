@@ -75,14 +75,14 @@ export function FullCommitHistoryView({ timeline, owner, repo, branch, isLoading
       <div className="mb-6 flex flex-col justify-between gap-4 border-b border-white/5 pb-5 sm:flex-row sm:items-center">
         <div>
           <h2 className="text-xl font-semibold tracking-tight text-white flex items-center gap-2">
-            <GitCommit className="h-5 w-5 text-violet-400 animate-pulse" />
+            <GitCommit className="h-5 w-5 text-ui-active-text-green animate-pulse" />
             Commit History
           </h2>
           <p className="mt-1 text-xs text-zinc-400">
             Chronological log of recent changes in{' '}
             <span className="font-mono text-zinc-300">{owner}/{repo}</span>
             {branch && (
-              <span className="ml-1.5 inline-flex items-center rounded bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 font-mono text-[10px] text-violet-400">
+              <span className="ml-1.5 inline-flex items-center rounded bg-ui-active/15 border border-ui-active/35 px-1.5 py-0.5 font-mono text-[10px] text-ui-active-text-green">
                 {branch}
               </span>
             )}
@@ -96,7 +96,7 @@ export function FullCommitHistoryView({ timeline, owner, repo, branch, isLoading
             placeholder="Search commits, authors, shas..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-white/5 bg-zinc-900/50 py-2 pl-9 pr-4 text-xs text-zinc-200 placeholder-zinc-500 focus:border-violet-500/50 focus:bg-zinc-900 focus:outline-none transition-all"
+            className="w-full rounded-lg border border-white/5 bg-zinc-900/50 py-2 pl-9 pr-4 text-xs text-zinc-200 placeholder-zinc-500 focus:border-ui-active/50 focus:bg-zinc-900 focus:outline-none transition-all"
           />
         </div>
       </div>
@@ -137,8 +137,8 @@ export function FullCommitHistoryView({ timeline, owner, repo, branch, isLoading
 
                 return (
                   <div key={commit.sha} className="relative group">
-                    <span className="absolute -left-[31px] top-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full border-2 border-zinc-950 bg-zinc-900 text-zinc-500 group-hover:border-violet-500/40 group-hover:bg-violet-600/10 transition-all duration-200 shadow-md">
-                      <span className="h-1.5 w-1.5 rounded-full bg-zinc-700 group-hover:bg-violet-400 transition-colors" />
+                    <span className="absolute -left-[31px] top-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full border-2 border-zinc-950 bg-zinc-900 text-zinc-500 group-hover:border-ui-active/40 group-hover:bg-ui-active/10 transition-all duration-200 shadow-md">
+                      <span className="h-1.5 w-1.5 rounded-full bg-zinc-700 group-hover:bg-ui-active-text-green transition-colors" />
                     </span>
 
                     <div className="rounded-xl border border-white/[0.03] bg-zinc-900/10 p-4 transition-all duration-200 hover:border-white/[0.08] hover:bg-white/[0.01] hover:shadow-[0_4px_20px_rgba(0,0,0,0.25)]">
@@ -155,11 +155,11 @@ export function FullCommitHistoryView({ timeline, owner, repo, branch, isLoading
                                 <img
                                   src={commit.authorAvatar}
                                   alt={commit.authorLogin || 'Avatar'}
-                                  className="h-9 w-9 shrink-0 rounded-full border border-white/10 shadow-sm hover:border-violet-500 hover:ring-2 hover:ring-violet-500/20 transition-all duration-200"
+                                  className="h-9 w-9 shrink-0 rounded-full border border-white/10 shadow-sm hover:border-ui-active-text-green hover:ring-2 hover:ring-ui-active/20 transition-all duration-200"
                                   onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                                 />
                               ) : (
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-zinc-900 text-zinc-400 shadow-sm hover:border-violet-500 hover:text-violet-400 transition-all">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-zinc-900 text-zinc-400 shadow-sm hover:border-ui-active/50 hover:text-ui-active-text-green transition-all">
                                   <User className="h-4 w-4" />
                                 </div>
                               )}
@@ -189,7 +189,7 @@ export function FullCommitHistoryView({ timeline, owner, repo, branch, isLoading
                                   href={`https://github.com/${commit.authorLogin}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="font-semibold text-zinc-300 hover:text-violet-400 transition-colors"
+                                  className="font-semibold text-zinc-300 hover:text-ui-active-text-green transition-colors"
                                 >
                                   {commit.authorLogin}
                                 </a>
@@ -228,7 +228,7 @@ export function FullCommitHistoryView({ timeline, owner, repo, branch, isLoading
                             href={commitUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 rounded-md border border-white/[0.06] bg-zinc-900/60 px-2.5 py-1 text-xs font-mono text-zinc-400 hover:border-violet-500/35 hover:bg-violet-950/20 hover:text-violet-400 transition-all duration-150"
+                            className="flex items-center gap-1.5 rounded-md border border-white/[0.06] bg-zinc-900/60 px-2.5 py-1 text-xs font-mono text-zinc-400 hover:border-ui-active/35 hover:bg-ui-active/20 hover:text-ui-active-text-green transition-all duration-150"
                           >
                             {commit.sha}
                             <ExternalLink className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />

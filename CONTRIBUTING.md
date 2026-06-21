@@ -48,7 +48,7 @@ pnpm dev:backend   # Express backend on http://localhost:3001
 
 ### Writing Code
 - Follow the existing project structure and modular layout.
-- For UI components, utilize semantic CSS and Tailwind CSS classes consistent with our dark/light theme systems.
+- For UI components, use semantic CSS and Tailwind CSS classes consistent with our dark/light theme systems.
 - If you modify code structures or add new files, run the graph builder generator to verify AST parser compatibility.
 
 ---

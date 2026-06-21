@@ -45,7 +45,7 @@ ${buildRepoContext(analysis)}`,
       if (isTodoApp) {
         return `🔥 **The AI Todo App Roast**\n\nA Todo app. In 2026. Using React Context${branchSuffix}. Bold choice — because clearly useState wasn't painful enough on its own, so you wrapped everything in a context that now does state, localStorage, AND API sync. That's not separation of concerns, that's a cry for help disguised as a hook.\n\nLet's appreciate \`useLocalStorage.ts\` — a whole file to wrap two lines of localStorage. Peak abstraction. Meanwhile \`server/db.js\` is literally a JSON file being read and written like it's 2013 and MongoDB hasn't been invented yet. At least it's honest about what it is.\n\nThe good news? TodoItem.tsx is genuinely clean, the Tailwind styling is actually tasteful, and the folder structure won't make a senior developer cry. This codebase is the coding equivalent of a really solid junior dev interview project — just don't ship it to production.`;
       }
-      return `🔥 **The AI Repository Roast**\n\nOh, look! Another developer tool utilizing React Flow! Did you build this because reading directories in VS Code was too easy, or did you just want to feel like a sci-fi hacker zooming into a dependency tree${branchSuffix}?\n\nLet's look at the structure:\n- You have a directory named \`server\` and a directory named \`src\` inside the root. Nice separation of concerns, except Vite is running both as one giant middleware monster.\n- A custom LRU cache that lives in-memory on a Vercel serverless function... that's like putting a state-of-the-art vault inside a cardboard box that gets shredded every 15 minutes on cold starts.\n- TypeScript typings defined everywhere, yet half of the network payloads are still labeled \`any\` under the hood. "Type-safety" is more of a wish list than a feature here, isn't it?\n\n*Keep up the vibe-coding! At least the dark mode gradient looks absolutely beautiful.*`;
+      return `🔥 **The AI Repository Roast**\n\nOh, look! Another developer tool utilizing React Flow! Did you build this because reading directories in VS Code was too easy, or did you just want to feel like a sci-fi hacker zooming into a dependency tree${branchSuffix}?\n\nLet's look at the structure:\n- You have a directory named \`server\` and a directory named \`src\` inside the root. Nice separation of concerns, except Vite is running both as one giant middleware monster.\n- A custom LRU cache that lives in-memory on a Vercel serverless function... that's like putting a state-of-the-art vault inside a cardboard box that gets shredded every 15 minutes on cold starts.\n- TypeScript typings defined everywhere, yet half of the network payloads are still labeled \`any\` under the hood. "Type-safety" is more of a wish list than a feature here, isn't it?\n\n*Keep up the good work! At least the dark mode gradient looks beautiful.*`;
     },
   });
 
@@ -69,7 +69,7 @@ export async function generateReadmeEnhancement(
     sha: analysis.meta.sha,
     paramHash: 'v1',
     systemPrompt: SYSTEM_PROMPT,
-    userPrompt: `Create an enhanced, professional, and visually stunning README.md for this repository.
+    userPrompt: `Create an enhanced, professional, and clean README.md for this repository.
 Include:
 1. High-quality markdown shields/badges (build, license, stars).
 2. Professional description and value proposition.
@@ -82,7 +82,7 @@ ${buildRepoContext(analysis)}`,
     json: false,
     mockFallback: () => {
       const branchSuffix = branch ? ` (branch: ${branch})` : '';
-      return `# 🔮 gitSdm — AI-Powered Repository Intelligence Platform${branchSuffix}\n\n> Instantly visualize, understand, and optimize codebase architecture.\n\n[![Vercel Deployment](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel)](https://vercel.com)\n[![GitHub Stars](https://img.shields.io/github/stars/bayue48/gitSdm?style=flat&color=violet)](https://github.com/bayue48/gitSdm)\n[![MIT License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)\n\n---\n\n## 🚀 Key Features\n\n* **Interactive Codebase Mapping**: Glowing node visualizer highlighting configurations, tests, source files, and dependencies.\n* **AI Architecture Summaries**: Understand module interaction, entry points, and systems flow instantly.\n* **ELI5 mode**: Perfect for onboarding new engineers on complex, multi-layered codebases.\n* **Health Dashboard & Refactoring**: Discover bottlenecks, coupled modules, and code duplication before they hit production.\n* **Mermaid Flowchart Generator**: Instantly export visual diagrams to copy-paste into internal developer wikis.\n\n---\n\n## 🛠️ Tech Stack\n\n- **Frontend**: React, TypeScript, Tailwind CSS, React Flow, Zustand, Framer Motion\n- **Backend**: Node.js API Router, Octokit, Google Gemini API\n`;
+      return `# 🔮 gitSdm — Graph-Based Repository Analysis${branchSuffix}\n\n> Graph-based repository analysis tool for mapping dependencies, modules, and architecture notes from a GitHub URL.\n\n[![Vercel Deployment](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel)](https://vercel.com)\n[![GitHub Stars](https://img.shields.io/github/stars/bayue48/gitSdm?style=flat&color=violet)](https://github.com/bayue48/gitSdm)\n[![MIT License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)\n\n---\n\n## 🚀 Key Features\n\n* **Interactive Codebase Mapping**: Glowing node visualizer showing configurations, tests, source files, and dependencies.\n* **Architecture Summaries**: Understand module interaction, entry points, and systems flow quickly.\n* **Detailed Insights**: Perfect for onboarding new engineers on complex, multi-layered codebases.\n* **Health Dashboard & Refactoring**: Discover bottlenecks, coupled modules, and code duplication before they hit production.\n* **Mermaid Flowchart Generator**: Quickly export visual diagrams to copy-paste into internal developer wikis.\n\n---\n\n## 🛠️ Tech Stack\n\n- **Frontend**: React, TypeScript, Tailwind CSS, React Flow, Zustand, Framer Motion\n- **Backend**: Node.js API Router, Octokit, Google Gemini API\n`;
     },
   });
 
@@ -139,7 +139,7 @@ export async function generateLearningPath(
     sha: analysis.meta.sha,
     paramHash: 'v1',
     systemPrompt: SYSTEM_PROMPT,
-    userPrompt: `Analyze this repository and return a comprehensive onboarding intelligence JSON with this exact shape:
+    userPrompt: `Analyze this repository and return a detailed onboarding intelligence JSON with this exact shape:
 {
   "mentalModel": {
     "type": "Architecture Type (e.g. Layered MVC, Event-Driven, Pipeline, Modular Service, Layered Frontend)",
@@ -149,7 +149,7 @@ export async function generateLearningPath(
   "recommendedPath": [
     {
       "path": "exact file path from the repository files list (must exist!)",
-      "importance": 0-100 score of how important this file is to read first,
+      "importance": 0-100 score of how important this file is to read initially,
       "reason": "specific description of why this file matters and its main responsibilities",
       "role": "e.g. Entry Point, Core Logic, Config, Router, UI View"
     }
@@ -177,7 +177,7 @@ export async function generateLearningPath(
   }
 }
 
-Choose 5-8 of the most critical files for recommendedPath, sorted by suggested reading order (highest priority first).
+Choose 5-8 of the most critical files for recommendedPath, sorted by suggested reading order (highest priority at the top).
 Ensure visualSteps lists actual existing file paths that map out the primary execution path (e.g., from main entrypoint through routers, controllers, services, database/view).
 Only reference files that exist in the context list.
 
@@ -193,7 +193,7 @@ ${buildRepoContext(analysis)}`,
           mentalModel: {
             type: 'React Context + Express Backend',
             concept: 'UI Components → Context State → LocalStorage → Express API',
-            description: `This is an offline-first Todo app${branchSuffix}. The React frontend manages state via TodoContext and persists data with useLocalStorage. A lightweight Express backend (server/) provides a REST API for syncing todos to a simple JSON database.`
+            description: `This is an offline-capable Todo app${branchSuffix}. The React frontend manages state via TodoContext and persists data with useLocalStorage. A lightweight Express backend (server/) provides a REST API for syncing todos to a simple JSON database.`
           },
           recommendedPath: [
             { path: 'README.md', importance: 95, reason: 'Overview of features, setup instructions, and architecture summary.', role: 'Documentation' },
@@ -274,7 +274,7 @@ ${buildRepoContext(analysis)}`,
             'Memory-cached LRU storage in serverless server instances will reset during cold starts, causing frequent rate limits.'
           ],
           suggestions: [
-            'New contributors should first look at how data flows from analyze-repo.ts into graph-builder.ts.',
+            'New contributors should start by looking at how data flows from analyze-repo.ts into graph-builder.ts.',
             'Try implementing client-side layout caching or local storage hydration to avoid repeated API requests.'
           ]
         },

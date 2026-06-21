@@ -114,7 +114,7 @@ export function GraphSidebar({
           {hasActiveFilters && (
             <button
               onClick={resetFilters}
-              className="flex items-center gap-0.5 rounded bg-violet-500/10 border border-violet-500/20 px-1 py-0.5 text-[8px] font-semibold text-violet-400 hover:bg-violet-500/20 transition-colors"
+              className="flex items-center gap-0.5 rounded bg-ui-active/15 border border-ui-active/35 px-1 py-0.5 text-[8px] font-semibold text-ui-active-text-green hover:bg-ui-active/25 transition-colors"
               title="Reset all filters"
             >
               <RotateCcw className="h-2 w-2" />
@@ -140,7 +140,7 @@ export function GraphSidebar({
             placeholder="Search nodes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-md border border-white/[0.08] bg-white/[0.03] pl-7 pr-2 py-1.5 text-[11px] text-zinc-200 placeholder:text-zinc-600 focus:border-violet-500/30 focus:outline-none focus:ring-0 transition-colors"
+            className="w-full rounded-md border border-white/[0.08] bg-white/[0.03] pl-7 pr-2 py-1.5 text-[11px] text-zinc-200 placeholder:text-zinc-600 focus:border-ui-focus/50 focus:outline-none focus:ring-0 transition-colors"
           />
         </div>
       </div>
@@ -159,7 +159,7 @@ export function GraphSidebar({
                 onClick={() => setBlastRadiusActive(!blastRadiusActive)}
                 className={cn(
                   "flex w-full items-center gap-2 rounded-md border px-2 py-1.5 text-left transition-all hover:bg-white/5 active:scale-[0.98]",
-                  blastRadiusActive ? "bg-cyan-500/10 border-cyan-500/20 text-cyan-400" : "border-white/[0.06] opacity-80"
+                  blastRadiusActive ? "bg-ui-active/15 border-ui-active/35 text-ui-active-text-green" : "border-white/[0.06] opacity-80"
                 )}
               >
                 <div className="flex flex-col">

@@ -55,6 +55,7 @@ export function VizPage() {
     aiSidebarOpen,
     setSidebarTab,
     setAiSidebarOpen,
+    setExplorerOpen,
   } = useVizStore();
 
   const selectedFilePath = focusedFilePath;
@@ -142,6 +143,7 @@ export function VizPage() {
                 onWidthChange={setLeftWidth}
                 minWidth={180}
                 maxWidth={450}
+                onClose={() => setExplorerOpen(false)}
               >
                 <ExplorerPanel
                   analysis={data}
@@ -169,7 +171,7 @@ export function VizPage() {
                       setShowMinimap={setShowMinimap}
                     />
                     {data.treeTruncated && (
-                      <div className="absolute left-3 top-2 z-10 rounded-lg bg-amber-500/10 px-2 py-1 text-[10px] text-amber-300 ring-1 ring-amber-500/20">
+                      <div className="absolute left-3 top-2 z-10 rounded-lg bg-[#1c2128] px-2 py-1 text-[10px] text-[#8b949e] ring-1 ring-[rgba(240,246,252,0.1)]">
                         Tree truncated
                       </div>
                     )}
@@ -226,6 +228,7 @@ export function VizPage() {
                 onWidthChange={setRightWidth}
                 minWidth={300}
                 maxWidth={700}
+                onClose={() => setAiSidebarOpen(false)}
               >
                 <AISidebar
                   analysis={data}

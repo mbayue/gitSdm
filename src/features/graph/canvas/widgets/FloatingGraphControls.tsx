@@ -1,5 +1,5 @@
 import { useReactFlow } from '@xyflow/react';
-import { ZoomIn, ZoomOut, Maximize, Map, Crosshair } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Map, Crosshair, RefreshCcw } from 'lucide-react';
 import { useVizStore } from '@/stores/vizStore';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -62,14 +62,21 @@ export function FloatingGraphControls({
     reactFlow.setCenter(0, 0, { zoom: 1, duration: 400 });
   };
 
+  const handleResetView = () => {
+    triggerGraphAction('reset');
+    reactFlow.setViewport({ x: 0, y: 0, zoom: 1 }, { duration: 400 });
+    // Also try to fit the graph
+    reactFlow.fitView({ duration: 400, padding: 0.35 });
+  };
+
   return (
-    <div className="absolute bottom-4 right-4 z-30 flex items-center gap-1 rounded-full border border-white/[0.04] bg-zinc-950/80 p-1 shadow-md backdrop-blur-md select-none font-sans">
+    <div className="absolute bottom-4 right-4 z-30 flex items-center gap-1 rounded-full border border-[rgba(240,246,252,0.1)] bg-[#161b22] p-1 shadow-md select-none font-sans">
       {/* Zoom Out */}
       <Tooltip>
         <TooltipTrigger
           type="button"
           onClick={handleZoomOut}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 hover:text-white hover:bg-white/5 active:scale-95 transition-all outline-none cursor-pointer"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] active:scale-95 transition-all outline-none cursor-pointer"
         >
           <ZoomOut className="h-3.5 w-3.5" />
         </TooltipTrigger>
@@ -81,7 +88,7 @@ export function FloatingGraphControls({
         <TooltipTrigger
           type="button"
           onClick={handleZoomIn}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 hover:text-white hover:bg-white/5 active:scale-95 transition-all outline-none cursor-pointer"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] active:scale-95 transition-all outline-none cursor-pointer"
         >
           <ZoomIn className="h-3.5 w-3.5" />
         </TooltipTrigger>
@@ -93,7 +100,7 @@ export function FloatingGraphControls({
         <TooltipTrigger
           type="button"
           onClick={handleFitView}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 hover:text-white hover:bg-white/5 active:scale-95 transition-all outline-none cursor-pointer"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] active:scale-95 transition-all outline-none cursor-pointer"
         >
           <Maximize className="h-3.5 w-3.5" />
         </TooltipTrigger>
@@ -105,14 +112,26 @@ export function FloatingGraphControls({
         <TooltipTrigger
           type="button"
           onClick={handleCenterView}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 hover:text-white hover:bg-white/5 active:scale-95 transition-all outline-none cursor-pointer"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] active:scale-95 transition-all outline-none cursor-pointer"
         >
           <Crosshair className="h-3.5 w-3.5" />
         </TooltipTrigger>
-        <TooltipContent side="top">Center View</TooltipContent>
+        <TooltipContent side="top">Focus Selected</TooltipContent>
       </Tooltip>
 
-      <div className="w-px h-4 bg-white/[0.08] mx-0.5" />
+      {/* Reset View */}
+      <Tooltip>
+        <TooltipTrigger
+          type="button"
+          onClick={handleResetView}
+          className="flex h-7 w-7 items-center justify-center rounded-full text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] active:scale-95 transition-all outline-none cursor-pointer"
+        >
+          <RefreshCcw className="h-3.5 w-3.5" />
+        </TooltipTrigger>
+        <TooltipContent side="top">Reset View</TooltipContent>
+      </Tooltip>
+
+      <div className="w-px h-4 bg-[rgba(240,246,252,0.1)] mx-0.5" />
 
       {/* Minimap Toggle */}
       <Tooltip>
@@ -121,8 +140,8 @@ export function FloatingGraphControls({
           onClick={() => setShowMinimap(!showMinimap)}
           className={`flex h-7 w-7 items-center justify-center rounded-full active:scale-95 transition-all outline-none cursor-pointer ${
             showMinimap
-              ? 'bg-zinc-850 text-zinc-100 border border-white/10 shadow-inner'
-              : 'text-zinc-400 hover:text-white hover:bg-white/5'
+              ? 'bg-[#1c2128] text-[#e6edf3] border border-[rgba(240,246,252,0.1)]'
+              : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)]'
           }`}
         >
           <Map className="h-3.5 w-3.5" />

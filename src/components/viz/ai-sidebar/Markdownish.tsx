@@ -6,6 +6,8 @@ function stripBadgeUrl(text: string) {
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1');
 }
 
+import { useVizStore } from '@/stores/vizStore';
+
 function renderInline(text: string): React.ReactNode[] {
   const parts = stripBadgeUrl(text).split(/(\*\*.*?\*\*|`.*?`)/g);
   return parts.map((part, idx) => {
@@ -13,7 +15,23 @@ function renderInline(text: string): React.ReactNode[] {
       return <strong key={idx} className="font-semibold text-white">{part.slice(2, -2)}</strong>;
     }
     if (part.startsWith('`') && part.endsWith('`')) {
-      return <code key={idx} className="rounded bg-zinc-900 px-1 py-0.5 font-mono text-[10px] dark:text-cyan-400 text-cyan-700 border border-white/5">{part.slice(1, -1)}</code>;
+      const content = part.slice(1, -1);
+      // If it looks like a file path (has a dot and slash, or just slash), make it clickable
+      if (content.includes('/') || content.includes('.')) {
+        return (
+          <button 
+            key={idx} 
+            onClick={() => {
+              useVizStore.getState().setSelectedNodeId(content);
+              useVizStore.getState().setFocusedFilePath(content);
+            }}
+            className="rounded bg-zinc-900 px-1 py-0.5 font-mono text-[10px] text-[#58a6ff] hover:text-[#79c0ff] border border-white/5 hover:bg-zinc-800 transition-colors cursor-pointer inline-block"
+          >
+            {content}
+          </button>
+        );
+      }
+      return <code key={idx} className="rounded bg-zinc-900 px-1 py-0.5 font-mono text-[10px] text-[#e6edf3] border border-white/5">{content}</code>;
     }
     return part;
   });
@@ -46,11 +64,11 @@ export function Markdownish({ text }: { text: string }) {
         return (
           <ol className="space-y-3">
             {parsed.steps.map((step, i) => (
-              <li key={i} className="rounded-xl border border-white/5 bg-zinc-900/50 p-3.5 hover:border-violet-500/10 transition-all">
+              <li key={i} className="rounded-xl border border-white/5 bg-zinc-900/50 p-3.5 hover:border-ui-active/20 transition-all">
                 <p className="font-semibold text-white text-xs">{step.title}</p>
                 <p className="mt-1 text-[11px] text-zinc-400 leading-normal">{step.description}</p>
                 {step.filePath && (
-                  <code className="mt-2 block text-[9px] font-mono dark:text-cyan-400/80 text-cyan-700 truncate">
+                  <code className="mt-2 block text-[9px] font-mono text-[#8b949e] truncate">
                     {step.filePath}
                   </code>
                 )}
@@ -122,14 +140,14 @@ export function Markdownish({ text }: { text: string }) {
       );
     } else if (trimmedLine.startsWith('### ')) {
       renderedElements.push(
-        <h3 key={i} className="mt-3 mb-1.5 text-xs font-semibold dark:text-violet-300 text-violet-750 tracking-tight">
+        <h3 key={i} className="mt-3 mb-1.5 text-xs font-semibold dark:text-ui-active-text-green text-ui-active-text-green tracking-tight">
           {renderInline(trimmedLine.slice(4))}
         </h3>
       );
     } else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
       renderedElements.push(
         <div key={i} className="ml-3 flex items-start gap-2 my-1">
-          <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full dark:bg-violet-400 bg-violet-600 animate-pulse" />
+          <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full dark:bg-ui-active-text-green bg-ui-active-text-green animate-pulse" />
           <span className="text-xs leading-relaxed text-zinc-400">
             {renderInline(trimmedLine.slice(2))}
           </span>
@@ -140,7 +158,7 @@ export function Markdownish({ text }: { text: string }) {
       if (match) {
         renderedElements.push(
           <div key={i} className="ml-3 flex items-start gap-1.5 my-1">
-            <span className="text-[11px] font-mono dark:text-violet-400 text-violet-650 mt-0.5 shrink-0">{match[1]}.</span>
+            <span className="text-[11px] font-mono dark:text-ui-active-text-green text-ui-active-text-green mt-0.5 shrink-0">{match[1]}.</span>
             <span className="text-xs leading-relaxed text-zinc-400">
               {renderInline(match[2])}
             </span>

@@ -29,16 +29,16 @@ export function BottomStatusBar({
   const zoomPct = activeView === 'graph' ? Math.round(zoom * 100) : 100;
 
   return (
-    <footer className="relative z-40 flex h-8 shrink-0 items-center justify-between border-t border-white/[0.05] bg-zinc-950 px-4 text-[11px] text-zinc-500 select-none">
+    <footer className="relative z-40 flex h-7 shrink-0 items-center justify-between border-t border-[rgba(240,246,252,0.1)] bg-[#0d1117] px-4 text-[10px] text-[#8b949e] select-none font-mono">
       {/* Left Group */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
         {/* Branch chip */}
-        <div className="flex items-center gap-1.5 text-zinc-400">
-          <GitBranch className="h-3.5 w-3.5 text-violet-400 shrink-0" />
-          <span className="font-semibold text-zinc-300 font-mono">{branchName}</span>
+        <div className="flex items-center gap-1.5 text-[#8b949e]">
+          <GitBranch className="h-3 w-3 text-[#8b949e] shrink-0" />
+          <span className="font-medium text-[#e6edf3] font-mono">{branchName}</span>
         </div>
 
-        <span className="text-zinc-800 font-light select-none">|</span>
+        <span className="text-[#30363d] font-light select-none">|</span>
 
         {/* Tree truncated warning */}
         {treeTruncated && (
@@ -47,22 +47,22 @@ export function BottomStatusBar({
               <ShieldAlert className="h-3 w-3 shrink-0" />
               <span>Truncated</span>
             </div>
-            <span className="text-zinc-800 font-light select-none">|</span>
+            <span className="text-[#30363d] font-light select-none">|</span>
           </>
         )}
 
         {/* Selection Status */}
         {selectedNodeId ? (
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-[9px] font-bold uppercase tracking-wider bg-violet-500/10 border border-violet-500/20 px-1 py-0.5 rounded text-violet-400 shrink-0 font-sans">
-              FOCUS
+            <span className="text-[9px] font-bold uppercase tracking-wider text-[#8b949e] shrink-0 font-sans hidden sm:inline">
+              SELECTED
             </span>
-            <span className="truncate font-mono text-zinc-400 text-xs max-w-[180px] sm:max-w-[320px] md:max-w-[480px] lg:max-w-[720px]" title={focusedFilePath || selectedNodeId}>
+            <span className="truncate font-mono text-[#e6edf3] text-[10px] max-w-[180px] sm:max-w-[320px] md:max-w-[480px] lg:max-w-[720px]" title={focusedFilePath || selectedNodeId}>
               {focusedFilePath || selectedNodeId}
             </span>
           </div>
         ) : (
-          <span className="text-zinc-600 italic truncate font-sans text-xs">
+          <span className="text-[#8b949e] italic truncate font-sans text-[10px] hidden sm:inline">
             No element selected
           </span>
         )}
@@ -75,29 +75,29 @@ export function BottomStatusBar({
       <div className="flex items-center gap-3 shrink-0">
         {/* Graph Node/Edge Stats */}
         {nodeCount > 0 && (
-          <div className="hidden sm:flex items-center gap-1.5 text-zinc-500 text-xs">
+          <div className="hidden sm:flex items-center gap-1.5 text-[#8b949e] text-[10px]">
             <span>{nodeCount} nodes</span>
-            <span className="text-zinc-700 font-light">·</span>
+            <span className="text-[#30363d] font-light">·</span>
             <span>{edgeCount} edges</span>
           </div>
         )}
 
         {activeView === 'graph' && (
           <>
-            <span className="hidden sm:inline text-zinc-800 font-light select-none">|</span>
+            <span className="hidden sm:inline text-[#30363d] font-light select-none">|</span>
             
             {/* Minimap Status */}
-            <div className="text-zinc-500 text-xs">
+            <div className="text-[#8b949e] text-[10px]">
               <span>Minimap:</span>{' '}
-              <span className={cn('font-semibold', showMinimap ? 'text-violet-400' : 'text-zinc-500')}>
+              <span className={cn('font-medium', showMinimap ? 'text-[#e6edf3]' : 'text-[#8b949e]')}>
                 {showMinimap ? 'On' : 'Off'}
               </span>
             </div>
 
-            <span className="text-zinc-800 font-light select-none">|</span>
+            <span className="text-[#30363d] font-light select-none">|</span>
 
             {/* Zoom Status */}
-            <div className="text-zinc-400 font-mono text-xs font-semibold">
+            <div className="text-[#e6edf3] font-mono text-[10px] font-medium">
               {zoomPct}%
             </div>
           </>

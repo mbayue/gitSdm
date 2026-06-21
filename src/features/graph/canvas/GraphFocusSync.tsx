@@ -19,11 +19,17 @@ export function GraphFocusSync() {
       return;
     }
 
-    const candidateNodeIds = [
-      `file:${focusedFilePath}`,
-      `folder:${focusedFilePath}`,
-      focusedFilePath,
-    ];
+    // Build candidate IDs: if focusedFilePath already has a type prefix, use it directly
+    const candidateNodeIds: string[] = [];
+    if (focusedFilePath.startsWith('file:') || focusedFilePath.startsWith('folder:')) {
+      candidateNodeIds.push(focusedFilePath);
+    } else {
+      candidateNodeIds.push(
+        `file:${focusedFilePath}`,
+        `folder:${focusedFilePath}`,
+        focusedFilePath,
+      );
+    }
     const target = candidateNodeIds.map((id) => getNode(id)).find(Boolean);
 
     // If node not found yet, retry up to 3 times with increasing delay

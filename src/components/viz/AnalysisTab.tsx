@@ -2,7 +2,7 @@ import { useReactFlow } from '@xyflow/react';
 import { cn } from '@/lib/utils';
 import { useVizStore } from '@/stores/vizStore';
 import type { GraphNode, RepoAnalysis } from '@/types';
-import { Layers, Network } from 'lucide-react';
+import { Network } from 'lucide-react';
 
 interface AnalysisTabProps {
   analysis: RepoAnalysis;
@@ -10,11 +10,6 @@ interface AnalysisTabProps {
   setSelectedNodeId: (id: string | null) => void;
   blastRadiusActive: boolean;
   blastRadiusIds: Set<string>;
-  architecture?: {
-    overview: string;
-    layers: { name: string; description: string }[];
-  } | null;
-  architectureLoading?: boolean;
 }
 
 export function AnalysisTab({
@@ -23,8 +18,6 @@ export function AnalysisTab({
   setSelectedNodeId,
   blastRadiusActive,
   blastRadiusIds,
-  architecture,
-  architectureLoading = false,
 }: AnalysisTabProps) {
   const setFocusedFilePath = useVizStore((s) => s.setFocusedFilePath);
   const { getNode, setCenter } = useReactFlow();
@@ -66,7 +59,7 @@ export function AnalysisTab({
       {selectedNode ? (
         <div className="space-y-5">
           <div className="mb-2">
-            <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest pl-1 mb-1.5 block font-mono">
+            <span className="text-[10px] font-bold text-ui-active-text-green uppercase tracking-widest pl-1 mb-1.5 block font-mono">
               Selected Node
             </span>
             <div className="flex items-center gap-2 mb-3">
@@ -85,34 +78,74 @@ export function AnalysisTab({
               )}
             </div>
 
-            <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-1 mb-3">Node Details</h4>
-            <div className="rounded-2xl border border-white/5 bg-zinc-900/30 p-4 space-y-3 text-sm">
-              <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                <span className="text-zinc-500">Type</span>
-                <span className="text-zinc-200 capitalize">{selectedNode.type}</span>
+            <h4 className="text-[10px] font-bold text-[#8b949e] uppercase tracking-widest pl-1 mb-3">Node Details</h4>
+            <div className="rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] px-3 py-2 space-y-2 text-[11px]">
+              <div className="flex items-center justify-between border-b border-[rgba(240,246,252,0.1)] pb-1.5 pt-1">
+                <span className="text-[#8b949e]">Path</span>
+                <span className="text-[#e6edf3] font-mono truncate max-w-[150px] text-right" title={selectedNode.data.path || ''}>{selectedNode.data.path || '-'}</span>
               </div>
-              <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                <span className="text-zinc-500">Path</span>
-                <span className="text-zinc-200 truncate max-w-[150px] text-right" title={selectedNode.data.path || ''}>{selectedNode.data.path || '-'}</span>
+              <div className="flex items-center justify-between border-b border-[rgba(240,246,252,0.1)] pb-1.5 pt-1">
+                <span className="text-[#8b949e]">Type</span>
+                <span className="text-[#e6edf3] capitalize">{selectedNode.type}</span>
               </div>
-              <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                <span className="text-zinc-500">Extension</span>
-                <span className="text-zinc-200 font-mono uppercase">{selectedNode.data.extension || '-'}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-500">Degree</span>
-                <span className="text-zinc-200 font-mono">
-                  {analysis.graph.edges.filter(e => e.source === selectedNode.id || e.target === selectedNode.id).length} 
-                  <span className="text-[10px] text-zinc-500 ml-1">
-                    (In: {analysis.graph.edges.filter(e => e.target === selectedNode.id).length}, Out: {analysis.graph.edges.filter(e => e.source === selectedNode.id).length})
+              {selectedNode.data.extension && (
+                <div className="flex items-center justify-between border-b border-[rgba(240,246,252,0.1)] pb-1.5 pt-1">
+                  <span className="text-[#8b949e]">Extension</span>
+                  <span className="text-[#e6edf3] font-mono">{selectedNode.data.extension}</span>
+                </div>
+              )}
+              {selectedNode.data.path && selectedNode.data.path.includes('/') && (
+                <div className="flex items-center justify-between border-b border-[rgba(240,246,252,0.1)] pb-1.5 pt-1">
+                  <span className="text-[#8b949e]">Module</span>
+                  <span className="text-[#e6edf3] font-mono truncate max-w-[150px] text-right" title={selectedNode.data.path.substring(0, selectedNode.data.path.lastIndexOf('/'))}>
+                    {selectedNode.data.path.substring(0, selectedNode.data.path.lastIndexOf('/'))}
                   </span>
+                </div>
+              )}
+              <div className="flex items-center justify-between border-b border-[rgba(240,246,252,0.1)] pb-1.5 pt-1">
+                <span className="text-[#8b949e]">Degree</span>
+                <span className="text-[#e6edf3] font-mono">
+                  {analysis.graph.edges.filter(e => e.source === selectedNode.id || e.target === selectedNode.id).length}
                 </span>
               </div>
+              <div className="flex items-center justify-between border-b border-[rgba(240,246,252,0.1)] pb-1.5 pt-1">
+                <span className="text-[#8b949e]">Imports (Out)</span>
+                <span className="text-[#e6edf3] font-mono">
+                  {analysis.graph.edges.filter(e => e.source === selectedNode.id).length}
+                </span>
+              </div>
+              <div className="flex items-center justify-between border-[rgba(240,246,252,0.1)] pb-1 pt-1">
+                <span className="text-[#8b949e]">Dependents (In)</span>
+                <span className="text-[#e6edf3] font-mono">
+                  {analysis.graph.edges.filter(e => e.target === selectedNode.id).length}
+                </span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 mt-4">
+              <button
+                onClick={() => {
+                  if (selectedNode.data.path) {
+                    navigator.clipboard.writeText(selectedNode.data.path);
+                    useVizStore.getState().setToastMessage('Copied path to clipboard');
+                  }
+                }}
+                className="flex items-center justify-center gap-1.5 px-2 py-1.5 bg-[#161b22] border border-[rgba(240,246,252,0.1)] hover:border-[#58a6ff] hover:text-[#58a6ff] rounded-sm text-[10px] text-[#e6edf3] transition-all"
+              >
+                Copy Path
+              </button>
+              <button
+                onClick={() => {
+                  useVizStore.getState().setSidebarTab('ai');
+                }}
+                className="flex items-center justify-center gap-1.5 px-2 py-1.5 bg-[#161b22] border border-[rgba(240,246,252,0.1)] hover:border-[#58a6ff] hover:text-[#58a6ff] rounded-sm text-[10px] text-[#e6edf3] transition-all"
+              >
+                Explain
+              </button>
             </div>
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest pl-1">
+            <h4 className="text-[10px] font-semibold text-[#8b949e] uppercase tracking-widest pl-1">
               {blastRadiusActive ? 'Affected Node' : 'Direct Relations'}
             </h4>
             <div className="space-y-1.5">
@@ -128,13 +161,13 @@ export function AnalysisTab({
                         <button
                           key={id}
                           onClick={() => focusRelatedNode(node)}
-                          className="w-full flex items-center justify-between p-2 rounded-xl bg-white/[0.015] border border-white/[0.03] hover:bg-white/[0.04] transition-colors group text-left"
+                          className="w-full flex items-center justify-between p-2 rounded-md bg-[#0d1117] border border-[rgba(240,246,252,0.1)] hover:bg-[#1c2128] transition-colors group text-left"
                         >
-                          <div className="flex items-center gap-2 truncate">
-                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/50 group-hover:bg-cyan-400 transition-colors shrink-0" />
-                            <span className="text-[12px] text-zinc-300 truncate group-hover:text-white transition-colors">{node.data.label}</span>
-                          </div>
-                          <span className="text-[9px] font-mono text-zinc-600 group-hover:text-zinc-400 shrink-0 ml-2">AFFECTED</span>
+                            <div className="flex items-center gap-2 truncate">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#58a6ff]/50 group-hover:bg-[#58a6ff] transition-colors shrink-0" />
+                              <span className="text-xs text-[#e6edf3] truncate transition-colors">{node.data.label}</span>
+                            </div>
+                            <span className="text-[9px] font-mono text-[#8b949e] shrink-0 ml-2">AFFECTED</span>
                         </button>
                       );
                     })
@@ -158,13 +191,13 @@ export function AnalysisTab({
                           <button
                             key={e.id}
                             onClick={() => focusRelatedNode(target)}
-                            className="w-full flex items-center justify-between p-2 rounded-xl bg-white/[0.015] border border-white/[0.03] hover:bg-white/[0.04] transition-colors group text-left"
+                            className="w-full flex items-center justify-between p-2 rounded-md bg-[#0d1117] border border-[rgba(240,246,252,0.1)] hover:bg-[#1c2128] transition-colors group text-left"
                           >
                             <div className="flex items-center gap-2 truncate">
                               <span className="w-1.5 h-1.5 rounded-full bg-blue-400/50 group-hover:bg-blue-400 transition-colors shrink-0" />
-                              <span className="text-[12px] text-zinc-300 truncate group-hover:text-white transition-colors">{target.data.label}</span>
+                              <span className="text-xs text-[#e6edf3] truncate transition-colors">{target.data.label}</span>
                             </div>
-                            <span className="text-[9px] font-mono text-zinc-600 group-hover:text-zinc-400 shrink-0 ml-2">OUT</span>
+                            <span className="text-[9px] font-mono text-[#8b949e] shrink-0 ml-2">OUT</span>
                           </button>
                         );
                       })}
@@ -175,13 +208,13 @@ export function AnalysisTab({
                           <button
                             key={e.id}
                             onClick={() => focusRelatedNode(source)}
-                            className="w-full flex items-center justify-between p-2 rounded-xl bg-white/[0.015] border border-white/[0.03] hover:bg-white/[0.04] transition-colors group text-left"
+                            className="w-full flex items-center justify-between p-2 rounded-md bg-[#0d1117] border border-[rgba(240,246,252,0.1)] hover:bg-[#1c2128] transition-colors group text-left"
                           >
                             <div className="flex items-center gap-2 truncate">
-                              <span className="w-1.5 h-1.5 rounded-full bg-violet-400/50 group-hover:bg-violet-400 transition-colors shrink-0" />
-                              <span className="text-[12px] text-zinc-300 truncate group-hover:text-white transition-colors">{source.data.label}</span>
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#8b949e] group-hover:bg-[#e6edf3] transition-colors shrink-0" />
+                              <span className="text-xs text-[#e6edf3] truncate transition-colors">{source.data.label}</span>
                             </div>
-                            <span className="text-[9px] font-mono text-zinc-600 group-hover:text-zinc-400 shrink-0 ml-2">IN</span>
+                            <span className="text-[9px] font-mono text-[#8b949e] shrink-0 ml-2">IN</span>
                           </button>
                         );
                       })}
@@ -193,68 +226,14 @@ export function AnalysisTab({
           </div>
         </div>
       ) : (
-        <div className="space-y-5">
-          <div className="mb-2">
-            <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest pl-1 mb-1.5 block font-mono">
-              Architecture Overview
-            </span>
-            <div className="flex items-center gap-2 mb-3">
-              <h3 className="text-[15px] font-semibold text-zinc-100 truncate leading-tight pl-1">
-                Repository Architecture
-              </h3>
-            </div>
-
-            <div className="rounded-2xl border border-white/5 bg-zinc-900/30 p-4 space-y-4 text-sm">
-              {architectureLoading && !architecture ? (
-                <div className="space-y-3">
-                  <div className="h-3 w-2/3 rounded bg-white/[0.06] animate-pulse" />
-                  <div className="h-3 w-full rounded bg-white/[0.04] animate-pulse" />
-                  <div className="h-3 w-5/6 rounded bg-white/[0.04] animate-pulse" />
-                </div>
-              ) : architecture ? (
-                <>
-                  <p className="text-[12px] text-zinc-300 leading-relaxed">
-                    {architecture.overview}
-                  </p>
-
-                  {architecture.layers.length > 0 && (
-                    <div className="space-y-2.5 pt-2 border-t border-white/5">
-                      <h4 className="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest">
-                        System Layers
-                      </h4>
-                      {architecture.layers.map((layer, idx) => (
-                        <div
-                          key={`${layer.name}-${idx}`}
-                          className="rounded-xl border border-white/[0.04] bg-white/[0.015] p-3 space-y-1.5"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Layers className="h-3.5 w-3.5 text-violet-400 shrink-0" />
-                            <span className="text-[12px] font-semibold text-zinc-100">
-                              {layer.name}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-zinc-500 leading-relaxed">
-                            {layer.description}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 px-4 text-center space-y-3">
-                  <div className="h-10 w-10 rounded-full bg-zinc-900/50 border border-white/5 flex items-center justify-center">
-                    <Network className="h-4 w-4 text-zinc-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-zinc-300">No Selection</p>
-                    <p className="text-[11px] text-zinc-500 mt-1 max-w-[200px] leading-relaxed">
-                      Click on any file or folder in the graph to view its detailed analysis.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
+        <div className="flex flex-col items-center justify-center py-8 px-4 text-center space-y-3">
+          <div className="h-10 w-10 rounded-md bg-[#0d1117] border border-[rgba(240,246,252,0.1)] flex items-center justify-center">
+            <Network className="h-4 w-4 text-[#8b949e]" />
+          </div>
+          <div>
+            <p className="text-[11px] text-[#8b949e] leading-relaxed">
+              Select a node to inspect file details, imports, dependents, and graph relationships.
+            </p>
           </div>
         </div>
       )}

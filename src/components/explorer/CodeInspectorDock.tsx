@@ -19,7 +19,7 @@ export function CodeInspectorDock({ state, setState, filePath, owner, repo }: Co
   const setToastMessage = useVizStore((s) => s.setToastMessage);
 
   const [copied, setCopied] = useState(false);
-  const [dragHeight, setDragHeight] = useState(380);
+  const [dragHeight, setDragHeight] = useState(250);
 
   // Fetch file content
   const { data, isLoading, error } = useQuery({
@@ -40,16 +40,15 @@ export function CodeInspectorDock({ state, setState, filePath, owner, repo }: Co
     return data.content;
   }, [data?.content, state]);
 
-  // Copy Code action
-  const handleCopyCode = async () => {
-    if (!data?.content) return;
+  // Copy Path action
+  const handleCopyPath = async () => {
     try {
-      await navigator.clipboard.writeText(data.content);
+      await navigator.clipboard.writeText(filePath);
       setCopied(true);
-      setToastMessage('Copied code to clipboard');
+      setToastMessage('Copied path to clipboard');
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy code: ', err);
+      console.error('Failed to copy path: ', err);
     }
   };
 
@@ -60,7 +59,7 @@ export function CodeInspectorDock({ state, setState, filePath, owner, repo }: Co
     const startHeight = dragHeight;
     const onMouseMove = (moveEvent: MouseEvent) => {
       const deltaY = startY - moveEvent.clientY;
-      setDragHeight(Math.max(200, Math.min(window.innerHeight * 0.75, startHeight + deltaY)));
+      setDragHeight(Math.max(200, Math.min(window.innerHeight * 0.35, startHeight + deltaY)));
     };
     const onMouseUp = () => {
       document.removeEventListener('mousemove', onMouseMove);
@@ -70,7 +69,7 @@ export function CodeInspectorDock({ state, setState, filePath, owner, repo }: Co
     document.addEventListener('mouseup', onMouseUp);
   };
 
-  const actualHeight = state === 'peek' ? 180 : dragHeight;
+  const actualHeight = state === 'peek' ? 140 : dragHeight;
 
   return (
     <div
@@ -81,10 +80,10 @@ export function CodeInspectorDock({ state, setState, filePath, owner, repo }: Co
       {state === 'expanded' && (
         <div
           onMouseDown={handleMouseDown}
-          className="group absolute top-0 left-0 right-0 h-1.5 cursor-row-resize bg-transparent hover:bg-violet-500/20 transition-all z-[80] flex items-center justify-center"
+          className="group absolute top-0 left-0 right-0 h-1.5 cursor-row-resize bg-transparent hover:bg-ui-active/20 transition-all z-[80] flex items-center justify-center"
         >
           {/* Subtle drag indicator */}
-          <div className="w-8 h-0.5 rounded-full bg-white/[0.1] group-hover:bg-violet-400/50 transition-colors" />
+          <div className="w-8 h-0.5 rounded-full bg-white/[0.1] group-hover:bg-ui-active/50 transition-colors" />
         </div>
       )}
 
@@ -93,7 +92,7 @@ export function CodeInspectorDock({ state, setState, filePath, owner, repo }: Co
         {/* Left Side: Title & File info with better hierarchy */}
         <div className="flex flex-col justify-center min-w-0 py-0.5">
           <div className="flex items-center gap-1.5 min-w-0">
-            <FileCode2 className="h-3.5 w-3.5 text-violet-400 shrink-0" />
+            <FileCode2 className="h-3.5 w-3.5 text-ui-active-text-green shrink-0" />
             <span className="text-zinc-150 font-semibold text-xs truncate max-w-[200px] sm:max-w-[320px]">
               {fileName}
             </span>
@@ -105,17 +104,16 @@ export function CodeInspectorDock({ state, setState, filePath, owner, repo }: Co
 
         {/* Right Side: Action buttons */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Copy code button */}
+          {/* Copy path button */}
           <Tooltip>
             <TooltipTrigger
               type="button"
-              disabled={!data?.content}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-white/5 hover:text-white transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
-              onClick={handleCopyCode}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-white/5 hover:text-white transition-colors"
+              onClick={handleCopyPath}
             >
               {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
             </TooltipTrigger>
-            <TooltipContent side="top">Copy Code</TooltipContent>
+            <TooltipContent side="top">Copy Path</TooltipContent>
           </Tooltip>
 
           <div className="h-4 w-px bg-white/[0.08] mx-1" />

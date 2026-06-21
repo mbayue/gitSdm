@@ -274,7 +274,7 @@ Let's look at the structure:
 
 *Keep up the vibe-coding! At least the dark mode gradient looks absolutely beautiful.*`;
       }
-      if (user.includes('enhanced, professional, and visually stunning README.md')) {
+      if (user.includes('enhanced, professional, and clean README.md')) {
         return `# 🔮 gitSdm — AI-Powered Repository Intelligence Platform
 
 > Instantly visualize, understand, and optimize codebase architecture.
@@ -287,7 +287,7 @@ Let's look at the structure:
 
 ## 🚀 Key Features
 
-* **Interactive Codebase Mapping**: Glowing node visualizer highlighting configurations, tests, source files, and dependencies.
+* **Interactive Codebase Mapping**: Glowing node visualizer showing configurations, tests, source files, and dependencies.
 * **AI Architecture Summaries**: Understand module interaction, entry points, and systems flow instantly.
 * **ELI5 mode**: Perfect for onboarding new engineers on complex, multi-layered codebases.
 * **Health Dashboard & Refactoring**: Discover bottlenecks, coupled modules, and code duplication before they hit production.

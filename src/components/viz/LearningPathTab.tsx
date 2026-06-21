@@ -1,70 +1,32 @@
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { useLearningPath } from '@/features/ai/useAiTasks';
 import { useVizStore } from '@/stores/vizStore';
 import type { RepoAnalysis } from '@/types';
 import {
-  Compass, RefreshCw, ShieldAlert, Sparkles
+  RefreshCw, ShieldAlert, Sparkles, Code, Network, Brain, FileText, ArrowRight
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import { AIErrorCard } from './AIErrorCard';
 
 // Decoupled subcomponents
-import { useTracerSimulation } from './learning-path/TracerSimulation';
 import { FocusLayers } from './learning-path/FocusLayers';
-import { TracerPlayer } from './learning-path/TracerPlayer';
 
 export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
   const { owner, repo } = analysis.meta;
   const selectedBranch = useVizStore((s) => s.selectedBranch);
   const activeFocusLayer = useVizStore((s) => s.activeFocusLayer);
   const setActiveFocusLayer = useVizStore((s) => s.setActiveFocusLayer);
-  const focusedFilePath = useVizStore((s) => s.focusedFilePath);
   const setFocusedFilePath = useVizStore((s) => s.setFocusedFilePath);
+  const selectedNodeId = useVizStore((s) => s.selectedNodeId);
   const setSelectedNodeId = useVizStore((s) => s.setSelectedNodeId);
-  const setHighlightedNodeIds = useVizStore((s) => s.setHighlightedNodeIds);
+  const setSidebarTab = useVizStore((s) => s.setSidebarTab);
 
   const lp = useLearningPath(owner, repo, selectedBranch);
 
   const data = lp.data;
-  const executionSteps = data?.executionFlow?.steps ?? [];
-  const visualSteps = data?.executionFlow?.visualSteps;
 
-  const {
-    isPlaying,
-    setIsPlaying,
-    activeStep,
-    setActiveStep,
-    focusFilePath,
-    resolveStepPath,
-  } = useTracerSimulation({
-    analysis,
-    executionSteps,
-    visualSteps,
-    focusedFilePath,
-    setSelectedNodeId,
-    setHighlightedNodeIds,
-    setFocusedFilePath,
-  });
-
-  // Reset simulation state when repo or branch changes
-  useEffect(() => {
-    setIsPlaying(false);
-    setActiveStep(0);
-  }, [owner, repo, selectedBranch, setIsPlaying, setActiveStep]);
-
-  const handleStepClick = (index: number) => {
-    setActiveStep(index);
-    const step = executionSteps[index];
-    if (step) {
-      const path = resolveStepPath(step, index);
-      focusFilePath(path);
-    }
-  };
-
-  const handleFileClick = (path: string) => {
-    focusFilePath(path);
-  };
+  const [showAllPaths, setShowAllPaths] = useState(false);
 
   const handleRefresh = () => {
     lp.refetch();
@@ -111,7 +73,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
         <ShieldAlert className="h-10 w-10 text-red-500/80 mb-3" />
         <h4 className="text-sm font-medium text-white mb-1">No learning path data available</h4>
         <p className="text-xs text-zinc-500 max-w-[240px] mb-4">
-          Try clicking retry to generate AI onboarding paths for this repository.
+          Try clicking retry to generate onboarding paths for this repository.
         </p>
         <button
           onClick={handleRefresh}
@@ -125,19 +87,23 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
   }
 
   return (
-    <div className="space-y-5 select-none">
-      {/* Mental Model Section */}
-      <div className="rounded-xl border border-white/[0.04] bg-white/[0.015] p-4.5 shadow-sm">
-        <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-medium bg-black/20 border border-white/[0.03] rounded-md px-2.5 py-1 w-fit">
-          <Compass className="h-3 w-3 text-violet-400" />
-          <span>{data.mentalModel?.type || 'Repository Architecture'}</span>
+    <div className="space-y-5 select-none pb-8">
+      {/* Small repository flow summary */}
+      <div className="rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] p-3 shadow-sm flex items-center justify-between overflow-x-auto text-[#8b949e] whitespace-nowrap [&::-webkit-scrollbar]:hidden">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Code className="h-3.5 w-3.5" />
+          <span className="text-[10px] font-medium">Parse Tree</span>
         </div>
-        <h3 className="mt-3 text-[16px] font-semibold text-zinc-100 leading-tight text-left">
-          {data.mentalModel?.concept || 'Ingestion Pipeline'}
-        </h3>
-        <p className="mt-2 text-[11px] text-zinc-500 leading-relaxed text-left">
-          {data.mentalModel?.description}
-        </p>
+        <ArrowRight className="h-3 w-3 shrink-0 opacity-50 mx-1.5" />
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Network className="h-3.5 w-3.5" />
+          <span className="text-[10px] font-medium">Build Graph</span>
+        </div>
+        <ArrowRight className="h-3 w-3 shrink-0 opacity-50 mx-1.5" />
+        <div className="flex items-center gap-1.5 shrink-0 text-ui-active-text-green">
+          <Brain className="h-3.5 w-3.5" />
+          <span className="text-[10px] font-medium">Analysis</span>
+        </div>
       </div>
 
       {/* Smart Focus Filters */}
@@ -145,110 +111,102 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
 
       {/* Recommended Learning Path */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-            <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-            Recommended learning order
+        <div className="flex items-center justify-between mb-1">
+          <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8b949e]">
+            Guided Codebase Tour
           </h4>
-          <span className="text-[10px] text-violet-400 font-semibold flex items-center gap-1">
-            <Sparkles className="h-3 w-3" /> AI Roadmap
+          <span className="text-[10px] text-ui-active-text-green font-semibold flex items-center gap-1">
+            <Sparkles className="h-3 w-3" />
+            {data.recommendedPath ? `Learning path · ${data.recommendedPath.length} steps` : 'Step-by-Step'}
           </span>
         </div>
+        
+        <p className="text-[10px] text-[#8b949e] mb-4 italic border-l-2 border-[#58a6ff]/30 pl-2">
+          {activeFocusLayer === 'api' ? 'API / Routes focus' : 
+           activeFocusLayer === 'ui' ? 'UI / Components focus' :
+           activeFocusLayer === 'core' ? 'Core Services focus' :
+           activeFocusLayer === 'config' ? 'Configuration focus' : 
+           'Full architecture focus'} — showing roadmap files and related dependencies.
+        </p>
 
         <div className="space-y-2.5">
-          {data.recommendedPath?.map((item, idx) => (
+          {(showAllPaths ? data.recommendedPath : data.recommendedPath?.slice(0, 5))?.map((item, idx) => {
+            const isActive = selectedNodeId === item.path || selectedNodeId === `file:${item.path}` || selectedNodeId === `folder:${item.path}`;
+            return (
             <motion.div
               key={item.path}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
-              onClick={() => handleFileClick(item.path)}
-              className="group flex gap-3.5 items-start rounded-xl border border-white/[0.04] bg-black/20 hover:bg-white/[0.03] hover:border-white/[0.08] p-3.5 cursor-pointer transition-all duration-200"
+              className={`group flex gap-3 items-start rounded-md border p-3 transition-all duration-200 ${
+                isActive 
+                  ? 'border-[#58a6ff]/50 bg-[#58a6ff]/10 shadow-[0_0_10px_rgba(88,166,255,0.1)]' 
+                  : 'border-[rgba(240,246,252,0.1)] bg-[#0d1117] hover:bg-[#161b22] hover:border-[rgba(240,246,252,0.3)]'
+              }`}
             >
               {/* Index & score circle */}
-              <div className="relative shrink-0 flex items-center justify-center h-8 w-8 rounded-lg bg-black/20 border border-white/[0.04] text-xs font-mono text-zinc-400 group-hover:border-violet-500/25 group-hover:text-violet-300 transition-colors">
+              <div className={`shrink-0 flex items-center justify-center h-6 w-6 rounded-md border text-[10px] font-mono transition-colors mt-0.5 ${
+                isActive
+                  ? 'bg-[#58a6ff]/20 border-[#58a6ff]/50 text-[#e6edf3]'
+                  : 'bg-[#161b22] border-[rgba(240,246,252,0.1)] text-[#8b949e] group-hover:border-[#58a6ff]/40 group-hover:text-[#e6edf3]'
+              }`}>
                 {idx + 1}
-                <div
-                  className="absolute inset-0 rounded-lg border-2 border-violet-500/20"
-                  style={{
-                    clipPath: `inset(${(100 - item.importance)}% 0px 0px 0px)`
-                  }}
-                />
               </div>
 
               {/* Path and details */}
               <div className="flex-1 min-w-0 text-left">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-mono text-zinc-200 group-hover:text-white truncate">
-                    {item.path.split('/').pop()}
-                  </span>
-                  <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded bg-black/20 border border-white/[0.03] text-zinc-500 font-mono">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="text-[11px] font-semibold text-[#e6edf3] truncate block">
+                      {item.path.split('/').pop()}
+                    </span>
+                    <p className="text-[9px] text-[#8b949e] font-mono truncate mt-0.5">
+                      {item.path}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded bg-[#161b22] border border-[rgba(240,246,252,0.1)] text-ui-active-text-green font-mono">
                     {item.role}
                   </span>
                 </div>
-                <p className="text-[10px] text-zinc-500 font-mono truncate mt-0.5">
-                  {item.path}
-                </p>
-                <p className="text-[11px] text-zinc-400 mt-2 leading-relaxed font-sans line-clamp-3">
+                
+                <p className="text-[11px] text-[#8b949e] mt-2 leading-relaxed font-sans">
                   {item.reason}
                 </p>
+
+                {/* Actions */}
+                <div className="flex items-center gap-1.5 mt-3 pt-2 border-t border-[rgba(240,246,252,0.05)]">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setFocusedFilePath(item.path); }}
+                    className="flex items-center gap-1.5 text-[9px] font-bold text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] px-2 py-1 rounded transition-colors"
+                  >
+                    <FileText className="h-3 w-3" /> OPEN
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const targetId = analysis.graph.nodes.find(n => n.id === `file:${item.path}` || n.id === `folder:${item.path}` || n.id === item.path)?.id || item.path;
+                      setSelectedNodeId(targetId);
+                      setSidebarTab('ai');
+                    }}
+                    className="flex items-center gap-1.5 text-[9px] font-bold text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] px-2 py-1 rounded transition-colors ml-auto"
+                  >
+                    <Brain className="h-3 w-3" /> EXPLAIN
+                  </button>
+                </div>
               </div>
             </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* Execution Flow simulation tracer */}
-      {executionSteps.length > 0 && (
-        <TracerPlayer
-          executionSteps={executionSteps}
-          activeStep={activeStep}
-          isPlaying={isPlaying}
-          setIsPlaying={setIsPlaying}
-          handleStepClick={handleStepClick}
-        />
-      )}
-
-      {/* Developer Insights, Risks & Suggestions */}
-      <div className="space-y-3.5 text-left">
-        <div>
-            <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2.5">
-            Architecture Insights
-          </h4>
-            <p className="text-[11px] text-zinc-500 leading-relaxed border-l-2 border-violet-500/20 pl-3">
-            {data.insights?.architecture}
-          </p>
+            );
+          })}
         </div>
 
-        {data.insights?.risks?.length > 0 && (
-          <div>
-            <h4 className="text-[10px] font-bold uppercase tracking-widest text-rose-400/90 mb-2">
-              Detected Architecture Risks
-            </h4>
-            <ul className="space-y-1.5 pl-1.5">
-              {data.insights.risks.map((risk, rIdx) => (
-                <li key={rIdx} className="flex gap-2 items-start text-xs text-zinc-400">
-                  <ShieldAlert className="h-3.5 w-3.5 text-red-500/70 shrink-0 mt-0.5" />
-                  <span>{risk}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {data.insights?.suggestions?.length > 0 && (
-          <div>
-            <h4 className="text-[10px] font-bold uppercase tracking-widest text-violet-400/90 mb-2">
-              Onboarding Suggestions
-            </h4>
-            <ul className="space-y-1.5 pl-1.5">
-              {data.insights.suggestions.map((suggestion, sIdx) => (
-                <li key={sIdx} className="flex gap-2 items-start text-xs text-zinc-400">
-                  <Sparkles className="h-3.5 w-3.5 text-violet-500/70 shrink-0 mt-0.5" />
-                  <span>{suggestion}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {data.recommendedPath && data.recommendedPath.length > 5 && !showAllPaths && (
+          <button
+            onClick={() => setShowAllPaths(true)}
+            className="w-full mt-3 py-2 text-[10px] font-medium text-[#58a6ff] hover:text-[#79c0ff] hover:bg-[#58a6ff]/10 rounded transition-colors"
+          >
+            View full roadmap ({data.recommendedPath.length - 5} more)
+          </button>
         )}
       </div>
     </div>

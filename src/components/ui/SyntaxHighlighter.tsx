@@ -81,7 +81,7 @@ export function HighlightedCode({
         return (
           <div
             key={i}
-            className={`flex border-l-2 ${isActive ? 'bg-violet-500/10 border-violet-500' : 'border-transparent'}`}
+            className={`flex border-l-2 ${isActive ? 'bg-ui-active/15 border-ui-active' : 'border-transparent'}`}
           >
             <span
               className={`w-12 shrink-0 select-none pr-4 text-right tabular-nums ${

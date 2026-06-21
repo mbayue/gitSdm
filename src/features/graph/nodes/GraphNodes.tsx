@@ -1,5 +1,5 @@
-import { memo } from 'react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { memo, useState } from 'react';
+import { Handle, Position, useStore, type NodeProps } from '@xyflow/react';
 import { cn } from '@/lib/utils';
 import { Folder, FileCode, FileText, Settings, FolderGit2, Users } from 'lucide-react';
 import { useVizStore } from '@/stores/vizStore';
@@ -33,8 +33,12 @@ function getNodeIcon(
 
 function CircleTreeNode({ id, data, selected, type }: NodeProps) {
   const label = data.label as string;
-  const color = (data.nodeColor as string) ?? '#ffffff';
+  const color = (data.nodeColor as string) ?? '#8b949e';
   const diffStatus = data.diffStatus as 'added' | 'modified' | 'deleted' | undefined;
+  
+  const zoom = useStore((s) => s.transform[2]);
+  const [isHovered, setIsHovered] = useState(false);
+  const isLabelVisible = type !== 'file' || zoom > 0.8 || selected || isHovered;
 
   const targetPos = Position.Top;
   const sourcePos = Position.Bottom;
@@ -82,14 +86,16 @@ function CircleTreeNode({ id, data, selected, type }: NodeProps) {
       className={cn(
         'group flex items-center gap-2 rounded-lg border px-2.5 py-1.5 transition-[background-color,border-color,box-shadow] duration-150',
         selected
-          ? 'bg-zinc-900/95 shadow-lg shadow-black/60'
-          : 'bg-zinc-950/80 border-white/[0.06] hover:border-white/20 hover:bg-zinc-900/50',
+          ? 'bg-[#1c2128] shadow-lg shadow-black/60 border-[#58a6ff]'
+          : 'bg-[#161b22] border-[rgba(240,246,252,0.1)] hover:border-[rgba(240,246,252,0.3)] hover:bg-[#1c2128]',
         diffClasses
       )}
       style={{
         borderColor: finalBorderColor,
         boxShadow: finalBoxShadow,
       }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <Handle
         type="target"
@@ -114,14 +120,16 @@ function CircleTreeNode({ id, data, selected, type }: NodeProps) {
       )}
 
       {/* Text label */}
-      <span
-        className={cn(
-          'whitespace-nowrap font-mono text-[11px] font-medium leading-none text-zinc-200 group-hover:text-white transition-colors',
-          diffStatus === 'deleted' && 'line-through text-zinc-500/70 group-hover:text-zinc-400'
-        )}
-      >
-        {type === 'folder' && label.includes(' (') ? label.split(' (')[0] : label}
-      </span>
+      {isLabelVisible && (
+        <span
+          className={cn(
+            'whitespace-nowrap font-mono text-[11px] font-medium leading-none text-[#e6edf3] group-hover:text-white transition-colors',
+            diffStatus === 'deleted' && 'line-through text-[#8b949e] group-hover:text-[#8b949e]'
+          )}
+        >
+          {type === 'folder' && label.includes(' (') ? label.split(' (')[0] : label}
+        </span>
+      )}
 
       {/* Optional Folder child count badge */}
       {type === 'folder' && data.childCount !== undefined && (

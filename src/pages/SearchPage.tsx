@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Sparkles, Search, MessageSquare, Code2, Database } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useSearchStore } from '@/features/search/searchStore';
 import { useVizStore } from '@/stores/vizStore';
 import { SearchBar } from '@/features/search/SearchBar';
@@ -80,16 +80,18 @@ export function SearchPage() {
   }, [owner, repo, indexMutation]);
 
   const handleSelectFile = useCallback(
-    (filePath: string, _startLine: number) => {
-      // Set vizStore state so GraphFocusSync zooms to the node
-      // and the code inspector opens when VizPage mounts.
-      // If the file doesn't exist in the graph (truncated), GraphFocusSync
-      // silently returns without zooming — the inspector will show a
-      // "failed to load" message instead.
+    (filePath: string, _startLine: number, action: 'open' | 'inspect' = 'open') => {
       const { setFocusedFilePath, setInspectorOpen, setSelectedNodeId } = useVizStore.getState();
+      
       setSelectedNodeId(null);
       setFocusedFilePath(filePath);
-      setInspectorOpen(true);
+      
+      if (action === 'open') {
+        setInspectorOpen(true);
+      } else {
+        setInspectorOpen(false);
+      }
+      
       navigate(`/${owner}/${repo}`);
     },
     [navigate, owner, repo],
@@ -101,72 +103,56 @@ export function SearchPage() {
   const showEmptyHero = !hasResults && !isLoading;
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-zinc-950">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#0d1117] font-sans">
       {/* Header */}
-      <header className="flex h-12 shrink-0 items-center gap-4 border-b border-white/5 bg-zinc-950/80 px-4 backdrop-blur-xl">
+      <header className="flex h-12 shrink-0 items-center gap-4 border-b border-[rgba(240,246,252,0.1)] bg-[#0d1117] px-4">
         <button
           onClick={() => navigate(`/${owner}/${repo}`)}
-          className="flex cursor-pointer items-center gap-1.5 text-xs text-zinc-400 transition-colors duration-200 hover:text-white"
+          className="flex cursor-pointer items-center gap-1.5 text-xs text-[#8b949e] transition-colors duration-200 hover:text-[#e6edf3]"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Back
         </button>
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-violet-400" />
-          <span className="text-sm font-semibold text-white">Semantic Search</span>
-          <span className="rounded-md bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-medium text-violet-400">
+          <span className="text-sm font-semibold text-[#e6edf3]">Semantic Search</span>
+          <span className="rounded-md border border-[rgba(240,246,252,0.1)] bg-[#161b22] px-1.5 py-0.5 text-[10px] font-medium text-[#8b949e]">
             {owner}/{repo}
           </span>
         </div>
       </header>
 
       {/* Content */}
-      <main className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col overflow-y-auto p-6">
+      <main className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col overflow-y-auto p-6">
         {/* Indexing status banner */}
         <div className="mb-4 shrink-0">
           <IndexingStatusPanel onRetry={handleIndex} />
         </div>
 
-        {/* Centered hero area (empty state) or compact controls (with results) */}
-        <div className={
-          showEmptyHero
-            ? 'flex flex-1 flex-col items-center justify-center gap-6 pb-12'
-            : 'flex flex-col gap-4'
-        }>
+        {/* Compact controls area */}
+        <div className="flex flex-col gap-4">
           {/* Search controls */}
-          <div className={showEmptyHero ? 'flex w-full flex-col items-center gap-4' : 'flex flex-col gap-3'}>
-            {/* Onboarding hero content */}
-            {showEmptyHero && (
-              <div className="flex flex-col items-center gap-3 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/10 ring-1 ring-violet-500/20">
-                  <Database className="h-7 w-7 text-violet-400" />
-                </div>
-                <h2 className="text-lg font-semibold text-zinc-100">
-                  Search your codebase with AI
+          <div className="flex flex-col gap-3">
+            {/* Onboarding text when empty */}
+            {showEmptyHero && isSearchDisabled && (
+              <div className="flex flex-col gap-1 mb-4">
+                <h2 className="text-sm font-semibold text-[#e6edf3]">
+                  Build an index to search this repository by meaning.
                 </h2>
-                <p className="max-w-md text-sm leading-relaxed text-zinc-400">
-                  Find code snippets by meaning, or ask questions about your repository.
-                  {isSearchDisabled && (
-                    <span className="mt-1 block text-zinc-500">
-                      Index the repository first to build vector embeddings.
-                    </span>
-                  )}
-                </p>
               </div>
             )}
 
             {/* Mode toggle + description */}
-            <div className={showEmptyHero ? 'flex items-center gap-3' : 'flex items-center gap-3'}>
+            <div className="flex items-center gap-3 max-sm:flex-col max-sm:items-start max-sm:gap-2">
               <ModeToggle />
-              <span className="text-[11px] text-zinc-500 transition-colors duration-200">
+              <span className="text-[11px] text-[#8b949e] transition-colors duration-200">
                 {mode === 'search'
-                  ? 'Find code snippets by semantic similarity'
-                  : 'Get AI-generated answers with source citations'}
+                  ? 'Find code snippets by semantic similarity.'
+                  : 'Ask a repository question with source citations.'}
               </span>
             </div>
 
             {/* Search bar */}
-            <div className={showEmptyHero ? 'w-full max-w-xl' : 'w-full'}>
+            <div className="w-full">
               <SearchBar
                 onSubmit={handleSubmit}
                 disabled={isSearchDisabled}
@@ -174,22 +160,55 @@ export function SearchPage() {
             </div>
           </div>
 
-          {/* Feature pills (only in hero state) */}
+          {/* Empty State Content */}
           {showEmptyHero && isIndexed && (
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {[
-                { icon: <Search className="h-3 w-3" />, text: 'Semantic code search' },
-                { icon: <MessageSquare className="h-3 w-3" />, text: 'Natural language Q&A' },
-                { icon: <Code2 className="h-3 w-3" />, text: `${indexingStatus.chunkCount} chunks indexed` },
-              ].map((pill) => (
-                <span
-                  key={pill.text}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] px-2.5 py-1 text-[11px] text-zinc-500"
-                >
-                  {pill.icon}
-                  {pill.text}
-                </span>
-              ))}
+            <div className="mt-8 space-y-6">
+              <div>
+                <h3 className="text-[10px] font-semibold text-[#8b949e] mb-3 uppercase tracking-widest">Search Examples</h3>
+                <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+                  {[
+                    "How are API errors handled?",
+                    "Where is GitHub data fetched?",
+                    "How is the dependency graph generated?"
+                  ].map((example) => (
+                    <button
+                      key={example}
+                      onClick={() => {
+                        useSearchStore.getState().setQuery(example);
+                        handleSubmit(example);
+                      }}
+                      className="px-3 py-1.5 text-xs text-[#e6edf3] bg-[#161b22] border border-[rgba(240,246,252,0.1)] rounded-md hover:border-[rgba(240,246,252,0.3)] hover:bg-[rgba(240,246,252,0.05)] transition-all text-left"
+                    >
+                      {example}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-[10px] font-semibold text-[#8b949e] mb-3 uppercase tracking-widest">Recent Queries</h3>
+                  <div className="text-[11px] text-[#8b949e] italic p-3 border border-[rgba(240,246,252,0.1)] rounded-md bg-[#0d1117] flex items-center justify-center h-[76px]">
+                    No recent queries yet.
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-[10px] font-semibold text-[#8b949e] mb-3 uppercase tracking-widest">Index Details</h3>
+                  <div className="text-[11px] text-[#e6edf3] p-3 border border-[rgba(240,246,252,0.1)] rounded-md bg-[#161b22] h-[76px] flex flex-col justify-center space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#8b949e]">Status</span>
+                      <span className="flex items-center gap-1.5 text-ui-active-text-green font-medium">
+                        <span className="h-1.5 w-1.5 rounded-full bg-ui-active-text-green shadow-[0_0_8px_rgba(230,237,243,0.4)]" />
+                        Ready
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#8b949e]">Chunks Indexed</span>
+                      <span className="font-mono text-xs">{indexingStatus.chunkCount}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -206,8 +225,8 @@ export function SearchPage() {
             mode === 'search' &&
             results.length === 0 &&
             searchMutation.isSuccess && (
-              <div className="py-8 text-center text-sm text-zinc-500">
-                No relevant results found. Try a different query or broaden your search.
+              <div className="py-8 text-sm text-[#8b949e] flex justify-center">
+                No matching code found. Try broader terms or switch to Ask mode.
               </div>
             )}
 
