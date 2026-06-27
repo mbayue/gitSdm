@@ -2,7 +2,11 @@
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
@@ -16,14 +20,26 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "baseUrl": ".",
-    "ignoreDeprecations": "5.0",
-    "types": ["bun-types"],
+    "types": [
+      "bun-types"
+    ],
     "paths": {
-      "@/*": ["src/*"],
-      "@server/*": ["server/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@server/*": [
+        "./server/*"
+      ],
     }
   },
-  "include": ["src", "server", "api"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": [
+    "src",
+    "server",
+    "api"
+  ],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
 }

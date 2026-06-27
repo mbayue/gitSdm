@@ -13,8 +13,8 @@ export function useArchitectureExport(
 ) {
   const [copied, setCopied] = useState(false);
   const [copiedSvg, setCopiedSvg] = useState(false);
-  const copiedTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
-  const copiedSvgTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const copiedSvgTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     return () => {
