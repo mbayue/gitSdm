@@ -55,22 +55,27 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const isAiRoute = path.startsWith('/api/ai');
-  const res = await fetch(path, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(isAiRoute ? getApiKeyHeader() : {}),
-      ...getGitHubTokenHeader(),
-      ...options?.headers,
-    },
-  });
+  try {
+    const isAiRoute = path.startsWith('/api/ai');
+    const res = await fetch(path, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(isAiRoute ? getApiKeyHeader() : {}),
+        ...getGitHubTokenHeader(),
+        ...options?.headers,
+      },
+    });
 
-  const data = await res.json();
-  if (!res.ok) {
-    throw new ApiError(data.error ?? `Request failed: ${res.status}`, res.status, data);
+    const data = await res.json();
+    if (!res.ok) {
+      throw new ApiError(data.error ?? `Request failed: ${res.status}`, res.status, data);
+    }
+    return data as T;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError('Network error or unexpected failure', 0);
   }
-  return data as T;
 }
 
 
