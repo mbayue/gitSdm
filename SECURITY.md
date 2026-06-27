@@ -50,7 +50,7 @@ Please include the following details in your report:
 ## Response Timeline
 
 We aim to handle all security reports with high priority:
-* **Acknowledgment:** Within 48 hours.
+* **Acknowledgment:** Within 72 hours.
 * **Initial Assessment:** Within 7 days, confirming the vulnerability and its severity.
 * **Remediation & Patching:** Within 30 days. We will keep you updated throughout this process.
 
