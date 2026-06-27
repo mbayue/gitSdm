@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import DOMPurify from 'dompurify';
 import { RefreshCw, Network, Check, CodeXml, Code, FileImage, FileCode2, ChevronDown, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -271,7 +272,7 @@ export function ArchitectureView({ analysis, owner, repo, compact }: Architectur
                        transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
                        transformOrigin: 'center center',
                      }}
-                     dangerouslySetInnerHTML={{ __html: svg }}
+                     dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(svg) }}
                   />
 
                   {/* Zoom Controls Overlay */}
