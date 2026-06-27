@@ -1,5 +1,5 @@
 import { getAIProvider } from './provider';
-import { aiCacheKey, cache, hashContext, hashApiKey } from '../cache/lru';
+import { aiCacheKey, cache, hashApiKey } from '../cache/lru';
 import { logApi } from '../utils/logger';
 
 // Concurrency queue to control/batch AI API requests
