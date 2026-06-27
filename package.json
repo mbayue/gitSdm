@@ -23,7 +23,7 @@
     "@fontsource-variable/geist": "^5.2.9",
     "@google/genai": "^2.6.0",
     "@octokit/rest": "^21.1.1",
-    "@tanstack/react-query": "^5.67.1",
+    "@tanstack/react-query": "^5.101.1",
     "@tanstack/react-virtual": "^3.13.2",
     "@xyflow/react": "^12.4.4",
     "class-variance-authority": "^0.7.1",
