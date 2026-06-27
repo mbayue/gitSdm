@@ -184,13 +184,14 @@ export async function fetchFlatTree(
       return false;
     };
 
-    allBlobs.sort((a, b) => {
-      const aNoise = isNoise(a.path);
-      const bNoise = isNoise(b.path);
-      if (!aNoise && bNoise) return -1;
-      if (aNoise && !bNoise) return 1;
-      return a.path.localeCompare(b.path);
+    const mapped = allBlobs.map((item) => ({ item, noise: isNoise(item.path) ? 1 : 0 }));
+    mapped.sort((a, b) => {
+      if (a.noise !== b.noise) return a.noise - b.noise;
+      return a.item.path.localeCompare(b.item.path);
     });
+    for (let i = 0; i < mapped.length; i++) {
+      allBlobs[i] = mapped[i].item;
+    }
 
     const blobs = allBlobs.slice(0, MAX_TREE_ITEMS);
 
