@@ -153,7 +153,11 @@ async function runIndexing(options: IndexingOptions, ctx: RequestContext, key: s
 
       // Embed chunks
       try {
-        const embeddings = await provider.embedBatch(chunks.map((c) => c.content));
+        const chunkContents = new Array(chunks.length);
+        for (let j = 0; j < chunks.length; j++) {
+          chunkContents[j] = chunks[j].content;
+        }
+        const embeddings = await provider.embedBatch(chunkContents);
 
         for (let j = 0; j < chunks.length; j++) {
           const chunk = chunks[j];
