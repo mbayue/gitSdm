@@ -136,8 +136,6 @@ async function runIndexing(options: IndexingOptions, ctx: RequestContext, key: s
       return limit(async () => {
         let contents: Record<string, string>;
         try {
-          // fetchFileContents itself makes one request per path or handles batches
-          // The issue mentions getContent request for EACH file. Wait, let me check fetchFileContents
           contents = await fetchFileContents(owner, repo, paths, targetSha, ctx);
         } catch {
           failedChunks += batch.length;
