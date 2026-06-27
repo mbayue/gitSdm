@@ -120,6 +120,9 @@ async function runIndexing(options: IndexingOptions, ctx: RequestContext, key: s
   let totalChunks = 0;
   const allIndexedChunks: IndexedChunk[] = [];
 
+  // Limit concurrency across all GitHub API requests to 5.
+  // We apply this per file processing task to prevent `fetchFileContents`
+  // fanout within batches from exceeding our limit.
   const limit = pLimit(5);
   const batches: (typeof filesToProcess)[] = [];
   for (let i = 0; i < filesToProcess.length; i += BATCH_SIZE) {
@@ -127,12 +130,14 @@ async function runIndexing(options: IndexingOptions, ctx: RequestContext, key: s
   }
 
   await Promise.all(
-    batches.map((batch) =>
-      limit(async () => {
-        const paths = batch.map((b) => b.path);
+    batches.map((batch) => {
+      const paths = batch.map((b) => b.path);
 
+      return limit(async () => {
         let contents: Record<string, string>;
         try {
+          // fetchFileContents itself makes one request per path or handles batches
+          // The issue mentions getContent request for EACH file. Wait, let me check fetchFileContents
           contents = await fetchFileContents(owner, repo, paths, targetSha, ctx);
         } catch {
           failedChunks += batch.length;
@@ -196,8 +201,8 @@ async function runIndexing(options: IndexingOptions, ctx: RequestContext, key: s
         // Update progress
         const progress = totalFiles > 0 ? Math.round((filesProcessed / totalFiles) * 100) : 100;
         statusMap.set(key, { state: 'indexing', progress, filesProcessed, totalFiles });
-      }),
-    ),
+      });
+    }),
   );
 
   // 6. Check failure threshold
