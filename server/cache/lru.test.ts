@@ -5,6 +5,7 @@ import {
   cache,
   clearAllCaches,
   hashContext,
+  hashApiKey,
   invalidateSearchCache,
 } from './lru';
 
@@ -88,5 +89,19 @@ describe('hashContext', () => {
     expect(hashContext('')).toBe(
       'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
     );
+  });
+});
+
+describe('hashApiKey', () => {
+  it('produces a distinct hash for api keys', () => {
+    const key1 = 'sk-12345';
+    const key2 = 'sk-67890';
+
+    const hash1 = hashApiKey(key1);
+    const hash2 = hashApiKey(key2);
+
+    expect(hash1).not.toBe(hash2);
+    expect(hash1).toBe(hashApiKey(key1)); // Deterministic
+    expect(hash1.length).toBe(64); // 32 bytes hex encoded
   });
 });

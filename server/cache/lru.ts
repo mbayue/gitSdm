@@ -91,3 +91,8 @@ export function aiCacheKey(
 export function hashContext(input: string): string {
   return crypto.createHash('sha256').update(input).digest('hex');
 }
+
+/** Securely hashes an API key for caching purposes to avoid storing raw secrets */
+export function hashApiKey(key: string): string {
+  return crypto.createHmac('sha256', 'api-key-salt').update(key).digest('hex');
+}
