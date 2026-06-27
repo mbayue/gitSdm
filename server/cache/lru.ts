@@ -9,22 +9,22 @@ export interface CacheStore {
 
 type CacheValue = NonNullable<unknown>;
 
-const analyzeCache = new LRUCache<string, CacheValue>({
+export const analyzeCache = new LRUCache<string, CacheValue>({
   max: 200,
   ttl: 1000 * 60 * 60,
 });
 
-const aiCache = new LRUCache<string, CacheValue>({
+export const aiCache = new LRUCache<string, CacheValue>({
   max: 200,
   ttl: 1000 * 60 * 30,
 });
 
-const searchCache = new LRUCache<string, CacheValue>({
+export const searchCache = new LRUCache<string, CacheValue>({
   max: 500, // up to 100 per repo, 5 repos typical
   ttl: 1000 * 60 * 60, // 60 minutes
 });
 
-const indexCache = new LRUCache<string, CacheValue>({
+export const indexCache = new LRUCache<string, CacheValue>({
   max: 50,
   ttl: 1000 * 60 * 60 * 2, // 2 hours
 });
