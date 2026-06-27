@@ -2,6 +2,7 @@ import type { IndexingOptions, IndexingStatus, IndexingPipeline, RequestContext,
 import { SUPPORTED_EXTENSIONS, extToLanguage } from './constants';
 import { createEmbeddingProvider } from './embedding-provider';
 import { createChunker } from './chunker';
+import pLimit from 'p-limit';
 import { getVectorStore } from './vector-store';
 import { fetchFlatTree, fetchFileContents, fetchRepoInfo } from '../github/fetch-tree';
 import { invalidateSearchCache } from '../cache/lru';
@@ -119,76 +120,88 @@ async function runIndexing(options: IndexingOptions, ctx: RequestContext, key: s
   let totalChunks = 0;
   const allIndexedChunks: IndexedChunk[] = [];
 
+  // Limit concurrency across all GitHub API requests to 5.
+  // We apply this per file processing task to prevent `fetchFileContents`
+  // fanout within batches from exceeding our limit.
+  const limit = pLimit(5);
+  const batches: (typeof filesToProcess)[] = [];
   for (let i = 0; i < filesToProcess.length; i += BATCH_SIZE) {
-    const batch = filesToProcess.slice(i, i + BATCH_SIZE);
-    const paths = batch.map((b) => b.path);
-
-    let contents: Record<string, string>;
-    try {
-      contents = await fetchFileContents(owner, repo, paths, targetSha, ctx);
-    } catch {
-      failedChunks += batch.length;
-      filesProcessed += batch.length;
-      continue;
-    }
-
-    for (const item of batch) {
-      const content = contents[item.path];
-      if (!content) {
-        failedChunks++;
-        filesProcessed++;
-        continue;
-      }
-
-      const ext = getExtension(item.path);
-      const language = extToLanguage(ext);
-      const chunks = chunker.chunkFile(content, item.path, language);
-
-      if (chunks.length === 0) {
-        filesProcessed++;
-        continue;
-      }
-
-      totalChunks += chunks.length;
-
-      // Embed chunks
-      try {
-        const chunkContents = new Array(chunks.length);
-        for (let j = 0; j < chunks.length; j++) {
-          chunkContents[j] = chunks[j].content;
-        }
-        const embeddings = await provider.embedBatch(chunkContents);
-
-        for (let j = 0; j < chunks.length; j++) {
-          const chunk = chunks[j];
-          const embedding = embeddings[j];
-          allIndexedChunks.push({
-            id: `${key}:${item.path}:${chunk.chunkIndex}`,
-            vector: embedding.vector,
-            metadata: {
-              filePath: item.path,
-              startLine: chunk.startLine,
-              endLine: chunk.endLine,
-              chunkIndex: chunk.chunkIndex,
-              language: chunk.language,
-              content: chunk.content.slice(0, 2000), // Limit stored content for display
-              repoKey: key,
-              commitSha: targetSha,
-            },
-          });
-        }
-      } catch (err) {
-        failedChunks++;
-        logError('indexing:embed', err, { file: item.path });
-      }
-
-      filesProcessed++;
-    }
-
-    // Update progress
-    const progress = totalFiles > 0 ? Math.round((filesProcessed / totalFiles) * 100) : 100;
-    statusMap.set(key, { state: 'indexing', progress, filesProcessed, totalFiles });
+    batches.push(filesToProcess.slice(i, i + BATCH_SIZE));
   }
+
+  await Promise.all(
+    batches.map((batch) => {
+      const paths = batch.map((b) => b.path);
+
+      return limit(async () => {
+        let contents: Record<string, string>;
+        try {
+          contents = await fetchFileContents(owner, repo, paths, targetSha, ctx);
+        } catch {
+          failedChunks += batch.length;
+          filesProcessed += batch.length;
+          return;
+        }
+
+        for (const item of batch) {
+          const content = contents[item.path];
+          if (!content) {
+            failedChunks++;
+            filesProcessed++;
+            continue;
+          }
+
+          const ext = getExtension(item.path);
+          const language = extToLanguage(ext);
+          const chunks = chunker.chunkFile(content, item.path, language);
+
+          if (chunks.length === 0) {
+            filesProcessed++;
+            continue;
+          }
+
+          totalChunks += chunks.length;
+
+          // Embed chunks
+          try {
+            const chunkContents = new Array(chunks.length);
+            for (let j = 0; j < chunks.length; j++) {
+              chunkContents[j] = chunks[j].content;
+            }
+            const embeddings = await provider.embedBatch(chunkContents);
+
+            for (let j = 0; j < chunks.length; j++) {
+              const chunk = chunks[j];
+              const embedding = embeddings[j];
+              allIndexedChunks.push({
+                id: `${key}:${item.path}:${chunk.chunkIndex}`,
+                vector: embedding.vector,
+                metadata: {
+                  filePath: item.path,
+                  startLine: chunk.startLine,
+                  endLine: chunk.endLine,
+                  chunkIndex: chunk.chunkIndex,
+                  language: chunk.language,
+                  content: chunk.content.slice(0, 2000), // Limit stored content for display
+                  repoKey: key,
+                  commitSha: targetSha,
+                },
+              });
+            }
+          } catch (err) {
+            failedChunks++;
+            logError('indexing:embed', err, { file: item.path });
+          }
+
+          filesProcessed++;
+        }
+
+        // Update progress
+        const progress = totalFiles > 0 ? Math.round((filesProcessed / totalFiles) * 100) : 100;
+        statusMap.set(key, { state: 'indexing', progress, filesProcessed, totalFiles });
+      });
+    }),
+  );
 
   // 6. Check failure threshold
   const totalAttempted = totalChunks + failedChunks;

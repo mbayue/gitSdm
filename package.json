@@ -39,6 +39,7 @@
     "lucide-react": "^1.21.0",
     "mermaid": "^11.15.0",
     "openai": "^6.45.0",
+    "p-limit": "^7.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-force-graph-2d": "^1.29.1",
