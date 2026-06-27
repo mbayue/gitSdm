@@ -37,8 +37,18 @@ describe('utils', () => {
       ).toBe('base-class is-active array-class array-nested text-red-500 p-4');
     });
 
+    it('resolves complex tailwind conflicts', () => {
+      expect(cn('px-2 py-2', 'p-4')).toBe('p-4');
+      expect(cn('text-lg text-sm text-center')).toBe('text-sm text-center');
+      expect(cn('bg-red-500', { 'bg-blue-500': true })).toBe('bg-blue-500');
+      expect(cn(['text-black', 'text-white'], { 'font-bold': true })).toBe('text-white font-bold');
+      expect(cn(['p-2', 'm-2'], ['p-4', 'm-4'])).toBe('p-4 m-4');
+      expect(cn({ 'text-red-500': false, 'text-blue-500': true }, 'text-green-500')).toBe('text-green-500');
+    });
+
     it('handles falsy values safely', () => {
       expect(cn('foo', null, undefined, false, 0, '')).toBe('foo');
+      expect(cn(undefined, null, false, '', 0, 'text-center')).toBe('text-center');
     });
   });
 
