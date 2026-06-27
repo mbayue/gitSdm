@@ -156,3 +156,12 @@ graphify-out/
 # OS/editor noise
 .DS_Store
 Thumbs.db
+
+.agents
+.agent
+.codex
+.cursor
+.kiro
+.qoder
+.clinerules
+design-system
