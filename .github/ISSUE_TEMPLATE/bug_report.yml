@@ -1,0 +1,64 @@
+name: Bug Report
+description: File a report to help us improve gitSdm
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! Please fill out the form below as completely as possible.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe what happened...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+    validations:
+      required: true
+  - type: input
+    id: repo-url
+    attributes:
+      label: Target Repository URL
+      description: The GitHub URL of the repository that caused the issue (if applicable).
+      placeholder: https://github.com/owner/repo
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Console Output
+      description: Please copy/paste any relevant logs, terminal errors, or browser console output.
+      render: shell
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      description: Where are you running gitSdm?
+      options:
+        - Local Bun CLI (bun run dev)
+        - Local Docker container
+        - Production deployment (e.g. Vercel)
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      description: What browser are you using?
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - Other / N/A

@@ -59,7 +59,6 @@ export function NetworkCanvas({
     setHighlightedNodeIds,
     setFocusedFilePath,
     compareBranch,
-    setActiveDropdown,
     forceSize,
     hoveredForceNode,
     setHoveredForceNode,

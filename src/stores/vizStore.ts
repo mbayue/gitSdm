@@ -333,14 +333,15 @@ export const useVizStore = create<VizState>()(
       graphScope: state.graphScope,
       contentFilters: Array.from(state.contentFilters),
     }),
-    merge: (persistedState: any, currentState: any) => {
+    merge: (persistedState: unknown, currentState: VizState): VizState => {
+      const p = persistedState as Partial<Omit<VizState, 'contentFilters'> & { contentFilters: ContentFilter[] }>;
       return {
         ...currentState,
-        ...persistedState,
-        contentFilters: persistedState.contentFilters
-          ? new Set(persistedState.contentFilters)
+        ...p,
+        contentFilters: p?.contentFilters
+          ? new Set(p.contentFilters)
           : currentState.contentFilters,
-      };
+      } as VizState;
     },
   }
 ));

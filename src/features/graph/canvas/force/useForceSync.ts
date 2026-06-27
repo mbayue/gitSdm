@@ -9,7 +9,6 @@ interface ForceSyncProps {
   nodes: ForceGraphNode[];
   graphActionTrigger: { action: string } | null;
   forceGraphRef: React.MutableRefObject<ForceGraphMethods<ForceGraphNode, ForceGraphLink> | undefined>;
-  forceInitialViewDoneRef: React.MutableRefObject<boolean>;
 }
 
 export function useForceSync({
@@ -19,7 +18,6 @@ export function useForceSync({
   nodes,
   graphActionTrigger,
   forceGraphRef,
-  forceInitialViewDoneRef,
 }: ForceSyncProps) {
   const prevFocusRef = useRef<string | null>(null);
 

@@ -129,7 +129,7 @@ export function useNodeFiltering({
         const isTests = p.includes('test/') || p.includes('tests/') || p.includes('spec/') || p.includes('__tests__');
         const isGithub = p.includes('.github/');
         const isExamples = p.includes('example/') || p.includes('examples/');
-        const isGenerated = p.includes('dist/') || p.includes('build/') || p.includes('out/') || (n.data as any).isGenerated;
+        const isGenerated = p.includes('dist/') || p.includes('build/') || p.includes('out/') || n.data.isGenerated;
         const isLocales = p.includes('locales/') || p.includes('i18n/') || p.includes('translations/');
         const isConfig = p.includes('config') || p.endsWith('.json') || p.endsWith('.yaml') || p.endsWith('.yml') || p.endsWith('.toml');
         

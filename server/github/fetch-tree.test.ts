@@ -117,8 +117,7 @@ describe('github/fetch-tree', () => {
     mockListBranches.mockImplementationOnce(async () => {
       throw new Error('Github failure');
     });
-    const fallbackRes = await fetchRepoBranches('real-owner', 'repo');
-    expect(fallbackRes.length).toBeGreaterThan(1);
+    await expect(fetchRepoBranches('real-owner', 'repo')).rejects.toThrow('Github failure');
   });
 
   it('fetchRepoInfo: handles mock and real repo successfully', async () => {

@@ -2,8 +2,8 @@ import { Filter, ChevronDown, Check, FolderGit2, Folder, FileCode, Download, Ale
 import type { GraphScope, ContentFilter } from '@/stores/vizStore';
 
 interface ToolbarDropdownProps {
-  activeDropdown: 'filter' | 'export' | null;
-  setActiveDropdown: (dropdown: 'filter' | 'export' | null) => void;
+  activeDropdown: 'filter' | 'layout' | 'export' | null;
+  setActiveDropdown: (dropdown: 'filter' | 'layout' | 'export' | null) => void;
   nodeTypeFilters: Set<string>;
   toggleNodeTypeFilter: (type: 'repo' | 'folder' | 'file') => void;
   compareBranch: boolean;

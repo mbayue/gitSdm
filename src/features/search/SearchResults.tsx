@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FileCode, ExternalLink, Network, Copy } from 'lucide-react';
 import { useSearchStore } from './searchStore';
 import { useVizStore } from '@/stores/vizStore';
+import type { SearchResultCard as SearchResultCardType } from '@/types';
 
 interface SearchResultsProps {
   onSelectFile?: (filePath: string, startLine: number, action?: 'open' | 'inspect') => void;
@@ -28,7 +29,7 @@ export function SearchResults({ onSelectFile }: SearchResultsProps) {
   );
 }
 
-function SearchResultCard({ result: r, onSelectFile }: { result: any, onSelectFile?: (f: string, l: number, a?: 'open'|'inspect') => void }) {
+function SearchResultCard({ result: r, onSelectFile }: { result: SearchResultCardType, onSelectFile?: (f: string, l: number, a?: 'open'|'inspect') => void }) {
   const [expanded, setExpanded] = useState(false);
   
   const snippetLines = r.snippet.split('\n');

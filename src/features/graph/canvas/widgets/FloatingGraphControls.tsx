@@ -1,5 +1,5 @@
 
-import { ZoomIn, ZoomOut, Maximize, Map, Crosshair, RefreshCcw, Target } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Map, RefreshCcw, Target } from 'lucide-react';
 import { useVizStore } from '@/stores/vizStore';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 

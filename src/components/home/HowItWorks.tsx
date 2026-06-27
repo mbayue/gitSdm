@@ -1,4 +1,3 @@
-import { ArrowRight } from 'lucide-react';
 
 const pipeline = [
   { step: '01', title: 'GitHub URL', description: 'Paste any public repository URL.' },

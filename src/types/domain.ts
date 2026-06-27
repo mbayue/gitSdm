@@ -19,6 +19,7 @@ export interface GraphNode {
     nodeColor?: string;
     circleSize?: number;
     diffStatus?: 'added' | 'modified' | 'deleted';
+    isGenerated?: boolean;
   };
 }
 

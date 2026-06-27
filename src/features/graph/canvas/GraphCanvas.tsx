@@ -15,7 +15,7 @@ import { LegendPanel } from "./widgets/LegendPanel";
 import { FloatingGraphControls } from "./widgets/FloatingGraphControls";
 import { useGraphExport } from "../useGraphExport";
 import type { ForceGraphMethods } from "react-force-graph-2d";
-import type { ForceGraphNode, ForceGraphLink } from "./force/forceGraphConstants";
+import type { ForceGraphNode, ForceGraphLink } from "../force/forceGraphConstants";
 
 interface GraphCanvasProps {
   graph: GraphData;
@@ -50,7 +50,6 @@ export function GraphCanvas({
     setGraphScope,
     contentFilters,
     toggleContentFilter,
-    setVisibleCounts,
   } = useVizStore();
 
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -97,8 +96,8 @@ export function GraphCanvas({
           {/* Attached Main Graph Action Toolbar */}
           <div ref={toolbarRef} className="absolute top-0 left-0 z-30 flex h-10 items-center gap-1 border-r border-b border-[rgba(240,246,252,0.1)] bg-[#0d1117] px-3 rounded-br-md select-none font-sans">
             <ToolbarDropdowns
-              activeDropdown={activeDropdown as any}
-              setActiveDropdown={setActiveDropdown as any}
+              activeDropdown={activeDropdown}
+              setActiveDropdown={setActiveDropdown}
               nodeTypeFilters={nodeTypeFilters}
               toggleNodeTypeFilter={toggleNodeTypeFilter}
               compareBranch={!!compareBranch}

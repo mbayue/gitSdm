@@ -16,7 +16,7 @@ import {
   roastCache,
   readmeEnhanceCache
 } from './hooks/useAiCenterState';
-import type { RepoAnalysis } from '@/types';
+import type { RepoAnalysis, AIRefactorSuggestion } from '@/types';
 
 const firstRow = [
   { key: 'maintainability', label: 'Maintainability', icon: Wrench },
@@ -39,7 +39,15 @@ interface AiCenterTabProps {
   analysis: RepoAnalysis;
 }
 
-function RiskCard({ s, setSelectedNodeId, setFocusedFilePath }: { s: any; setSelectedNodeId: any; setFocusedFilePath: any }) {
+function RiskCard({ 
+  s, 
+  setSelectedNodeId, 
+  setFocusedFilePath 
+}: { 
+  s: AIRefactorSuggestion; 
+  setSelectedNodeId: (id: string | null) => void; 
+  setFocusedFilePath: (path: string | null) => void; 
+}) {
   const [expanded, setExpanded] = React.useState(false);
 
   return (

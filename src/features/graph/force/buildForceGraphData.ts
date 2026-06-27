@@ -45,7 +45,6 @@ export function buildForceGraphData(
       const fileType = node.data.extension || node.data.fileClass || node.type;
       const community = String(node.data.fileClass || node.type);
       const communityName = community.charAt(0).toUpperCase() + community.slice(1);
-      const isRepo = node.type === 'repo';
 
       return {
         id: node.id,

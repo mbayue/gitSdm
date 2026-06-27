@@ -1,0 +1,41 @@
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "apiKey",
+      "description": "21st.dev Magic API Key",
+      "password": true
+    }
+  ],
+  "servers": {
+    "21dev": {
+      "type": "stdio",
+      "command": "bunx",
+      "args": [
+        "@21st-dev/magic@latest",
+        "--package",
+        "@modelcontextprotocol/sdk@latest",
+        "magic"
+      ],
+      "env": {
+        "API_KEY": "${input:apiKey}"
+      }
+    },
+    "magicuidesign-mcp": {
+      "command": "bunx",
+      "args": [
+        "-y",
+        "@magicuidesign/mcp@latest"
+      ],
+      "env": {}
+    },
+    "shadcn": {
+      "command": "bunx",
+      "args": [
+        "shadcn@latest",
+        "mcp"
+      ],
+      "env": {}
+    }
+  }
+}

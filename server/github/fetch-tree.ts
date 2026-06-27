@@ -159,7 +159,7 @@ export async function fetchFlatTree(
       recursive: '1',
     });
 
-    let allBlobs: FlatTreeItem[] = [];
+    const allBlobs: FlatTreeItem[] = [];
     const tree = data.tree ?? [];
     for (const item of tree) {
       if (item.path && item.type === 'blob') {
@@ -172,7 +172,7 @@ export async function fetchFlatTree(
       }
     }
 
-    let totalFiles = allBlobs.length;
+    const totalFiles = allBlobs.length;
 
     // Prioritize source code over noise (docs, tests, generated)
     const isNoise = (p: string) => {
