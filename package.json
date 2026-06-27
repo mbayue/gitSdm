@@ -35,7 +35,7 @@
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",
     "lru-cache": "^11.0.2",
-    "lucide-react": "^1.18.0",
+    "lucide-react": "^1.21.0",
     "mermaid": "^11.15.0",
     "openai": "^4.86.1",
     "react": "^19.0.0",
