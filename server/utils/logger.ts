@@ -18,7 +18,12 @@ export function logError(
   meta?: Record<string, unknown>,
 ): void {
   const message = error instanceof Error ? error.message : String(error);
-  const stack = error instanceof Error ? error.stack : undefined;
+  const stack =
+    process.env.NODE_ENV === 'production'
+      ? undefined
+      : error instanceof Error
+        ? error.stack
+        : undefined;
   console.error(
     JSON.stringify({
       level: 'error',
