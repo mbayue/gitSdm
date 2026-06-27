@@ -194,24 +194,24 @@ async function createGeminiEmbeddingProvider(): Promise<EmbeddingProvider> {
     },
 
     async embedBatch(texts: string[]): Promise<EmbeddingResult[]> {
-      const results: EmbeddingResult[] = [];
-      for (const text of texts) {
-        const truncated = truncateText(text, maxTokens);
-        const response = await withRetry(() =>
-          ai.models.embedContent({
-            model,
-            contents: truncated,
-            config: { outputDimensionality: EMBEDDING_DIMENSIONS },
-          }),
-        );
-        const embedding = response.embeddings?.[0]?.values;
-        if (!embedding) throw new AppError(503, 'Gemini returned no embedding.', 'EMBEDDING_FAILURE', true);
-        results.push({
-          vector: normalizeVector(new Float32Array(embedding)),
-          tokenCount: estimateTokens(truncated),
-        });
-      }
-      return results;
+      return Promise.all(
+        texts.map(async (text) => {
+          const truncated = truncateText(text, maxTokens);
+          const response = await withRetry(() =>
+            ai.models.embedContent({
+              model,
+              contents: truncated,
+              config: { outputDimensionality: EMBEDDING_DIMENSIONS },
+            }),
+          );
+          const embedding = response.embeddings?.[0]?.values;
+          if (!embedding) throw new AppError(503, 'Gemini returned no embedding.', 'EMBEDDING_FAILURE', true);
+          return {
+            vector: normalizeVector(new Float32Array(embedding)),
+            tokenCount: estimateTokens(truncated),
+          };
+        }),
+      );
     },
   };
 }
