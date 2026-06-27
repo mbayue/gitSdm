@@ -92,6 +92,32 @@ describe('utils', () => {
       expect(parseRepoFromUrl('https://github.com/facebook/react.git')).toEqual({ owner: 'facebook', repo: 'react' });
     });
 
+    it('handles URLs with query parameters', () => {
+      expect(parseRepoFromUrl('https://github.com/facebook/react?tab=readme-ov-file')).toEqual({ owner: 'facebook', repo: 'react' });
+    });
+
+    it('handles URLs with hash parameters', () => {
+      expect(parseRepoFromUrl('https://github.com/facebook/react#readme')).toEqual({ owner: 'facebook', repo: 'react' });
+    });
+
+    it('handles deep links (e.g., issues, pull requests)', () => {
+      expect(parseRepoFromUrl('https://github.com/facebook/react/issues/1')).toEqual({ owner: 'facebook', repo: 'react' });
+      expect(parseRepoFromUrl('https://github.com/facebook/react/pull/123')).toEqual({ owner: 'facebook', repo: 'react' });
+      expect(parseRepoFromUrl('github.com/facebook/react/tree/main/src')).toEqual({ owner: 'facebook', repo: 'react' });
+    });
+
+    it('handles subdomains (e.g., www)', () => {
+      expect(parseRepoFromUrl('https://www.github.com/facebook/react')).toEqual({ owner: 'facebook', repo: 'react' });
+    });
+
+    it('handles .git/ trailing slash edge case', () => {
+      expect(parseRepoFromUrl('facebook/react.git/')).toEqual({ owner: 'facebook', repo: 'react' });
+    });
+
+    it('handles SSH URLs', () => {
+      expect(parseRepoFromUrl('git@github.com:facebook/react.git')).toEqual({ owner: 'facebook', repo: 'react' });
+    });
+
     it('returns null for invalid inputs', () => {
       expect(parseRepoFromUrl('invalid-string')).toBeNull();
       expect(parseRepoFromUrl('https://google.com/facebook/react')).toBeNull();
