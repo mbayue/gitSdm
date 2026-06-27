@@ -290,23 +290,27 @@ export async function fetchFileContents(
   const octokit = resolveOctokit(tokenOrCtx);
   const result: Record<string, string> = {};
 
-  await Promise.all(
-    paths.map(async (path) => {
-      try {
-        const { data } = await octokit.repos.getContent({
-          owner,
-          repo,
-          path,
-          ref,
-        });
-        if (!Array.isArray(data) && data.type === 'file' && 'content' in data && data.content) {
-          result[path] = Buffer.from(data.content, 'base64').toString('utf-8').slice(0, 50000);
+  const CONCURRENCY = 7;
+  for (let i = 0; i < paths.length; i += CONCURRENCY) {
+    const chunk = paths.slice(i, i + CONCURRENCY);
+    await Promise.all(
+      chunk.map(async (path) => {
+        try {
+          const { data } = await octokit.repos.getContent({
+            owner,
+            repo,
+            path,
+            ref,
+          });
+          if (!Array.isArray(data) && data.type === 'file' && 'content' in data && data.content) {
+            result[path] = Buffer.from(data.content, 'base64').toString('utf-8').slice(0, 50000);
+          }
+        } catch {
+          // skip unreadable files
         }
-      } catch {
-        // skip unreadable files
-      }
-    }),
-  );
+      }),
+    );
+  }
 
   return result;
 }
