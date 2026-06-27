@@ -39,15 +39,17 @@ interface AiCenterTabProps {
   analysis: RepoAnalysis;
 }
 
+interface RiskCardProps {
+  s: AIRefactorSuggestion;
+  setSelectedNodeId: (id: string | null) => void;
+  setFocusedFilePath: (path: string | null) => void;
+}
+
 function RiskCard({ 
   s, 
   setSelectedNodeId, 
   setFocusedFilePath 
-}: { 
-  s: AIRefactorSuggestion; 
-  setSelectedNodeId: (id: string | null) => void; 
-  setFocusedFilePath: (path: string | null) => void; 
-}) {
+}: RiskCardProps) {
   const [expanded, setExpanded] = React.useState(false);
 
   return (
