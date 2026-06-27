@@ -4,6 +4,13 @@ import { useSearchStore } from './searchStore';
 import { useVizStore } from '@/stores/vizStore';
 import type { SearchResultCard as SearchResultCardType } from '@/types';
 
+export interface SearchResultCardProps {
+  result: SearchResultCardType & {
+    highlights?: { line: number }[];
+  };
+  onSelectFile?: (filePath: string, startLine: number, action?: 'open' | 'inspect') => void;
+}
+
 interface SearchResultsProps {
   onSelectFile?: (filePath: string, startLine: number, action?: 'open' | 'inspect') => void;
 }
@@ -29,7 +36,7 @@ export function SearchResults({ onSelectFile }: SearchResultsProps) {
   );
 }
 
-function SearchResultCard({ result: r, onSelectFile }: { result: SearchResultCardType, onSelectFile?: (f: string, l: number, a?: 'open'|'inspect') => void }) {
+function SearchResultCard({ result: r, onSelectFile }: SearchResultCardProps) {
   const [expanded, setExpanded] = useState(false);
   
   const snippetLines = r.snippet.split('\n');
