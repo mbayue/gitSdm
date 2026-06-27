@@ -72,7 +72,6 @@ ${buildRepoContext(analysis)}`,
 
   diagram = diagram
     .replace(/click\s+\w+\s+[^\n;]*/gi, '')
-    .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, '')
     .replace(/[<>]/g, '');
 
   return { diagram, cached: result.cached };
