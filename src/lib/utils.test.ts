@@ -15,7 +15,9 @@ describe('utils', () => {
 
     it('handles conditional classes', () => {
       expect(cn('foo', { bar: true, baz: false })).toBe('foo bar');
-      expect(cn('foo', true && 'bar', false && 'baz')).toBe('foo bar');
+      const isTrue = true;
+      const isFalse = false;
+      expect(cn('foo', isTrue && 'bar', isFalse && 'baz')).toBe('foo bar');
     });
 
     it('handles arrays of classes', () => {
