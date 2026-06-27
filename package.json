@@ -18,7 +18,7 @@
     "graphify:update": "graphify update . && python scripts/clean_graphify.py"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
+    "@anthropic-ai/sdk": "^0.106.0",
     "@base-ui/react": "^1.6.0",
     "@fontsource-variable/geist": "^5.2.9",
     "@google/genai": "^2.6.0",
