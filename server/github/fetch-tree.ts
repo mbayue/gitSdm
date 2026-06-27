@@ -206,17 +206,19 @@ export async function fetchFlatTree(
 
 export function buildTreeFromPaths(items: FlatTreeItem[]): TreeNode[] {
   const root: TreeNode[] = [];
+  const map = new Map<string, TreeNode>();
 
   for (const item of items) {
     const parts = item.path.split('/');
     let current = root;
+    let path = '';
 
     for (let i = 0; i < parts.length; i++) {
       const name = parts[i];
       const isFile = i === parts.length - 1;
-      const path = parts.slice(0, i + 1).join('/');
+      path = path ? `${path}/${name}` : name;
 
-      let existing = current.find((n) => n.name === name);
+      let existing = map.get(path);
       if (!existing) {
         existing = {
           path,
@@ -227,6 +229,7 @@ export function buildTreeFromPaths(items: FlatTreeItem[]): TreeNode[] {
           sha: isFile ? item.sha : undefined,
         };
         current.push(existing);
+        map.set(path, existing);
       }
 
       if (!isFile && existing.children) {
