@@ -1,4 +1,5 @@
 import { LRUCache } from 'lru-cache';
+import crypto from 'crypto';
 
 export interface CacheStore {
   get<T>(key: string): T | undefined;
@@ -88,10 +89,5 @@ export function aiCacheKey(
 }
 
 export function hashContext(input: string): string {
-  let hash = 0;
-  for (let i = 0; i < input.length; i++) {
-    hash = (hash << 5) - hash + input.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash).toString(36);
+  return crypto.createHash('sha256').update(input).digest('hex');
 }
