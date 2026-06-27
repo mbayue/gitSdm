@@ -19,8 +19,8 @@ Security updates are actively applied to the latest major release branch.
 
 ### In Scope
 The following components are in scope for security vulnerability reports:
-* Core parsing logic under [server/parser/](file:///c:/Users/bayue/Documents/Code/gitSdm/server/parser/) and [server/github/](file:///c:/Users/bayue/Documents/Code/gitSdm/server/github/).
-* API endpoints defined in [server/prod-server.ts](file:///c:/Users/bayue/Documents/Code/gitSdm/server/prod-server.ts) and server routers.
+* Core parsing logic under [server/parser/](server/parser/) and [server/github/](server/github/).
+* API endpoints defined in [server/prod-server.ts](server/prod-server.ts) and server routers.
 * Token and secret leakage via environment variables or logs.
 * Client-side Cross-Site Scripting (XSS) in markdown or graph visualizers.
 

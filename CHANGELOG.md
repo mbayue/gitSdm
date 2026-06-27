@@ -21,6 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved TypeScript and ESLint type coverage across visualization hooks and search results.
 
 ### Fixed
-- Fixed typescript compiler error in [GraphCanvas.tsx](file:///c:/Users/bayue/Documents/Code/gitSdm/src/features/graph/canvas/GraphCanvas.tsx) due to incorrect import path.
-- Fixed timer instantiation issue in [useArchitectureExport.ts](file:///c:/Users/bayue/Documents/Code/gitSdm/src/components/viz/architecture/hooks/useArchitectureExport.ts) by providing proper `undefined` initial values to `useRef`.
+- Fixed typescript compiler error in [GraphCanvas.tsx](src/features/graph/canvas/GraphCanvas.tsx) due to incorrect import path.
+- Fixed timer instantiation issue in [useArchitectureExport.ts](src/components/viz/architecture/hooks/useArchitectureExport.ts) by providing proper `undefined` initial values to `useRef`.
 - Fixed mock repository check tests failing in isolated test runner environments.
