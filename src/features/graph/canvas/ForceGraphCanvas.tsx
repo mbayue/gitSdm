@@ -271,6 +271,9 @@ export function NetworkCanvas({
           d3VelocityDecay={0.5}
           onEngineStop={handleEngineStop}
           onEngineTick={handleEngineTick}
+          onZoomEnd={() => {
+            if (showMinimap) setTick((t) => t + 1);
+          }}
           linkDirectionalParticles={0}
           linkWidth={getLinkWidth}
           linkColor={getLinkColor}
