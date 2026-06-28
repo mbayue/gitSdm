@@ -325,24 +325,53 @@ export async function fetchContributors(
   }
   const octokit = resolveOctokit(tokenOrCtx);
   try {
-    const { data } = await octokit.repos.listContributors({
-      owner,
-      repo,
-      per_page: 15,
-    });
     const result: { login: string; avatarUrl: string; contributions: number }[] = [];
-    for (const c of data) {
-      if (c.login) {
-        result.push({
-          login: c.login,
-          avatarUrl: c.avatar_url ?? '',
-          contributions: c.contributions ?? 0,
-        });
+    for (let page = 1; ; page++) {
+      const { data } = await octokit.repos.listContributors({
+        owner,
+        repo,
+        per_page: 100,
+        page,
+      });
+      for (const c of data) {
+        if (c.login) {
+          result.push({
+            login: c.login,
+            avatarUrl: c.avatar_url ?? '',
+            contributions: c.contributions ?? 0,
+          });
+        }
       }
+      if (data.length < 100) break;
     }
     return result;
   } catch {
     return [];
+  }
+}
+
+export async function fetchTotalCommits(
+  owner: string,
+  repo: string,
+  branch?: string,
+  tokenOrCtx?: string | RequestContext,
+): Promise<number> {
+  if (isMockRepo(owner)) {
+    return (await fetchMockContributors()).reduce((sum, c) => sum + c.contributions, 0);
+  }
+  const octokit = resolveOctokit(tokenOrCtx);
+  try {
+    const { data, headers } = await octokit.repos.listCommits({
+      owner,
+      repo,
+      sha: branch || undefined,
+      per_page: 1,
+    });
+    const link = headers?.link ?? '';
+    const lastPage = /[?&]page=(\d+)>;\s*rel="last"/.exec(link)?.[1];
+    return lastPage ? Number(lastPage) : data.length;
+  } catch {
+    return 0;
   }
 }
 

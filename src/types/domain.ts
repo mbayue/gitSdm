@@ -102,6 +102,7 @@ export interface RepoAnalysis {
   timeline: TimelineWeek[];
   importantFiles: string[];
   totalFiles?: number;
+  totalCommits?: number;
 }
 
 export interface TrendingRepo {

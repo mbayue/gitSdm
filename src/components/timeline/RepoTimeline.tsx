@@ -23,12 +23,12 @@ export function RepoTimeline({ timeline, height = 112 }: RepoTimelineProps) {
     <div style={{ height }} className="w-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 12, right: 8, left: -20, bottom: 4 }}>
-          <defs>
-            <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.25} />
-              <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0} />
-            </linearGradient>
-          </defs>
+	          <defs>
+	            <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+	              <stop offset="0%" stopColor="#58a6ff" stopOpacity={0.28} />
+	              <stop offset="100%" stopColor="#1f6feb" stopOpacity={0} />
+	            </linearGradient>
+	          </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
           <XAxis
             dataKey="week"
@@ -48,12 +48,12 @@ export function RepoTimeline({ timeline, height = 112 }: RepoTimelineProps) {
               backdropFilter: 'blur(8px)',
             }}
             labelStyle={{ color: isDark ? '#a1a1aa' : '#52525b', fontWeight: 'bold' }}
-            itemStyle={{ color: '#a78bfa' }}
+	            itemStyle={{ color: '#58a6ff' }}
           />
           <Area
             type="monotone"
             dataKey="commits"
-            stroke="#a78bfa"
+	            stroke="#58a6ff"
             fill="url(#areaGradient)"
             strokeWidth={2}
           />

@@ -9,6 +9,9 @@ interface ContributorsViewProps {
   repo: string;
 }
 
+const statLabelClass = "block text-[10px] leading-3 text-zinc-400 uppercase font-mono tracking-wider font-semibold truncate";
+const statValueClass = "text-2xl leading-8 font-bold text-white mt-0.5 truncate";
+
 export function ContributorsView({ analysis, owner, repo }: ContributorsViewProps) {
   const { contributors, timeline } = analysis;
 
@@ -59,8 +62,8 @@ export function ContributorsView({ analysis, owner, repo }: ContributorsViewProp
               <Users className="h-5 w-5" />
             </div>
             <div>
-              <span className="text-[10px] text-zinc-400 uppercase font-mono tracking-wider font-semibold">Total Contributors</span>
-              <h3 className="text-2xl font-bold text-white mt-0.5">{stats.totalContributors}</h3>
+	              <span className={statLabelClass}>Total Contributors</span>
+	              <h3 className={statValueClass}>{stats.totalContributors}</h3>
             </div>
           </div>
         </div>
@@ -73,8 +76,8 @@ export function ContributorsView({ analysis, owner, repo }: ContributorsViewProp
               <GitCommit className="h-5 w-5" />
             </div>
             <div>
-              <span className="text-[10px] text-zinc-400 uppercase font-mono tracking-wider font-semibold">Total Commits</span>
-              <h3 className="text-2xl font-bold text-white mt-0.5">{stats.totalCommits}</h3>
+	              <span className={statLabelClass}>Total Commits</span>
+	              <h3 className={statValueClass}>{stats.totalCommits}</h3>
             </div>
           </div>
         </div>
@@ -87,10 +90,10 @@ export function ContributorsView({ analysis, owner, repo }: ContributorsViewProp
               <Flame className="h-5 w-5 animate-pulse" />
             </div>
             <div className="min-w-0 flex-1">
-              <span className="text-[10px] text-zinc-400 uppercase font-mono tracking-wider font-semibold block truncate">Most Active Contributor</span>
-              <h3 className="text-md font-bold text-white mt-0.5 truncate" title={`${stats.mostActiveName} (${stats.mostActiveCommits} commits)`}>
-                {stats.mostActiveName} <span className="text-xs text-zinc-400 font-normal">({stats.mostActiveCommits})</span>
-              </h3>
+	              <span className={statLabelClass}>Most Active Contributor</span>
+	              <h3 className={statValueClass} title={`${stats.mostActiveName} (${stats.mostActiveCommits} commits)`}>
+	                {stats.mostActiveName}
+	              </h3>
             </div>
           </div>
         </div>
@@ -103,8 +106,8 @@ export function ContributorsView({ analysis, owner, repo }: ContributorsViewProp
               <Calendar className="h-5 w-5" />
             </div>
             <div>
-              <span className="text-[10px] text-zinc-400 uppercase font-mono tracking-wider font-semibold">Active Timeline</span>
-              <h3 className="text-2xl font-bold text-white mt-0.5">{stats.activeWeeks} Weeks</h3>
+	              <span className={statLabelClass}>Active Timeline</span>
+	              <h3 className={statValueClass}>{stats.activeWeeks} Weeks</h3>
             </div>
           </div>
         </div>
