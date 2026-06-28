@@ -14,7 +14,7 @@ export function formatStars(n: number): string {
 export function parseRepoFromUrl(url: string): { owner: string; repo: string } | null {
   const trimmed = url.trim().replace(/\/$/, '').replace(/\.git$/, '');
   const match =
-    trimmed.match(/github\.com[:/]([^/]+)\/([^/?#]+)/i) ?? trimmed.match(/^([^/]+)\/([^/]+)$/);
+    trimmed.match(/github\.com(?:\/|:(?!\d))([^/]+)\/([^/?#]+)/i) ?? trimmed.match(/^([^/]+)\/([^/]+)$/);
   if (!match) return null;
   return { owner: match[1], repo: match[2] };
 }
