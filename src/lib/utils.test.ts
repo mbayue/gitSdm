@@ -59,15 +59,22 @@ describe('utils', () => {
     });
 
     it('formats stars in thousands', () => {
-      expect(formatStars(1000)).toBe('1.0k');
-      expect(formatStars(1500)).toBe('1.5k');
-      expect(formatStars(999900)).toBe('999.9k');
+      expect(formatStars(1000)).toBe('1K');
+      expect(formatStars(1500)).toBe('1.5K');
+      expect(formatStars(999900)).toBe('999.9K');
     });
 
     it('formats stars in millions', () => {
-      expect(formatStars(1000000)).toBe('1.0M');
+      expect(formatStars(1000000)).toBe('1M');
       expect(formatStars(1500000)).toBe('1.5M');
-      expect(formatStars(2000000)).toBe('2.0M');
+      expect(formatStars(2000000)).toBe('2M');
+    });
+
+    it('handles boundary values specifically', () => {
+      expect(formatStars(999)).toBe('999');
+      expect(formatStars(1000)).toBe('1K');
+      expect(formatStars(999999)).toBe('1M');
+      expect(formatStars(1000000)).toBe('1M');
     });
   });
 
