@@ -8,122 +8,93 @@ interface ForceMinimapProps {
   width: number;
   height: number;
   isDark: boolean;
+  tick: number;
 }
 
-export function ForceMinimap({ nodes, forceGraphRef, width, height, isDark }: ForceMinimapProps) {
+export function ForceMinimap({ nodes, forceGraphRef, width, height, isDark, tick }: ForceMinimapProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    let animationFrameId: number;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-    const render = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) {
-        animationFrameId = requestAnimationFrame(render);
-        return;
+    const fg = forceGraphRef.current;
+    if (!fg) return;
+
+    const center = fg.centerAt();
+    const zoom = fg.zoom();
+
+    if (!center || typeof zoom !== 'number' || zoom <= 0) return;
+
+    const mapWidth = 200;
+    const mapHeight = 150;
+
+    let minX = -100, maxX = 100, minY = -100, maxY = 100;
+    if (nodes.length > 0) {
+      minX = Infinity;
+      maxX = -Infinity;
+      minY = Infinity;
+      maxY = -Infinity;
+      for (const node of nodes) {
+        const x = node.x ?? 0;
+        const y = node.y ?? 0;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
       }
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        animationFrameId = requestAnimationFrame(render);
-        return;
-      }
+    }
+    const padding = 60;
+    minX -= padding;
+    maxX += padding;
+    minY -= padding;
+    maxY += padding;
 
-      const fg = forceGraphRef.current;
-      if (!fg) {
-        animationFrameId = requestAnimationFrame(render);
-        return;
-      }
+    const graphWidth = maxX - minX;
+    const graphHeight = maxY - minY;
 
-      // Get current center and zoom from force-graph API
-      const center = fg.centerAt(); // returns { x, y }
-      const zoom = fg.zoom(); // returns number
+    const scaleX = mapWidth / graphWidth;
+    const scaleY = mapHeight / graphHeight;
+    const scale = Math.min(scaleX, scaleY);
 
-      if (!center || typeof zoom !== 'number' || zoom <= 0) {
-        animationFrameId = requestAnimationFrame(render);
-        return;
-      }
+    const offsetX = (mapWidth - graphWidth * scale) / 2 - minX * scale;
+    const offsetY = (mapHeight - graphHeight * scale) / 2 - minY * scale;
 
-      const mapWidth = 200;
-      const mapHeight = 150;
+    const toMinimapCoords = (nx: number, ny: number) => ({
+      x: nx * scale + offsetX,
+      y: ny * scale + offsetY,
+    });
 
-      // Calculate graph bounds
-      let minX = -100, maxX = 100, minY = -100, maxY = 100;
-      if (nodes.length > 0) {
-        minX = Infinity;
-        maxX = -Infinity;
-        minY = Infinity;
-        maxY = -Infinity;
-        for (const node of nodes) {
-          const x = node.x ?? 0;
-          const y = node.y ?? 0;
-          if (x < minX) minX = x;
-          if (x > maxX) maxX = x;
-          if (y < minY) minY = y;
-          if (y > maxY) maxY = y;
-        }
-      }
-      const padding = 60;
-      minX -= padding;
-      maxX += padding;
-      minY -= padding;
-      maxY += padding;
+    ctx.clearRect(0, 0, mapWidth, mapHeight);
 
-      const graphWidth = maxX - minX;
-      const graphHeight = maxY - minY;
+    nodes.forEach((n) => {
+      if (typeof n.x !== 'number' || typeof n.y !== 'number') return;
+      const { x, y } = toMinimapCoords(n.x, n.y);
+      ctx.beginPath();
+      ctx.arc(x, y, 2.5, 0, 2 * Math.PI);
+      ctx.fillStyle = n.color || '#8b5cf6';
+      ctx.fill();
+    });
 
-      const scaleX = mapWidth / graphWidth;
-      const scaleY = mapHeight / graphHeight;
-      const scale = Math.min(scaleX, scaleY);
+    const halfWidthInD3 = (width / 2) / zoom;
+    const halfHeightInD3 = (height / 2) / zoom;
 
-      const offsetX = (mapWidth - graphWidth * scale) / 2 - minX * scale;
-      const offsetY = (mapHeight - graphHeight * scale) / 2 - minY * scale;
+    const vMinX = center.x - halfWidthInD3;
+    const vMaxX = center.x + halfWidthInD3;
+    const vMinY = center.y - halfHeightInD3;
+    const vMaxY = center.y + halfHeightInD3;
 
-      const toMinimapCoords = (nx: number, ny: number) => ({
-        x: nx * scale + offsetX,
-        y: ny * scale + offsetY,
-      });
+    const tl = toMinimapCoords(vMinX, vMinY);
+    const br = toMinimapCoords(vMaxX, vMaxY);
 
-      // Clear canvas
-      ctx.clearRect(0, 0, mapWidth, mapHeight);
-
-      // Draw nodes
-      nodes.forEach((n) => {
-        if (typeof n.x !== 'number' || typeof n.y !== 'number') return;
-        const { x, y } = toMinimapCoords(n.x, n.y);
-        ctx.beginPath();
-        ctx.arc(x, y, 2.5, 0, 2 * Math.PI);
-        ctx.fillStyle = n.color || '#8b5cf6';
-        ctx.fill();
-      });
-
-      // Calculate D3 coordinates of the screen viewport edges
-      const halfWidthInD3 = (width / 2) / zoom;
-      const halfHeightInD3 = (height / 2) / zoom;
-
-      const vMinX = center.x - halfWidthInD3;
-      const vMaxX = center.x + halfWidthInD3;
-      const vMinY = center.y - halfHeightInD3;
-      const vMaxY = center.y + halfHeightInD3;
-
-      const tl = toMinimapCoords(vMinX, vMinY);
-      const br = toMinimapCoords(vMaxX, vMaxY);
-
-      // Draw viewport bounds
-      ctx.strokeStyle = isDark ? 'rgba(139, 92, 246, 0.55)' : 'rgba(109, 40, 217, 0.6)';
-      ctx.lineWidth = 1.2;
-      ctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
-      ctx.fillStyle = isDark ? 'rgba(139, 92, 246, 0.08)' : 'rgba(109, 40, 217, 0.05)';
-      ctx.fillRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
-
-      animationFrameId = requestAnimationFrame(render);
-    };
-
-    animationFrameId = requestAnimationFrame(render);
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [nodes, forceGraphRef, width, height, isDark]);
+    ctx.strokeStyle = isDark ? 'rgba(139, 92, 246, 0.55)' : 'rgba(109, 40, 217, 0.6)';
+    ctx.lineWidth = 1.2;
+    ctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
+    ctx.fillStyle = isDark ? 'rgba(139, 92, 246, 0.08)' : 'rgba(109, 40, 217, 0.05)';
+    ctx.fillRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
+  }, [nodes, forceGraphRef, width, height, isDark, tick]);
 
   return (
     <canvas

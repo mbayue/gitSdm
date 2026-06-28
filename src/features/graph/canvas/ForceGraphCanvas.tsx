@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d";
 import { Loader2 } from "lucide-react";
 import type { GraphEdge, GraphNode } from "@/types";
@@ -35,6 +35,7 @@ export function NetworkCanvas({
   forceGraphRef: externalForceGraphRef,
   forceHostRef: externalForceHostRef,
 }: NetworkCanvasProps) {
+  const [tick, setTick] = useState(0);
   const theme = useVizStore((s) => s.theme);
 
   const internalForceGraphRef = useRef<
@@ -45,10 +46,7 @@ export function NetworkCanvas({
   const forceGraphRef = externalForceGraphRef || internalForceGraphRef;
   const forceHostRef = externalForceHostRef || internalForceHostRef;
   const forceInitialViewDoneRef = useRef(false);
-  const pendingResetFitRef = useRef(false);
-  const resetFitTimeoutRef = useRef<number | null>(null);
-  const clickTimeoutRef = useRef<number | null>(null);
-  const lastGraphActionTimestampRef = useRef<number | null>(null);
+  const lastMinimapTickRef = useRef(0);
 
   const {
     selectedNodeId,
@@ -60,7 +58,6 @@ export function NetworkCanvas({
     forceSize,
     hoveredForceNode,
     setHoveredForceNode,
-    resetFilters,
     isExporting,
     exportFormat,
     forceGraphData,
@@ -74,97 +71,6 @@ export function NetworkCanvas({
     forceInitialViewDoneRef,
   });
 
-  const graphActionTrigger = useVizStore((s) => s.graphActionTrigger);
-  const zoomIn = useCallback(() => {
-    const fg = forceGraphRef.current;
-    if (!fg) return;
-    const currentZoom = fg.zoom();
-    fg.zoom(currentZoom * 1.3, 300);
-  }, []);
-
-  const zoomOut = useCallback(() => {
-    const fg = forceGraphRef.current;
-    if (!fg) return;
-    const currentZoom = fg.zoom();
-    fg.zoom(currentZoom / 1.3, 300);
-  }, []);
-
-  const fitVisibleNodes = useCallback(
-    (duration = 400, maxZoom = 4) => {
-      const fg = forceGraphRef.current;
-      const positionedNodes = forceGraphData.nodes.filter(
-        (node) => typeof node.x === "number" && typeof node.y === "number",
-      );
-      if (!fg || positionedNodes.length === 0) return;
-
-      const xs = positionedNodes.map((node) => node.x as number);
-      const ys = positionedNodes.map((node) => node.y as number);
-      const minX = Math.min(...xs);
-      const maxX = Math.max(...xs);
-      const minY = Math.min(...ys);
-      const maxY = Math.max(...ys);
-      const width = Math.max(1, maxX - minX);
-      const height = Math.max(1, maxY - minY);
-      const padding = 80;
-      const zoom = Math.min(
-        maxZoom,
-        forceSize.width / (width + padding * 2),
-        forceSize.height / (height + padding * 2),
-      );
-
-      fg.centerAt((minX + maxX) / 2, (minY + maxY) / 2, duration);
-      fg.zoom(zoom, duration);
-    },
-    [forceGraphData.nodes, forceSize.height, forceSize.width],
-  );
-
-  const resetView = useCallback(() => {
-    prevFocusRef.current = null;
-    setSelectedNodeId(null);
-    setHighlightedNodeIds(new Set());
-    setHoveredForceNode(null);
-    setFocusedFilePath(null);
-    resetFilters();
-    pendingResetFitRef.current = true;
-    fitVisibleNodes(400, 1);
-  }, [
-    fitVisibleNodes,
-    prevFocusRef,
-    resetFilters,
-    setFocusedFilePath,
-    setHighlightedNodeIds,
-    setHoveredForceNode,
-    setSelectedNodeId,
-  ]);
-
-  const fitView = useCallback(() => {
-    fitVisibleNodes(400);
-  }, [fitVisibleNodes]);
-
-  useEffect(() => {
-    if (!pendingResetFitRef.current) return;
-    if (!forceGraphRef.current || forceGraphData.nodes.length === 0) return;
-
-    pendingResetFitRef.current = false;
-    if (resetFitTimeoutRef.current !== null) {
-      window.clearTimeout(resetFitTimeoutRef.current);
-    }
-
-    // ponytail: wait one force tick after filter reset; upgrade to layout-settled event if reset gains one.
-    resetFitTimeoutRef.current = window.setTimeout(() => {
-      fitVisibleNodes(0, 1);
-      resetFitTimeoutRef.current = null;
-    }, 120);
-  }, [
-    forceGraphData.nodes.length,
-    forceGraphData.links.length,
-    forceSize.width,
-    forceSize.height,
-    fitVisibleNodes,
-  ]);
-
-
-
   // --- Callbacks ---
 
   const focusForceNode = useCallback(
@@ -177,69 +83,12 @@ export function NetworkCanvas({
         setFocusedFilePath(null);
       }
       if (typeof node.x === "number" && typeof node.y === "number") {
-        forceGraphRef.current?.centerAt(node.x, node.y, 400);
-        forceGraphRef.current?.zoom(3.5, 400);
+        forceGraphRef.current?.centerAt(node.x, node.y, 300);
+        forceGraphRef.current?.zoom(3.2, 300);
       }
     },
     [setFocusedFilePath, setSelectedNodeId, prevFocusRef],
   );
-
-  const focusSelectedNode = useCallback(() => {
-    if (!selectedNodeId) return;
-
-    const node = forceNodeById.get(selectedNodeId);
-    if (!node) return;
-
-    focusForceNode(node);
-  }, [focusForceNode, forceNodeById, selectedNodeId]);
-
-  useEffect(() => {
-    if (!selectedNodeId) return;
-    if (prevFocusRef.current === selectedNodeId) return;
-
-    const node = forceNodeById.get(selectedNodeId);
-    if (!node) return;
-    if (typeof node.x !== "number" || typeof node.y !== "number") return;
-
-    const timer = setTimeout(() => {
-      forceGraphRef.current?.centerAt(node.x, node.y, 300);
-    }, 250);
-
-    return () => clearTimeout(timer);
-  }, [forceNodeById, selectedNodeId, prevFocusRef]);
-
-  useEffect(() => {
-    if (!graphActionTrigger) return;
-    if (lastGraphActionTimestampRef.current === graphActionTrigger.timestamp)
-      return;
-
-    lastGraphActionTimestampRef.current = graphActionTrigger.timestamp;
-    const { action } = graphActionTrigger;
-    switch (action) {
-      case "zoomIn":
-        zoomIn();
-        break;
-      case "zoomOut":
-        zoomOut();
-        break;
-      case "fitView":
-        fitView();
-        break;
-      case "focusGraph":
-        focusSelectedNode();
-        break;
-      case "reset":
-        resetView();
-        break;
-    }
-  }, [
-    graphActionTrigger,
-    zoomIn,
-    zoomOut,
-    fitView,
-    focusSelectedNode,
-    resetView,
-  ]);
 
   const onForceBackgroundClick = useCallback(() => {
     prevFocusRef.current = null;
@@ -256,8 +105,19 @@ export function NetworkCanvas({
   ]);
 
   const handleEngineStop = useCallback(() => {
+    if (showMinimap) setTick((t) => t + 1);
     forceInitialViewDoneRef.current = true;
-  }, []);
+  }, [showMinimap]);
+
+  const handleEngineTick = useCallback(() => {
+    if (!showMinimap) return;
+
+    const now = performance.now();
+    if (now - lastMinimapTickRef.current < 140) return;
+
+    lastMinimapTickRef.current = now;
+    setTick((t) => t + 1);
+  }, [showMinimap]);
 
   const getLinkWidth = useCallback(
     (link: ForceGraphLink) => {
@@ -338,42 +198,11 @@ export function NetworkCanvas({
   );
 
   const handleNodeClick = useCallback(
-    (node: ForceGraphNode, event: MouseEvent) => {
-      if (readOnly) return;
-
-      if (event.detail > 1) {
-        if (clickTimeoutRef.current !== null) {
-          window.clearTimeout(clickTimeoutRef.current);
-          clickTimeoutRef.current = null;
-        }
-        focusForceNode(node);
-        return;
-      }
-
-      clickTimeoutRef.current = window.setTimeout(() => {
-        prevFocusRef.current = node.id;
-        setSelectedNodeId(node.id);
-        if (node.nodeType === "file" && node.sourceFile) {
-          setFocusedFilePath(node.sourceFile);
-        } else {
-          setFocusedFilePath(null);
-        }
-        clickTimeoutRef.current = null;
-      }, 180);
+    (node: ForceGraphNode) => {
+      if (!readOnly) focusForceNode(node);
     },
-    [focusForceNode, readOnly, setSelectedNodeId, setFocusedFilePath, prevFocusRef],
+    [focusForceNode, readOnly],
   );
-
-  useEffect(() => {
-    return () => {
-      if (clickTimeoutRef.current !== null) {
-        window.clearTimeout(clickTimeoutRef.current);
-      }
-      if (resetFitTimeoutRef.current !== null) {
-        window.clearTimeout(resetFitTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const handleNodeHover = useCallback(
     (node: ForceGraphNode | null) => {
@@ -441,6 +270,10 @@ export function NetworkCanvas({
           d3AlphaDecay={0.028}
           d3VelocityDecay={0.5}
           onEngineStop={handleEngineStop}
+          onEngineTick={handleEngineTick}
+          onZoomEnd={() => {
+            if (showMinimap) setTick((t) => t + 1);
+          }}
           linkDirectionalParticles={0}
           linkWidth={getLinkWidth}
           linkColor={getLinkColor}
@@ -480,6 +313,7 @@ export function NetworkCanvas({
             width={forceSize.width}
             height={forceSize.height}
             isDark={theme === "dark"}
+            tick={tick}
           />
         </div>
       )}

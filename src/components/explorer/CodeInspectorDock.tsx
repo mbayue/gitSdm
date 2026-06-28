@@ -74,7 +74,7 @@ export function CodeInspectorDock({ state, setState, filePath, owner, repo }: Co
   return (
     <div
       style={{ height: actualHeight }}
-      className="relative shrink-0 border-t border-white/[0.06] bg-zinc-950/95 backdrop-blur-md shadow-2xl flex flex-col min-w-0 transition-[height] duration-200 ease-out select-none"
+      className="absolute inset-x-0 bottom-0 z-40 border-t border-white/[0.06] bg-zinc-950/95 backdrop-blur-md shadow-2xl flex flex-col min-w-0 transition-[height] duration-200 ease-out select-none"
     >
       {/* Top resize handle & drag affordance */}
       {state === 'expanded' && (
