@@ -96,5 +96,14 @@ describe('utils', () => {
       expect(parseRepoFromUrl('invalid-string')).toBeNull();
       expect(parseRepoFromUrl('https://google.com/facebook/react')).toBeNull();
     });
+
+    it('returns null for malformed URLs that throw during parsing', () => {
+      // "http://" is a malformed URL that causes new URL() to throw.
+      expect(parseRepoFromUrl('http://')).toBeNull();
+      // Empty string also causes new URL() to throw and regex to fail.
+      expect(parseRepoFromUrl('')).toBeNull();
+      // A string with just whitespace
+      expect(parseRepoFromUrl('   ')).toBeNull();
+    });
   });
 });
