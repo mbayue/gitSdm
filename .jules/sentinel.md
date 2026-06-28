@@ -1,0 +1,4 @@
+## 2025-03-09 - Path Traversal Vulnerability in Static File Serving
+**Vulnerability:** A path traversal vulnerability exists in `server/prod-server.ts` because the `safeJoin` function checks `resolved.startsWith(root)` where `root` is a directory path that might not end with a path separator (e.g., `/app/dist`). This allows an attacker to request paths like `/../dist-server/prod-server.ts` because the resolved path `/app/dist-server/prod-server.ts` incorrectly passes the `startsWith('/app/dist')` check.
+**Learning:** Checking `path.startsWith(root)` without ensuring `root` ends with a directory separator (`/`) is insecure because strings like `/app/dist-server` start with `/app/dist`.
+**Prevention:** Always ensure the root directory string ends with a path separator (e.g., `path.sep` or `/`) before performing a `startsWith()` check, or verify that the resolved path is exactly the root directory.

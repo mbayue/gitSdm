@@ -46,5 +46,14 @@ console.log(`[gitSdm] GitHub API: ${hasToken ? 'authenticated' : 'unauthenticate
 function safeJoin(root: string, pathname: string): string {
   const normalized = pathname.replace(/^[/\\]+/, '');
   const resolved = path.resolve(root, normalized);
-  return resolved.startsWith(root) ? resolved : indexFile;
+
+  // Ensure the resolved path strictly resides within the root directory
+  // by appending the path separator to avoid sibling directory traversal
+  // (e.g. preventing /app/dist-server from bypassing /app/dist check).
+  const rootPrefix = root.endsWith(path.sep) ? root : root + path.sep;
+  if (resolved === root || resolved.startsWith(rootPrefix)) {
+    return resolved;
+  }
+
+  return indexFile;
 }
