@@ -2,12 +2,25 @@ import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:te
 import {
   aiArchitecture,
   aiExplain,
+  aiExplainLif,
+  aiHealth,
+  aiLearningPath,
+  aiMermaid,
+  aiOnboarding,
+  aiReadmeEnhance,
+  aiRefactor,
+  aiRoast,
+  aiSuggestFiles,
   analyzeRepo,
   ApiError,
+  fetchAppConfig,
+  fetchIndexingStatus,
   fetchRepoBranches,
   fetchRepoFile,
   fetchTrending,
+  semanticAsk,
   semanticSearch,
+  triggerIndexing,
 } from './apiClient';
 
 describe('apiClient', () => {
@@ -320,6 +333,66 @@ describe('apiClient', () => {
         filePath: 'src/index.ts',
         content: 'console.log("hello");',
       })).rejects.toThrow(ApiError);
+    });
+  });
+
+  describe('thin wrappers', () => {
+    it('fetches app config', async () => {
+      const fetchMock = mock(async () => new Response(JSON.stringify({ aiProvider: 'mock' }), { status: 200 }));
+      global.fetch = fetchMock as any;
+
+      await expect(fetchAppConfig()).resolves.toEqual({ aiProvider: 'mock' });
+      expect(fetchMock.mock.calls[0][0]).toBe('/api/config');
+    });
+
+    it.each([
+      [aiSuggestFiles, '/api/ai/suggest-files'],
+      [aiOnboarding, '/api/ai/onboarding'],
+      [aiExplainLif, '/api/ai/explain-lif'],
+      [aiRefactor, '/api/ai/refactor'],
+      [aiHealth, '/api/ai/health'],
+      [aiMermaid, '/api/ai/mermaid'],
+      [aiRoast, '/api/ai/roast'],
+      [aiReadmeEnhance, '/api/ai/readme-enhance'],
+      [aiLearningPath, '/api/ai/learning-path'],
+    ] as const)('POSTs owner, repo, and branch to %s', async (fn, path) => {
+      const fetchMock = mock(async () => new Response(JSON.stringify({ ok: true }), { status: 200 }));
+      global.fetch = fetchMock as any;
+
+      await fn('owner', 'repo', 'branch');
+
+      expect(fetchMock.mock.calls[0][0]).toBe(path);
+      expect(fetchMock.mock.calls[0][1]?.method).toBe('POST');
+      expect(fetchMock.mock.calls[0][1]?.body).toBe(JSON.stringify({ owner: 'owner', repo: 'repo', branch: 'branch' }));
+    });
+
+    it('asks semantic question', async () => {
+      const fetchMock = mock(async () => new Response(JSON.stringify({ answer: '42', citations: [], cached: false }), { status: 200 }));
+      global.fetch = fetchMock as any;
+
+      await semanticAsk('why?', 'owner', 'repo', 'branch');
+
+      expect(fetchMock.mock.calls[0][0]).toBe('/api/search/ask');
+      expect(fetchMock.mock.calls[0][1]?.method).toBe('POST');
+      expect(fetchMock.mock.calls[0][1]?.body).toBe(JSON.stringify({ question: 'why?', owner: 'owner', repo: 'repo', branch: 'branch' }));
+    });
+
+    it('triggers indexing', async () => {
+      const fetchMock = mock(async () => new Response(JSON.stringify({ status: 'queued' }), { status: 200 }));
+      global.fetch = fetchMock as any;
+
+      await expect(triggerIndexing('owner', 'repo', 'branch')).resolves.toEqual({ status: 'queued' });
+      expect(fetchMock.mock.calls[0][0]).toBe('/api/search/index');
+      expect(fetchMock.mock.calls[0][1]?.method).toBe('POST');
+      expect(fetchMock.mock.calls[0][1]?.body).toBe(JSON.stringify({ owner: 'owner', repo: 'repo', branch: 'branch' }));
+    });
+
+    it('fetches indexing status', async () => {
+      const fetchMock = mock(async () => new Response(JSON.stringify({ state: 'idle' }), { status: 200 }));
+      global.fetch = fetchMock as any;
+
+      await expect(fetchIndexingStatus('owner', 'repo')).resolves.toEqual({ state: 'idle' });
+      expect(fetchMock.mock.calls[0][0]).toBe('/api/search/status?owner=owner&repo=repo');
     });
   });
 });
