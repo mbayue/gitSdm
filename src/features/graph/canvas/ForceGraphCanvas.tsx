@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d";
 import { Loader2 } from "lucide-react";
 import type { GraphEdge, GraphNode } from "@/types";
@@ -35,7 +35,6 @@ export function NetworkCanvas({
   forceGraphRef: externalForceGraphRef,
   forceHostRef: externalForceHostRef,
 }: NetworkCanvasProps) {
-  const [tick, setTick] = useState(0);
   const theme = useVizStore((s) => s.theme);
 
   const internalForceGraphRef = useRef<
@@ -46,7 +45,6 @@ export function NetworkCanvas({
   const forceGraphRef = externalForceGraphRef || internalForceGraphRef;
   const forceHostRef = externalForceHostRef || internalForceHostRef;
   const forceInitialViewDoneRef = useRef(false);
-  const lastMinimapTickRef = useRef(0);
   const pendingResetFitRef = useRef(false);
   const resetFitTimeoutRef = useRef<number | null>(null);
   const clickTimeoutRef = useRef<number | null>(null);
@@ -197,13 +195,18 @@ export function NetworkCanvas({
 
   useEffect(() => {
     if (!selectedNodeId) return;
+    if (prevFocusRef.current === selectedNodeId) return;
 
     const node = forceNodeById.get(selectedNodeId);
     if (!node) return;
     if (typeof node.x !== "number" || typeof node.y !== "number") return;
 
-    forceGraphRef.current?.centerAt(node.x, node.y, 300);
-  }, [forceNodeById, selectedNodeId]);
+    const timer = setTimeout(() => {
+      forceGraphRef.current?.centerAt(node.x, node.y, 300);
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [forceNodeById, selectedNodeId, prevFocusRef]);
 
   useEffect(() => {
     if (!graphActionTrigger) return;
@@ -252,20 +255,9 @@ export function NetworkCanvas({
     setHoveredForceNode,
   ]);
 
-  const handleEngineTick = useCallback(() => {
-    if (!showMinimap) return;
-
-    const now = performance.now();
-    if (now - lastMinimapTickRef.current < 140) return;
-
-    lastMinimapTickRef.current = now;
-    setTick((t) => t + 1);
-  }, [showMinimap]);
-
   const handleEngineStop = useCallback(() => {
-    if (showMinimap) setTick((t) => t + 1);
     forceInitialViewDoneRef.current = true;
-  }, [showMinimap]);
+  }, []);
 
   const getLinkWidth = useCallback(
     (link: ForceGraphLink) => {
@@ -359,19 +351,17 @@ export function NetworkCanvas({
       }
 
       clickTimeoutRef.current = window.setTimeout(() => {
+        prevFocusRef.current = node.id;
         setSelectedNodeId(node.id);
         if (node.nodeType === "file" && node.sourceFile) {
           setFocusedFilePath(node.sourceFile);
         } else {
           setFocusedFilePath(null);
         }
-        if (typeof node.x === "number" && typeof node.y === "number") {
-          forceGraphRef.current?.centerAt(node.x, node.y, 300);
-        }
         clickTimeoutRef.current = null;
       }, 180);
     },
-    [focusForceNode, readOnly, setSelectedNodeId, setFocusedFilePath],
+    [focusForceNode, readOnly, setSelectedNodeId, setFocusedFilePath, prevFocusRef],
   );
 
   useEffect(() => {
@@ -459,7 +449,6 @@ export function NetworkCanvas({
           onNodeClick={handleNodeClick}
           onNodeHover={handleNodeHover}
           onBackgroundClick={onForceBackgroundClick}
-          onEngineTick={handleEngineTick}
           enablePointerInteraction
           enableNodeDrag
           enablePanInteraction
@@ -491,7 +480,6 @@ export function NetworkCanvas({
             width={forceSize.width}
             height={forceSize.height}
             isDark={theme === "dark"}
-            tick={tick}
           />
         </div>
       )}

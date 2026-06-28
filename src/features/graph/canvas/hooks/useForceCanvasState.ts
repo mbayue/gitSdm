@@ -85,7 +85,7 @@ export function useForceCanvasState({
   }, [blastRadiusActive, selectedNodeId, forceNodeById, graph.edges]);
 
   useEffect(() => {
-    if (layoutType !== "network" || !focusedFilePath) return;
+    if (!focusedFilePath) return;
 
     const focusedNodeIds = [
       `file:${focusedFilePath}`,
@@ -107,7 +107,6 @@ export function useForceCanvasState({
     focusedFilePath,
     forceGraphData.nodes,
     forceNodeById,
-    layoutType,
     selectedNodeId,
     setSelectedNodeId,
   ]);
@@ -137,8 +136,10 @@ export function useForceCanvasState({
   }, [forceGraphData.nodes.length, forceGraphData.links.length, forceInitialViewDoneRef]);
 
   useEffect(() => {
-    if (layoutType !== "network" || !forceHostRef.current) return;
+    if (!forceHostRef.current) return;
     const host = forceHostRef.current;
+    let timeoutId: number | null = null;
+
     const updateSize = () => {
       const rect = host.getBoundingClientRect();
       setForceSize({
@@ -147,10 +148,25 @@ export function useForceCanvasState({
       });
     };
     updateSize();
-    const observer = new ResizeObserver(updateSize);
+
+    const observer = new ResizeObserver(() => {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+      timeoutId = window.setTimeout(() => {
+        updateSize();
+        timeoutId = null;
+      }, 100);
+    });
+
     observer.observe(host);
-    return () => observer.disconnect();
-  }, [layoutType, forceHostRef]);
+    return () => {
+      observer.disconnect();
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [forceHostRef]);
 
   useD3Physics({
     layoutType,
