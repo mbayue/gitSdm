@@ -131,6 +131,26 @@ describe('apiClient', () => {
         expect(error.code).toBe('400');
       }
     });
+
+    it('preserves HTTP status for invalid JSON error response', async () => {
+      spyOn(global, 'fetch').mockResolvedValueOnce(new Response('{ nope', {
+        status: 502,
+        headers: { 'Content-Type': 'application/json' },
+      }));
+
+      let error: unknown;
+      try {
+        await fetchTrending();
+      } catch (err) {
+        error = err;
+      }
+
+      expect(error).toBeInstanceOf(ApiError);
+      if (error instanceof ApiError) {
+        expect(error.status).toBe(502);
+        expect(error.message).toBe('Invalid JSON response');
+      }
+    });
   });
 
   describe('fetchRepoBranches', () => {

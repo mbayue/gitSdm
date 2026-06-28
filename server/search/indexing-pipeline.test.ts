@@ -173,6 +173,16 @@ describe('indexing pipeline', () => {
     expect(pipeline.getStatus(key)).toMatchObject({ state: 'complete', chunkCount: 0 });
   });
 
+  it('fetches file contents in batches of at most five paths', async () => {
+    const pipeline = createIndexingPipeline();
+    flatTrees['sha-current'] = Array.from({ length: 12 }, (_, i) => ({ path: `src/file-${i}.ts`, type: 'blob', sha: `sha-${i}` }));
+    fileContents = Object.fromEntries(flatTrees['sha-current'].map((item) => [item.path, `export const n = ${item.sha};`])) as Record<string, string>;
+
+    await pipeline.startIndexing(options, {} as any);
+
+    expect(fetchFileContents.mock.calls.map((call) => call[2].length)).toEqual([5, 5, 2]);
+  });
+
   it('counts missing content as failed and aborts over threshold', async () => {
     const pipeline = createIndexingPipeline();
     fileContents = {};

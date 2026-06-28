@@ -83,7 +83,15 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       },
     });
 
-    const data = await parseBody(res);
+    let data: unknown;
+    try {
+      data = await parseBody(res);
+    } catch (error) {
+      if (!res.ok) {
+        throw new ApiError(error instanceof Error ? error.message : `Request failed with status ${res.status}`, res.status);
+      }
+      throw error;
+    }
 
     if (!res.ok) {
       const message =
