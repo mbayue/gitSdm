@@ -18,24 +18,28 @@ export function parseRepoFromUrl(url: string): { owner: string; repo: string } |
   const sshMatch = trimmed.match(/^git@github\.com:([^/]+)\/([^/?#]+)$/i);
   if (sshMatch) return { owner: sshMatch[1], repo: sshMatch[2] };
 
+  const shorthandMatch = trimmed.match(/^([A-Za-z0-9-]+)\/([A-Za-z0-9._-]+)$/);
+  if (shorthandMatch) return { owner: shorthandMatch[1], repo: shorthandMatch[2] };
+
   try {
     let urlToParse = trimmed;
-    if (!urlToParse.startsWith('http') && urlToParse.toLowerCase().includes('github.com')) {
+    if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(urlToParse)) {
       urlToParse = `https://${urlToParse}`;
     }
 
     const urlObj = new URL(urlToParse);
-    if (urlObj.hostname === 'github.com' || urlObj.hostname.endsWith('.github.com')) {
-      const parts = urlObj.pathname.split('/').filter(Boolean);
-      if (parts.length >= 2) {
-        return { owner: parts[0], repo: parts[1] };
-      }
+    const hostname = urlObj.hostname.toLowerCase();
+    if (hostname !== 'github.com' && hostname !== 'www.github.com') {
+      return null;
+    }
+
+    const parts = urlObj.pathname.split('/').filter(Boolean);
+    if (parts.length >= 2) {
+      return { owner: parts[0], repo: parts[1] };
     }
     return null;
   } catch {
-    const match = trimmed.match(/^([^/]+)\/([^/]+)$/);
-    if (!match) return null;
-    return { owner: match[1], repo: match[2] };
+    return null;
   }
 }
 

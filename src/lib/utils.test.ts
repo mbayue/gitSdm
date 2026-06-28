@@ -130,6 +130,13 @@ describe('utils', () => {
       expect(parseRepoFromUrl('https://google.com/facebook/react')).toBeNull();
     });
 
+    it('rejects URLs that only contain github.com outside the hostname', () => {
+      expect(parseRepoFromUrl('https://github.com.evil.com/facebook/react')).toBeNull();
+      expect(parseRepoFromUrl('https://evil.com/github.com/facebook/react')).toBeNull();
+      expect(parseRepoFromUrl('https://evil.com?url=github.com')).toBeNull();
+      expect(parseRepoFromUrl('https://github.com@evil.com/facebook/react')).toBeNull();
+    });
+
     it('returns null for malformed URLs that throw during parsing', () => {
       // "http://" is a malformed URL that causes new URL() to throw.
       expect(parseRepoFromUrl('http://')).toBeNull();
