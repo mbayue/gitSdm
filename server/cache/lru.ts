@@ -92,8 +92,13 @@ export function hashContext(input: string): string {
   return crypto.createHash('sha256').update(input).digest('hex');
 }
 
-/** Securely hashes an API key for caching purposes to avoid storing raw secrets */
+const API_KEY_CACHE_HASH_SECRET = process.env.API_KEY_CACHE_HASH_SECRET ?? 'api-key-cache-v1';
+
+// This is cache-key derivation, not password storage.
+// HMAC avoids exposing raw API keys while keeping cache lookup non-blocking.
 export function hashApiKey(key: string): string {
-  // Use scrypt with low cost (N: 1024) to satisfy CodeQL while maintaining ~3ms cache performance
-  return crypto.scryptSync(key, 'api-key-salt', 32, { N: 1024 }).toString('hex');
+  return crypto
+    .createHmac('sha256', API_KEY_CACHE_HASH_SECRET)
+    .update(key)
+    .digest('hex');
 }
