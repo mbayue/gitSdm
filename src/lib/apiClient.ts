@@ -62,6 +62,10 @@ async function parseBody(res: Response): Promise<unknown> {
   try {
     return JSON.parse(text);
   } catch {
+    const contentType = res.headers.get('Content-Type') ?? '';
+    if (contentType.includes('application/json')) {
+      throw new SyntaxError('Invalid JSON response');
+    }
     return text;
   }
 }
