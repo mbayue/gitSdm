@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
-import { aiArchitecture, aiExplain, analyzeRepo, ApiError, semanticSearch } from './apiClient';
+import { aiArchitecture, aiExplain, analyzeRepo, ApiError, fetchRepoFile, semanticSearch } from './apiClient';
 
 describe('apiClient', () => {
   let originalFetch: typeof global.fetch;
@@ -11,6 +11,42 @@ describe('apiClient', () => {
   afterEach(() => {
     global.fetch = originalFetch;
     mock.restore();
+  });
+
+  describe('fetchRepoFile', () => {
+    it('appends owner, repo, and path to query params', async () => {
+      const mockData = { path: 'src/index.js', content: 'console.log("hello")', sha: 'abc' };
+      const fetchMock = mock(async () => new Response(JSON.stringify(mockData), { status: 200 }));
+      global.fetch = fetchMock as any;
+
+      const result = await fetchRepoFile('testOwner', 'testRepo', 'src/index.js');
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const url = fetchMock.mock.calls[0][0].toString();
+      expect(url).toContain('/api/repo/file');
+      expect(url).toContain('owner=testOwner');
+      expect(url).toContain('repo=testRepo');
+      expect(url).toContain('path=src%2Findex.js');
+      expect(url).not.toContain('branch=');
+      expect(result).toEqual(mockData);
+    });
+
+    it('appends branch to query params if provided', async () => {
+      const mockData = { path: 'src/index.js', content: 'console.log("hello")', sha: 'abc' };
+      const fetchMock = mock(async () => new Response(JSON.stringify(mockData), { status: 200 }));
+      global.fetch = fetchMock as any;
+
+      const result = await fetchRepoFile('testOwner', 'testRepo', 'src/index.js', 'main-branch');
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const url = fetchMock.mock.calls[0][0].toString();
+      expect(url).toContain('/api/repo/file');
+      expect(url).toContain('owner=testOwner');
+      expect(url).toContain('repo=testRepo');
+      expect(url).toContain('path=src%2Findex.js');
+      expect(url).toContain('branch=main-branch');
+      expect(result).toEqual(mockData);
+    });
   });
 
   describe('analyzeRepo', () => {
