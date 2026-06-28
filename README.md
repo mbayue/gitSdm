@@ -15,9 +15,11 @@
 
 ---
 
+<!--
 <p align="center">
   <img src="assets/graph.png" alt="Repository Graph" width="75%" />
 </p>
+-->
 
 ---
 
