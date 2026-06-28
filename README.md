@@ -5,18 +5,11 @@
 </p>
 
 <p align="center">
-  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-6-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" /></a>
-  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React" /></a>
-  <a href="https://vite.dev/"><img src="https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License" /></a>
   <a href="https://github.com/mbayue/gitSdm/pulls"><img src="https://img.shields.io/badge/PRs-Welcome-brightgreen?style=for-the-badge" alt="PRs Welcome" /></a>
   <a href="https://github.com/mbayue/gitSdm/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/mbayue/gitSdm/ci.yml?branch=master&style=for-the-badge&logo=github&label=CI" alt="CI" /></a>
-</p>
-
-<p align="center">
-  <a href="https://github.com/mbayue/gitSdm/wiki">Docs</a> ·
-  <a href="https://github.com/mbayue/gitSdm/issues">Issues</a> ·
-  <a href="https://github.com/mbayue/gitSdm/blob/master/LICENSE">License</a>
+  <a href="https://github.com/mbayue/gitSdm/wiki"><img src="https://img.shields.io/badge/Docs-Wiki-blue?style=for-the-badge&logo=github" alt="Docs" /></a>
+  <a href="https://github.com/mbayue/gitSdm/issues"><img src="https://img.shields.io/github/issues/mbayue/gitSdm?style=for-the-badge&logo=github&label=Issues" alt="Issues" /></a>
 </p>
 
 ---
