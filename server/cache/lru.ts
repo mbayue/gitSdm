@@ -9,22 +9,22 @@ export interface CacheStore {
 
 type CacheValue = NonNullable<unknown>;
 
-export const analyzeCache = new LRUCache<string, CacheValue>({
+const analyzeCache = new LRUCache<string, CacheValue>({
   max: 200,
   ttl: 1000 * 60 * 60,
 });
 
-export const aiCache = new LRUCache<string, CacheValue>({
+const aiCache = new LRUCache<string, CacheValue>({
   max: 200,
   ttl: 1000 * 60 * 30,
 });
 
-export const searchCache = new LRUCache<string, CacheValue>({
+const searchCache = new LRUCache<string, CacheValue>({
   max: 500, // up to 100 per repo, 5 repos typical
   ttl: 1000 * 60 * 60, // 60 minutes
 });
 
-export const indexCache = new LRUCache<string, CacheValue>({
+const indexCache = new LRUCache<string, CacheValue>({
   max: 50,
   ttl: 1000 * 60 * 60 * 2, // 2 hours
 });
@@ -56,6 +56,16 @@ export function clearAllCaches(): void {
   aiCache.clear();
   searchCache.clear();
   indexCache.clear();
+}
+
+/** Get the sizes of all internal caches. Useful for testing. */
+export function getCacheSizes(): Record<string, number> {
+  return {
+    analyze: analyzeCache.size,
+    ai: aiCache.size,
+    search: searchCache.size,
+    index: indexCache.size,
+  };
 }
 
 /** Remove all cached search results for a given repository. */
