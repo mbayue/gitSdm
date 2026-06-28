@@ -32,7 +32,7 @@ mermaid.initialize({
     noteTextColor: '#f4f4f5',
   },
   themeCSS: `
-	    .node rect, .node polygon, .node circle {
+ 	    .node rect, .node polygon, .node circle, .node path {
       fill: #18181b;
       stroke: #3f3f46;
       stroke-width: 1.5px;
@@ -41,7 +41,7 @@ mermaid.initialize({
       transition: all 0.2s ease-in-out;
     }
     
-	    .node:hover rect, .node:hover polygon, .node:hover circle {
+ 	    .node:hover rect, .node:hover polygon, .node:hover circle, .node:hover path {
       fill: #242427 !important;
       stroke: #3fb950 !important;
       filter: drop-shadow(0 0 8px rgba(63, 185, 80, 0.45));
