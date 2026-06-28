@@ -21,7 +21,7 @@ export function parseRepoFromUrl(url: string): { owner: string; repo: string } |
     }
 
     const urlObj = new URL(urlToParse);
-    if (urlObj.hostname.includes('github.com')) {
+    if (urlObj.hostname === 'github.com' || urlObj.hostname.endsWith('.github.com')) {
       const parts = urlObj.pathname.split('/').filter(Boolean);
       if (parts.length >= 2) {
         return { owner: parts[0], repo: parts[1] };
