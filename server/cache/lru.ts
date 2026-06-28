@@ -59,7 +59,7 @@ export function clearAllCaches(): void {
 }
 
 /** Get the sizes of all internal caches. Useful for testing. */
-export function getCacheSizes(): Record<string, number> {
+export function getCacheSizes(): { analyze: number; ai: number; search: number; index: number } {
   return {
     analyze: analyzeCache.size,
     ai: aiCache.size,
