@@ -129,6 +129,41 @@ describe('github/fetch-tree', () => {
     expect(realRes.license).toBe('MIT');
   });
 
+  it('fetchRepoInfo: falls back to default branch when requested branch is missing', async () => {
+    mockGetBranch
+      .mockImplementationOnce(async () => {
+        throw { status: 404 };
+      })
+      .mockImplementationOnce(async ({ branch }: any) => ({ data: { commit: { sha: `${branch}-sha` } } }));
+
+    const res = await fetchRepoInfo('real-owner', 'repo', 'missing-branch');
+
+    expect(mockGetBranch).toHaveBeenNthCalledWith(1, { owner: 'real-owner', repo: 'repo', branch: 'missing-branch' });
+    expect(mockGetBranch).toHaveBeenNthCalledWith(2, { owner: 'real-owner', repo: 'repo', branch: 'main' });
+    expect(res.defaultBranch).toBe('main');
+    expect(res.sha).toBe('main-sha');
+  });
+
+  it('fetchRepoInfo: propagates default branch fallback errors', async () => {
+    mockGetBranch
+      .mockImplementationOnce(async () => {
+        throw { status: 404 };
+      })
+      .mockImplementationOnce(async () => {
+        throw new Error('fallback failed');
+      });
+
+    await expect(fetchRepoInfo('real-owner', 'repo', 'missing-branch')).rejects.toThrow('fallback failed');
+  });
+
+  it('fetchRepoInfo: propagates non-404 branch errors', async () => {
+    mockGetBranch.mockImplementationOnce(async () => {
+      throw new Error('branch failed');
+    });
+
+    await expect(fetchRepoInfo('real-owner', 'repo', 'main')).rejects.toThrow('branch failed');
+  });
+
   it('fetchFlatTree: handles mock and real repo successfully', async () => {
     const mockRes = await fetchFlatTree('mock-owner', 'repo', 'sha');
     expect(mockRes.items).toEqual([]);

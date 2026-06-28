@@ -58,8 +58,8 @@ export function useNodeFiltering({
 
     if (q) {
       nodes = nodes.filter((n) => {
-        const label = n.data.label ? String(n.data.label).toLowerCase() : "";
-        const path = n.data.path ? String(n.data.path).toLowerCase() : "";
+        const label = n.data.label ? n.data.label.toLowerCase() : "";
+        const path = n.data.path ? n.data.path.toLowerCase() : "";
         return label.includes(q) || path.includes(q);
       });
     }
@@ -78,9 +78,9 @@ export function useNodeFiltering({
     if (activeFocusLayer && activeFocusLayer !== "all") {
       nodes = nodes.filter((n) => {
         if (n.type === "repo") return true;
-        const path = n.data.path ? String(n.data.path).toLowerCase() : "";
+        const path = n.data.path ? n.data.path.toLowerCase() : "";
         const ext = n.data.extension
-          ? String(n.data.extension).toLowerCase()
+          ? n.data.extension.toLowerCase()
           : "";
         if (activeFocusLayer === "api")
           return (
@@ -124,7 +124,7 @@ export function useNodeFiltering({
     if (contentFilters) {
       nodes = nodes.filter((n) => {
         if (n.type === 'repo') return true;
-        const p = n.data.path ? String(n.data.path).toLowerCase() : "";
+        const p = n.data.path ? n.data.path.toLowerCase() : "";
         const isDocs = p.includes('docs/') || p.includes('doc/');
         const isTests = p.includes('test/') || p.includes('tests/') || p.includes('spec/') || p.includes('__tests__');
         const isGithub = p.includes('.github/');
