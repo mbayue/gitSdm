@@ -181,6 +181,7 @@ export function useForceCanvasState({
     nodes: forceGraphData.nodes,
     graphActionTrigger,
     forceGraphRef,
+    forceInitialViewDoneRef,
   });
 
   return {
