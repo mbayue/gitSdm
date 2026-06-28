@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
-import { aiArchitecture, aiExplain, ApiError, semanticSearch } from './apiClient';
+import { aiArchitecture, aiExplain, analyzeRepo, ApiError, semanticSearch } from './apiClient';
 
 describe('apiClient', () => {
   let originalFetch: typeof global.fetch;
@@ -11,6 +11,48 @@ describe('apiClient', () => {
   afterEach(() => {
     global.fetch = originalFetch;
     mock.restore();
+  });
+
+  describe('analyzeRepo', () => {
+    it('makes a POST request to /api/repo/analyze and returns data', async () => {
+      const mockData = { name: 'test-repo', summary: 'test' };
+      const fetchMock = mock(async () => new Response(JSON.stringify(mockData), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }));
+      global.fetch = fetchMock as any;
+
+      const result = await analyzeRepo('https://github.com/foo/bar', 'main');
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toBe('/api/repo/analyze');
+      expect(options?.method).toBe('POST');
+      expect(JSON.parse(options?.body as string)).toEqual({ url: 'https://github.com/foo/bar', branch: 'main' });
+      expect(result).toEqual(mockData as any);
+    });
+
+    it('throws an ApiError on failed request', async () => {
+      const errorData = { error: 'Internal Server Error' };
+      const fetchMock = mock(async () => new Response(JSON.stringify(errorData), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }));
+      global.fetch = fetchMock as any;
+
+      let error: unknown;
+      try {
+        await analyzeRepo('https://github.com/foo/bar', 'main');
+      } catch (err) {
+        error = err;
+      }
+
+      expect(error).toBeInstanceOf(ApiError);
+      if (error instanceof ApiError) {
+        expect(error.status).toBe(500);
+        expect(error.message).toBe('Internal Server Error');
+      }
+    });
   });
 
   describe('aiArchitecture', () => {
