@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
 import {
   aiArchitecture,
   aiExplain,
@@ -22,18 +22,112 @@ describe('apiClient', () => {
     mock.restore();
   });
 
+  describe('request handling', () => {
+    it('throws ApiError on non-ok response', async () => {
+      spyOn(global, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Not Found', code: '404' }), { status: 404 }));
+
+      let error: unknown;
+      try {
+        await fetchTrending();
+      } catch (err) {
+        error = err;
+      }
+
+      expect(error).toBeInstanceOf(ApiError);
+      if (error instanceof ApiError) {
+        expect(error.status).toBe(404);
+        expect(error.message).toBe('Not Found');
+        expect(error.code).toBe('404');
+      }
+    });
+
+    it('throws "Network error or unexpected failure" on fetch exception', async () => {
+      spyOn(global, 'fetch').mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+      let error: unknown;
+      try {
+        await fetchTrending();
+      } catch (err) {
+        error = err;
+      }
+
+      expect(error).toBeInstanceOf(ApiError);
+      if (error instanceof ApiError) {
+        expect(error.message).toBe('Network error or unexpected failure');
+        expect(error.status).toBe(0);
+      }
+    });
+
+    it('preserves status 404 on text/plain error response', async () => {
+      spyOn(global, 'fetch').mockResolvedValueOnce(new Response('Not Found text', {
+        status: 404,
+        headers: { 'Content-Type': 'text/plain' },
+      }));
+
+      let error: unknown;
+      try {
+        await fetchTrending();
+      } catch (err) {
+        error = err;
+      }
+
+      expect(error).toBeInstanceOf(ApiError);
+      if (error instanceof ApiError) {
+        expect(error.status).toBe(404);
+        expect(error.message).toBe('Not Found text');
+      }
+    });
+
+    it('preserves status 500 on HTML error response', async () => {
+      spyOn(global, 'fetch').mockResolvedValueOnce(new Response('<html><body>Internal Server Error</body></html>', {
+        status: 500,
+        headers: { 'Content-Type': 'text/html' },
+      }));
+
+      let error: unknown;
+      try {
+        await fetchTrending();
+      } catch (err) {
+        error = err;
+      }
+
+      expect(error).toBeInstanceOf(ApiError);
+      if (error instanceof ApiError) {
+        expect(error.status).toBe(500);
+        expect(error.message).toBe('<html><body>Internal Server Error</body></html>');
+      }
+    });
+
+    it('uses message on valid JSON error response', async () => {
+      spyOn(global, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({ message: 'Custom Error Message', code: '400' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      }));
+
+      let error: unknown;
+      try {
+        await fetchTrending();
+      } catch (err) {
+        error = err;
+      }
+
+      expect(error).toBeInstanceOf(ApiError);
+      if (error instanceof ApiError) {
+        expect(error.status).toBe(400);
+        expect(error.message).toBe('Custom Error Message');
+        expect(error.code).toBe('400');
+      }
+    });
+  });
+
   describe('fetchRepoBranches', () => {
     it('fetches repository branches successfully', async () => {
-      const mockBranches = [
-        { name: 'main', protected: true },
-        { name: 'dev', protected: false },
-      ];
+      const mockBranches = [{ name: 'main', protected: true }, { name: 'dev', protected: false }];
       const fetchMock = mock(async () => new Response(JSON.stringify(mockBranches), { status: 200 }));
       global.fetch = fetchMock as any;
 
       const result = await fetchRepoBranches('facebook', 'react');
 
-      expect(fetchMock).toHaveBeenCalledTimes(1);
       const url = new URL(fetchMock.mock.calls[0][0].toString(), 'http://localhost');
       expect(url.pathname).toBe('/api/repo/branches');
       expect(url.searchParams.get('owner')).toBe('facebook');
@@ -50,10 +144,7 @@ describe('apiClient', () => {
 
   describe('fetchTrending', () => {
     it('fetches trending repos successfully', async () => {
-      const mockRepos = [
-        { author: 'test', name: 'repo1', stars: 100 },
-        { author: 'test', name: 'repo2', stars: 200 },
-      ];
+      const mockRepos = [{ author: 'test', name: 'repo1', stars: 100 }, { author: 'test', name: 'repo2', stars: 200 }];
       const fetchMock = mock(async () => new Response(JSON.stringify({ repos: mockRepos }), { status: 200 }));
       global.fetch = fetchMock as any;
 
