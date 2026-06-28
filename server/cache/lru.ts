@@ -58,6 +58,16 @@ export function clearAllCaches(): void {
   indexCache.clear();
 }
 
+/** Get the sizes of all internal caches. Useful for testing. */
+export function getCacheSizes(): { analyze: number; ai: number; search: number; index: number } {
+  return {
+    analyze: analyzeCache.size,
+    ai: aiCache.size,
+    search: searchCache.size,
+    index: indexCache.size,
+  };
+}
+
 /** Remove all cached search results for a given repository. */
 export function invalidateSearchCache(owner: string, repo: string): void {
   const prefix = `search:${owner}/${repo}@`;

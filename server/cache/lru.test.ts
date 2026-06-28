@@ -4,6 +4,7 @@ import {
   analyzeCacheKey,
   cache,
   clearAllCaches,
+  getCacheSizes,
   hashContext,
   invalidateSearchCache,
 } from './lru';
@@ -47,6 +48,27 @@ describe('cache/lru', () => {
     expect(cache.has('ai:a')).toBe(false);
     expect(cache.has('search:a')).toBe(false);
     expect(cache.has('index:a')).toBe(false);
+  });
+
+  it('verifies clearAllCaches sets cache sizes to 0', () => {
+    cache.set('analyze:test1', { ok: true });
+    cache.set('ai:test2', { ok: true });
+    cache.set('search:test3', { ok: true });
+    cache.set('index:test4', { ok: true });
+
+    let sizes = getCacheSizes();
+    expect(sizes.analyze).toBe(1);
+    expect(sizes.ai).toBe(1);
+    expect(sizes.search).toBe(1);
+    expect(sizes.index).toBe(1);
+
+    clearAllCaches();
+
+    sizes = getCacheSizes();
+    expect(sizes.analyze).toBe(0);
+    expect(sizes.ai).toBe(0);
+    expect(sizes.search).toBe(0);
+    expect(sizes.index).toBe(0);
   });
 
   it('invalidates search cache for one repo only', () => {
