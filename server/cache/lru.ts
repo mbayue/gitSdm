@@ -98,7 +98,7 @@ const API_KEY_CACHE_HASH_SECRET = process.env.API_KEY_CACHE_HASH_SECRET ?? 'api-
 // HMAC avoids exposing raw API keys while keeping cache lookup non-blocking.
 export function hashApiKey(key: string): string {
   return crypto
-    .createHmac('sha512', API_KEY_CACHE_HASH_SECRET)
+    .createHmac('sha256', API_KEY_CACHE_HASH_SECRET)
     .update(key)
     .digest('hex');
 }
