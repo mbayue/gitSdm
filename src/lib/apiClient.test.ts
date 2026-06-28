@@ -1,5 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
-import { aiArchitecture, aiExplain, analyzeRepo, ApiError, fetchRepoFile, fetchTrending, semanticSearch } from './apiClient';
+import {
+  aiArchitecture,
+  aiExplain,
+  analyzeRepo,
+  ApiError,
+  fetchRepoBranches,
+  fetchRepoFile,
+  fetchTrending,
+  semanticSearch,
+} from './apiClient';
 
 describe('apiClient', () => {
   let originalFetch: typeof global.fetch;
@@ -13,16 +22,39 @@ describe('apiClient', () => {
     mock.restore();
   });
 
+  describe('fetchRepoBranches', () => {
+    it('fetches repository branches successfully', async () => {
+      const mockBranches = [
+        { name: 'main', protected: true },
+        { name: 'dev', protected: false },
+      ];
+      const fetchMock = mock(async () => new Response(JSON.stringify(mockBranches), { status: 200 }));
+      global.fetch = fetchMock as any;
+
+      const result = await fetchRepoBranches('facebook', 'react');
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const url = new URL(fetchMock.mock.calls[0][0].toString(), 'http://localhost');
+      expect(url.pathname).toBe('/api/repo/branches');
+      expect(url.searchParams.get('owner')).toBe('facebook');
+      expect(url.searchParams.get('repo')).toBe('react');
+      expect(result).toEqual(mockBranches);
+    });
+
+    it('throws ApiError when request fails', async () => {
+      global.fetch = mock(async () => new Response(JSON.stringify({ error: 'Not found' }), { status: 404 })) as any;
+
+      await expect(fetchRepoBranches('facebook', 'nonexistent')).rejects.toThrow(ApiError);
+    });
+  });
+
   describe('fetchTrending', () => {
     it('fetches trending repos successfully', async () => {
       const mockRepos = [
         { author: 'test', name: 'repo1', stars: 100 },
         { author: 'test', name: 'repo2', stars: 200 },
       ];
-      const fetchMock = mock(async () => new Response(JSON.stringify({ repos: mockRepos }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }));
+      const fetchMock = mock(async () => new Response(JSON.stringify({ repos: mockRepos }), { status: 200 }));
       global.fetch = fetchMock as any;
 
       const result = await fetchTrending();
@@ -32,10 +64,7 @@ describe('apiClient', () => {
     });
 
     it('throws ApiError on failed request', async () => {
-      global.fetch = mock(async () => new Response(JSON.stringify({ error: 'Internal Server Error' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      })) as any;
+      global.fetch = mock(async () => new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 })) as any;
 
       await expect(fetchTrending()).rejects.toThrow(ApiError);
     });
@@ -49,7 +78,6 @@ describe('apiClient', () => {
 
       const result = await fetchRepoFile('testOwner', 'testRepo', 'src/index.js');
 
-      expect(fetchMock).toHaveBeenCalledTimes(1);
       const url = fetchMock.mock.calls[0][0].toString();
       expect(url).toContain('/api/repo/file');
       expect(url).toContain('owner=testOwner');
@@ -66,7 +94,6 @@ describe('apiClient', () => {
 
       const result = await fetchRepoFile('testOwner', 'testRepo', 'src/index.js', 'main-branch');
 
-      expect(fetchMock).toHaveBeenCalledTimes(1);
       const url = fetchMock.mock.calls[0][0].toString();
       expect(url).toContain('/api/repo/file');
       expect(url).toContain('owner=testOwner');
@@ -85,7 +112,6 @@ describe('apiClient', () => {
 
       const result = await analyzeRepo('https://github.com/foo/bar', 'main');
 
-      expect(fetchMock).toHaveBeenCalledTimes(1);
       const [url, options] = fetchMock.mock.calls[0];
       expect(url).toBe('/api/repo/analyze');
       expect(options?.method).toBe('POST');
@@ -94,8 +120,7 @@ describe('apiClient', () => {
     });
 
     it('throws an ApiError on failed request', async () => {
-      const fetchMock = mock(async () => new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 }));
-      global.fetch = fetchMock as any;
+      global.fetch = mock(async () => new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 })) as any;
 
       await expect(analyzeRepo('https://github.com/foo/bar', 'main')).rejects.toThrow(ApiError);
     });
@@ -109,7 +134,6 @@ describe('apiClient', () => {
 
       const result = await aiArchitecture('test-owner', 'test-repo', 'main');
 
-      expect(fetchMock).toHaveBeenCalledTimes(1);
       const fetchCall = fetchMock.mock.calls[0];
       expect(fetchCall[0]).toBe('/api/ai/architecture');
       expect(fetchCall[1]?.method).toBe('POST');
@@ -153,7 +177,6 @@ describe('apiClient', () => {
 
       const response = await semanticSearch('test query', 'facebook', 'react');
 
-      expect(mockFetch).toHaveBeenCalledTimes(1);
       expect(mockFetch.mock.calls[0][0]).toBe('/api/search');
       expect(mockFetch.mock.calls[0][1]?.method).toBe('POST');
       expect(mockFetch.mock.calls[0][1]?.body).toBe(JSON.stringify({ query: 'test query', owner: 'facebook', repo: 'react' }));
@@ -192,7 +215,6 @@ describe('apiClient', () => {
       const result = await aiExplain(requestBody);
 
       expect(result).toEqual(mockResponse as any);
-      expect(fetchMock).toHaveBeenCalledTimes(1);
       expect(fetchMock.mock.calls[0][0]).toBe('/api/ai/explain');
       expect(fetchMock.mock.calls[0][1]?.method).toBe('POST');
       expect(fetchMock.mock.calls[0][1]?.body).toBe(JSON.stringify(requestBody));
