@@ -70,7 +70,11 @@ export function Navbar() {
         {/* Right actions */}
         <div className="flex items-center gap-4">
           <div className="h-4 w-[1px] bg-[rgba(240,246,252,0.1)] hidden md:block" />
-          <button className="p-2 text-[#8b949e] hover:text-[#e6edf3] transition-colors">
+          <button
+            className="p-2 text-[#8b949e] hover:text-[#e6edf3] transition-colors"
+            aria-label="AI Features"
+            title="AI Features"
+          >
             <Sparkles className="h-4 w-4" />
           </button>
           <Button
