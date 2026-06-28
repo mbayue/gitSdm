@@ -1,4 +1,4 @@
-<h1 align="center">gitSdm (Git Software Dependency Map v1.0.0)</h1>
+<h1 align="center">gitSdm (Git Software Dependency Map v2.0.0)</h1>
 
 <p align="center">
   <strong>Graph-first repository analysis for exploring files, dependencies, modules, and architecture notes.</strong>
@@ -23,7 +23,7 @@
 
 ## ✨ Overview
 
-**gitSdm** transforms how developers understand unfamiliar codebases. Instead of spending hours reading through files and tracing dependencies, gitSdm provides **instant, interactive architecture visualization** powered by AI.
+**gitSdm v2** transforms how developers understand unfamiliar codebases. Instead of spending hours reading through files and tracing dependencies, gitSdm provides **instant, interactive architecture visualization** powered by AI. v2 adds more complete repository metadata and clearer graph controls for navigating large codebases.
 
 > _"The kind of deep insight that normally takes days of reading code — delivered in seconds."_
 
