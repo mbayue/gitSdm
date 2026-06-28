@@ -40,9 +40,9 @@ export function HomePage() {
           </div>
           <div className="flex items-center gap-6">
             <a href="https://github.com/mbayue/gitSdm" className="text-xs text-[#8b949e] hover:text-[#e6edf3] transition-colors">GitHub</a>
-            <a href="/docs" className="text-xs text-[#8b949e] hover:text-[#e6edf3] transition-colors">Docs</a>
+            <a href="https://github.com/mbayue/gitSdm/wiki" className="text-xs text-[#8b949e] hover:text-[#e6edf3] transition-colors">Docs</a>
             <a href="https://github.com/mbayue/gitSdm/issues" className="text-xs text-[#8b949e] hover:text-[#e6edf3] transition-colors">Issues</a>
-            <span className="text-xs text-[#8b949e]">MIT License</span>
+            <a href="https://github.com/mbayue/gitSdm/blob/master/LICENSE" className="text-xs text-[#8b949e] hover:text-[#e6edf3] transition-colors">MIT License</a>
           </div>
         </div>
       </footer>
