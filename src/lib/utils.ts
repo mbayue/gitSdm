@@ -16,7 +16,7 @@ export function parseRepoFromUrl(url: string): { owner: string; repo: string } |
 
   try {
     let urlToParse = trimmed;
-    if (!urlToParse.startsWith('http') && urlToParse.includes('github.com')) {
+    if (!urlToParse.startsWith('http') && urlToParse.toLowerCase().includes('github.com')) {
       urlToParse = `https://${urlToParse}`;
     }
 
