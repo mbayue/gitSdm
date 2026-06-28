@@ -96,9 +96,9 @@ const API_KEY_CACHE_HASH_SECRET = process.env.API_KEY_CACHE_HASH_SECRET ?? 'api-
 
 // This is cache-key derivation, not password storage.
 // HMAC avoids exposing raw API keys while keeping cache lookup non-blocking.
-export function hashApiKey(key: string): string {
+export function hashApiKey(token: string): string {
   return crypto
     .createHmac('sha256', API_KEY_CACHE_HASH_SECRET)
-    .update(key)
+    .update(token)
     .digest('hex');
 }
