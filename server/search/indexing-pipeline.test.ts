@@ -113,7 +113,9 @@ describe('indexing pipeline', () => {
     expect(fetchRepoInfo).toHaveBeenCalledWith('o', 'r', undefined, {});
     expect(fetchFlatTree).toHaveBeenCalledWith('o', 'r', 'sha-current', {});
     expect(vectorStore.removeByRepo).toHaveBeenCalledWith(key);
-    expect(fetchFileContents).toHaveBeenCalledWith('o', 'r', ['src/a.ts', 'README.md'], 'sha-current', {});
+    expect(fetchFileContents).toHaveBeenCalledWith('o', 'r', ['src/a.ts'], 'sha-current', {});
+    expect(fetchFileContents).toHaveBeenCalledWith('o', 'r', ['README.md'], 'sha-current', {});
+    expect(fetchFileContents.mock.calls.every((call) => call[2].length === 1)).toBe(true);
     expect(vectorStore.addChunks).toHaveBeenCalledTimes(1);
     expect(vectorStore.chunks.map((chunk) => chunk.metadata.filePath)).toEqual(['src/a.ts', 'README.md']);
     expect(invalidateSearchCache).toHaveBeenCalledWith('o', 'r');
@@ -159,7 +161,8 @@ describe('indexing pipeline', () => {
 
     expect(fetchFlatTree).toHaveBeenCalledWith('o', 'r', 'sha-prev', {});
     expect(vectorStore.removeByFile).toHaveBeenCalledWith(key, 'src/deleted.ts');
-    expect(fetchFileContents).toHaveBeenCalledWith('o', 'r', ['src/a.ts', 'README.md'], 'sha-current', {});
+    expect(fetchFileContents).toHaveBeenCalledWith('o', 'r', ['src/a.ts'], 'sha-current', {});
+    expect(fetchFileContents).toHaveBeenCalledWith('o', 'r', ['README.md'], 'sha-current', {});
   });
 
   it('handles no supported files', async () => {

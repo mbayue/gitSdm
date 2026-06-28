@@ -113,16 +113,12 @@ async function runIndexing(options: IndexingOptions, ctx: RequestContext, key: s
     vectorStore.removeByRepo(key);
   }
 
-  // 5. Fetch file contents and process in batches
-  const BATCH_SIZE = 10;
+  const BATCH_SIZE = 1;
   let filesProcessed = 0;
   let failedChunks = 0;
   let totalChunks = 0;
   const allIndexedChunks: IndexedChunk[] = [];
 
-  // Limit concurrency across all GitHub API requests to 5.
-  // We apply this per file processing task to prevent `fetchFileContents`
-  // fanout within batches from exceeding our limit.
   const limit = pLimit(5);
   const batches: (typeof filesToProcess)[] = [];
   for (let i = 0; i < filesToProcess.length; i += BATCH_SIZE) {
