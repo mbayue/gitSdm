@@ -85,11 +85,10 @@ export function useForceSync({
     if (layoutType !== "force") return;
     if (!graphActionTrigger) return;
     if (lastActionTimestampRef.current === graphActionTrigger.timestamp) return;
-    lastActionTimestampRef.current = graphActionTrigger.timestamp;
-
     const { action } = graphActionTrigger;
     const ref = forceGraphRef.current;
     if (!ref) return;
+    lastActionTimestampRef.current = graphActionTrigger.timestamp;
 
     if (action === 'zoomIn') {
       const currentZoom = ref.zoom();
