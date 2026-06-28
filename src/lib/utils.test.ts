@@ -129,5 +129,21 @@ describe('utils', () => {
       expect(parseRepoFromUrl('invalid-string')).toBeNull();
       expect(parseRepoFromUrl('https://google.com/facebook/react')).toBeNull();
     });
+
+    it('rejects URLs that only contain github.com outside the hostname', () => {
+      expect(parseRepoFromUrl('https://github.com.evil.com/facebook/react')).toBeNull();
+      expect(parseRepoFromUrl('https://evil.com/github.com/facebook/react')).toBeNull();
+      expect(parseRepoFromUrl('https://evil.com?url=github.com')).toBeNull();
+      expect(parseRepoFromUrl('https://github.com@evil.com/facebook/react')).toBeNull();
+    });
+
+    it('returns null for malformed URLs that throw during parsing', () => {
+      // "http://" is a malformed URL that causes new URL() to throw.
+      expect(parseRepoFromUrl('http://')).toBeNull();
+      // Empty string also causes new URL() to throw and regex to fail.
+      expect(parseRepoFromUrl('')).toBeNull();
+      // A string with just whitespace
+      expect(parseRepoFromUrl('   ')).toBeNull();
+    });
   });
 });
