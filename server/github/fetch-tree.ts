@@ -357,7 +357,7 @@ export async function fetchTotalCommits(
   tokenOrCtx?: string | RequestContext,
 ): Promise<number> {
   if (isMockRepo(owner)) {
-    return 0;
+    return (await fetchMockContributors()).reduce((sum, c) => sum + c.contributions, 0);
   }
   const octokit = resolveOctokit(tokenOrCtx);
   try {
