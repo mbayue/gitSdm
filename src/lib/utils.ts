@@ -15,12 +15,28 @@ export function formatStars(n: number): string {
 
 export function parseRepoFromUrl(url: string): { owner: string; repo: string } | null {
   const trimmed = url.trim().replace(/\/$/, '').replace(/\.git$/, '');
-  const match =
-    trimmed.match(/^git@github\.com:([^/]+)\/([^/?#]+)$/i) ??
-    trimmed.match(/^(?:https?:\/\/)?(?:[^/]+\.)?github\.com\/([^/]+)\/([^/?#]+)/i) ??
-    trimmed.match(/^([^/]+)\/([^/]+)$/);
-  if (!match) return null;
-  return { owner: match[1], repo: match[2] };
+  const sshMatch = trimmed.match(/^git@github\.com:([^/]+)\/([^/?#]+)$/i);
+  if (sshMatch) return { owner: sshMatch[1], repo: sshMatch[2] };
+
+  try {
+    let urlToParse = trimmed;
+    if (!urlToParse.startsWith('http') && urlToParse.toLowerCase().includes('github.com')) {
+      urlToParse = `https://${urlToParse}`;
+    }
+
+    const urlObj = new URL(urlToParse);
+    if (urlObj.hostname === 'github.com' || urlObj.hostname.endsWith('.github.com')) {
+      const parts = urlObj.pathname.split('/').filter(Boolean);
+      if (parts.length >= 2) {
+        return { owner: parts[0], repo: parts[1] };
+      }
+    }
+    return null;
+  } catch {
+    const match = trimmed.match(/^([^/]+)\/([^/]+)$/);
+    if (!match) return null;
+    return { owner: match[1], repo: match[2] };
+  }
 }
 
 export const LAST_REPO_KEY = 'gitsdm:last-repo';
