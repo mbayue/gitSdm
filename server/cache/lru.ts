@@ -101,12 +101,20 @@ export function hashContext(input: string): string {
 }
 
 const API_KEY_CACHE_HASH_SECRET = process.env.API_KEY_CACHE_HASH_SECRET ?? 'api-key-cache-v1';
+const API_KEY_CACHE_PBKDF2_ITERATIONS = 210_000;
+const API_KEY_CACHE_PBKDF2_KEYLEN = 32;
+const API_KEY_CACHE_PBKDF2_DIGEST = 'sha256';
 
 // This is cache-key derivation, not password storage.
-// HMAC avoids exposing raw API keys while keeping cache lookup non-blocking.
+// Use PBKDF2 to add computational effort for credential-derived material.
 export function hashApiKey(key: string): string {
   return crypto
-    .createHmac('sha256', API_KEY_CACHE_HASH_SECRET)
-    .update(key)
-    .digest('hex');
+    .pbkdf2Sync(
+      key,
+      API_KEY_CACHE_HASH_SECRET,
+      API_KEY_CACHE_PBKDF2_ITERATIONS,
+      API_KEY_CACHE_PBKDF2_KEYLEN,
+      API_KEY_CACHE_PBKDF2_DIGEST,
+    )
+    .toString('hex');
 }
