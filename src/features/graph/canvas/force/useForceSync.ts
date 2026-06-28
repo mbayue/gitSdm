@@ -41,7 +41,11 @@ export function useForceSync({
 
     const focusTarget = () => {
       const ref = forceGraphRef.current;
-      if (!ref) return;
+      if (!ref) {
+        attempts++;
+        if (attempts < 20) timer = window.setTimeout(focusTarget, 150);
+        return;
+      }
 
       const node = nodes.find(
         (n) =>
