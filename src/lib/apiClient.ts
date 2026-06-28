@@ -54,6 +54,18 @@ export class ApiError extends Error {
   }
 }
 
+async function parseBody(res: Response): Promise<unknown> {
+  const text = await res.text();
+
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   try {
     const isAiRoute = path.startsWith('/api/ai');
@@ -67,10 +79,27 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       },
     });
 
-    const data = await res.json();
+    const data = await parseBody(res);
+
     if (!res.ok) {
-      throw new ApiError(data.error ?? `Request failed: ${res.status}`, res.status, data);
+      const message =
+        typeof data === 'object' &&
+        data !== null &&
+        'message' in data &&
+        typeof data.message === 'string'
+          ? data.message
+          : typeof data === 'object' &&
+            data !== null &&
+            'error' in data &&
+            typeof data.error === 'string'
+            ? data.error
+            : typeof data === 'string'
+            ? data
+            : `Request failed with status ${res.status}`;
+
+      throw new ApiError(message, res.status, typeof data === 'object' && data !== null ? data : undefined);
     }
+
     return data as T;
   } catch (error) {
     if (error instanceof ApiError) throw error;
