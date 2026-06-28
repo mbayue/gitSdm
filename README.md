@@ -5,21 +5,19 @@
 </p>
 
 <p align="center">
-  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" /></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-6-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" /></a>
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React" /></a>
-  <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" /></a>
+  <a href="https://vite.dev/"><img src="https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License" /></a>
   <a href="https://github.com/mbayue/gitSdm/pulls"><img src="https://img.shields.io/badge/PRs-Welcome-brightgreen?style=for-the-badge" alt="PRs Welcome" /></a>
-  <a href="https://github.com/mbayue/gitSdm/actions"><img src="https://img.shields.io/badge/Build-Passing-success?style=for-the-badge" alt="Build" /></a>
+  <a href="https://github.com/mbayue/gitSdm/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/mbayue/gitSdm/ci.yml?branch=master&style=for-the-badge&logo=github&label=CI" alt="CI" /></a>
 </p>
 
----
-
-<!--
 <p align="center">
-  <img src="assets/graph.png" alt="Repository Graph" width="75%" />
+  <a href="https://github.com/mbayue/gitSdm/wiki">Docs</a> ·
+  <a href="https://github.com/mbayue/gitSdm/issues">Issues</a> ·
+  <a href="https://github.com/mbayue/gitSdm/blob/master/LICENSE">License</a>
 </p>
--->
 
 ---
 
@@ -114,7 +112,7 @@ cp .env.example .env
 | `GITHUB_TOKEN`       | Optional. Increases GitHub API rate limits for public repos                  |
 | `AI_PROVIDER`        | `mock` (default), `gemini`,`openai`, or `anthropic`                          |
 | `OPENAI_API_KEY`     | Required when `AI_PROVIDER=openai`                                           |
-| `ANTHROPIC_API_KEY`  | Required when `AI_PROVIDER=anthropic` |
+| `ANTHROPIC_API_KEY`  | Required when `AI_PROVIDER=anthropic`                                  |
 | `GEMINI_API_KEY`     | Required when `AI_PROVIDER=gemini`                                           |
 | `GEMINI_MODEL`       | Optional when `AI_PROVIDER=gemini`; defaults to `gemini-2.5-flash`           |
 | `GEMINI_API_VERSION` | Optional when `AI_PROVIDER=gemini`; defaults to `v1alpha`                    |
@@ -206,12 +204,12 @@ gcloud run deploy gitsdm \
 | Technology             | Purpose                         |
 | ---------------------- | ------------------------------- |
 | React 19               | UI framework                    |
-| TypeScript 5.8         | Type safety                     |
-| Vite 6                 | Build tooling                   |
+| TypeScript 6           | Type safety                     |
+| Vite 8                 | Build tooling                   |
 | @xyflow/react 12       | Graph visualization             |
 | Framer Motion 12       | Animations                      |
 | TanStack React Query 5 | Data fetching                   |
-| Tailwind CSS 4.0       | Styling                         |
+| Tailwind CSS 4.3       | Styling                         |
 | shadcn/ui 4            | Component primitives            |
 | Recharts 2             | Charts & analytics              |
 | Mermaid 11             | Diagram generation              |
@@ -228,8 +226,8 @@ gcloud run deploy gitsdm \
 | Octokit 21           | GitHub API client |
 | LRU Cache 11         | Response caching  |
 | Google GenAI 2.6     | AI provider       |
-| OpenAI 4             | AI provider       |
-| Anthropic SDK 0.39   | AI provider       |
+| OpenAI 6             | AI provider       |
+| Anthropic SDK 0.106  | AI provider       |
 
 ### Infrastructure
 
@@ -284,33 +282,7 @@ bun run test:coverage
 bun run test:watch
 ```
 
-Test files are co-located with source files (25 test suites):
-
-- `server/ai/provider.test.ts`
-- `server/ai/service.test.ts`
-- `server/cache/lru.test.ts`
-- `server/config/app-config.test.ts`
-- `server/github/client.test.ts`
-- `server/github/fetch-tree.test.ts`
-- `server/github/mock-data.test.ts`
-- `server/github/parse-url.test.ts`
-- `server/graph/graph-builder.test.ts`
-- `server/graph/layout.test.ts`
-- `server/parser/dependency-analyzer.test.ts`
-- `server/parser/file-classifier.test.ts`
-- `server/parser/import-resolver.test.ts`
-- `server/parser/manifest-parsers/index.test.ts`
-- `server/search/chunker.test.ts`
-- `server/search/constants.test.ts`
-- `server/search/embedding-provider.test.ts`
-- `server/search/qa-engine.test.ts`
-- `server/search/search-engine.test.ts`
-- `server/search/vector-store.test.ts`
-- `server/services/analyze-repo.test.ts`
-- `server/services/get-file.test.ts`
-- `server/services/trending.test.ts`
-- `server/utils/errors.test.ts`
-- `server/utils/logger.test.ts`
+Tests are co-located with source files and use `*.test.ts` naming.
 
 ---
 
