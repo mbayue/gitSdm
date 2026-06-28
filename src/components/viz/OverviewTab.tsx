@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { useVizStore } from '@/stores/vizStore';
 import type { RepoAnalysis } from '@/types';
@@ -41,25 +41,37 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
     }, 80);
   }, [setCenter, getNode]);
 
-  const fileCount = analysis.graph.nodes.filter(n => n.type === 'file').length;
-  const folderCount = analysis.graph.nodes.filter(n => n.type === 'folder').length;
-  const depCount = analysis.dependencies.length;
-  const contributorCount = analysis.contributors.length;
+  const {
+    fileCount,
+    folderCount,
+    depCount,
+    contributorCount,
+    highCoupling,
+    entryPoints,
+    degrees
+  } = useMemo(() => {
+    const fileCount = analysis.graph.nodes.filter(n => n.type === 'file').length;
+    const folderCount = analysis.graph.nodes.filter(n => n.type === 'folder').length;
+    const depCount = analysis.dependencies.length;
+    const contributorCount = analysis.contributors.length;
 
-  // Calculate High Coupling
-  const degrees: Record<string, number> = {};
-  analysis.graph.edges.forEach(e => {
-    degrees[e.source] = (degrees[e.source] || 0) + 1;
-    degrees[e.target] = (degrees[e.target] || 0) + 1;
-  });
-  const highCoupling = analysis.graph.nodes
-    .filter(n => n.type === 'file' || n.type === 'folder')
-    .sort((a, b) => (degrees[b.id] || 0) - (degrees[a.id] || 0))
-    .slice(0, 5);
+    // Calculate High Coupling
+    const degrees: Record<string, number> = {};
+    analysis.graph.edges.forEach(e => {
+      degrees[e.source] = (degrees[e.source] || 0) + 1;
+      degrees[e.target] = (degrees[e.target] || 0) + 1;
+    });
+    const highCoupling = analysis.graph.nodes
+      .filter(n => n.type === 'file' || n.type === 'folder')
+      .sort((a, b) => (degrees[b.id] || 0) - (degrees[a.id] || 0))
+      .slice(0, 5);
 
-  const entryPoints = analysis.graph.nodes
-    .filter(n => n.data.fileClass === 'entry')
-    .slice(0, 5);
+    const entryPoints = analysis.graph.nodes
+      .filter(n => n.data.fileClass === 'entry')
+      .slice(0, 5);
+
+    return { fileCount, folderCount, depCount, contributorCount, highCoupling, entryPoints, degrees };
+  }, [analysis]);
 
   return (
     <div className="space-y-5">
@@ -319,24 +331,26 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
               </div>
             ) : (
               <div className="flex items-end gap-0.5 h-8">
-                {analysis.timeline.slice(-24).map((week, idx) => {
+                {(() => {
                   const maxCount = Math.max(1, Math.max(...analysis.timeline.map(w => w.count)));
-                  const ratio = week.count / maxCount;
-                  const heightPercentage = Math.max(10, ratio * 100);
-                  const opacity = Math.max(0.2, ratio);
+                  return analysis.timeline.slice(-24).map((week, idx) => {
+                    const ratio = week.count / maxCount;
+                    const heightPercentage = Math.max(10, ratio * 100);
+                    const opacity = Math.max(0.2, ratio);
 
-                  return (
-                    <div
-                      key={idx}
-                      className="group relative flex-1 rounded-t-[1px] transition-all bg-[#58a6ff] hover:bg-[#79c0ff]"
-                      style={{
-                        height: `${heightPercentage}%`,
-                        opacity: opacity
-                      }}
-                      title={`${week.count} commits on ${new Date(week.week).toLocaleDateString()}`}
-                    />
-                  );
-                })}
+                    return (
+                      <div
+                        key={idx}
+                        className="group relative flex-1 rounded-t-[1px] transition-all bg-[#58a6ff] hover:bg-[#79c0ff]"
+                        style={{
+                          height: `${heightPercentage}%`,
+                          opacity: opacity
+                        }}
+                        title={`${week.count} commits on ${new Date(week.week).toLocaleDateString()}`}
+                      />
+                    );
+                  });
+                })()}
               </div>
             )}
           </div>
