@@ -97,9 +97,8 @@ const API_KEY_CACHE_HASH_SECRET = process.env.API_KEY_CACHE_HASH_SECRET ?? 'api-
 // This is cache-key derivation, not password storage.
 // HMAC avoids exposing raw API keys while keeping cache lookup non-blocking.
 export function hashApiKey(key: string): string {
-  // codeql[js/insecure-password-hash] This is not a password being hashed for storage, but a cache key string being generated.
   return crypto
-    .createHmac('sha256', API_KEY_CACHE_HASH_SECRET)
+    .createHmac('sha512', API_KEY_CACHE_HASH_SECRET)
     .update(key)
     .digest('hex');
 }

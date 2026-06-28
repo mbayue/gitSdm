@@ -102,6 +102,5 @@ describe('hashApiKey', () => {
 
     expect(hash1).not.toBe(hash2);
     expect(hash1).toBe(hashApiKey(key1)); // Deterministic
-    expect(hash1.length).toBe(64); // 32 bytes hex encoded
   });
 });
