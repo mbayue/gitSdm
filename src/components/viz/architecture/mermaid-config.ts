@@ -5,9 +5,10 @@ mermaid.initialize({
   startOnLoad: false,
   theme: 'base',
   securityLevel: 'strict',
+  htmlLabels: false,
   flowchart: {
     useMaxWidth: true,
-    htmlLabels: true,
+    htmlLabels: false,
   },
   themeVariables: {
     background: '#09090b',
@@ -31,7 +32,7 @@ mermaid.initialize({
     noteTextColor: '#f4f4f5',
   },
   themeCSS: `
-    .node rect, .node polygon, .node circle, .node path {
+	    .node rect, .node polygon, .node circle {
       fill: #18181b;
       stroke: #3f3f46;
       stroke-width: 1.5px;
@@ -40,7 +41,7 @@ mermaid.initialize({
       transition: all 0.2s ease-in-out;
     }
     
-    .node:hover rect, .node:hover polygon, .node:hover circle, .node:hover path {
+	    .node:hover rect, .node:hover polygon, .node:hover circle {
       fill: #242427 !important;
       stroke: #3fb950 !important;
       filter: drop-shadow(0 0 8px rgba(63, 185, 80, 0.45));
@@ -91,13 +92,18 @@ mermaid.initialize({
       padding: 0 !important;
     }
 
-    .node text, .node .label, .node .label text, .node .label div, .node .label span, .node span, .node div, .node a, .node a:visited, .node a:hover {
+    .node text, .node .label, .node .label text, .node .label div, .node .label span, .node span, .node div, .node a, .node a:visited, .node a:hover,
+    .nodeLabel, .nodeLabel tspan, .label, .label text, .label tspan {
       color: #f4f4f5 !important;
       fill: #f4f4f5 !important;
       font-family: 'Inter', system-ui, sans-serif !important;
       font-size: 11px !important;
       font-weight: 500 !important;
       text-decoration: none !important;
+    }
+
+    .nodeLabel {
+      pointer-events: none !important;
     }
 
     .node.entry rect, .node.entry polygon {

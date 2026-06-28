@@ -21,6 +21,12 @@ interface ArchitectureViewProps {
   compact?: boolean;
 }
 
+const mermaidSvgSanitizeConfig = {
+  USE_PROFILES: { svg: true, svgFilters: true, html: true },
+  ADD_TAGS: ['foreignObject', 'div', 'span', 'p'],
+  ADD_ATTR: ['xmlns', 'style', 'class'],
+};
+
 export function ArchitectureView({ analysis, owner, repo, compact }: ArchitectureViewProps) {
   const svgContainerRef = useRef<HTMLDivElement>(null);
 
@@ -272,8 +278,8 @@ export function ArchitectureView({ analysis, owner, repo, compact }: Architectur
                        transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
                        transformOrigin: 'center center',
                      }}
-                     dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(svg) }}
-                  />
+	                     dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(svg, mermaidSvgSanitizeConfig) }}
+	                  />
 
                   {/* Zoom Controls Overlay */}
                   <div className="absolute bottom-4 right-4 flex items-center gap-0.5 bg-[#161b22] border border-white/5 rounded-md p-1 shadow-xl z-20">

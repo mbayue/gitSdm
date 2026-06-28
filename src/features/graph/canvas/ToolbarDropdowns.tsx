@@ -1,5 +1,70 @@
 import { Filter, ChevronDown, Check, FolderGit2, Folder, FileCode, Download, AlertTriangle } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { GraphScope, ContentFilter } from '@/stores/vizStore';
+
+const sectionHeaderClass = "mb-1.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#c9d1d9] font-mono";
+const sectionClass = "space-y-1.5 border-t border-[rgba(240,246,252,0.08)] pt-3 first:border-t-0 first:pt-0";
+const focusClass = "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ui-focus/70 focus-visible:ring-offset-1 focus-visible:ring-offset-[#161b22]";
+const rowButtonClass = `flex w-full items-center justify-between rounded px-2 py-1 text-left text-[11px] transition-colors active:scale-[0.99] ${focusClass}`;
+const inactiveRowClass = "text-[#8b949e] hover:bg-[rgba(240,246,252,0.08)] hover:text-[#e6edf3]";
+const activeRowClass = "bg-[#1c2128] text-[#e6edf3] ring-1 ring-[rgba(240,246,252,0.1)]";
+
+const nodeTypes = [
+  { id: 'repo' as const, label: 'Repository', icon: FolderGit2, color: 'text-violet-400' },
+  { id: 'folder' as const, label: 'Folders', icon: Folder, color: 'text-amber-400' },
+  { id: 'file' as const, label: 'Files', icon: FileCode, color: 'text-blue-400' },
+];
+
+const graphScopes = [
+  { id: 'important' as const, label: 'Important' },
+  { id: 'source' as const, label: 'Source' },
+  { id: 'grouped' as const, label: 'Grouped' },
+  { id: 'full' as const, label: 'Full graph' },
+];
+
+const contentFilterOptions = [
+  { id: 'source' as const, label: 'Source' },
+  { id: 'config' as const, label: 'Config' },
+  { id: 'docs' as const, label: 'Docs' },
+  { id: 'tests' as const, label: 'Tests' },
+  { id: 'github' as const, label: '.github' },
+  { id: 'examples' as const, label: 'Examples' },
+  { id: 'generated' as const, label: 'Generated' },
+  { id: 'translations' as const, label: 'Locales' },
+];
+
+const focusLayers = [
+  { id: 'all' as const, label: 'All' },
+  { id: 'ui' as const, label: 'UI' },
+  { id: 'api' as const, label: 'API' },
+  { id: 'core' as const, label: 'Core' },
+  { id: 'config' as const, label: 'Config' },
+];
+
+const diffStatuses = [
+  { id: 'added' as const, label: 'Added', symbol: '+', color: 'text-green-400' },
+  { id: 'modified' as const, label: 'Modified', symbol: '~', color: 'text-amber-400' },
+  { id: 'deleted' as const, label: 'Deleted', symbol: '-', color: 'text-red-400' },
+];
+
+function SectionHeader({ children }: { children: ReactNode }) {
+  return <div className={sectionHeaderClass}>{children}</div>;
+}
+
+function CheckboxMark({ checked }: { checked: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[3px] border transition-colors ${
+        checked
+          ? "border-ui-active-text-green/60 bg-ui-active/20 text-ui-active-text-green"
+          : "border-[rgba(240,246,252,0.16)] bg-[#0d1117]"
+      }`}
+    >
+      {checked && <Check className="h-2.5 w-2.5" />}
+    </span>
+  );
+}
 
 interface ToolbarDropdownProps {
   activeDropdown: 'filter' | 'layout' | 'export' | null;
@@ -57,31 +122,28 @@ export function ToolbarDropdowns({
         </button>
 
         {activeDropdown === 'filter' && (
-          <div className="absolute left-0 mt-2 w-56 rounded-md border border-[rgba(240,246,252,0.1)] bg-[#161b22] p-3 shadow-2xl animate-in fade-in slide-in-from-top-1 duration-150 max-h-[80vh] overflow-y-auto">
-            <div className="space-y-3.5">
+          <div className="absolute left-0 mt-2 w-[280px] rounded-md border border-[rgba(240,246,252,0.1)] bg-[#161b22] p-3 shadow-2xl animate-in fade-in slide-in-from-top-1 duration-150 max-h-[70vh] overflow-y-auto">
+            <div className="space-y-3">
               {/* Node Types Section */}
-              <div>
-                <div className="text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider mb-2 font-mono">Node Types</div>
+              <div className={sectionClass}>
+                <SectionHeader>Node Types</SectionHeader>
                 <div className="space-y-1">
-                  {[
-                    { id: 'repo' as const, label: 'Repository', icon: FolderGit2, color: 'text-violet-400' },
-                    { id: 'folder' as const, label: 'Folders', icon: Folder, color: 'text-amber-400' },
-                    { id: 'file' as const, label: 'Files', icon: FileCode, color: 'text-blue-400' }
-                  ].map((type) => {
+                  {nodeTypes.map((type) => {
                     const Icon = type.icon;
                     const active = nodeTypeFilters.has(type.id);
                     return (
                       <button
                         key={type.id}
                         type="button"
+                        aria-pressed={active}
                         onClick={() => toggleNodeTypeFilter(type.id)}
-                        className="flex w-full items-center justify-between rounded-sm px-2 py-1 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors"
+                        className={`${rowButtonClass} ${active ? "text-[#e6edf3]" : inactiveRowClass}`}
                       >
                         <div className="flex items-center gap-2">
                           <Icon className={`h-3.5 w-3.5 ${type.color}`} />
-                          <span>{type.label}</span>
+                          <span className="font-medium">{type.label}</span>
                         </div>
-                        {active && <Check className="h-3.5 w-3.5 text-ui-active-text-green" />}
+                        <CheckboxMark checked={active} />
                       </button>
                     );
                   })}
@@ -89,8 +151,8 @@ export function ToolbarDropdowns({
               </div>
 
               {/* Graph Scope Section */}
-              <div>
-                <div className="text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider mb-2 font-mono flex items-center gap-1">
+              <div className={sectionClass}>
+                <div className={`${sectionHeaderClass} flex items-center gap-1.5`}>
                   Graph Scope
                   {graphScope === 'full' && (
                     <span title="Full graph may be slow for large repositories">
@@ -99,19 +161,15 @@ export function ToolbarDropdowns({
                   )}
                 </div>
                 <div className="grid grid-cols-2 gap-1">
-                  {[
-                    { id: 'important' as const, label: 'Important' },
-                    { id: 'source' as const, label: 'Source Only' },
-                    { id: 'grouped' as const, label: 'Grouped' },
-                    { id: 'full' as const, label: 'Full Graph' },
-                  ].map((scope) => {
+                  {graphScopes.map((scope) => {
                     const active = graphScope === scope.id;
                     return (
                       <button
                         key={scope.id}
                         type="button"
+                        aria-pressed={active}
                         onClick={() => setGraphScope(scope.id)}
-                        className={`rounded-sm px-1.5 py-1 text-center text-[10px] font-semibold transition-all ${
+                        className={`rounded px-2 py-1 text-center text-[11px] font-semibold transition-all active:scale-[0.98] ${focusClass} ${
                           active
                             ? "bg-[#1c2128] text-[#e6edf3] border border-[rgba(240,246,252,0.1)] shadow-sm"
                             : "bg-transparent text-[#8b949e] border border-transparent hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3]"
@@ -123,40 +181,32 @@ export function ToolbarDropdowns({
                   })}
                 </div>
                 {graphScope === 'full' && (
-                  <p className="mt-1 text-[9px] text-amber-500/80 leading-tight px-1">
+                  <p className="mt-1.5 text-[10px] text-amber-500/80 leading-tight px-1">
                     Full graph may be slow for large repositories.
                   </p>
                 )}
               </div>
 
               {/* Content Filters Section */}
-              <div>
-                <div className="text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider mb-2 font-mono">Content</div>
-                <div className="grid grid-cols-2 gap-1 gap-y-1">
-                  {[
-                    { id: 'source' as const, label: 'Source' },
-                    { id: 'config' as const, label: 'Config' },
-                    { id: 'docs' as const, label: 'Docs' },
-                    { id: 'tests' as const, label: 'Tests' },
-                    { id: 'github' as const, label: '.github' },
-                    { id: 'examples' as const, label: 'Examples' },
-                    { id: 'generated' as const, label: 'Generated' },
-                    { id: 'translations' as const, label: 'Locales' },
-                  ].map((filter) => {
+              <div className={sectionClass}>
+                <SectionHeader>Content</SectionHeader>
+                <div className="grid grid-cols-2 gap-x-1.5 gap-y-0.5">
+                  {contentFilterOptions.map((filter) => {
                     const active = contentFilters.has(filter.id);
                     return (
                       <button
                         key={filter.id}
                         type="button"
+                        aria-pressed={active}
                         onClick={() => toggleContentFilter(filter.id)}
-                        className={`flex items-center justify-between rounded-sm px-1.5 py-1 text-left text-[10px] transition-colors ${
+                        className={`flex items-center gap-1.5 rounded px-1.5 py-1 text-left text-[11px] transition-colors active:scale-[0.99] ${focusClass} ${
                           active
                             ? "text-[#e6edf3]"
-                            : "text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3]"
+                            : inactiveRowClass
                         }`}
                       >
-                        <span className={!active ? "line-through opacity-60" : ""}>{filter.label}</span>
-                        {active && <Check className="h-3 w-3 text-ui-active-text-green shrink-0" />}
+                        <CheckboxMark checked={active} />
+                        <span className="font-medium">{filter.label}</span>
                       </button>
                     );
                   })}
@@ -165,27 +215,24 @@ export function ToolbarDropdowns({
 
               {/* Diff Status (if compare mode) */}
               {compareBranch && (
-                <div>
-                  <div className="text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider mb-2 font-mono">Diff Status</div>
+                <div className={sectionClass}>
+                  <SectionHeader>Diff Status</SectionHeader>
                   <div className="space-y-1">
-                    {[
-                      { id: 'added' as const, label: 'Added', symbol: '+', color: 'text-green-400' },
-                      { id: 'modified' as const, label: 'Modified', symbol: '~', color: 'text-amber-400' },
-                      { id: 'deleted' as const, label: 'Deleted', symbol: '-', color: 'text-red-400' }
-                    ].map((status) => {
+                    {diffStatuses.map((status) => {
                       const active = diffStatusFilters.has(status.id);
                       return (
                         <button
                           key={status.id}
                           type="button"
+                          aria-pressed={active}
                           onClick={() => toggleDiffStatusFilter(status.id)}
-                          className="flex w-full items-center justify-between rounded-sm px-2 py-1 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors"
+                          className={`${rowButtonClass} ${active ? activeRowClass : inactiveRowClass}`}
                         >
                           <div className="flex items-center gap-2">
                             <span className={`w-3.5 text-center font-bold font-mono ${status.color}`}>{status.symbol}</span>
-                            <span>{status.label}</span>
+                            <span className="font-medium">{status.label}</span>
                           </div>
-                          {active && <Check className="h-3.5 w-3.5 text-ui-active-text-green" />}
+                          <CheckboxMark checked={active} />
                         </button>
                       );
                     })}
@@ -194,23 +241,24 @@ export function ToolbarDropdowns({
               )}
 
               {/* Layers Focus */}
-              <div>
-                <div className="text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider mb-2 font-mono">Focus Layer</div>
-                <div className="grid grid-cols-2 gap-1">
-                  {(['all', 'api', 'ui', 'core', 'config'] as const).map((layer) => {
-                    const active = activeFocusLayer === layer;
+              <div className={sectionClass}>
+                <SectionHeader>Focus Layer</SectionHeader>
+                <div className="grid grid-cols-5 gap-1 rounded bg-[#0d1117] p-1 ring-1 ring-[rgba(240,246,252,0.08)]" role="group" aria-label="Focus layer">
+                  {focusLayers.map((layer) => {
+                    const active = activeFocusLayer === layer.id;
                     return (
                       <button
-                        key={layer}
+                        key={layer.id}
                         type="button"
-                        onClick={() => setActiveFocusLayer(layer)}
-                        className={`rounded-sm px-1.5 py-0.5 text-center text-[10px] font-semibold font-mono border transition-all ${
+                        aria-pressed={active}
+                        onClick={() => setActiveFocusLayer(layer.id)}
+                        className={`rounded px-1.5 py-1 text-center text-[10px] font-semibold font-mono transition-all active:scale-[0.97] ${focusClass} ${
                           active
-                            ? "bg-[#1c2128] text-[#e6edf3] border-[rgba(240,246,252,0.1)] shadow-sm"
-                            : "bg-transparent text-[#8b949e] border-transparent hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3]"
+                            ? "bg-[#1c2128] text-[#e6edf3] shadow-sm ring-1 ring-[rgba(240,246,252,0.12)]"
+                            : "text-[#8b949e] hover:bg-[rgba(240,246,252,0.08)] hover:text-[#e6edf3]"
                         }`}
                       >
-                        {layer.toUpperCase()}
+                        {layer.label.toUpperCase()}
                       </button>
                     );
                   })}
@@ -218,21 +266,25 @@ export function ToolbarDropdowns({
               </div>
 
               {/* Blast Radius Toggle */}
-              <div className="border-t border-[rgba(240,246,252,0.1)] pt-2.5">
+              <div className={sectionClass}>
+                <SectionHeader>Blast Radius</SectionHeader>
                 <button
                   type="button"
+                  aria-pressed={blastRadiusActive}
                   onClick={() => setBlastRadiusActive(!blastRadiusActive)}
-                  className={`flex w-full items-center justify-between rounded-sm px-2 py-1 text-left text-xs transition-colors ${
+                  className={`flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-[11px] transition-colors active:scale-[0.99] ${focusClass} ${
                     blastRadiusActive
                       ? "bg-[#1c2128] text-[#e6edf3] border border-[rgba(240,246,252,0.1)]"
                       : "text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3]"
                   }`}
                 >
-                  <div className="flex flex-col text-left">
-                    <span className="font-semibold">Blast Radius</span>
-                    <span className="text-[9px] text-zinc-500 font-mono">Trace change impact</span>
+                  <div className="flex flex-col gap-0.5 text-left">
+                    <span className="font-semibold text-[#e6edf3]">Trace change impact</span>
+                    <span className="text-[9px] text-[#8b949e]">Highlight direct dependencies around selected node.</span>
                   </div>
-                  {blastRadiusActive && <Check className="h-3.5 w-3.5 text-[#58a6ff]" />}
+                  <span className={`ml-3 rounded-full px-2 py-0.5 text-[10px] font-semibold ${blastRadiusActive ? "bg-ui-active/20 text-ui-active-text-green" : "bg-[#0d1117] text-[#8b949e]"}`}>
+                    {blastRadiusActive ? 'On' : 'Off'}
+                  </span>
                 </button>
               </div>
             </div>

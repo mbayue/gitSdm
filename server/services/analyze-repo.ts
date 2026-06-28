@@ -6,6 +6,7 @@ import {
   fetchFlatTree,
   fetchRepoInfo,
   fetchTimeline,
+  fetchTotalCommits,
   findManifestPaths,
 } from '../github/fetch-tree';
 import { parseGitHubUrl } from '../github/parse-url';
@@ -36,10 +37,11 @@ export async function analyzeRepository(
   const cached = cache.get<RepoAnalysis>(cacheKey);
   if (cached) return cached;
 
-  const [{ items, truncated, totalFiles }, contributors, timeline] = await Promise.all([
+  const [{ items, truncated, totalFiles }, contributors, timeline, totalCommits] = await Promise.all([
     fetchFlatTree(owner, repo, info.sha, tokenOrCtx),
     fetchContributors(owner, repo, tokenOrCtx),
     fetchTimeline(owner, repo, branch, tokenOrCtx),
+    fetchTotalCommits(owner, repo, branch, tokenOrCtx),
   ]);
 
   const tree = annotateTree(buildTreeFromPaths(items));
@@ -90,6 +92,7 @@ export async function analyzeRepository(
     timeline,
     importantFiles,
     totalFiles,
+    totalCommits,
   };
 
   cache.set(cacheKey, analysis);

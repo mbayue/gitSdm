@@ -15,6 +15,16 @@ function sanitizeMermaidId(nodeId: string): string {
   return `${sanitized}_${hash}`;
 }
 
+function getNodeLabel(node: RepoAnalysis['graph']['nodes'][number]): string {
+  const label = node.data?.label?.trim();
+  if (label) return label;
+
+  const path = node.data?.path?.trim();
+  if (path) return path.split('/').pop() || path;
+
+  return node.id;
+}
+
 export function generateProgrammaticMermaid(analysis: RepoAnalysis): string {
   const nodes = analysis.graph?.nodes?.filter((n) => n.type === 'file') || [];
   const edges = analysis.graph?.edges || [];
@@ -65,7 +75,7 @@ export function generateProgrammaticMermaid(analysis: RepoAnalysis): string {
     const escapedFolderPath = folderPath.replace(/"/g, '#quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     lines.push(`  subgraph ${folderId} ["${escapedFolderPath}"]`);
     files.forEach((node) => {
-      const label = (node.data?.label || '').replace(/"/g, '#quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const label = getNodeLabel(node).replace(/"/g, '#quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const mermaidId = sanitizeMermaidId(node.id);
       lines.push(`    ${mermaidId}["${label}"]`);
     });
