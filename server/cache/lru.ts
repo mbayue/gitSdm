@@ -1,4 +1,5 @@
 import { LRUCache } from 'lru-cache';
+import crypto from 'crypto';
 
 export interface CacheStore {
   get<T>(key: string): T | undefined;
@@ -58,6 +59,16 @@ export function clearAllCaches(): void {
   indexCache.clear();
 }
 
+/** Get the sizes of all internal caches. Useful for testing. */
+export function getCacheSizes(): { analyze: number; ai: number; search: number; index: number } {
+  return {
+    analyze: analyzeCache.size,
+    ai: aiCache.size,
+    search: searchCache.size,
+    index: indexCache.size,
+  };
+}
+
 /** Remove all cached search results for a given repository. */
 export function invalidateSearchCache(owner: string, repo: string): void {
   const prefix = `search:${owner}/${repo}@`;
@@ -88,10 +99,16 @@ export function aiCacheKey(
 }
 
 export function hashContext(input: string): string {
-  let hash = 0;
-  for (let i = 0; i < input.length; i++) {
-    hash = (hash << 5) - hash + input.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash).toString(36);
+  return crypto.createHash('sha256').update(input).digest('hex');
+}
+
+const API_KEY_CACHE_HASH_SECRET = process.env.API_KEY_CACHE_HASH_SECRET ?? 'api-key-cache-v1';
+
+// This is cache-key derivation, not password storage.
+// HMAC avoids exposing raw API keys while keeping cache lookup non-blocking.
+export function hashApiKey(token: string): string {
+  return crypto
+    .createHmac('sha256', API_KEY_CACHE_HASH_SECRET)
+    .update(token)
+    .digest('hex');
 }
