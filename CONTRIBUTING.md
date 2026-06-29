@@ -1,6 +1,6 @@
 # 🤝 Contributing to gitSdm
 
-Thank you for your interest in contributing to **gitSdm**! We welcome contributions of all kinds, including bug fixes, new features, documentation improvements, and UI refinements.
+Thanks for contributing to **gitSdm**. Bug fixes, features, docs, and UI improvements all welcome.
 
 Please review this guide to get started.
 
@@ -100,6 +100,6 @@ bunx graphify update .
    git checkout -b bugfix/issue-description
    ```
 
-2. **Commit Messages**: Keep commit messages clear and descriptive (e.g. `feat(ui): center badges in README` or `fix(viz): correct trace highlight state`).
+2. **Commit Messages**: Use conventional commits — e.g. `feat(ui): center badges in README` or `fix(viz): correct trace highlight state`.
 3. **Verify Build**: Ensure `bun run build` runs successfully.
 4. **Submit**: Push your branch and open a Pull Request against the `main` branch of the upstream repository.

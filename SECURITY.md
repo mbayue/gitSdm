@@ -1,12 +1,12 @@
 # Security Policy
 
-We take the security of `gitSdm` seriously. This document outlines our supported versions, vulnerability reporting process, disclosure policy, response timeline, safe harbor guidelines, scope, and security best practices.
+We take the security of `gitSdm` seriously. If you find a vulnerability, report it privately — do not open a public issue.
 
 ---
 
 ## Supported Versions
 
-Security updates are actively applied to the latest major release branch. 
+Security updates are actively applied to the latest major release branch.
 
 | Version | Supported          |
 | ------- | ------------------ |
@@ -18,13 +18,16 @@ Security updates are actively applied to the latest major release branch.
 ## Scope
 
 ### In Scope
+
 The following components are in scope for security vulnerability reports:
+
 * Core parsing logic under [server/parser/](server/parser/) and [server/github/](server/github/).
 * API endpoints defined in [server/prod-server.ts](server/prod-server.ts) and server routers.
 * Token and secret leakage via environment variables or logs.
 * Client-side Cross-Site Scripting (XSS) in markdown or graph visualizers.
 
 ### Out of Scope
+
 * Attacks requiring physical access to the user's host machine.
 * Issues related to third-party dependencies (unless a wrapper vulnerability exists in `gitSdm` itself). Please report dependency bugs to their respective maintainers.
 * Rate-limiting issues on the mock API endpoints.
@@ -36,10 +39,12 @@ The following components are in scope for security vulnerability reports:
 **Do not open a public GitHub issue for security vulnerabilities.**
 
 If you discover a vulnerability, please report it privately:
+
 1. **GitHub Security Advisory:** Submit a report via the "Security" tab on GitHub (preferred).
 2. **Email:** Send a detailed report to `rich.bayue@gmail.com`.
 
 Please include the following details in your report:
+
 * A description of the vulnerability and its potential impact.
 * Step-by-step instructions to reproduce the behavior.
 * A minimal Proof of Concept (PoC) if applicable.
@@ -49,25 +54,26 @@ Please include the following details in your report:
 
 ## Response Timeline
 
-We aim to handle all security reports with high priority:
-* **Acknowledgment:** Within 72 hours.
-* **Initial Assessment:** Within 7 days, confirming the vulnerability and its severity.
-* **Remediation & Patching:** Within 30 days. We will keep you updated throughout this process.
+We prioritize security reports:
+
+* **Acknowledgment:** within 72 hours
+* **Assessment & fix:** timeline depends on severity and complexity — we'll keep you updated
 
 ---
 
 ## Disclosure Policy
 
-We follow coordinated vulnerability disclosure. Please allow us reasonable time to investigate, address, and release a patch for the reported issue before making any details public. Once a patched version is published, we will coordinate public disclosure and credit you for the discovery.
+We practice coordinated disclosure. Give us reasonable time to investigate and release a fix before making details public. After a patched version is published, we'll coordinate disclosure and credit you.
 
 ---
 
 ## Safe Harbor
 
-We want to encourage security research. Any activities conducted in good faith, in compliance with this policy, and aimed at identifying vulnerabilities will be treated as authorized:
+Research conducted in good faith under this policy is authorized:
+
 * We will not pursue legal action against you.
-* We will not report your activity to law enforcement.
-* If a third party pursues legal action against you, we will make it known that your research was conducted in compliance with this policy.
+* We will not report you to law enforcement.
+* If a third party pursues action against you, we'll make it known your research complied with this policy.
 
 ---
 

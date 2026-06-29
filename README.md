@@ -1,5 +1,5 @@
 <!-- markdownlint-disable MD033 -->
-<h1 align="center">gitSdm (Git Software Dependency Map v2.0.0)</h1>
+<h1 align="center">gitSdm (Git Software Dependency Map v2.3.0)</h1>
 
 <p align="center">
   <strong>Graph-first repository analysis for exploring files, dependencies, modules, and architecture notes.</strong>
@@ -32,48 +32,7 @@
 
 ---
 
-## 🏗️ Architecture
-
-```text
-gitSdm/
-├── 📁 api/                    # Vercel serverless functions
-├── 📁 server/                 # Backend services & router
-│   ├── ai/                    # AI provider, prompt & task handlers
-│   ├── cache/                 # LRU caching layer
-│   ├── config/                # App configuration & env validation
-│   ├── github/                # GitHub API client
-│   ├── graph/                 # Graph building & layout algorithms
-│   ├── parser/                # Dependency & file analysis
-│   ├── router/                # Modular backend routers (AI, repo, search)
-│   ├── search/                # Semantic search, embeddings & QA engine
-│   ├── services/              # Business logic layer
-│   └── utils/                 # HTTP, logging utilities
-├── 📁 src/                    # Frontend application
-│   ├── app/                   # App providers & routing
-│   ├── components/            # UI components
-│   │   ├── explorer/          # File explorer & code inspector dock
-│   │   ├── home/              # Modular landing page sections
-│   │   ├── ui/                # shadcn/ui primitives & styling wrapper
-│   │   └── viz/               # Visual workspace modules
-│   │       ├── ai-sidebar/    # Context-aware chat tabs & tools
-│   │       ├── architecture/  # Mermaid configs & interactive generators
-│   │       ├── layout/        # Viz sidebar & workspace layout
-│   │       ├── learning-path/ # Code learning simulation player
-│   │       └── top-nav/       # Branch switcher & stats menus
-│   ├── features/              # Feature modules
-│   │   ├── ai/                # AI task integration hooks
-│   │   └── graph/             # Graph rendering, styles & layout worker
-│   │       └── canvas/        # ReactFlow & D3-force engines
-│   │           └── force/     # Custom D3 minimap & canvas painters
-│   ├── hooks/                 # Custom React hooks
-│   ├── lib/                   # Shared API client & utilities
-│   ├── pages/                 # Route-level page components
-│   ├── stores/                # Zustand global stores (e.g. vizStore)
-│   ├── styles/                # Tailwind CSS global styles
-│   └── types/                 # TypeScript definitions
-├── 📁 public/                 # Static assets (including layout worker)
-└── 📁 .agents/                # AI agent configurations
-```
+> **Architecture moved → [`ARCHITECTURE.md`](./ARCHITECTURE.md)**
 
 ---
 
@@ -280,22 +239,7 @@ Tests are co-located with source files and use `*.test.ts` naming.
 
 ---
 
-## 🗺️ Roadmap
-
-### Planned Features
-
-- [x] **AI-generated architecture diagrams** — High-quality Mermaid flowcharts detailing module boundaries and system workflows.
-- [x] **Commit History & Activity** — Interactive timeline visualizing author patterns and directory churn over time.
-- [x] **Export to PDF / PNG / SVG** — Graph maps export to PNG/PDF, while Mermaid architecture diagrams export to SVG/PNG for documentation.
-- [x] **Private repository support** — GitHub PAT-based access for private codebases while OAuth support remains planned.
-- [x] **Monorepo-aware dependency grouping** — Automatic workspace detection (npm/pnpm/yarn/bun) and cross-package mapping.
-- [x] **AI-powered semantic search & Q&A** — Context-aware vector search to ask code questions and locate entry points. (Beta)
-- [x] **Change impact analysis (Blast Radius)** — Visualizer showing transitive dependents to predict edit breakages.
-- [ ] **CI/CD integration** — GitHub Action to automatically comment visual architecture diffs on PR updates.
-- [ ] **Interactive path pruning & editing** — Tools to manually prune/group nodes and export tailored subgraphs.
-- [ ] **Multi-repository mapping** — Cross-repo mapping to trace frontend-to-backend API and SDK dependencies.
-
----
+> **Roadmap moved → [`ROADMAP.md`](./ROADMAP.md)**
 
 ## 🤝 Contributing
 
