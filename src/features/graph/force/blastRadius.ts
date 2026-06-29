@@ -29,20 +29,29 @@ export function computeBlastRadius(
 ): Set<string> {
   const affected = new Set<string>([selectedId]);
   const queue = getBlastRadiusSeedIds(selectedId, nodes);
+  const dependentsByTarget = new Map<string, string[]>();
 
   for (const id of queue) {
     affected.add(id);
   }
 
+  for (const edge of edges) {
+    if (edge.type !== 'imports') continue;
+
+    const dependents = dependentsByTarget.get(edge.target);
+    if (dependents) {
+      dependents.push(edge.source);
+    } else {
+      dependentsByTarget.set(edge.target, [edge.source]);
+    }
+  }
+
   while (queue.length > 0) {
     const curr = queue.shift()!;
-    for (const edge of edges) {
-      if (edge.target === curr && edge.type === 'imports') {
-        const dependentId = edge.source;
-        if (!affected.has(dependentId)) {
-          affected.add(dependentId);
-          queue.push(dependentId);
-        }
+    for (const dependentId of dependentsByTarget.get(curr) ?? []) {
+      if (!affected.has(dependentId)) {
+        affected.add(dependentId);
+        queue.push(dependentId);
       }
     }
   }
