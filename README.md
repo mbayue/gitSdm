@@ -15,267 +15,33 @@
 
 ---
 
-## ✨ Overview
-
-**gitSdm v2** transforms how developers understand unfamiliar codebases. Instead of spending hours reading through files and tracing dependencies, gitSdm provides **instant, interactive architecture visualization** powered by AI. v2 adds more complete repository metadata and clearer graph controls for navigating large codebases.
-
-> _"The kind of deep insight that normally takes days of reading code — delivered in seconds."_
-
-### 🎯 Value Proposition
-
-| Problem                                | Solution                          |
-| -------------------------------------- | --------------------------------- |
-| 🕒 Hours spent onboarding to new repos | ⚡ Instant architecture overview  |
-| 🔍 Manual dependency tracing           | 🕸️ Interactive dependency graph   |
-| 📚 Scattered documentation             | 🤖 AI-generated code explanations |
-| 🧩 Unclear module boundaries           | 🎯 Visual file classification     |
-
----
-
-> **Architecture moved → [`ARCHITECTURE.md`](./ARCHITECTURE.md)**
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- **Bun** >= 1.1 (recommended runtime and package manager)
-- **Node.js** >= 22 (legacy backend support)
-- **GitHub Personal Access Token** (for API access)
-
-### Installation
+## Quick Start
 
 ```bash
-# Clone the repository
 git clone https://github.com/mbayue/gitSdm.git
 cd gitSdm
-
-# Install dependencies
 bun install
-
-# Copy environment variables
 cp .env.example .env
-```
-
-### Environment Configuration
-
-| Variable             | Description                                                                  |
-| -------------------- | ---------------------------------------------------------------------------- |
-| `GITHUB_TOKEN`       | Optional. Increases GitHub API rate limits for public repos                  |
-| `AI_PROVIDER`        | `mock` (default), `gemini`,`openai`, or `anthropic`                          |
-| `OPENAI_API_KEY`     | Required when `AI_PROVIDER=openai`                                           |
-| `ANTHROPIC_API_KEY`  | Required when `AI_PROVIDER=anthropic`                                        |
-| `GEMINI_API_KEY`     | Required when `AI_PROVIDER=gemini`                                           |
-| `GEMINI_MODEL`       | Optional when `AI_PROVIDER=gemini`; defaults to `gemini-2.5-flash`           |
-| `GEMINI_API_VERSION` | Optional when `AI_PROVIDER=gemini`; defaults to `v1alpha`                    |
-| `OPENAI_MODEL`       | Optional when `AI_PROVIDER=openai`; defaults to `gpt-4o-mini`                |
-| `ANTHROPIC_MODEL`    | Optional when `AI_PROVIDER=anthropic`; defaults to `claude-3-5-haiku-latest` |
-
-### Development
-
-```bash
-# Start development server
 bun dev
 ```
 
-### Production Build
+Prerequisites: **Bun >= 1.1**, **Node.js >= 22**, and a **GitHub token** (optional, increases API rate limits).
 
-```bash
-# Build for production
-bun run build
-
-# Preview production build
-bun run preview
-```
-
-### Docker Deployment
-
-The Docker image builds the Vite app, bundles a small Node server, serves static files from `dist/`, and handles `/api/*` using the same API router as development/Vercel.
-
-```bash
-# Build Docker image
-docker build -t gitsdm .
-
-# Run container
-docker run -p 3000:3000 --env-file .env gitsdm
-```
-
-For minimal setup, `GITHUB_TOKEN` is optional but recommended. AI features use `AI_PROVIDER=mock` by default; set the matching API key when using `gemini`, `openai`, or `anthropic`.
-
-### Google Cloud Run
-
-```bash
-# Deploy directly from source
-gcloud run deploy gitsdm \
-  --source . \
-  --region asia-southeast1 \
-  --allow-unauthenticated \
-  --env-vars-file .env
-```
+Set `AI_PROVIDER=mock` (default) or `gemini`/`openai`/`anthropic` with the matching API key in `.env`.
 
 ---
 
-## 🧩 Core Features
+## More
 
-### 🔬 **Repository Analysis**
-
-- **Instant parsing** of any public GitHub repository
-- **Dependency graph** generation with `d3-force` and `dagre` layout algorithms
-- **File classification** by type (component, utility, config, etc.)
-- **Module boundary detection** for architectural insights
-
-### 🤖 **AI-Powered Insights**
-
-- **Architecture summaries** via Google Gemini, OpenAI, or Anthropic Claude
-- **Code explanations** for specific files and modules in `Standard` and `ELI5 (Explain It Like I'm 5)` modes
-- **Smart file suggestions** based on context
-- **Learning paths** for onboarding to new codebases
-
-### 🕸️ **Interactive Visualization**
-
-- **Force-directed graphs** with `@xyflow/react` (React Flow)
-- **Real-time filtering** by file type, module, or dependency
-- **Branch comparison** with visual diff
-- **High-resolution exports** to PNG and PDF for dependency maps
-- **Interactive Mermaid flowcharts** with SVG and PNG download support
-
-### 📊 **Repository Intelligence**
-
-- **Contributor analytics** with `recharts` visualizations
-- **Commit timeline** and activity patterns
-- **Trending repositories** discovery
-- **File explorer** with syntax showing via `highlight.js`
-- **Dynamic presets** that automatically adjust based on active AI provider configurations
+| Document            | Contents                         |
+| ------------------- | -------------------------------- |
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Folder structure and module layout |
+| [`ROADMAP.md`](./ROADMAP.md)           | Planned and proposed features     |
+| [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Dev workflow, testing, PR guide   |
+| [`SECURITY.md`](./SECURITY.md)         | Vulnerability reporting           |
 
 ---
 
-## 🛠️ Technology Stack
+## License
 
-### Frontend
-
-| Technology             | Purpose                         |
-| ---------------------- | ------------------------------- |
-| React 19               | UI framework                    |
-| TypeScript 6           | Type safety                     |
-| Vite 8                 | Build tooling                   |
-| @xyflow/react 12       | Graph visualization             |
-| Framer Motion 12       | Animations                      |
-| TanStack React Query 5 | Data fetching                   |
-| Tailwind CSS 4.3       | Styling                         |
-| shadcn/ui 4            | Component primitives            |
-| Recharts 2             | Charts & analytics              |
-| Mermaid 11             | Diagram generation              |
-| html-to-image          | Element/SVG to image conversion |
-| jsPDF                  | PDF generation library          |
-| Lucide React           | Icon library                    |
-
-### Backend
-
-| Technology           | Purpose           |
-| -------------------- | ----------------- |
-| Node.js 22           | Runtime           |
-| Express (via Vercel) | API server        |
-| Octokit 21           | GitHub API client |
-| LRU Cache 11         | Response caching  |
-| Google GenAI 2.6     | AI provider       |
-| OpenAI 6             | AI provider       |
-| Anthropic SDK 0.106  | AI provider       |
-
-### Infrastructure
-
-| Technology       | Purpose             |
-| ---------------- | ------------------- |
-| Google Cloud Run | Deployment platform |
-| Docker           | Containerization    |
-| Bun              | Package management  |
-| Bun Test         | Testing framework   |
-| ESLint 9         | Code quality        |
-
----
-
-## 📖 Usage Guide
-
-### 1. **Analyze a Repository**
-
-```text
-Enter a GitHub URL → gitSdm fetches & parses → Interactive graph appears
-```
-
-### 2. **Explore Architecture**
-
-```text
-Click nodes → View file contents → Trace dependencies → Understand modules
-```
-
-### 3. **Get AI Insights**
-
-```text
-Select "Explain Architecture" → AI analyzes structure → Natural language summary
-```
-
-### 4. **Compare Branches**
-
-```text
-Select branches → Visual diff → See architectural changes
-```
-
----
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-bun test
-
-# Run with coverage
-bun run test:coverage
-
-# Watch mode
-bun run test:watch
-```
-
-Tests are co-located with source files and use `*.test.ts` naming.
-
----
-
-> **Roadmap moved → [`ROADMAP.md`](./ROADMAP.md)**
-
-## 🤝 Contributing
-
-We welcome contributions! See our [contributing guidelines](CONTRIBUTING.md) for details.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Contribution Ideas
-
-- Improve graph rendering performance
-- Add new AI providers
-- Improve parser accuracy
-- Create better onboarding flows
-- Enhance repository analytics
-
----
-
-## 🔒 Security
-
-- API keys are never exposed to the client
-- Environment variables are securely handled
-- Rate limiting prevents abuse
-- GitHub API access follows OAuth best practices
-
-If you discover a vulnerability, please open a private security report.
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License**.
-
-See the [LICENSE](LICENSE) file for more information.
-
----
+MIT. See [LICENSE](LICENSE).
