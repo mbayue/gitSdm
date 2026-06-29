@@ -132,7 +132,6 @@ export function AnalysisTab({
                 Array.from(blastRadiusIds).filter(id => id !== selectedNode.id).length > 0 ? (
                   Array.from(blastRadiusIds)
                     .filter(id => id !== selectedNode.id)
-                    .slice(0, 10)
                     .map(id => {
                       const node = analysis.graph.nodes.find(n => n.id === id);
                       if (!node) return null;

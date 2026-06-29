@@ -29,6 +29,16 @@ describe('manifest parsers', () => {
   it('handles invalid package.json gracefully', () => {
     const deps = parsePackageJson('corrupted-json-payload-string-invalid');
     expect(deps).toEqual([]);
+
+    const originalParse = JSON.parse;
+    JSON.parse = (() => {
+      throw new Error('non-syntax JSON failure');
+    }) as typeof JSON.parse;
+    try {
+      expect(() => parsePackageJson('{}')).toThrow('non-syntax JSON failure');
+    } finally {
+      JSON.parse = originalParse;
+    }
   });
 
   it('parses peerDependencies from package.json', () => {
@@ -91,8 +101,8 @@ describe('manifest parsers', () => {
   });
 
   it('detects pnpm workspace package list', () => {
-    // Given: pnpm-workspace.yaml with packages list
-    const content = `packages:\n  - "packages/*"\n  - apps/web\n`;
+    // Given: pnpm-workspace.yaml with packages list plus unrelated top-level YAML
+    const content = `packages:\n  - "packages/*"\n  - apps/web\nignored: true\n`;
 
     // When: workspace metadata is parsed
     const workspace = parsePnpmWorkspace('pnpm-workspace.yaml', content);

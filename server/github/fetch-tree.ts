@@ -277,16 +277,25 @@ const MANIFEST_PATHS = [
   'Dockerfile',
 ];
 
+const ROOT_WORKSPACE_MANIFESTS = new Set(['package.json', 'pnpm-workspace.yaml']);
+
 export function findManifestPaths(items: FlatTreeItem[]): string[] {
-  const paths: string[] = [];
+  const rootWorkspaceManifests = items
+    .filter((item) => ROOT_WORKSPACE_MANIFESTS.has(item.path))
+    .map((item) => item.path)
+    .sort((a, b) => a.localeCompare(b));
+
+  const rootWorkspaceManifestSet = new Set(rootWorkspaceManifests);
+  const packageManifests: string[] = [];
   for (const item of items) {
     const base = item.path.split('/').pop() ?? '';
-    if (MANIFEST_PATHS.includes(base)) {
-      paths.push(item.path);
-      if (paths.length >= 50) break;
+    if (MANIFEST_PATHS.includes(base) && !rootWorkspaceManifestSet.has(item.path)) {
+      packageManifests.push(item.path);
+      if (rootWorkspaceManifests.length + packageManifests.length >= 50) break;
     }
   }
-  return paths;
+
+  return [...rootWorkspaceManifests, ...packageManifests];
 }
 
 export async function fetchFileContents(

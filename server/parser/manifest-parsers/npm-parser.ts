@@ -49,6 +49,8 @@ function parseWorkspaces(value: unknown): PackageJson['workspaces'] | null {
 
 function getWorkspaceManager(pkg: PackageJson): WorkspaceManager {
   if (pkg.packageManager?.startsWith('bun@')) return 'bun';
+  if (pkg.packageManager?.startsWith('pnpm@')) return 'pnpm';
+  if (pkg.packageManager?.startsWith('yarn@')) return 'yarn';
   if (Array.isArray(pkg.workspaces)) return 'npm';
   return 'yarn';
 }

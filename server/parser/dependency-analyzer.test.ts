@@ -148,10 +148,8 @@ describe('dependency-analyzer', () => {
     // When: workspace package records are analyzed
     const packages = analyzeWorkspacePackages(fileContents);
 
-    // Then: malformed workspace metadata keeps root record and skips invalid workspace matches
-    expect(packages).toEqual([
-      { ecosystem: 'javascript', manager: 'npm', rootPath: '', manifestPath: 'package.json' },
-    ]);
+    // Then: malformed workspace metadata is ignored like a non-workspace project
+    expect(packages).toEqual([]);
   });
 
   it('chooses deepest workspace package root for path ownership', () => {

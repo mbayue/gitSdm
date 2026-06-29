@@ -188,6 +188,22 @@ describe('github/fetch-tree', () => {
     expect(manifests).toEqual(['package.json', 'pnpm-workspace.yaml']);
   });
 
+  it('findManifestPaths preserves root workspace manifests before manifest cap', () => {
+    const items = Array.from({ length: 55 }, (_, idx) => ({
+      path: `packages/pkg-${String(idx).padStart(2, '0')}/package.json`,
+      type: 'blob' as const,
+      sha: `sha-${idx}`,
+      size: 10,
+    }));
+    items.push({ path: 'pnpm-workspace.yaml', type: 'blob' as const, sha: 'sha-w', size: 10 });
+
+    const manifests = findManifestPaths(items);
+
+    expect(manifests).toHaveLength(50);
+    expect(manifests[0]).toBe('pnpm-workspace.yaml');
+    expect(manifests).not.toContain('packages/pkg-49/package.json');
+  });
+
   it('fetchFileContents: handles mock and real repo successfully', async () => {
     const mockRes = await fetchFileContents('mock-owner', 'repo', ['a'], 'main');
     expect(mockRes).toEqual({});

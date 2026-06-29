@@ -47,7 +47,13 @@ function globToRegex(glob: string): RegExp {
 }
 
 function matchesWorkspaceGlob(rootPath: string, packageGlobs: readonly string[]): boolean {
-  return packageGlobs.some((glob) => globToRegex(glob).test(rootPath));
+  const positiveGlobs = packageGlobs.filter((glob) => !glob.startsWith('!'));
+  const negativeGlobs = packageGlobs
+    .filter((glob) => glob.startsWith('!'))
+    .map((glob) => glob.slice(1));
+
+  return positiveGlobs.some((glob) => globToRegex(glob).test(rootPath)) &&
+    !negativeGlobs.some((glob) => globToRegex(glob).test(rootPath));
 }
 
 function packageRecord(
@@ -71,7 +77,7 @@ export function analyzeWorkspacePackages(fileContents: Record<string, string>): 
   if (!rootPackage) return [];
 
   const manifests = detectWorkspaceManifests(fileContents);
-  if (manifests.length === 0 && !rootPackage.includes('workspaces')) return [];
+  if (manifests.length === 0) return [];
 
   const manager = manifests[0]?.manager ?? 'npm';
   const packages: WorkspacePackage[] = [packageRecord({

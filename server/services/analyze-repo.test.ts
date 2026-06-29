@@ -26,7 +26,14 @@ const workspaceFileContents = {
 };
 
 const plainFileContents = {
-  'package.json': JSON.stringify({ name: 'plain-app', dependencies: { react: '^19' } }),
+  'package.json': JSON.stringify({ name: 'plain-app', description: 'no workspaces here', dependencies: { react: '^19' } }),
+  'src/main.ts': 'console.log(1)',
+};
+
+const excludedWorkspaceFileContents = {
+  'package.json': JSON.stringify({ name: '@repo/root', packageManager: 'yarn@4.0.0', workspaces: ['packages/*', '!packages/excluded'] }),
+  'packages/a/package.json': JSON.stringify({ name: '@repo/a' }),
+  'packages/excluded/package.json': JSON.stringify({ name: '@repo/excluded' }),
   'src/main.ts': 'console.log(1)',
 };
 
@@ -130,5 +137,16 @@ describe('services/analyze-repo', () => {
     ]);
     expect(analysis.workspacePackages).toEqual([]);
     expect(analysis.graph.edges.some((edge) => edge.source.startsWith('package:') && edge.target.startsWith('package:'))).toBe(false);
+  });
+
+  it('honors negated workspace globs and explicit yarn packageManager', async () => {
+    activeFileContents = excludedWorkspaceFileContents;
+
+    const analysis = await analyzeRepository('https://github.com/test-owner/test-repo');
+
+    expect(analysis.workspacePackages).toEqual([
+      expect.objectContaining({ rootPath: '', manager: 'yarn' }),
+      expect.objectContaining({ rootPath: 'packages/a', manager: 'yarn' }),
+    ]);
   });
 });

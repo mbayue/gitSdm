@@ -80,7 +80,7 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
 	  }, [analysis]);
 
   const totalFiles = analysis.totalFiles ?? fileCount;
-  const isGraphCapped = totalFiles > fileCount || fileCount >= GRAPH_FILE_NODE_CAP || folderCount >= GRAPH_FOLDER_NODE_CAP;
+  const isGraphCapped = totalFiles > fileCount;
 
   return (
     <div className="space-y-5">
@@ -276,7 +276,7 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
             <div className="flex items-start gap-2 rounded-md border border-amber-500/15 bg-amber-500/5 px-2 py-1.5 text-[10px] leading-snug text-amber-200/80">
               <Info className="mt-0.5 h-3 w-3 shrink-0 text-amber-300/80" />
               <span>
-                Repository size exceeds API limits. The dependency graph has been truncated to the first 5,000 files.
+                Repository size exceeds API limits. The dependency graph uses a prioritized 5,000-file subset.
               </span>
             </div>
           )}
