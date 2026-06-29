@@ -1,3 +1,6 @@
+# Disable automatic .env file loading since Vite's loadEnv handles it
+env = false
+
 [test]
 coverageSkipTestFiles = true
 coveragePathIgnorePatterns = [

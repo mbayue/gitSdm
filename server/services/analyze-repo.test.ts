@@ -69,6 +69,7 @@ mock.module('../github/fetch-tree', () => ({
   }),
   fetchContributors: async () => [],
   fetchTimeline: async () => [],
+  fetchTotalCommits: async () => 42,
   buildTreeFromPaths: (items: readonly { readonly path: string; readonly type: string }[]) => items,
   findManifestPaths: () => ['package.json', 'packages/a/package.json', 'packages/b/package.json'],
   fetchFileContents: async () => activeFileContents,

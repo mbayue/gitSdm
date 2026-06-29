@@ -1,4 +1,4 @@
-export function getPublicAppConfig(env: NodeJS.ProcessEnv = process.env) {
+export function getPublicAppConfig(env: Record<string, string | undefined> = process.env) {
   return {
     aiProvider: (env.AI_PROVIDER ?? 'mock').toLowerCase(),
   };

@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD033 -->
 <h1 align="center">gitSdm (Git Software Dependency Map v2.0.0)</h1>
 
 <p align="center">
@@ -33,7 +34,7 @@
 
 ## 🏗️ Architecture
 
-```
+```text
 gitSdm/
 ├── 📁 api/                    # Vercel serverless functions
 ├── 📁 server/                 # Backend services & router
@@ -81,7 +82,7 @@ gitSdm/
 ### Prerequisites
 
 - **Bun** >= 1.1 (recommended runtime and package manager)
-- **Node.js** >= 22 (alternative backend support)
+- **Node.js** >= 22 (legacy backend support)
 - **GitHub Personal Access Token** (for API access)
 
 ### Installation
@@ -105,7 +106,7 @@ cp .env.example .env
 | `GITHUB_TOKEN`       | Optional. Increases GitHub API rate limits for public repos                  |
 | `AI_PROVIDER`        | `mock` (default), `gemini`,`openai`, or `anthropic`                          |
 | `OPENAI_API_KEY`     | Required when `AI_PROVIDER=openai`                                           |
-| `ANTHROPIC_API_KEY`  | Required when `AI_PROVIDER=anthropic`                                  |
+| `ANTHROPIC_API_KEY`  | Required when `AI_PROVIDER=anthropic`                                        |
 | `GEMINI_API_KEY`     | Required when `AI_PROVIDER=gemini`                                           |
 | `GEMINI_MODEL`       | Optional when `AI_PROVIDER=gemini`; defaults to `gemini-2.5-flash`           |
 | `GEMINI_API_VERSION` | Optional when `AI_PROVIDER=gemini`; defaults to `v1alpha`                    |
@@ -238,25 +239,25 @@ gcloud run deploy gitsdm \
 
 ### 1. **Analyze a Repository**
 
-```
+```text
 Enter a GitHub URL → gitSdm fetches & parses → Interactive graph appears
 ```
 
 ### 2. **Explore Architecture**
 
-```
+```text
 Click nodes → View file contents → Trace dependencies → Understand modules
 ```
 
 ### 3. **Get AI Insights**
 
-```
+```text
 Select "Explain Architecture" → AI analyzes structure → Natural language summary
 ```
 
 ### 4. **Compare Branches**
 
-```
+```text
 Select branches → Visual diff → See architectural changes
 ```
 
