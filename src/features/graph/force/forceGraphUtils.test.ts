@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test';
+import { getBlastRadiusSeedIds } from './blastRadius';
 import { computeBlastRadius, getForceLinkColor, getForceNodeRadius } from './forceGraphUtils';
 import type { ForceGraphLink, ForceGraphNode } from './forceGraphConstants';
 
@@ -34,6 +35,19 @@ test('computeBlastRadius traces file dependents and ignores non-import edges', (
   );
 
   expect([...ids].sort()).toEqual(['file:core.ts', 'file:feature.ts', 'file:ui.ts']);
+});
+
+test('getBlastRadiusSeedIds expands folder descendants only', () => {
+  const ids = getBlastRadiusSeedIds(
+    'folder:server',
+    [
+      { id: 'folder:server', type: 'folder', data: { label: 'server', path: 'server' } },
+      { id: 'file:server/api.ts', type: 'file', data: { label: 'api.ts', path: 'server/api.ts' } },
+      { id: 'file:serverless.ts', type: 'file', data: { label: 'serverless.ts', path: 'serverless.ts' } },
+    ],
+  );
+
+  expect(ids).toEqual(['file:server/api.ts']);
 });
 
 test('computeBlastRadius expands folder selections before tracing dependents', () => {

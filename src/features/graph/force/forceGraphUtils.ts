@@ -1,4 +1,4 @@
-import type { GraphNode } from '@/types';
+import { computeBlastRadius } from './blastRadius';
 import type { ForceGraphNode, ForceGraphLink } from './forceGraphConstants';
 
 export function getForceNodeRadius(node: ForceGraphNode): number {
@@ -47,42 +47,4 @@ export function getForceLinkColor(
   }
   return 'rgba(255,255,255,0.06)';
 }
-
-export function computeBlastRadius(
-  selectedId: string,
-  edges: { source: string; target: string; type?: string }[],
-  nodes: Pick<GraphNode, 'id' | 'type' | 'data'>[] = [],
-): Set<string> {
-  const affected = new Set<string>([selectedId]);
-  const queue: string[] = [];
-  const selectedNode = nodes.find((node) => node.id === selectedId);
-
-  if (!selectedNode || selectedNode.type === 'file') {
-    queue.push(selectedId);
-  } else if (selectedNode.type === 'folder') {
-    const folderPath = selectedNode.data.path;
-    if (folderPath) {
-      for (const node of nodes) {
-        if (node.type === 'file' && node.data.path?.startsWith(`${folderPath}/`)) {
-          affected.add(node.id);
-          queue.push(node.id);
-        }
-      }
-    }
-  }
-
-  while (queue.length > 0) {
-    const curr = queue.shift()!;
-    for (const edge of edges) {
-      if (edge.target === curr && edge.type === 'imports') {
-        const dependentId = edge.source;
-        if (!affected.has(dependentId)) {
-          affected.add(dependentId);
-          queue.push(dependentId);
-        }
-      }
-    }
-  }
-
-  return affected;
-}
+export { computeBlastRadius };
