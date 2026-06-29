@@ -1,5 +1,4 @@
 import type { RequestContext } from '../../utils/context';
-import type { RepoAnalysis } from '../../../src/types';
 import { buildRepoContext, SYSTEM_PROMPT } from '../prompts';
 import { analyzeRepository } from '../../services/analyze-repo';
 import { executeAiTask } from '../service';
@@ -289,8 +288,4 @@ ${buildRepoContext(analysis)}`,
 
   return { mentalModel, recommendedPath, executionFlow, insights, cached: result.cached };
 }
-export type { RepoAnalysis };
-export type { RequestContext };
-export { buildRepoContext, SYSTEM_PROMPT };
-export { analyzeRepository };
-export { executeAiTask };
+

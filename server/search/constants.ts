@@ -24,18 +24,6 @@ export const DEFAULT_TOP_K = 10;
 /** Minimum cosine similarity score for a result to be included. */
 export const DEFAULT_MIN_SCORE = 0.3;
 
-/** Maximum number of search results cached per repository. */
-export const MAX_SEARCH_CACHE_PER_REPO = 100;
-
-/** Search cache TTL in ms (60 minutes). */
-export const SEARCH_CACHE_TTL_MS = 60 * 60 * 1000;
-
-/** Index cache TTL in ms (2 hours). */
-export const INDEX_CACHE_TTL_MS = 2 * 60 * 60 * 1000;
-
-/** Maximum index cache entries. */
-export const MAX_INDEX_CACHE_ENTRIES = 50;
-
 /** Languages with AST-aware chunking support. */
 export const AST_SUPPORTED_LANGUAGES = new Set([
   'typescript', 'tsx', 'javascript', 'jsx', 'python',
