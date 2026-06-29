@@ -48,7 +48,8 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
     contributorCount,
     highCoupling,
     entryPoints,
-    degrees
+    degrees,
+    nodeById
   } = useMemo(() => {
     const fileCount = analysis.graph.nodes.filter(n => n.type === 'file').length;
     const folderCount = analysis.graph.nodes.filter(n => n.type === 'folder').length;
@@ -70,7 +71,9 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
       .filter(n => n.data.fileClass === 'entry')
       .slice(0, 5);
 
-    return { fileCount, folderCount, depCount, contributorCount, highCoupling, entryPoints, degrees };
+    const nodeById = new Map(analysis.graph.nodes.map(n => [n.id, n]));
+
+    return { fileCount, folderCount, depCount, contributorCount, highCoupling, entryPoints, degrees, nodeById };
   }, [analysis]);
 
   return (
@@ -116,7 +119,7 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                 </h4>
                 <div className="rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] py-2 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin">
                   {Array.from(graphDiff.added).map(id => {
-                    const node = analysis.graph.nodes.find(n => n.id === id);
+                    const node = nodeById.get(id);
                     return (
                       <button 
                         key={id} 
@@ -141,7 +144,7 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                 </h4>
                 <div className="rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] py-2 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin">
                   {Array.from(graphDiff.modified).map(id => {
-                    const node = analysis.graph.nodes.find(n => n.id === id);
+                    const node = nodeById.get(id);
                     return (
                       <button 
                         key={id} 
@@ -166,7 +169,7 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                 </h4>
                 <div className="rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] py-2 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin">
                   {Array.from(graphDiff.deleted).map(id => {
-                    const node = analysis.graph.nodes.find(n => n.id === id);
+                    const node = nodeById.get(id);
                     return (
                       <button
                         key={id} 
@@ -282,7 +285,7 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                     <button
                       key={file}
                       onClick={() => {
-                        const node = analysis.graph.nodes.find(n => n.id === `file:${file}` || n.id === file);
+                        const node = nodeById.get(`file:${file}`) || nodeById.get(file);
                         if (node) focusOnNode(node.id, node.data?.path || file);
                       }}
                       className="w-full flex items-center gap-1.5 text-left px-1.5 py-1 text-[10px] font-mono text-[#e6edf3] hover:bg-[rgba(240,246,252,0.05)] rounded-sm truncate transition-colors"
