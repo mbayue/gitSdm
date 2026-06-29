@@ -6,7 +6,7 @@ import {
   clearAllCaches,
   getCacheSizes,
   hashContext,
-  hashApiKey,
+  hashToken,
   invalidateSearchCache,
 } from './lru';
 
@@ -114,15 +114,15 @@ describe('hashContext', () => {
   });
 });
 
-describe('hashApiKey', () => {
+describe('hashToken', () => {
   it('produces a distinct hash for api keys', () => {
     const key1 = 'sk-12345';
     const key2 = 'sk-67890';
 
-    const hash1 = hashApiKey(key1);
-    const hash2 = hashApiKey(key2);
+    const hash1 = hashToken(key1);
+    const hash2 = hashToken(key2);
 
     expect(hash1).not.toBe(hash2);
-    expect(hash1).toBe(hashApiKey(key1)); // Deterministic
+    expect(hash1).toBe(hashToken(key1)); // Deterministic
   });
 });

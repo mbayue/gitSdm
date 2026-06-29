@@ -100,13 +100,13 @@ export function hashContext(input: string): string {
   return crypto.createHash('sha256').update(input).digest('hex');
 }
 
-const API_KEY_CACHE_HASH_SECRET = process.env.API_KEY_CACHE_HASH_SECRET ?? 'api-key-cache-v1';
+const TOKEN_CACHE_HASH_SECRET = process.env.TOKEN_CACHE_HASH_SECRET ?? 'token-cache-v1';
 
 // This is cache-key derivation, not password storage.
-// HMAC avoids exposing raw API keys without blocking request handling.
-export function hashApiKey(key: string): string {
+// HMAC avoids exposing raw tokens without blocking request handling.
+export function hashToken(token: string): string {
   return crypto
-    .createHmac('sha256', API_KEY_CACHE_HASH_SECRET)
-    .update(key)
+    .createHmac('sha256', TOKEN_CACHE_HASH_SECRET)
+    .update(token)
     .digest('hex');
 }
