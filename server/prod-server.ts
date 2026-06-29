@@ -1,10 +1,8 @@
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { handleApiRequest } from './api-router';
 import { resetOctokit } from './github/client';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const distDir = path.resolve(__dirname, '../dist');
+const distDir = path.resolve(import.meta.dir, '../dist');
 const indexFile = path.join(distDir, 'index.html');
 const port = Number(process.env.PORT ?? 3000);
 const host = process.env.HOST ?? '0.0.0.0';

@@ -63,7 +63,7 @@ function getAiCacheDiscriminator(apiKey?: string): string {
   return `${provider}:${model}:${keyScope}`;
 }
 
-export function safeParseJSON<T>(raw: string): T {
+function safeParseJSON<T>(raw: string): T {
   let cleaned = raw.trim();
 
   // 1. Remove markdown code block wraps (like ```json ... ``` or ``` ... ```)

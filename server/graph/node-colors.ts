@@ -1,4 +1,4 @@
-export const FILE_EXT_COLORS: Record<string, string> = {
+const FILE_EXT_COLORS: Record<string, string> = {
   ts: '#3b82f6',     // Blue
   tsx: '#60a5fa',    // Light Blue
   js: '#eab308',     // Yellow

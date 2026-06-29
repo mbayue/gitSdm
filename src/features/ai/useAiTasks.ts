@@ -1,10 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
-  aiArchitecture,
-  aiExplain,
-  aiOnboarding,
-  aiSuggestFiles,
-  aiExplainLif,
   aiRefactor,
   aiHealth,
   aiMermaid,
@@ -12,41 +7,6 @@ import {
   aiReadmeEnhance,
   aiLearningPath,
 } from '@/lib/apiClient';
-import type { AIExplainRequest } from '@/types';
-
-export function useExplain() {
-  return useMutation({
-    mutationFn: (body: AIExplainRequest) => aiExplain(body),
-  });
-}
-
-export function useArchitecture() {
-  return useMutation({
-    mutationFn: ({ owner, repo }: { owner: string; repo: string }) =>
-      aiArchitecture(owner, repo),
-  });
-}
-
-export function useSuggestFiles() {
-  return useMutation({
-    mutationFn: ({ owner, repo }: { owner: string; repo: string }) =>
-      aiSuggestFiles(owner, repo),
-  });
-}
-
-export function useOnboarding() {
-  return useMutation({
-    mutationFn: ({ owner, repo }: { owner: string; repo: string }) =>
-      aiOnboarding(owner, repo),
-  });
-}
-
-export function useExplainLif() {
-  return useMutation({
-    mutationFn: ({ owner, repo }: { owner: string; repo: string }) =>
-      aiExplainLif(owner, repo),
-  });
-}
 
 export function useRefactor() {
   return useMutation({

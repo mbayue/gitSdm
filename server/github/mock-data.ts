@@ -2,7 +2,7 @@ import type { RepoInfo, FlatTreeItem } from './fetch-tree';
 import type { Contributor, TimelineWeek } from '../../src/types';
 
 export function isMockRepo(owner: string): boolean {
-  return owner.toLowerCase() === 'mock';
+  return owner.toLowerCase() === 'mock' || owner.toLowerCase() === 'mock-owner';
 }
 
 const TODO_APP_FILES = [

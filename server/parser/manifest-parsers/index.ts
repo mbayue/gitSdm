@@ -4,7 +4,7 @@ import { detectPackageJsonWorkspace, parsePnpmWorkspace } from './npm-parser';
 
 // Export all individual parser functions to retain complete backward compatibility
 export { parsePackageJson } from './npm-parser';
-export { detectPackageJsonWorkspace, parsePackageJsonName, parsePackageJsonScoped, parsePnpmWorkspace } from './npm-parser';
+export { parsePackageJsonName, parsePackageJsonScoped, parsePnpmWorkspace } from './npm-parser';
 export { parseRequirementsTxt, parsePyproject } from './pip-parser';
 export { parseCargoToml } from './rust-parser';
 export { parseGoMod } from './go-parser';
