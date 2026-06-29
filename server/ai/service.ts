@@ -1,5 +1,5 @@
 import { getAIProvider } from './provider';
-import { aiCacheKey, cache, hashApiKey } from '../cache/lru';
+import { aiCacheKey, cache, hashToken } from '../cache/lru';
 import { logApi } from '../utils/logger';
 
 // Concurrency queue to control/batch AI API requests
@@ -59,7 +59,7 @@ function getAiCacheDiscriminator(apiKey?: string): string {
         ? (process.env.ANTHROPIC_MODEL ?? 'claude-3-5-haiku-latest')
         : 'mock';
 
-  const keyScope = apiKey?.trim() ? `user-key:${hashApiKey(apiKey)}` : 'env-key';
+  const keyScope = apiKey?.trim() ? `user-key:${hashToken(apiKey)}` : 'env-key';
   return `${provider}:${model}:${keyScope}`;
 }
 
