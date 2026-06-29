@@ -11,7 +11,7 @@ import {
   fetchMockTimeline,
 } from './mock-data';
 
-const MAX_TREE_ITEMS = 10000;
+const MAX_TREE_ITEMS = 5000;
 
 function resolveOctokit(tokenOrCtx?: string | RequestContext) {
   if (tokenOrCtx && typeof tokenOrCtx === 'object' && 'octokit' in tokenOrCtx) {
@@ -175,6 +175,11 @@ export async function fetchFlatTree(
     const totalFiles = allBlobs.length;
 
     // Prioritize source code over noise (docs, tests, generated)
+    const isManifest = (p: string) => {
+      const base = p.split('/').pop() ?? '';
+      return MANIFEST_PATHS.includes(base);
+    };
+
     const isNoise = (p: string) => {
       const lower = p.toLowerCase();
       // Match explicit noise folders
@@ -184,9 +189,15 @@ export async function fetchFlatTree(
       return false;
     };
 
-    const mapped = allBlobs.map((item) => ({ item, noise: isNoise(item.path) ? 1 : 0 }));
+    const mapped = allBlobs.map((item) => {
+      let priority = 0;
+      if (isManifest(item.path)) priority = -1; // Highest priority: never truncate manifests
+      else if (isNoise(item.path)) priority = 1;  // Lowest priority: noise
+      return { item, priority };
+    });
+
     mapped.sort((a, b) => {
-      if (a.noise !== b.noise) return a.noise - b.noise;
+      if (a.priority !== b.priority) return a.priority - b.priority;
       return a.item.path.localeCompare(b.item.path);
     });
     for (let i = 0; i < mapped.length; i++) {
@@ -255,6 +266,7 @@ function sortTree(nodes: TreeNode[]): TreeNode[] {
 
 const MANIFEST_PATHS = [
   'package.json',
+  'pnpm-workspace.yaml',
   'requirements.txt',
   'pyproject.toml',
   'Pipfile',
@@ -265,16 +277,25 @@ const MANIFEST_PATHS = [
   'Dockerfile',
 ];
 
+const ROOT_WORKSPACE_MANIFESTS = new Set(['package.json', 'pnpm-workspace.yaml']);
+
 export function findManifestPaths(items: FlatTreeItem[]): string[] {
-  const paths: string[] = [];
+  const rootWorkspaceManifests = items
+    .filter((item) => ROOT_WORKSPACE_MANIFESTS.has(item.path))
+    .map((item) => item.path)
+    .sort((a, b) => a.localeCompare(b));
+
+  const rootWorkspaceManifestSet = new Set(rootWorkspaceManifests);
+  const packageManifests: string[] = [];
   for (const item of items) {
     const base = item.path.split('/').pop() ?? '';
-    if (MANIFEST_PATHS.includes(base)) {
-      paths.push(item.path);
-      if (paths.length >= 20) break;
+    if (MANIFEST_PATHS.includes(base) && !rootWorkspaceManifestSet.has(item.path)) {
+      packageManifests.push(item.path);
+      if (rootWorkspaceManifests.length + packageManifests.length >= 50) break;
     }
   }
-  return paths;
+
+  return [...rootWorkspaceManifests, ...packageManifests];
 }
 
 export async function fetchFileContents(

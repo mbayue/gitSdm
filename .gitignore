@@ -160,8 +160,9 @@ Thumbs.db
 .agents
 .agent
 .codex
-.cursor
 .kiro
-.qoder
 .clinerules
+.playwright-mcp
+.omo
+.omop
 design-system

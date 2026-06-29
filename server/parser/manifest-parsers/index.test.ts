@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'bun:test';
 import {
+  detectWorkspaceManifest,
   parsePackageJson,
+  parsePnpmWorkspace,
   parseGoMod,
   parseManifest,
   parseRequirementsTxt,
@@ -27,6 +29,16 @@ describe('manifest parsers', () => {
   it('handles invalid package.json gracefully', () => {
     const deps = parsePackageJson('corrupted-json-payload-string-invalid');
     expect(deps).toEqual([]);
+
+    const originalParse = JSON.parse;
+    JSON.parse = (() => {
+      throw new Error('non-syntax JSON failure');
+    }) as typeof JSON.parse;
+    try {
+      expect(() => parsePackageJson('{}')).toThrow('non-syntax JSON failure');
+    } finally {
+      JSON.parse = originalParse;
+    }
   });
 
   it('parses peerDependencies from package.json', () => {
@@ -38,6 +50,84 @@ describe('manifest parsers', () => {
     );
     expect(deps).toHaveLength(2);
     expect(deps.find((d) => d.name === 'react-dom')?.type).toBe('peer');
+  });
+
+  it('detects npm workspaces array from package.json', () => {
+    // Given: root package.json with npm workspaces array
+    const content = JSON.stringify({ workspaces: ['packages/*', 'apps/web'] });
+
+    // When: workspace metadata is parsed
+    const workspace = detectWorkspaceManifest('package.json', content);
+
+    // Then: npm workspace package globs are preserved
+    expect(workspace).toEqual({
+      ecosystem: 'javascript',
+      manager: 'npm',
+      manifestPath: 'package.json',
+      packageGlobs: ['packages/*', 'apps/web'],
+    });
+  });
+
+  it('detects Yarn workspaces object from package.json', () => {
+    // Given: root package.json with Yarn workspaces object
+    const content = JSON.stringify({ workspaces: { packages: ['packages/*'] } });
+
+    // When: workspace metadata is parsed
+    const workspace = detectWorkspaceManifest('package.json', content);
+
+    // Then: Yarn workspace package globs are preserved
+    expect(workspace).toEqual({
+      ecosystem: 'javascript',
+      manager: 'yarn',
+      manifestPath: 'package.json',
+      packageGlobs: ['packages/*'],
+    });
+  });
+
+  it('detects Bun workspaces from package.json packageManager', () => {
+    // Given: package.json declares Bun as manager and workspaces array
+    const content = JSON.stringify({ packageManager: 'bun@1.3.14', workspaces: ['packages/*'] });
+
+    // When: workspace metadata is parsed
+    const workspace = detectWorkspaceManifest('package.json', content);
+
+    // Then: Bun manager is reported for JavaScript workspace contract
+    expect(workspace).toEqual({
+      ecosystem: 'javascript',
+      manager: 'bun',
+      manifestPath: 'package.json',
+      packageGlobs: ['packages/*'],
+    });
+  });
+
+  it('detects pnpm workspace package list', () => {
+    // Given: pnpm-workspace.yaml with packages list plus unrelated top-level YAML
+    const content = `packages:\n  - "packages/*"\n  - apps/web\nignored: true\n`;
+
+    // When: workspace metadata is parsed
+    const workspace = parsePnpmWorkspace('pnpm-workspace.yaml', content);
+
+    // Then: pnpm package globs are preserved
+    expect(workspace).toEqual({
+      ecosystem: 'javascript',
+      manager: 'pnpm',
+      manifestPath: 'pnpm-workspace.yaml',
+      packageGlobs: ['packages/*', 'apps/web'],
+    });
+  });
+
+  it('handles malformed workspace manifests gracefully', () => {
+    // Given: corrupt JSON and malformed pnpm YAML inputs
+    const corruptJson = '{"workspaces": [';
+    const malformedYaml = 'packages:\n  - ok\n    bad-indent';
+
+    // When: workspace metadata is parsed
+    const packageWorkspace = detectWorkspaceManifest('package.json', corruptJson);
+    const pnpmWorkspace = parsePnpmWorkspace('pnpm-workspace.yaml', malformedYaml);
+
+    // Then: parser returns null instead of throwing
+    expect(packageWorkspace).toBeNull();
+    expect(pnpmWorkspace).toBeNull();
   });
 
   it('parses go.mod require block', () => {

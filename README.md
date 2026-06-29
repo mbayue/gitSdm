@@ -285,9 +285,9 @@ Tests are co-located with source files and use `*.test.ts` naming.
 
 - [x] **AI-generated architecture diagrams** — High-quality Mermaid flowcharts detailing module boundaries and system workflows.
 - [x] **Commit History & Activity** — Interactive timeline visualizing author patterns and directory churn over time.
-- [x] **Export to PDF / PNG / SVG** — High-res canvas snapshots and vector diagram outputs for documentation.
-- [x] **Private repository support** — Secure OAuth authentication and credential storage to map private codebases.
-- [ ] **Monorepo-aware dependency grouping** — Automatic workspace detection (npm/pnpm/yarn) and cross-package mapping.
+- [x] **Export to PDF / PNG / SVG** — Graph maps export to PNG/PDF, while Mermaid architecture diagrams export to SVG/PNG for documentation.
+- [x] **Private repository support** — GitHub PAT-based access for private codebases while OAuth support remains planned.
+- [x] **Monorepo-aware dependency grouping** — Automatic workspace detection (npm/pnpm/yarn/bun) and cross-package mapping.
 - [x] **AI-powered semantic search & Q&A** — Context-aware vector search to ask code questions and locate entry points. (Beta)
 - [x] **Change impact analysis (Blast Radius)** — Visualizer showing transitive dependents to predict edit breakages.
 - [ ] **CI/CD integration** — GitHub Action to automatically comment visual architecture diffs on PR updates.

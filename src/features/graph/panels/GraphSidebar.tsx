@@ -84,7 +84,7 @@ export function GraphSidebar({
     toggleGraphSidebarSection: toggle,
   } = useVizStore();
 
-  const defaultNodeTypeFilters = new Set<NodeType>(['repo', 'folder', 'file']);
+  const defaultNodeTypeFilters = new Set<NodeType>(['repo', 'package', 'folder', 'file']);
   const hasActiveFilters =
     diffStatusFilters.size > 0 ||
     fileTypeFilters.size > 0 ||
@@ -179,6 +179,10 @@ export function GraphSidebar({
               <button type="button" onClick={() => toggleNodeTypeFilter('repo')} className={cn("flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5", !nodeTypeFilters.has('repo') && "opacity-40 line-through")}>
                 <div className="flex h-4 w-4 items-center justify-center rounded bg-violet-500/10 border border-violet-500/20 text-violet-400 shrink-0"><FolderGit2 className="h-2.5 w-2.5" /></div>
                 <span className="text-[11px] text-zinc-300">Repository</span>
+              </button>
+              <button type="button" onClick={() => toggleNodeTypeFilter('package')} className={cn("flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5", !nodeTypeFilters.has('package') && "opacity-40 line-through")}>
+                <div className="flex h-4 w-4 items-center justify-center rounded bg-pink-500/10 border border-pink-500/20 text-pink-400 shrink-0"><Layers className="h-2.5 w-2.5" /></div>
+                <span className="text-[11px] text-zinc-300">Packages</span>
               </button>
               <button type="button" onClick={() => toggleNodeTypeFilter('folder')} className={cn("flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-all hover:bg-white/5", !nodeTypeFilters.has('folder') && "opacity-40 line-through")}>
                 <div className="flex h-4 w-4 items-center justify-center rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 shrink-0"><Folder className="h-2.5 w-2.5" /></div>

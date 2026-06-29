@@ -1,3 +1,4 @@
+import { computeBlastRadius } from './blastRadius';
 import type { ForceGraphNode, ForceGraphLink } from './forceGraphConstants';
 
 export function getForceNodeRadius(node: ForceGraphNode): number {
@@ -46,26 +47,4 @@ export function getForceLinkColor(
   }
   return 'rgba(255,255,255,0.06)';
 }
-
-export function computeBlastRadius(
-  selectedId: string,
-  edges: { source: string; target: string; type?: string }[],
-): Set<string> {
-  const affected = new Set<string>([selectedId]);
-  const queue: string[] = [selectedId];
-
-  while (queue.length > 0) {
-    const curr = queue.shift()!;
-    for (const edge of edges) {
-      if (edge.target === curr && edge.type === 'imports') {
-        const dependentId = edge.source;
-        if (!affected.has(dependentId)) {
-          affected.add(dependentId);
-          queue.push(dependentId);
-        }
-      }
-    }
-  }
-
-  return affected;
-}
+export { computeBlastRadius };

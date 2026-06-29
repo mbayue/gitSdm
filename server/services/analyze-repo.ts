@@ -11,7 +11,7 @@ import {
 } from '../github/fetch-tree';
 import { parseGitHubUrl } from '../github/parse-url';
 import { buildGraph } from '../graph/graph-builder';
-import { analyzeDependencies } from '../parser/dependency-analyzer';
+import { analyzeDependencies, analyzeManifestDependencies, analyzeWorkspacePackages } from '../parser/dependency-analyzer';
 import { annotateTree, findImportantFiles } from '../parser/file-classifier';
 import type { RepoAnalysis } from '../../src/types';
 import type { RequestContext } from '../utils/context';
@@ -55,17 +55,21 @@ export async function analyzeRepository(
   );
 
   const pathsToFetch = Array.from(new Set([...manifestPaths, ...importantSourceFiles]));
-  const fileContents = await fetchFileContents(owner, repo, pathsToFetch, info.sha, tokenOrCtx);
-  const dependencies = analyzeDependencies(fileContents);
+	const fileContents = await fetchFileContents(owner, repo, pathsToFetch, info.sha, tokenOrCtx);
+	const dependencies = analyzeDependencies(fileContents);
+	const scopedDependencies = analyzeManifestDependencies(fileContents);
+	const workspacePackages = analyzeWorkspacePackages(fileContents);
 
   const graph = buildGraph({
     owner,
     repo,
     tree,
     dependencies,
-    contributors,
-    fileContents,
-  });
+	  contributors,
+	  fileContents,
+	  workspacePackages,
+	  scopedDependencies,
+	});
 
   const analysis: RepoAnalysis = {
     meta: {
@@ -87,6 +91,7 @@ export async function analyzeRepository(
     tree,
     treeTruncated: truncated,
     dependencies,
+    workspacePackages,
     graph,
     contributors,
     timeline,

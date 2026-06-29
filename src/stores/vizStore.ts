@@ -117,7 +117,7 @@ interface VizState {
   reset: () => void;
 }
 
-const defaultFilters = new Set<NodeType>(["repo", "folder", "file"]);
+const defaultFilters = new Set<NodeType>(["repo", "package", "folder", "file"]);
 const defaultContentFilters = new Set<ContentFilter>(["source", "config"]);
 
 export const useVizStore = create<VizState>()(

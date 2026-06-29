@@ -81,8 +81,8 @@ export function useForceCanvasState({
   const blastRadiusNodeIds = useMemo(() => {
     if (!blastRadiusActive || !selectedNodeId) return new Set<string>();
     if (!forceNodeById.get(selectedNodeId)) return new Set<string>();
-    return computeBlastRadius(selectedNodeId, graph.edges);
-  }, [blastRadiusActive, selectedNodeId, forceNodeById, graph.edges]);
+    return computeBlastRadius(selectedNodeId, graph.edges, graph.nodes);
+  }, [blastRadiusActive, selectedNodeId, forceNodeById, graph.edges, graph.nodes]);
 
   useEffect(() => {
     if (!focusedFilePath) return;
