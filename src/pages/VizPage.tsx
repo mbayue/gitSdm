@@ -256,7 +256,6 @@ export function VizPage() {
 
         <BottomStatusBar
           analysis={data}
-          treeTruncated={data?.treeTruncated}
           showMinimap={showMinimap}
           activeView={activeView}
         />

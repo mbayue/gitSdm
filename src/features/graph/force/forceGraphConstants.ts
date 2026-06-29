@@ -27,6 +27,7 @@ export const COMMUNITY_COLORS = [
 
 export const NODE_TYPE_COLORS: Record<string, string> = {
   repo: '#8b5cf6',
+  package: '#ec4899',
   folder: '#f59e0b',
   file: '#3b82f6',
 };

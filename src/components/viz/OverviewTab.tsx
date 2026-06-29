@@ -4,8 +4,11 @@ import { useVizStore } from '@/stores/vizStore';
 import type { RepoAnalysis } from '@/types';
 import {
   Plus, Activity, AlertTriangle, GitBranch,
-  FileCode, Folder, Package, Users, Code2, ShieldAlert
+  FileCode, Folder, Package, Users, Code2, ShieldAlert, Info
 } from 'lucide-react';
+
+const GRAPH_FILE_NODE_CAP = 1200;
+const GRAPH_FOLDER_NODE_CAP = 300;
 
 interface OverviewTabProps {
   analysis: RepoAnalysis;
@@ -71,10 +74,13 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
       .filter(n => n.data.fileClass === 'entry')
       .slice(0, 5);
 
-    const nodeById = new Map(analysis.graph.nodes.map(n => [n.id, n]));
+	    const nodeById = new Map(analysis.graph.nodes.map(n => [n.id, n]));
+	
+	    return { fileCount, folderCount, depCount, contributorCount, highCoupling, entryPoints, degrees, nodeById };
+	  }, [analysis]);
 
-    return { fileCount, folderCount, depCount, contributorCount, highCoupling, entryPoints, degrees, nodeById };
-  }, [analysis]);
+  const totalFiles = analysis.totalFiles ?? fileCount;
+  const isGraphCapped = totalFiles > fileCount || fileCount >= GRAPH_FILE_NODE_CAP || folderCount >= GRAPH_FOLDER_NODE_CAP;
 
   return (
     <div className="space-y-5">
@@ -219,6 +225,12 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                   {analysis.meta.license}
                 </div>
               )}
+              {analysis.workspacePackages && analysis.workspacePackages.length > 0 && (
+                <div className="flex items-center gap-1 text-[10px] text-[#ec4899] font-mono border border-[#ec4899]/20 bg-[#ec4899]/10 rounded-sm px-1.5 py-0.5">
+                  <Package className="h-3 w-3" />
+                  Monorepo
+                </div>
+              )}
             </div>
 
             {analysis.meta.topics && analysis.meta.topics.length > 0 && (
@@ -235,9 +247,9 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
           <div className="h-px w-full bg-[rgba(240,246,252,0.1)]" />
 
           {/* Stats Rows */}
-          <div className="space-y-1.5">
-            {[
-              { label: 'Files', val: fileCount, icon: FileCode },
+	          <div className="space-y-1.5">
+	            {[
+	              { label: 'Files', val: fileCount, icon: FileCode },
               { label: 'Folders', val: folderCount, icon: Folder },
               { label: 'Dependencies', val: depCount, icon: Package },
               { label: 'Contributors', val: contributorCount, icon: Users },
@@ -248,11 +260,28 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                   <span className="text-[11px] text-[#8b949e] group-hover:text-[#e6edf3] transition-colors">{stat.label}</span>
                 </div>
                 <span className="text-[11px] font-mono text-[#e6edf3]">{stat.val}</span>
-              </div>
-            ))}
-          </div>
+	              </div>
+	            ))}
+	          </div>
 
-          {/* Useful Sections */}
+          {isGraphCapped && (
+            <div className="flex items-start gap-2 rounded-md border border-amber-500/15 bg-amber-500/5 px-2 py-1.5 text-[10px] leading-snug text-amber-200/80">
+              <Info className="mt-0.5 h-3 w-3 shrink-0 text-amber-300/80" />
+              <span>
+                Graph view renders up to {GRAPH_FILE_NODE_CAP.toLocaleString()} files and {GRAPH_FOLDER_NODE_CAP.toLocaleString()} folders for responsiveness. Showing {fileCount.toLocaleString()} of {totalFiles.toLocaleString()} files.
+              </span>
+            </div>
+          )}
+          {analysis.treeTruncated && (
+            <div className="flex items-start gap-2 rounded-md border border-amber-500/15 bg-amber-500/5 px-2 py-1.5 text-[10px] leading-snug text-amber-200/80">
+              <Info className="mt-0.5 h-3 w-3 shrink-0 text-amber-300/80" />
+              <span>
+                Repository size exceeds API limits. The dependency graph has been truncated to the first 5,000 files.
+              </span>
+            </div>
+          )}
+	
+	          {/* Useful Sections */}
           {(entryPoints.length > 0 || analysis.importantFiles.length > 0 || highCoupling.length > 0) && (
             <div className="h-px w-full bg-[rgba(240,246,252,0.1)]" />
           )}

@@ -56,6 +56,30 @@ export interface Dependency {
   ecosystem: string;
 }
 
+export type WorkspaceManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
+
+export type WorkspaceEcosystem = 'javascript';
+
+export type WorkspaceManifest = {
+  readonly ecosystem: WorkspaceEcosystem;
+  readonly manager: WorkspaceManager;
+  readonly manifestPath: string;
+  readonly packageGlobs: readonly string[];
+};
+
+export type ScopedDependency = Dependency & {
+  readonly manifestPath: string;
+  readonly packageName?: string;
+};
+
+export type WorkspacePackage = {
+  readonly ecosystem: WorkspaceEcosystem;
+  readonly manager: WorkspaceManager;
+  readonly rootPath: string;
+  readonly manifestPath: string;
+  readonly name?: string;
+};
+
 export interface Contributor {
   login: string;
   avatarUrl: string;
@@ -97,6 +121,7 @@ export interface RepoAnalysis {
   tree: TreeNode[];
   treeTruncated: boolean;
   dependencies: Dependency[];
+  workspacePackages?: WorkspacePackage[];
   graph: GraphData;
   contributors: Contributor[];
   timeline: TimelineWeek[];

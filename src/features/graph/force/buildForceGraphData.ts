@@ -42,9 +42,15 @@ export function buildForceGraphData(
   const forceNodes: ForceGraphNode[] = nodes
     .filter((node) => visibleNodeIds.has(node.id))
     .map((node) => {
-      const fileType = node.data.extension || node.data.fileClass || node.type;
-      const community = String(node.data.fileClass || node.type);
-      const communityName = community.charAt(0).toUpperCase() + community.slice(1);
+      let fileType = node.data.extension || node.data.fileClass || node.type;
+      let community = String(node.data.fileClass || node.type);
+      let communityName = community.charAt(0).toUpperCase() + community.slice(1);
+      
+      if (node.type === 'package') {
+        fileType = 'package';
+        community = 'package';
+        communityName = node.data.label || 'Package';
+      }
 
       return {
         id: node.id,

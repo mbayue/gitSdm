@@ -1,18 +1,16 @@
-import { GitBranch, ShieldAlert } from 'lucide-react';
+import { GitBranch } from 'lucide-react';
 import { useVizStore } from '@/stores/vizStore';
 import type { RepoAnalysis } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface BottomStatusBarProps {
   analysis?: RepoAnalysis;
-  treeTruncated?: boolean;
   showMinimap: boolean;
   activeView: 'graph' | 'architecture' | 'contributors' | 'commits';
 }
 
 export function BottomStatusBar({
   analysis,
-  treeTruncated,
   showMinimap,
   activeView,
 }: BottomStatusBarProps) {
@@ -20,7 +18,6 @@ export function BottomStatusBar({
   const focusedFilePath = useVizStore((state) => state.focusedFilePath);
   const selectedBranch = useVizStore((state) => state.selectedBranch);
   const zoom = useVizStore((state) => state.zoom);
-  const setActiveDropdown = useVizStore((state) => state.setActiveDropdown);
   const visibleNodeCount = useVizStore((state) => state.visibleNodeCount);
   const visibleEdgeCount = useVizStore((state) => state.visibleEdgeCount);
 
@@ -43,26 +40,6 @@ export function BottomStatusBar({
 
         <span className="text-[#30363d] font-light select-none">|</span>
 
-        {/* Tree truncated warning */}
-        {treeTruncated && (
-          <>
-            <button
-              type="button"
-              onClick={() => setActiveDropdown('filter')}
-              className="flex items-center gap-1.5 rounded bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 px-1.5 py-0.5 text-[9px] text-amber-400 font-sans transition-colors cursor-pointer"
-              title="Graph is truncated for performance. Click to adjust filter scope."
-            >
-              <ShieldAlert className="h-3 w-3 shrink-0" />
-              <span className="font-bold uppercase tracking-wider">Truncated</span>
-              {visibleNodeCount > 0 && (
-                <span className="font-medium lowercase">
-                  · {totalNodeCount > 0 ? `${visibleNodeCount} / ${analysis?.totalFiles || totalNodeCount}` : visibleNodeCount} nodes
-                </span>
-              )}
-            </button>
-            <span className="text-[#30363d] font-light select-none">|</span>
-          </>
-        )}
 
         {/* Selection Status */}
         {selectedNodeId ? (

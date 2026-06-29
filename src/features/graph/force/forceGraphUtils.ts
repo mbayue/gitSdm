@@ -1,3 +1,4 @@
+import type { GraphNode } from '@/types';
 import type { ForceGraphNode, ForceGraphLink } from './forceGraphConstants';
 
 export function getForceNodeRadius(node: ForceGraphNode): number {
@@ -50,9 +51,25 @@ export function getForceLinkColor(
 export function computeBlastRadius(
   selectedId: string,
   edges: { source: string; target: string; type?: string }[],
+  nodes: Pick<GraphNode, 'id' | 'type' | 'data'>[] = [],
 ): Set<string> {
   const affected = new Set<string>([selectedId]);
-  const queue: string[] = [selectedId];
+  const queue: string[] = [];
+  const selectedNode = nodes.find((node) => node.id === selectedId);
+
+  if (!selectedNode || selectedNode.type === 'file') {
+    queue.push(selectedId);
+  } else if (selectedNode.type === 'folder') {
+    const folderPath = selectedNode.data.path;
+    if (folderPath) {
+      for (const node of nodes) {
+        if (node.type === 'file' && node.data.path?.startsWith(`${folderPath}/`)) {
+          affected.add(node.id);
+          queue.push(node.id);
+        }
+      }
+    }
+  }
 
   while (queue.length > 0) {
     const curr = queue.shift()!;

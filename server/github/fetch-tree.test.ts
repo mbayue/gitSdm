@@ -176,15 +176,16 @@ describe('github/fetch-tree', () => {
   it('buildTreeFromPaths and findManifestPaths work', () => {
     const items = [
       { path: 'package.json', type: 'blob' as const, sha: 'sha-p', size: 10 },
+      { path: 'pnpm-workspace.yaml', type: 'blob' as const, sha: 'sha-w', size: 10 },
       { path: 'src/main.ts', type: 'blob' as const, sha: 'sha-m', size: 20 },
     ];
     const tree = buildTreeFromPaths(items);
-    expect(tree).toHaveLength(2);
+    expect(tree).toHaveLength(3);
     expect(tree[0].name).toBe('src');
     expect(tree[1].name).toBe('package.json');
 
     const manifests = findManifestPaths(items);
-    expect(manifests).toEqual(['package.json']);
+    expect(manifests).toEqual(['package.json', 'pnpm-workspace.yaml']);
   });
 
   it('fetchFileContents: handles mock and real repo successfully', async () => {
@@ -294,9 +295,9 @@ describe('github/fetch-tree', () => {
   });
 
   it('findManifestPaths: limits results and handles empty path segments', () => {
-    const items = Array(25).fill(0).map((_, i) => ({ path: `pkg-${i}/package.json`, type: 'blob' as const, sha: 's' }));
+    const items = Array(125).fill(0).map((_, i) => ({ path: `pkg-${i}/package.json`, type: 'blob' as const, sha: 's' }));
     const res = findManifestPaths(items);
-    expect(res).toHaveLength(20);
+    expect(res).toHaveLength(50);
 
     const edgeItems = [{ path: 'package.json', type: 'blob' as const, sha: 's' }];
     expect(findManifestPaths(edgeItems)).toEqual(['package.json']);

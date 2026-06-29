@@ -25,20 +25,22 @@ export const FILE_EXT_COLORS: Record<string, string> = {
 };
 
 export function getNodeCircleColor(
-  nodeType: 'repo' | 'folder' | 'file',
-  name: string,
-  extension?: string,
-  _path?: string,
+	  nodeType: 'repo' | 'folder' | 'file' | 'package',
+	  name: string,
+	  extension?: string,
+	  _path?: string,
 ): string {
-  if (nodeType === 'repo') return '#a78bfa'; // Violet
-  if (nodeType === 'folder') return '#fbbf24'; // Amber
+	  if (nodeType === 'repo') return '#a78bfa'; // Violet
+	  if (nodeType === 'package') return '#22c55e';
+	  if (nodeType === 'folder') return '#fbbf24'; // Amber
   
   const ext = extension?.toLowerCase() ?? name.split('.').pop()?.toLowerCase() ?? '';
   return FILE_EXT_COLORS[ext] ?? '#9ca3af'; // Grey
 }
 
-export function getNodeCircleSize(nodeType: 'repo' | 'folder' | 'file'): number {
-  if (nodeType === 'repo') return 14;
-  if (nodeType === 'folder') return 12;
+export function getNodeCircleSize(nodeType: 'repo' | 'folder' | 'file' | 'package'): number {
+	  if (nodeType === 'repo') return 14;
+	  if (nodeType === 'package') return 13;
+	  if (nodeType === 'folder') return 12;
   return 8;
 }
