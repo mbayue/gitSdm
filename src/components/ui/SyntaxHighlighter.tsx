@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import hljs from 'highlight.js';
+import DOMPurify from 'dompurify';
 import type { ReactNode } from 'react';
 
 function languageFromPath(path: string): string {
@@ -92,7 +93,7 @@ export function HighlightedCode({
             </span>
             <code
               className="hljs min-w-0 flex-1 whitespace-pre pl-4"
-              dangerouslySetInnerHTML={{ __html: html }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
             />
           </div>
         );
