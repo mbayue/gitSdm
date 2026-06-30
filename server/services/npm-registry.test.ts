@@ -116,8 +116,8 @@ describe('services/npm-registry', () => {
     ].map((name) => ({ ecosystem: 'npm' as const, name, type: 'prod' as const, version: '^1.0.0' })));
 
     expect(peak).toBeLessThanOrEqual(10);
-    expect(result['npm:pkg-1:prod']).toMatchObject({ status: 'outdated', currentVersion: '1.0.0', latestVersion: '1.0.1', license: 'Apache-2.0' });
-    expect(result['npm:pkg-11:prod']).toMatchObject({ status: 'error', error: 'missing latest version' });
-    expect(result['npm:pkg-12:prod']).toMatchObject({ status: 'error', error: 'missing latest version' });
+    expect(result['npm:pkg-1:^1.0.0:prod']).toMatchObject({ status: 'outdated', currentVersion: '1.0.0', latestVersion: '1.0.1', license: 'Apache-2.0' });
+    expect(result['npm:pkg-11:^1.0.0:prod']).toMatchObject({ status: 'error', error: 'missing latest version' });
+    expect(result['npm:pkg-12:^1.0.0:prod']).toMatchObject({ status: 'error', error: 'missing latest version' });
   });
 });
