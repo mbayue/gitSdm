@@ -35,7 +35,7 @@ export interface GraphEdge {
 export interface GraphData {
   nodes: GraphNode[];
   edges: GraphEdge[];
-  layout: 'dagre';
+  layout: 'dagre' | 'force';
 }
 
 export type FileClass = 'entry' | 'config' | 'test' | 'source' | 'doc' | 'asset' | 'other';
