@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useDeferredValue } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TreeNode } from '@/types';
@@ -59,10 +59,13 @@ export function SmartFileExplorer({
 }: SmartFileExplorerProps) {
   const [rootOpen, setRootOpen] = useState(true);
 
+  // Defer the search query to prevent blocking the main thread during typing
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
   // Filter the tree based on search query
   const filteredTree = useMemo(() => {
-    return filterTree(tree, searchQuery);
-  }, [tree, searchQuery]);
+    return filterTree(tree, deferredSearchQuery);
+  }, [tree, deferredSearchQuery]);
 
   useEffect(() => {
     if (selectedPath && !rootOpen) {
@@ -73,10 +76,10 @@ export function SmartFileExplorer({
 
   // Keep root folder open when filtering
   useEffect(() => {
-    if (searchQuery) {
+    if (deferredSearchQuery) {
       setRootOpen(true);
     }
-  }, [searchQuery]);
+  }, [deferredSearchQuery]);
 
   // Sync root open state with expansion triggers
   useEffect(() => {
@@ -107,7 +110,7 @@ export function SmartFileExplorer({
               depth={0}
               onSelectFile={onSelectFile}
               selectedPath={selectedPath}
-              searchQuery={searchQuery}
+              searchQuery={deferredSearchQuery}
               expansionTrigger={expansionTrigger}
             />
           ))}
