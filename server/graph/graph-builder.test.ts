@@ -24,7 +24,7 @@ describe('buildGraph', () => {
     expect(graph.nodes.some((n) => n.type === 'folder' && n.data.label.includes('(1)'))).toBe(true);
     expect(graph.nodes.some((n) => n.type === 'package')).toBe(false);
     expect(graph.edges.length).toBeGreaterThan(0);
-    expect(graph.layout).toBe('dagre');
+    expect(graph.layout).toBe('force');
   });
 
   it('handles empty trees gracefully without crashing', () => {

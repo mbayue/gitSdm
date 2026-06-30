@@ -11,11 +11,41 @@ interface Stage {
 }
 
 const STAGES: Stage[] = [
-  { id: 1, label: 'Connecting to GitHub', sublabel: 'Authenticating & fetching repository metadata', icon: GitBranch, duration: 1000 },
-  { id: 2, label: 'Ingesting file tree', sublabel: 'Mapping directories, files & module boundaries', icon: Layers, duration: 1200 },
-  { id: 3, label: 'Resolving dependencies', sublabel: 'Parsing manifests across detected ecosystems', icon: Zap, duration: 1100 },
-  { id: 4, label: 'Building architecture graph', sublabel: 'Computing node positions & dependency chains', icon: Map, duration: 1100 },
-  { id: 5, label: 'Synthesizing AI onboarding roadmap', sublabel: 'Generating recommended reading paths & execution flows', icon: Brain, duration: 99999 },
+  {
+    id: 1,
+    label: 'Connecting to GitHub',
+    sublabel: 'Fetching repository metadata',
+    icon: GitBranch,
+    duration: 1000,
+  },
+  {
+    id: 2,
+    label: 'Loading file tree',
+    sublabel: 'Mapping directories and files',
+    icon: Layers,
+    duration: 1200,
+  },
+  {
+    id: 3,
+    label: 'Processing repository files',
+    sublabel: 'Reading manifests and source relationships',
+    icon: Zap,
+    duration: 1100,
+  },
+  {
+    id: 4,
+    label: 'Building dependency graph',
+    sublabel: 'Computing nodes, edges, and layout',
+    icon: Map,
+    duration: 1100,
+  },
+  {
+    id: 5,
+    label: 'Finalizing repository analysis',
+    sublabel: 'Preparing graph data and workspace insights',
+    icon: Brain,
+    duration: 99999,
+  },
 ];
 
 interface StagedLoaderProps {
@@ -75,7 +105,7 @@ export function StagedLoader({ owner, repo }: StagedLoaderProps) {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] font-bold tracking-widest text-ui-active-text-green uppercase">
-                AI Analysis Pipeline
+                Loading Repository
               </span>
               <span className="text-[10px] font-mono text-zinc-500">{Math.floor(progress)}%</span>
             </div>
@@ -130,9 +160,8 @@ export function StagedLoader({ owner, repo }: StagedLoaderProps) {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.07 }}
-                  className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors ${
-                    isActive ? 'bg-white/[0.03]' : ''
-                  }`}
+                  className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors ${isActive ? 'bg-white/[0.03]' : ''
+                    }`}
                 >
                   <div className="shrink-0">
                     {isDone ? (
@@ -143,11 +172,10 @@ export function StagedLoader({ owner, repo }: StagedLoaderProps) {
                       <Icon className="h-4 w-4 text-zinc-700" />
                     )}
                   </div>
-                  <span className={`text-xs font-medium transition-colors ${
-                    isDone ? 'text-zinc-600 line-through decoration-zinc-700'
+                  <span className={`text-xs font-medium transition-colors ${isDone ? 'text-zinc-600 line-through decoration-zinc-700'
                       : isActive ? 'text-white'
-                      : 'text-zinc-700'
-                  }`}>
+                        : 'text-zinc-700'
+                    }`}>
                     {stage.label}
                   </span>
                 </motion.div>

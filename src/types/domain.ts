@@ -20,6 +20,7 @@ export interface GraphNode {
     circleSize?: number;
     diffStatus?: 'added' | 'modified' | 'deleted';
     isGenerated?: boolean;
+    hasOutdatedDeps?: boolean;
   };
 }
 
@@ -72,6 +73,57 @@ export type ScopedDependency = Dependency & {
   readonly packageName?: string;
 };
 
+export type DependencyHealthState = 'current' | 'outdated' | 'unknown' | 'error' | 'unsupported';
+
+export type DependencyHealthMetadata = {
+  readonly status?: 'current' | 'outdated' | 'unknown' | 'error';
+  readonly currentVersion?: string;
+  readonly latestVersion?: string;
+  readonly license?: string;
+  readonly checkedAt?: string;
+  readonly error?: string;
+};
+
+export type DependencyHealthEcosystemSupport = {
+  readonly npm: 'freshness';
+  readonly python: 'inventory-only';
+  readonly go: 'inventory-only';
+  readonly java: 'inventory-only';
+  readonly rust: 'inventory-only';
+  readonly docker: 'inventory-only';
+};
+
+export type DependencyHealthItem = {
+  readonly ecosystem: string;
+  readonly name: string;
+  readonly type: Dependency['type'];
+  readonly state: DependencyHealthState;
+  readonly manifestPaths: readonly string[];
+  readonly packageNames: readonly string[];
+  readonly currentVersion?: string;
+  readonly latestVersion?: string;
+  readonly license?: string;
+  readonly checkedAt?: string;
+  readonly error?: string;
+};
+
+export type DependencyHealthSummary = {
+  readonly total: number;
+  readonly current: number;
+  readonly outdated: number;
+  readonly unknown: number;
+  readonly errors: number;
+  readonly unsupported: number;
+};
+
+export type DependencyHealthReport = {
+  readonly generatedAt: string;
+  readonly cacheTtlMs: number;
+  readonly ecosystemSupport: DependencyHealthEcosystemSupport;
+  readonly items: readonly DependencyHealthItem[];
+  readonly summary: DependencyHealthSummary;
+};
+
 export type WorkspacePackage = {
   readonly ecosystem: WorkspaceEcosystem;
   readonly manager: WorkspaceManager;
@@ -122,6 +174,7 @@ export interface RepoAnalysis {
   treeTruncated: boolean;
   dependencies: Dependency[];
   workspacePackages?: WorkspacePackage[];
+  dependencyHealth?: DependencyHealthReport;
   graph: GraphData;
   contributors: Contributor[];
   timeline: TimelineWeek[];

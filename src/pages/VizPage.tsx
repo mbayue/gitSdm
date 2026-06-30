@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useCallback, useState } from "react";
 import { useParams } from "react-router-dom";
-import { ReactFlowProvider } from "@xyflow/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GraphCanvas } from "@/features/graph/canvas/GraphCanvas";
-import { GraphFocusSync } from "@/features/graph/canvas/GraphFocusSync";
 import { useAnalyzeRepo } from "@/hooks/useAnalyzeRepo";
 import { useVizStore } from "@/stores/vizStore";
 import { useVizDiff } from "@/hooks/useVizDiff";
@@ -142,8 +140,7 @@ export function VizPage() {
   }
 
   return (
-    <ReactFlowProvider>
-      <div className="flex h-screen flex-col overflow-hidden bg-background">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
         <TopNav analysis={data} meta={data?.meta} owner={owner} repo={repo} />
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -179,7 +176,6 @@ export function VizPage() {
                     className={`h-full w-full relative ${activeView !== "graph" ? "hidden" : ""
                       }`}
                   >
-                    <GraphFocusSync />
                     <GraphCanvas
                       graph={combinedGraph || data.graph}
                       showMinimap={showMinimap}
@@ -284,7 +280,6 @@ export function VizPage() {
           )}
         </AnimatePresence>
       </div>
-    </ReactFlowProvider>
   );
 }
 

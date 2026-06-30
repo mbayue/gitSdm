@@ -8,7 +8,6 @@ import type {
 	  TreeNode,
 	  WorkspacePackage,
 	} from '../../src/types';
-	import { applyDagreLayout } from './layout';
 	import { getNodeCircleColor, getNodeCircleSize } from './node-colors';
 	import { buildImportEdges } from '../parser/import-resolver';
 	import { findWorkspacePackageForPath } from '../parser/dependency-analyzer';
@@ -183,6 +182,5 @@ export function buildGraph(input: GraphBuildInput): GraphData {
     edges.push(...importEdges);
   }
 
-  const laidOut = applyDagreLayout(nodes, edges);
-  return { nodes: laidOut, edges, layout: 'dagre' };
+  return { nodes, edges, layout: 'force' };
 }

@@ -36,6 +36,16 @@ export function drawForceNode({
 
   ctx.globalAlpha = isDimmed ? (blastRadiusActive ? 0.08 : 0.22) : 1;
 
+  if (node.hasOutdatedDeps) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius + 2.5, 0, Math.PI * 2);
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 1.8 / globalScale;
+    ctx.globalAlpha = isDimmed ? 0.15 : 0.85;
+    ctx.stroke();
+    ctx.globalAlpha = isDimmed ? (blastRadiusActive ? 0.08 : 0.22) : 1;
+  }
+
   if (diffColor) {
     ctx.beginPath();
     ctx.arc(x, y, radius + 2.5, 0, Math.PI * 2);
@@ -95,6 +105,22 @@ export function drawForceNode({
     ctx.textBaseline = "top";
     ctx.fillStyle = "rgba(245,245,255,0.92)";
     ctx.fillText(node.label, x, y + radius + 3 / globalScale);
+  }
+
+  if (node.hasOutdatedDeps && globalScale > 0.4) {
+    const badgeRadius = Math.max(4.5 / globalScale, 2.5);
+    const bx = x + radius * 0.75;
+    const by = y - radius * 0.75;
+    ctx.beginPath();
+    ctx.arc(bx, by, badgeRadius, 0, Math.PI * 2);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${Math.max(7 / globalScale, 4.5)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('!', bx, by);
   }
 
   ctx.globalAlpha = 1;

@@ -88,27 +88,6 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
 
   return (
     <div className="space-y-5 select-none pb-8">
-      {/* Small repository flow summary */}
-      <div className="rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] p-3 shadow-sm flex items-center justify-between overflow-x-auto text-[#8b949e] whitespace-nowrap [&::-webkit-scrollbar]:hidden">
-        <div className="flex items-center gap-1.5 shrink-0">
-          <Code className="h-3.5 w-3.5" />
-          <span className="text-[10px] font-medium">Parse Tree</span>
-        </div>
-        <ArrowRight className="h-3 w-3 shrink-0 opacity-50 mx-1.5" />
-        <div className="flex items-center gap-1.5 shrink-0">
-          <Network className="h-3.5 w-3.5" />
-          <span className="text-[10px] font-medium">Build Graph</span>
-        </div>
-        <ArrowRight className="h-3 w-3 shrink-0 opacity-50 mx-1.5" />
-        <div className="flex items-center gap-1.5 shrink-0 text-ui-active-text-green">
-          <Brain className="h-3.5 w-3.5" />
-          <span className="text-[10px] font-medium">Analysis</span>
-        </div>
-      </div>
-
-      {/* Smart Focus Filters */}
-      <FocusLayers activeFocusLayer={activeFocusLayer} setActiveFocusLayer={setActiveFocusLayer} />
-
       {/* Recommended Learning Path */}
       <div>
         <div className="flex items-center justify-between mb-1">

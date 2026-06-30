@@ -13,6 +13,8 @@ import { parseGitHubUrl } from '../github/parse-url';
 import { buildGraph } from '../graph/graph-builder';
 import { analyzeDependencies, analyzeManifestDependencies, analyzeWorkspacePackages } from '../parser/dependency-analyzer';
 import { annotateTree, findImportantFiles } from '../parser/file-classifier';
+import { buildDependencyHealthReport } from './dependency-health';
+import { fetchNpmDependencyMetadataBatch } from './npm-registry';
 import type { RepoAnalysis } from '../../src/types';
 import type { RequestContext } from '../utils/context';
 
@@ -59,6 +61,10 @@ export async function analyzeRepository(
 	const dependencies = analyzeDependencies(fileContents);
 	const scopedDependencies = analyzeManifestDependencies(fileContents);
 	const workspacePackages = analyzeWorkspacePackages(fileContents);
+	const npmDependencyMetadata = await fetchNpmDependencyMetadataBatch(
+		dependencies.filter((dependency) => dependency.ecosystem === 'npm'),
+	);
+	const dependencyHealth = buildDependencyHealthReport(dependencies, scopedDependencies, npmDependencyMetadata);
 
   const graph = buildGraph({
     owner,
@@ -98,6 +104,7 @@ export async function analyzeRepository(
     importantFiles,
     totalFiles,
     totalCommits,
+    dependencyHealth,
   };
 
   cache.set(cacheKey, analysis);
