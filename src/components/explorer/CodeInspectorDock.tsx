@@ -59,7 +59,7 @@ export function CodeInspectorDock({ state, setState, filePath, owner, repo }: Co
     const startHeight = dragHeight;
     const onMouseMove = (moveEvent: MouseEvent) => {
       const deltaY = startY - moveEvent.clientY;
-      setDragHeight(Math.max(200, Math.min(window.innerHeight * 0.35, startHeight + deltaY)));
+      setDragHeight(Math.max(200, Math.min(window.innerHeight * 0.9, startHeight + deltaY)));
     };
     const onMouseUp = () => {
       document.removeEventListener('mousemove', onMouseMove);
