@@ -37,9 +37,10 @@ export async function fetchNpmDependencyMetadata(
 ): Promise<DependencyHealthMetadata | NpmRegistryError> {
   if (currentVersion && (currentVersion.startsWith('workspace:') || currentVersion.startsWith('file:') || currentVersion.startsWith('link:'))) {
     return {
-      status: 'unknown',
+      status: 'current',
       checkedAt: nowIsoString(),
       currentVersion,
+      latestVersion: currentVersion,
     };
   }
 
@@ -168,7 +169,7 @@ function chunkDependencies<T>(items: readonly T[], size: number): readonly T[][]
 }
 
 function dependencyKey(dependency: NpmDependency): string {
-  return `${dependency.ecosystem}:${dependency.name}:${dependency.type}`;
+  return `${dependency.ecosystem}:${dependency.name}:${dependency.version ?? ''}:${dependency.type}`;
 }
 
 function normalizeVersion(version: string | undefined): string | undefined {

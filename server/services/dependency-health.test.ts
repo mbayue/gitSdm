@@ -16,14 +16,14 @@ describe('dependency-health', () => {
         { ecosystem: 'go', name: 'github.com/gin-gonic/gin', type: 'prod', manifestPath: 'go.mod' },
       ],
       {
-        'npm:lodash:prod': {
+        'npm:lodash:^4.17.21:prod': {
           status: 'current',
           currentVersion: 'v4.17.21',
           latestVersion: '4.17.21',
           license: 'MIT',
           checkedAt: '2026-06-30T00:00:00.000Z',
         },
-        'npm:react:prod': {
+        'npm:react:^19.0.0:prod': {
           status: 'outdated',
           currentVersion: '19.0.0',
           latestVersion: '19.1.0',
@@ -96,7 +96,7 @@ describe('dependency-health', () => {
       ],
       [],
       {
-        'npm:vite:dev': { status: 'error', error: 'registry timeout', checkedAt: '2026-06-30T00:00:00.000Z' },
+        'npm:vite:^5.0.0:dev': { status: 'error', error: 'registry timeout', checkedAt: '2026-06-30T00:00:00.000Z' },
       },
       '2026-06-30T00:00:00.000Z',
     );

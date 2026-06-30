@@ -148,13 +148,12 @@ describe('services/analyze-repo', () => {
         expect.objectContaining({ manifestPath: 'packages/a/package.json', name: '@repo/b' }),
       ]),
     }));
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(String(fetchMock.mock.calls[0]?.[0])).toContain(encodeURIComponent('@repo/b'));
+    expect(fetchMock).toHaveBeenCalledTimes(0);
 
     // Call again, should return cached
     const cachedAnalysis = await analyzeRepository('https://github.com/test-owner/test-repo');
     expect(cachedAnalysis).toBe(analysis);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(0);
   });
 
   it('keeps no-workspace repository analysis backward-compatible', async () => {
