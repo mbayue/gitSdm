@@ -3,20 +3,18 @@ import { useLearningPath } from '@/features/ai/useAiTasks';
 import { useVizStore } from '@/stores/vizStore';
 import type { RepoAnalysis } from '@/types';
 import {
-  RefreshCw, ShieldAlert, Sparkles, Code, Network, Brain, FileText, ArrowRight
+  RefreshCw, ShieldAlert, Sparkles, Brain, FileText
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import { AIErrorCard } from './AIErrorCard';
 
 // Decoupled subcomponents
-import { FocusLayers } from './learning-path/FocusLayers';
 
 export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
   const { owner, repo } = analysis.meta;
   const selectedBranch = useVizStore((s) => s.selectedBranch);
   const activeFocusLayer = useVizStore((s) => s.activeFocusLayer);
-  const setActiveFocusLayer = useVizStore((s) => s.setActiveFocusLayer);
   const setFocusedFilePath = useVizStore((s) => s.setFocusedFilePath);
   const selectedNodeId = useVizStore((s) => s.selectedNodeId);
   const setSelectedNodeId = useVizStore((s) => s.setSelectedNodeId);
