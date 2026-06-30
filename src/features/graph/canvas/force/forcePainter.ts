@@ -36,9 +36,11 @@ export function drawForceNode({
 
   ctx.globalAlpha = isDimmed ? (blastRadiusActive ? 0.08 : 0.22) : 1;
 
+  const amberRadius = diffColor ? radius + 5.5 : radius + 2.5;
+
   if (node.hasOutdatedDeps) {
     ctx.beginPath();
-    ctx.arc(x, y, radius + 2.5, 0, Math.PI * 2);
+    ctx.arc(x, y, amberRadius, 0, Math.PI * 2);
     ctx.strokeStyle = '#f59e0b';
     ctx.lineWidth = 1.8 / globalScale;
     ctx.globalAlpha = isDimmed ? 0.15 : 0.85;
@@ -108,6 +110,9 @@ export function drawForceNode({
   }
 
   if (node.hasOutdatedDeps && globalScale > 0.4) {
+    const prevAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = isDimmed ? 0.85 : 1.0;
+
     const badgeRadius = Math.max(4.5 / globalScale, 2.5);
     const bx = x + radius * 0.75;
     const by = y - radius * 0.75;
@@ -121,6 +126,8 @@ export function drawForceNode({
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('!', bx, by);
+
+    ctx.globalAlpha = prevAlpha;
   }
 
   ctx.globalAlpha = 1;

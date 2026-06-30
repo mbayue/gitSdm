@@ -35,6 +35,14 @@ export async function fetchNpmDependencyMetadata(
   packageName: string,
   currentVersion?: string,
 ): Promise<DependencyHealthMetadata | NpmRegistryError> {
+  if (currentVersion && (currentVersion.startsWith('workspace:') || currentVersion.startsWith('file:') || currentVersion.startsWith('link:'))) {
+    return {
+      status: 'unknown',
+      checkedAt: nowIsoString(),
+      currentVersion,
+    };
+  }
+
   const cacheKey = npmDependencyHealthCacheKey(packageName);
   const cached = cache.get<NpmRegistrySummary>(cacheKey);
   if (cached) return buildDependencyHealthMetadata(currentVersion, cached);
@@ -171,13 +179,49 @@ function normalizeVersion(version: string | undefined): string | undefined {
 }
 
 function compareVersions(left: string, right: string): number {
-  const leftParts = left.split(/[.-]/).map(parseVersionPart);
-  const rightParts = right.split(/[.-]/).map(parseVersionPart);
+  const [leftRelease, leftPre] = left.split('-');
+  const [rightRelease, rightPre] = right.split('-');
+
+  const leftParts = leftRelease.split('.').map(parseVersionPart);
+  const rightParts = rightRelease.split('.').map(parseVersionPart);
   const partCount = Math.max(leftParts.length, rightParts.length);
 
   for (let index = 0; index < partCount; index += 1) {
     const difference = (leftParts[index] ?? 0) - (rightParts[index] ?? 0);
     if (difference !== 0) return difference;
+  }
+
+  if (!leftPre && rightPre) return 1;
+  if (leftPre && !rightPre) return -1;
+  if (!leftPre && !rightPre) return 0;
+
+  const leftPreParts = leftPre.split('.');
+  const rightPreParts = rightPre.split('.');
+  const prePartCount = Math.max(leftPreParts.length, rightPreParts.length);
+
+  for (let index = 0; index < prePartCount; index += 1) {
+    const lp = leftPreParts[index];
+    const rp = rightPreParts[index];
+
+    if (lp === undefined && rp !== undefined) return -1;
+    if (lp !== undefined && rp === undefined) return 1;
+
+    const lpNum = Number.parseInt(lp, 10);
+    const rpNum = Number.parseInt(rp, 10);
+    const lpIsNum = Number.isInteger(lpNum) && String(lpNum) === lp;
+    const rpIsNum = Number.isInteger(rpNum) && String(rpNum) === rp;
+
+    if (lpIsNum && rpIsNum) {
+      const diff = lpNum - rpNum;
+      if (diff !== 0) return diff;
+    } else if (lpIsNum && !rpIsNum) {
+      return -1;
+    } else if (!lpIsNum && rpIsNum) {
+      return 1;
+    } else {
+      const cmp = lp.localeCompare(rp);
+      if (cmp !== 0) return cmp;
+    }
   }
 
   return 0;

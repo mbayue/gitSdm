@@ -96,7 +96,16 @@ export function useVizDiff(
         ...data.graph,
         nodes: data.graph.nodes.map((n) => {
           const isOutdated =
-            (n.type === 'package' && outdatedPackages.has(n.data.label)) ||
+            (n.type === 'package' &&
+              healthReport?.items?.some((item) => {
+                if (item.state !== 'outdated') return false;
+                if (item.packageNames.includes(n.data.label)) return true;
+                const rootPath = n.data.path || '';
+                const expectedManifest = rootPath === '.' || rootPath === '' 
+                  ? 'package.json' 
+                  : `${rootPath}/package.json`;
+                return item.manifestPaths.includes(expectedManifest);
+              })) ||
             (n.type === 'file' &&
               n.data.path &&
               (n.data.path === 'package.json' || n.data.path.endsWith('/package.json')) &&
@@ -120,7 +129,16 @@ export function useVizDiff(
     const nodesMap = new Map(
       data.graph.nodes.map((n) => {
         const isOutdated =
-          (n.type === 'package' && outdatedPackages.has(n.data.label)) ||
+          (n.type === 'package' &&
+            healthReport?.items?.some((item) => {
+              if (item.state !== 'outdated') return false;
+              if (item.packageNames.includes(n.data.label)) return true;
+              const rootPath = n.data.path || '';
+              const expectedManifest = rootPath === '.' || rootPath === '' 
+                ? 'package.json' 
+                : `${rootPath}/package.json`;
+              return item.manifestPaths.includes(expectedManifest);
+            })) ||
           (n.type === 'file' &&
             n.data.path &&
             (n.data.path === 'package.json' || n.data.path.endsWith('/package.json')) &&

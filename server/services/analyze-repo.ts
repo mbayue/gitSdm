@@ -61,21 +61,22 @@ export async function analyzeRepository(
 	const dependencies = analyzeDependencies(fileContents);
 	const scopedDependencies = analyzeManifestDependencies(fileContents);
 	const workspacePackages = analyzeWorkspacePackages(fileContents);
-	const npmDependencyMetadata = await fetchNpmDependencyMetadataBatch(
-		dependencies.filter((dependency) => dependency.ecosystem === 'npm'),
-	);
+	const [npmDependencyMetadata, graph] = await Promise.all([
+		fetchNpmDependencyMetadataBatch(
+			dependencies.filter((dependency) => dependency.ecosystem === 'npm'),
+		),
+		buildGraph({
+			owner,
+			repo,
+			tree,
+			dependencies,
+			contributors,
+			fileContents,
+			workspacePackages,
+			scopedDependencies,
+		}),
+	]);
 	const dependencyHealth = buildDependencyHealthReport(dependencies, scopedDependencies, npmDependencyMetadata);
-
-  const graph = buildGraph({
-    owner,
-    repo,
-    tree,
-    dependencies,
-	  contributors,
-	  fileContents,
-	  workspacePackages,
-	  scopedDependencies,
-	});
 
   const analysis: RepoAnalysis = {
     meta: {
