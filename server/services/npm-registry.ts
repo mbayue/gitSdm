@@ -208,8 +208,8 @@ function compareVersions(left: string, right: string): number {
   if (leftPre && !rightPre) return -1;
   if (!leftPre && !rightPre) return 0;
 
-  const leftPreParts = leftPre.split('.');
-  const rightPreParts = rightPre.split('.');
+  const leftPreParts = leftPre!.split('.');
+  const rightPreParts = rightPre!.split('.');
   const prePartCount = Math.max(leftPreParts.length, rightPreParts.length);
 
   for (let index = 0; index < prePartCount; index += 1) {
