@@ -65,7 +65,7 @@ export async function analyzeRepository(
 		fetchNpmDependencyMetadataBatch(
 			dependencies.filter((dependency) => dependency.ecosystem === 'npm'),
 		),
-		buildGraph({
+		Promise.resolve().then(() => buildGraph({
 			owner,
 			repo,
 			tree,
@@ -74,7 +74,7 @@ export async function analyzeRepository(
 			fileContents,
 			workspacePackages,
 			scopedDependencies,
-		}),
+		})),
 	]);
 	const dependencyHealth = buildDependencyHealthReport(dependencies, scopedDependencies, npmDependencyMetadata);
 

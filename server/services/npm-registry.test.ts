@@ -120,4 +120,21 @@ describe('services/npm-registry', () => {
     expect(result['npm:pkg-11:^1.0.0:prod']).toMatchObject({ status: 'error', error: 'missing latest version' });
     expect(result['npm:pkg-12:^1.0.0:prod']).toMatchObject({ status: 'error', error: 'missing latest version' });
   });
+
+  it('correctly compares SemVer versions with prerelease identifiers and build metadata', async () => {
+    const fetchMock = mock(async () => new Response(JSON.stringify({
+      'dist-tags': { latest: '1.0.0-x-y-z.--+build123' },
+      license: 'MIT',
+    }), { status: 200 }));
+    globalThis.fetch = fetchMock as typeof fetch;
+
+    const meta = await fetchNpmDependencyMetadata('test-pkg', '1.0.0-x-y-z.--');
+    expect(meta).toEqual({
+      status: 'current',
+      currentVersion: '1.0.0-x-y-z.--',
+      latestVersion: '1.0.0-x-y-z.--+build123',
+      license: 'MIT',
+      checkedAt: meta.checkedAt,
+    });
+  });
 });

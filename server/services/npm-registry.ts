@@ -180,8 +180,20 @@ function normalizeVersion(version: string | undefined): string | undefined {
 }
 
 function compareVersions(left: string, right: string): number {
-  const [leftRelease, leftPre] = left.split('-');
-  const [rightRelease, rightPre] = right.split('-');
+  const stripBuildMetadata = (v: string) => {
+    const idx = v.indexOf('+');
+    return idx === -1 ? v : v.slice(0, idx);
+  };
+  const splitFirstHyphen = (v: string): [string, string | undefined] => {
+    const idx = v.indexOf('-');
+    return idx === -1 ? [v, undefined] : [v.slice(0, idx), v.slice(idx + 1)];
+  };
+
+  const leftClean = stripBuildMetadata(left);
+  const rightClean = stripBuildMetadata(right);
+
+  const [leftRelease, leftPre] = splitFirstHyphen(leftClean);
+  const [rightRelease, rightPre] = splitFirstHyphen(rightClean);
 
   const leftParts = leftRelease.split('.').map(parseVersionPart);
   const rightParts = rightRelease.split('.').map(parseVersionPart);
