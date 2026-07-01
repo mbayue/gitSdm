@@ -23,12 +23,10 @@ export function TopNav({
   owner: fallbackOwner = '',
   repo: fallbackRepo = '',
 }: TopNavProps) {
-  const {
-    explorerOpen,
-    setExplorerOpen,
-    aiSidebarOpen,
-    setAiSidebarOpen,
-  } = useVizStore();
+  const explorerOpen = useVizStore((state) => state.explorerOpen);
+  const setExplorerOpen = useVizStore((state) => state.setExplorerOpen);
+  const aiSidebarOpen = useVizStore((state) => state.aiSidebarOpen);
+  const setAiSidebarOpen = useVizStore((state) => state.setAiSidebarOpen);
 
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
