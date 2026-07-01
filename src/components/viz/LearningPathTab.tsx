@@ -3,7 +3,7 @@ import { useLearningPath } from '@/features/ai/useAiTasks';
 import { useVizStore } from '@/stores/vizStore';
 import type { RepoAnalysis } from '@/types';
 import {
-  RefreshCw, ShieldAlert, Sparkles, Brain, FileText
+  RefreshCw, ShieldAlert, Sparkles, Brain, FileText, Target
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -19,12 +19,15 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
   const selectedNodeId = useVizStore((s) => s.selectedNodeId);
   const setSelectedNodeId = useVizStore((s) => s.setSelectedNodeId);
   const setSidebarTab = useVizStore((s) => s.setSidebarTab);
-
-  const lp = useLearningPath(owner, repo, selectedBranch);
-
-  const data = lp.data;
+  const triggerGraphAction = useVizStore((s) => s.triggerGraphAction);
 
   const [showAllPaths, setShowAllPaths] = useState(false);
+  const [goalInput, setGoalInput] = useState('');
+  const [submittedGoal, setSubmittedGoal] = useState('');
+
+  const lp = useLearningPath(owner, repo, selectedBranch, true, submittedGoal || undefined);
+
+  const data = lp.data;
 
   const handleRefresh = () => {
     lp.refetch();
@@ -86,6 +89,43 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
 
   return (
     <div className="space-y-5 select-none pb-8">
+      {/* Personalized Goal Input */}
+      <div className="rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] p-3 space-y-2">
+        <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#8b949e] flex items-center gap-1.5">
+          <Target className="h-3 w-3 text-[#58a6ff]" />
+          Learning Goal
+        </h4>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={goalInput}
+            onChange={(e) => setGoalInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') setSubmittedGoal(goalInput.trim()); }}
+            placeholder="e.g. understand auth flow, fix search bugs..."
+            className="flex-1 min-w-0 rounded-md border border-[rgba(240,246,252,0.1)] bg-[#161b22] px-2.5 py-1.5 text-[11px] text-[#e6edf3] placeholder:text-[#8b949e] focus:outline-none focus:border-[#58a6ff]/40 transition-colors"
+          />
+          <button
+            onClick={() => setSubmittedGoal(goalInput.trim())}
+            disabled={!goalInput.trim()}
+            className="shrink-0 rounded-md bg-[#58a6ff]/10 border border-[#58a6ff]/30 px-3 py-1.5 text-[10px] font-semibold text-[#58a6ff] hover:bg-[#58a6ff]/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            Start Tour
+          </button>
+        </div>
+        {submittedGoal && (
+          <div className="flex items-center gap-1.5 text-[10px] text-[#58a6ff]">
+            <Sparkles className="h-3 w-3 shrink-0" />
+            <span className="truncate">Customizing path for: <strong className="text-[#e6edf3]">{submittedGoal}</strong></span>
+            <button
+              onClick={() => { setSubmittedGoal(''); setGoalInput(''); }}
+              className="ml-auto shrink-0 text-[#8b949e] hover:text-[#e6edf3] underline"
+            >
+              Reset
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Recommended Learning Path */}
       <div>
         <div className="flex items-center justify-between mb-1">
@@ -115,7 +155,13 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
-              className={`group flex gap-3 items-start rounded-md border p-3 transition-all duration-200 ${
+              onClick={() => {
+                const targetId = analysis.graph.nodes.find(n => n.id === `file:${item.path}` || n.id === `folder:${item.path}` || n.id === item.path)?.id || item.path;
+                setSelectedNodeId(targetId);
+                setFocusedFilePath(item.path);
+                triggerGraphAction('focusGraph');
+              }}
+              className={`group flex gap-3 items-start rounded-md border p-3 transition-all duration-200 cursor-pointer ${
                 isActive 
                   ? 'border-[#58a6ff]/50 bg-[#58a6ff]/10 shadow-[0_0_10px_rgba(88,166,255,0.1)]' 
                   : 'border-[rgba(240,246,252,0.1)] bg-[#0d1117] hover:bg-[#161b22] hover:border-[rgba(240,246,252,0.3)]'

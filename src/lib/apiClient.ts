@@ -268,10 +268,11 @@ export async function aiLearningPath(
   owner: string,
   repo: string,
   branch?: string,
+  goal?: string,
 ): Promise<AILearningPathResponse> {
   return request<AILearningPathResponse>('/api/ai/learning-path', {
     method: 'POST',
-    body: JSON.stringify({ owner, repo, branch }),
+    body: JSON.stringify({ owner, repo, branch, ...(goal ? { goal } : {}) }),
   });
 }
 

@@ -35,6 +35,7 @@ export const repoQuerySchema = z.object({
   owner: z.string().min(1).max(39).regex(/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/),
   repo: z.string().min(1).max(100).regex(/^[a-zA-Z0-9-._]+$/),
   branch: z.string().optional(),
+  goal: z.string().optional(),
 });
 
 export const fileQuerySchema = repoQuerySchema.extend({

@@ -43,10 +43,10 @@ export function useReadmeEnhance() {
   });
 }
 
-export function useLearningPath(owner: string, repo: string, branch: string | null = null, enabled = true) {
+export function useLearningPath(owner: string, repo: string, branch: string | null = null, enabled = true, goal?: string) {
   return useQuery({
-    queryKey: ['learningPath', owner, repo, branch],
-    queryFn: () => aiLearningPath(owner, repo, branch || undefined),
+    queryKey: ['learningPath', owner, repo, branch, goal],
+    queryFn: () => aiLearningPath(owner, repo, branch || undefined, goal),
     enabled: enabled && !!owner && !!repo,
     staleTime: 1000 * 60 * 30,
   });
