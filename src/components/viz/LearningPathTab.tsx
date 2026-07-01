@@ -155,6 +155,17 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  const targetId = analysis.graph.nodes.find(n => n.id === `file:${item.path}` || n.id === `folder:${item.path}` || n.id === item.path)?.id || item.path;
+                  setSelectedNodeId(targetId);
+                  setFocusedFilePath(item.path);
+                  triggerGraphAction('focusGraph');
+                }
+              }}
               onClick={() => {
                 const targetId = analysis.graph.nodes.find(n => n.id === `file:${item.path}` || n.id === `folder:${item.path}` || n.id === item.path)?.id || item.path;
                 setSelectedNodeId(targetId);
