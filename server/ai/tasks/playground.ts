@@ -134,7 +134,7 @@ export async function generateLearningPath(
 Choose 5-8 of the most critical files for recommendedPath, sorted by suggested reading order (highest priority at the top).
 Only reference files that exist in the context list.
 
-${goal ? `The user's specific learning goal is: "${goal}". Customize the recommendedPath to help them achieve this specific goal.` : ''}
+${goal?.trim() ? `The user's specific learning goal is: "${goal.trim().slice(0, 500)}". Customize the recommendedPath to help them achieve this specific goal.` : ''}
 
 ${buildRepoContext(analysis)}`,
     apiKey,
