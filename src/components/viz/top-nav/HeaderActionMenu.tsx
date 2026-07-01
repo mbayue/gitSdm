@@ -326,6 +326,7 @@ export function HeaderActionMenu({ owner, repo, analysis, meta: propsMeta, onSea
                       setActiveSubPanel('main');
                       setBranchSearchQuery('');
                     }}
+                    aria-label="Back to actions menu"
                     className="flex h-5 w-5 items-center justify-center rounded text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3] transition-colors outline-none cursor-pointer"
                   >
                     <ArrowLeft className="h-3 w-3" />
