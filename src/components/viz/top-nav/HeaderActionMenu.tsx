@@ -193,7 +193,7 @@ export function HeaderActionMenu({ owner, repo, analysis, meta: propsMeta, onSea
         </button>
 
         {isMenuOpen && (
-          <div className="absolute right-0 top-full z-[100] mt-2 w-56 rounded-md border border-[rgba(240,246,252,0.1)] bg-[#161b22] p-1.5 shadow-2xl animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="absolute right-0 top-full z-[100] mt-2 w-56 max-h-[calc(100vh-70px)] overflow-y-auto custom-scrollbar rounded-md border border-[rgba(240,246,252,0.1)] bg-[#161b22] p-1.5 shadow-2xl animate-in fade-in slide-in-from-top-1 duration-150">
             {activeSubPanel === 'main' ? (
               <>
                 <div className="px-2.5 py-1 text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider font-mono select-none">
