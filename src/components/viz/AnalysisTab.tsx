@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { useVizStore } from '@/stores/vizStore';
 import type { GraphNode, RepoAnalysis } from '@/types';
@@ -20,9 +21,10 @@ export function AnalysisTab({
 }: AnalysisTabProps) {
   const setFocusedFilePath = useVizStore((s) => s.setFocusedFilePath);
 
-  const selectedNode = selectedNodeId
-    ? analysis.graph.nodes.find((n) => n.id === selectedNodeId)
-    : null;
+  // ⚡ Bolt: Use a Map for O(1) node lookups instead of O(N) array .find() calls inside render loops
+  const nodeById = useMemo(() => new Map(analysis.graph.nodes.map(n => [n.id, n])), [analysis.graph.nodes]);
+
+  const selectedNode = selectedNodeId ? nodeById.get(selectedNodeId) : null;
 
   const focusRelatedNode = (node: GraphNode) => {
     setSelectedNodeId(node.id);
@@ -133,7 +135,7 @@ export function AnalysisTab({
                   Array.from(blastRadiusIds)
                     .filter(id => id !== selectedNode.id)
                     .map(id => {
-                      const node = analysis.graph.nodes.find(n => n.id === id);
+                      const node = nodeById.get(id);
                       if (!node) return null;
                       return (
                         <button
@@ -163,7 +165,7 @@ export function AnalysisTab({
                   ) : (
                     <>
                       {analysis.graph.edges.filter(e => e.source === selectedNode.id).map(e => {
-                        const target = analysis.graph.nodes.find(n => n.id === e.target);
+                        const target = nodeById.get(e.target);
                         if (!target) return null;
                         return (
                           <button
@@ -180,7 +182,7 @@ export function AnalysisTab({
                         );
                       })}
                       {analysis.graph.edges.filter(e => e.target === selectedNode.id).map(e => {
-                        const source = analysis.graph.nodes.find(n => n.id === e.source);
+                        const source = nodeById.get(e.source);
                         if (!source) return null;
                         return (
                           <button
