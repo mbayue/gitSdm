@@ -27,13 +27,23 @@ export function toErrorPayload(err: unknown) {
   }
 
   const msg = err instanceof Error ? err.message : 'Internal Server Error';
-  const isRate = msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('429');
-  const isPrivate = msg.toLowerCase().includes('private') || msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('404');
+  const lowerMsg = msg.toLowerCase();
+
+  const isRate = lowerMsg.includes('rate limit') || lowerMsg.includes('429');
+  const isPrivate = lowerMsg.includes('private') || lowerMsg.includes('not found') || lowerMsg.includes('404');
+  const isNetwork = lowerMsg.includes('timeout') || lowerMsg.includes('network') || lowerMsg.includes('fetch') || lowerMsg.includes('connect');
+
+  // Security: Prevent information disclosure (e.g. file paths or internal stack details)
+  // by sanitizing raw internal error messages before sending them to the client.
+  let safeMsg = 'Internal Server Error';
+  if (isRate) safeMsg = 'API rate limit exceeded';
+  else if (isPrivate) safeMsg = 'Repository not found or is private';
+  else if (isNetwork) safeMsg = 'Network connection failed';
 
   return {
-    error: msg,
+    error: safeMsg,
     code: isRate ? 'RATE_LIMIT_EXCEEDED' : isPrivate ? 'REPO_INACCESSIBLE' : 'INTERNAL_ERROR',
     status: isPrivate ? 404 : isRate ? 429 : 500,
-    retryable: isRate || msg.toLowerCase().includes('timeout') || msg.toLowerCase().includes('network'),
+    retryable: isRate || isNetwork,
   };
 }

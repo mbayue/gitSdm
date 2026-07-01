@@ -271,8 +271,15 @@ export function NetworkCanvas({
           d3VelocityDecay={0.5}
           onEngineStop={handleEngineStop}
           onEngineTick={handleEngineTick}
+          onZoom={(transform) => {
+            useVizStore.getState().setZoom(transform.k);
+          }}
           onZoomEnd={() => {
             if (showMinimap) setTick((t) => t + 1);
+            const currentZoom = forceGraphRef.current?.zoom();
+            if (typeof currentZoom === 'number') {
+              useVizStore.getState().setZoom(currentZoom);
+            }
           }}
           linkDirectionalParticles={0}
           linkWidth={getLinkWidth}

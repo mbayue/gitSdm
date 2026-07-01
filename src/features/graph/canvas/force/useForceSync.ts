@@ -5,7 +5,6 @@ import type { ForceGraphNode, ForceGraphLink } from '../../force/forceGraphConst
 type GraphAction = "zoomIn" | "zoomOut" | "fitView" | "reset" | "focusGraph";
 
 interface ForceSyncProps {
-  layoutType: string;
   selectedNodeId: string | null;
   focusedFilePath: string | null;
   nodes: ForceGraphNode[];
@@ -15,7 +14,6 @@ interface ForceSyncProps {
 }
 
 export function useForceSync({
-  layoutType,
   selectedNodeId,
   focusedFilePath,
   nodes,
@@ -27,8 +25,6 @@ export function useForceSync({
   const lastActionTimestampRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (layoutType !== "force") return;
-
     const targetId = selectedNodeId || focusedFilePath;
     if (!targetId) {
       prevFocusRef.current = null;
@@ -73,7 +69,6 @@ export function useForceSync({
       if (timer) window.clearTimeout(timer);
     };
   }, [
-    layoutType,
     selectedNodeId,
     focusedFilePath,
     nodes,
@@ -82,7 +77,6 @@ export function useForceSync({
   ]);
 
   useEffect(() => {
-    if (layoutType !== "force") return;
     if (!graphActionTrigger) return;
     if (lastActionTimestampRef.current === graphActionTrigger.timestamp) return;
     const { action } = graphActionTrigger;
@@ -126,7 +120,6 @@ export function useForceSync({
     }
   }, [
     graphActionTrigger,
-    layoutType,
     forceGraphRef,
     selectedNodeId,
     focusedFilePath,

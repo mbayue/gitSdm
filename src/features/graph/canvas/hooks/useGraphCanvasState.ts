@@ -12,19 +12,18 @@ export function useGraphCanvasState(graph: GraphData, readOnly?: boolean) {
     activeFocusLayer,
     graphScope,
     contentFilters,
-    layoutType,
     theme,
   } = useVizStore();
 
   const isDark = theme === 'dark';
 
   const defaultEdgeOptions = useMemo(() => ({
-    type: layoutType === 'force' ? 'straight' : 'smoothstep',
+    type: 'straight',
     style: {
       stroke: isDark ? 'rgba(255, 255, 255, 0.24)' : 'rgba(0, 0, 0, 0.15)',
       strokeWidth: isDark ? 1.35 : 1.2,
     },
-  }), [isDark, layoutType]);
+  }), [isDark]);
 
   const filtered = useNodeFiltering({
     graph,

@@ -5,12 +5,11 @@ import type { ForceGraphNode, ForceGraphLink } from '../../force/forceGraphConst
 import { getForceNodeRadius } from '../../force/forceGraphUtils';
 
 interface D3PhysicsProps {
-  layoutType: string;
   forceGraphRef: React.MutableRefObject<ForceGraphMethods<ForceGraphNode, ForceGraphLink> | undefined>;
   nodes: ForceGraphNode[];
 }
 
-export function useD3Physics({ layoutType, forceGraphRef, nodes }: D3PhysicsProps) {
+export function useD3Physics({ forceGraphRef, nodes }: D3PhysicsProps) {
   const nodeCount = nodes.length;
   const maxDegree = useMemo(
     () => Math.max(1, ...nodes.map((n) => n.degree)),
@@ -18,7 +17,6 @@ export function useD3Physics({ layoutType, forceGraphRef, nodes }: D3PhysicsProp
   );
 
   useEffect(() => {
-    if (layoutType !== "force") return;
     const ref = forceGraphRef.current;
     if (!ref) return;
     const radius = Math.max(80, Math.sqrt(nodeCount) * 25);
@@ -41,10 +39,10 @@ export function useD3Physics({ layoutType, forceGraphRef, nodes }: D3PhysicsProp
     );
 
     ref.d3ReheatSimulation();
-  }, [layoutType, nodeCount, maxDegree, forceGraphRef]);
+  }, [nodeCount, maxDegree, forceGraphRef]);
 
   useEffect(() => {
-    if (layoutType !== "force" || !forceGraphRef.current) return;
+    if (!forceGraphRef.current) return;
     const timeout = window.setTimeout(() => {
       const g = forceGraphRef.current;
       if (!g) return;
@@ -59,5 +57,5 @@ export function useD3Physics({ layoutType, forceGraphRef, nodes }: D3PhysicsProp
       g.d3ReheatSimulation();
     }, 0);
     return () => window.clearTimeout(timeout);
-  }, [layoutType, nodes.length, forceGraphRef]);
+  }, [nodes.length, forceGraphRef]);
 }

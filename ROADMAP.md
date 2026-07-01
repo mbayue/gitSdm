@@ -9,12 +9,13 @@
 - **Monorepo-aware dependency grouping** — Automatic workspace detection (npm/pnpm/yarn/bun) and cross-package mapping.
 - **AI-powered semantic search & Q&A** — Context-aware vector search to ask code questions and locate entry points.
 - **Change impact analysis (Blast Radius)** — Visualizer showing transitive dependents to predict edit breakages.
+- **📦 Dependency Health Report** — Core health panel, version freshness checker (npm), license compliance audits, and real-time visual highlight alerts (amber borders/warning badges) on the force-directed canvas.
 
 ---
 
-## 🚧 In Progress / Upcoming
+## 🚧 In Progress
 
-- **📦 Dependency Health Overlay** — Overlay live metadata on every dependency node: version vs latest (color-coded), known vulnerabilities via OSV.dev, license info, and blast radius. Backend fetches from npm registry + OSV.dev with 24h cache; frontend shows badges and tooltips on graph nodes.
+- *(None)*
 
 ---
 

@@ -54,9 +54,9 @@ export function LegendPanel({ legendOpen, setLegendOpen }: LegendPanelProps) {
               </div>
             </div>
 
-            {/* Status Changes */}
+            {/* Status & Health Changes */}
             <div>
-              <div className="text-[10px] font-semibold text-[#c9d1d9] uppercase tracking-[0.14em] mb-2 font-mono">Status Changes</div>
+              <div className="text-[10px] font-semibold text-[#c9d1d9] uppercase tracking-[0.14em] mb-2 font-mono">Status & Health</div>
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2.5 text-xs text-[#e6edf3]">
                   <span className="flex h-4 w-4 items-center justify-center rounded bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] font-bold">+</span>
@@ -69,6 +69,10 @@ export function LegendPanel({ legendOpen, setLegendOpen }: LegendPanelProps) {
                 <div className="flex items-center gap-2.5 text-xs text-[#e6edf3]">
                   <span className="flex h-4 w-4 items-center justify-center rounded bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold">-</span>
                   <span>Deleted File</span>
+                </div>
+                <div className="flex items-center gap-2.5 text-xs text-[#e6edf3]">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-zinc-950 text-[10px] font-extrabold select-none">!</span>
+                  <span>Outdated Dependencies</span>
                 </div>
                 <div className="flex items-center gap-2.5 text-xs text-[#8b949e]">
                   <span className="flex h-4 w-4 items-center justify-center rounded bg-[#161b22] border border-[rgba(240,246,252,0.1)] text-[#8b949e] text-[10px] font-bold"></span>

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Brain, FileText, Sparkles, PanelRightClose, PanelRightOpen, Info, GraduationCap
+  Brain, FileText, Sparkles, PanelRightClose, PanelRightOpen, Info, GraduationCap, Network
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useVizStore, type SidebarTab } from '@/stores/vizStore';
@@ -11,17 +11,19 @@ import { LearningPathTab } from './LearningPathTab';
 import { OverviewTab } from './OverviewTab';
 import { AnalysisTab } from './AnalysisTab';
 import { AiCenterTab } from './ai-sidebar/AiCenterTab';
+import { DependencyHealthTab } from './DependencyHealthTab';
 
 // Subcomponents & Helpers
-import { getBlastRadiusNodeIds } from '@/features/graph/canvas/helpers/blastRadiusLayout';
+import { computeBlastRadius } from '@/features/graph/force/blastRadius';
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const tabs = [
   { id: 'overview' as SidebarTab, label: 'Overview', icon: Info },
   { id: 'analysis' as SidebarTab, label: 'Detail', icon: FileText },
+  { id: 'dependencies' as SidebarTab, label: 'Dependencies', icon: Network },
   { id: 'ai' as SidebarTab, label: 'Analysis', icon: Brain },
-  { id: 'learning' as SidebarTab, label: 'Learn', icon: GraduationCap },
+  { id: 'learning' as SidebarTab, label: 'Learning', icon: GraduationCap },
 ];
 
 interface AISidebarProps {
@@ -70,7 +72,7 @@ interface TabNavigationProps {
 
 function TabNavigation({ activeTab, setActiveTab }: TabNavigationProps) {
   return (
-    <div className="flex items-center gap-0.5 p-1 bg-[#0d1117] rounded-md border border-[rgba(240,246,252,0.1)] w-full overflow-x-auto [&::-webkit-scrollbar]:hidden">
+    <div className="flex items-center w-full justify-between gap-1 bg-[#0d1117] rounded-md border border-[rgba(240,246,252,0.1)] p-1">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -80,14 +82,15 @@ function TabNavigation({ activeTab, setActiveTab }: TabNavigationProps) {
             type="button"
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              "flex-1 min-w-[62px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-sm text-xs font-semibold transition-all duration-200 outline-none select-none shrink-0",
+              "flex items-center justify-center h-8 rounded-sm text-xs font-semibold transition-all duration-200 outline-none select-none cursor-pointer border border-transparent",
               isActive
-                ? "bg-[#161b22] text-[#e6edf3] border-[rgba(240,246,252,0.1)]"
-                : "text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.05)] border border-transparent"
+                ? "flex-1 px-3 bg-[#161b22] text-[#e6edf3] border-[rgba(240,246,252,0.1)]"
+                : "w-8 shrink-0 p-0 text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.05)]"
             )}
+            title={tab.label}
           >
             <Icon className={cn("h-3.5 w-3.5 shrink-0 transition-colors", isActive ? "text-[#e6edf3]" : "text-[#8b949e]")} />
-            <span className="truncate">{tab.label}</span>
+            {isActive && <span className="ml-1.5 truncate text-[11px]">{tab.label}</span>}
           </button>
         );
       })}
@@ -122,7 +125,7 @@ export function AISidebar({
 
   const blastRadiusIds = useMemo(() => {
     if (!selectedNode) return new Set<string>();
-    return getBlastRadiusNodeIds(selectedNode.id, analysis.graph.nodes, analysis.graph.edges);
+    return computeBlastRadius(selectedNode.id, analysis.graph.edges, analysis.graph.nodes);
   }, [selectedNode, analysis]);
 
   if (!aiSidebarOpen) {
@@ -151,7 +154,7 @@ export function AISidebar({
       <SidebarHeader onClose={() => setAiSidebarOpen(false)} />
 
       {/* 2. Navigation Tabs Container */}
-      <div className="px-4 pt-3.5 pb-2 bg-[#0d1117] shrink-0 border-b border-[rgba(240,246,252,0.1)]">
+      <div className="bg-[#0d1117] shrink-0 border-b border-[rgba(240,246,252,0.1)] px-2">
         <TabNavigation activeTab={sidebarTab} setActiveTab={setSidebarTab} />
       </div>
 
@@ -182,14 +185,18 @@ export function AISidebar({
             </TabPanel>
           )}
 
-          {/* TAB 3: AI CENTER */}
+          {sidebarTab === 'dependencies' && (
+            <TabPanel key="dependencies">
+              <DependencyHealthTab analysis={analysis} />
+            </TabPanel>
+          )}
+
           {sidebarTab === 'ai' && (
             <TabPanel key="ai">
               <AiCenterTab analysis={analysis} />
             </TabPanel>
           )}
 
-          {/* TAB 4: TOOLS / LEARNING PATH */}
           {sidebarTab === 'learning' && (
             <TabPanel key="learning">
               <LearningPathTab analysis={analysis} />

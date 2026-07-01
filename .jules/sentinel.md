@@ -7,3 +7,8 @@
 **Vulnerability:** CodeQL flagged `crypto.createHmac` in `server/cache/lru.ts` as a potential insecure password hash. Although it was just fast cache-key derivation, sensitive terms in the variable and function names (`apiKey`, `API_KEY_CACHE_HASH_SECRET`) triggered taint-tracking heuristics.
 **Learning:** Security analysis tools rely heavily on nomenclature when assessing the intent of cryptographic functions. Renaming sensitive-sounding variables to neutral terms breaks these heuristics and prevents false positives without compromising real security.
 **Prevention:** When implementing cryptographic derivations (like cache keys or pseudo-anonymization) that are not password-hashing, avoid using sensitive terms like `key`, `apiKey`, or `secret` in parameters and function names. Use neutral terms like `token` or `id`.
+
+## 2025-03-09 - Information Disclosure in Global Error Handlers
+**Vulnerability:** The global error payload serializer (`toErrorPayload`) in `server/utils/errors.ts` was leaking raw `err.message` values from unexpected internal exceptions to the client response payload. This could expose file paths, database query details, or other sensitive backend internals.
+**Learning:** Returning `err.message` directly for generic `Error` instances in API responses creates a risk of information disclosure because internal system messages are often verbose and meant for developer logging, not external consumers.
+**Prevention:** Sanitize or mask raw internal error messages before they are returned to the client. Use generic fallback messages (like "Internal Server Error") for unhandled errors, and rely on secure server-side logging for the actual error context.

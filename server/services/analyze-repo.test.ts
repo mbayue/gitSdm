@@ -1,4 +1,4 @@
-import { describe, expect, it, mock, beforeEach } from 'bun:test';
+import { afterEach, describe, expect, it, mock, beforeEach } from 'bun:test';
 import { analyzeRepository } from './analyze-repo';
 import { clearAllCaches } from '../cache/lru';
 import type { GraphBuildInput } from '../graph/graph-builder';
@@ -22,19 +22,19 @@ const workspaceFileContents = {
   'package.json': JSON.stringify({ name: '@repo/root', workspaces: ['packages/*'] }),
   'packages/a/package.json': JSON.stringify({ name: '@repo/a', dependencies: { '@repo/b': 'workspace:*' } }),
   'packages/b/package.json': JSON.stringify({ name: '@repo/b' }),
-  'src/main.ts': 'console.log(1)',
+  'src/main.ts': 'export const value = 1',
 };
 
 const plainFileContents = {
   'package.json': JSON.stringify({ name: 'plain-app', description: 'no workspaces here', dependencies: { react: '^19' } }),
-  'src/main.ts': 'console.log(1)',
+  'src/main.ts': 'export const value = 1',
 };
 
 const excludedWorkspaceFileContents = {
   'package.json': JSON.stringify({ name: '@repo/root', packageManager: 'yarn@4.0.0', workspaces: ['packages/*', '!packages/excluded'] }),
   'packages/a/package.json': JSON.stringify({ name: '@repo/a' }),
   'packages/excluded/package.json': JSON.stringify({ name: '@repo/excluded' }),
-  'src/main.ts': 'console.log(1)',
+  'src/main.ts': 'export const value = 1',
 };
 
 let activeFileContents: Record<string, string> = workspaceFileContents;
@@ -56,15 +56,31 @@ const buildGraphMock = mock((input: GraphBuildInput) => ({
   layout: 'dagre' as const,
 }));
 
+const originalFetch = globalThis.fetch;
+const fetchMock = mock(async (input: RequestInfo | URL) => {
+  const packageName = decodeURIComponent(new URL(String(input)).pathname.slice(1));
+
+  if (packageName === '@repo/b') {
+    return new Response(JSON.stringify({
+      'dist-tags': { latest: 'workspace:*' },
+      license: 'MIT',
+    }), { status: 200 });
+  }
+
+  if (packageName === 'react') {
+    return new Response(JSON.stringify({
+      'dist-tags': { latest: '19.1.0' },
+      license: 'MIT',
+    }), { status: 200 });
+  }
+
+  throw new TypeError(`unexpected fetch for ${packageName}`);
+});
+
 mock.module('../github/fetch-tree', () => ({
   fetchRepoInfo: async () => mockRepoInfo,
   fetchFlatTree: async () => ({
-    items: [
-      { path: 'package.json', type: 'file' },
-      { path: 'packages/a/package.json', type: 'file' },
-      { path: 'packages/b/package.json', type: 'file' },
-      { path: 'src/main.ts', type: 'file' },
-    ],
+    items: Object.keys(activeFileContents).map((path) => ({ path, type: 'file' })),
     truncated: false,
   }),
   fetchContributors: async () => [],
@@ -96,6 +112,13 @@ describe('services/analyze-repo', () => {
     clearAllCaches();
     activeFileContents = workspaceFileContents;
     buildGraphMock.mockClear();
+    fetchMock.mockClear();
+    globalThis.fetch = fetchMock as typeof fetch;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    mock.restore();
   });
 
   it('throws error for invalid repo url', () => {
@@ -113,6 +136,9 @@ describe('services/analyze-repo', () => {
     ]);
     expect(analysis.graph.nodes.some((node) => node.id === 'package:packages/a')).toBe(true);
     expect(analysis.graph.edges.some((edge) => edge.source === 'package:packages/a' && edge.target === 'package:packages/b')).toBe(true);
+    expect(analysis.dependencyHealth).toEqual(expect.objectContaining({
+      summary: expect.objectContaining({ total: 1, current: 1, unsupported: 0 }),
+    }));
     expect(buildGraphMock).toHaveBeenCalledWith(expect.objectContaining({
       workspacePackages: expect.arrayContaining([
         expect.objectContaining({ rootPath: 'packages/a', name: '@repo/a' }),
@@ -122,10 +148,12 @@ describe('services/analyze-repo', () => {
         expect.objectContaining({ manifestPath: 'packages/a/package.json', name: '@repo/b' }),
       ]),
     }));
+    expect(fetchMock).toHaveBeenCalledTimes(0);
 
     // Call again, should return cached
     const cachedAnalysis = await analyzeRepository('https://github.com/test-owner/test-repo');
     expect(cachedAnalysis).toBe(analysis);
+    expect(fetchMock).toHaveBeenCalledTimes(0);
   });
 
   it('keeps no-workspace repository analysis backward-compatible', async () => {
@@ -136,8 +164,27 @@ describe('services/analyze-repo', () => {
     expect(analysis.dependencies).toEqual([
       { name: 'react', version: '^19', type: 'prod', ecosystem: 'npm' },
     ]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('/react');
     expect(analysis.workspacePackages).toEqual([]);
     expect(analysis.graph.edges.some((edge) => edge.source.startsWith('package:') && edge.target.startsWith('package:'))).toBe(false);
+  });
+
+  it('skips registry metadata for non-npm dependencies', async () => {
+    activeFileContents = {
+      'go.mod': 'module example.com/app\n\nrequire github.com/gin-gonic/gin v1.9.1',
+      'src/main.go': 'package main',
+    };
+
+    const analysis = await analyzeRepository('https://github.com/test-owner/test-repo');
+
+    expect(fetchMock).toHaveBeenCalledTimes(0);
+    expect(analysis.dependencyHealth).toEqual(expect.objectContaining({
+      summary: expect.objectContaining({ total: 1, unsupported: 1, current: 0, outdated: 0, unknown: 0, errors: 0 }),
+      items: expect.arrayContaining([
+        expect.objectContaining({ ecosystem: 'go', name: 'github.com/gin-gonic/gin', state: 'unsupported' }),
+      ]),
+    }));
   });
 
   it('honors negated workspace globs and explicit yarn packageManager', async () => {
