@@ -107,6 +107,7 @@ export async function generateLearningPath(
   cached: boolean;
 }> {
   const analysis = await analyzeRepository({ owner, repo, branch }, ctx || gitHubToken);
+  const processedGoal = goal?.trim().slice(0, 500) || undefined;
 
   type LearningPathResult = {
     recommendedPath: Array<{ path: string; importance: number; reason: string; role: string }>;
@@ -117,7 +118,7 @@ export async function generateLearningPath(
     owner,
     repo,
     sha: analysis.meta.sha,
-    paramHash: goal?.trim() ? `v1-goal:${hashContext(goal.trim())}` : 'v1',
+    paramHash: processedGoal ? `v1-goal:${hashContext(processedGoal)}` : 'v1',
     systemPrompt: SYSTEM_PROMPT,
     userPrompt: `Analyze this repository and return a JSON with this exact shape:
 {
@@ -134,13 +135,13 @@ export async function generateLearningPath(
 Choose 5-8 of the most critical files for recommendedPath, sorted by suggested reading order (highest priority at the top).
 Only reference files that exist in the context list.
 
-${goal?.trim() ? `The user's specific learning goal is: "${goal.trim().slice(0, 500)}". Customize the recommendedPath to help them achieve this specific goal.` : ''}
+${processedGoal ? `The user's specific learning goal is: "${processedGoal}". Customize the recommendedPath to help them achieve this specific goal.` : ''}
 
 ${buildRepoContext(analysis)}`,
     apiKey,
     json: true,
     mockFallback: () => {
-      const goalSuffix = goal ? ` — focused on: "${goal}"` : '';
+      const goalSuffix = processedGoal ? ` — focused on: "${processedGoal}"` : '';
       const isTodoApp = repo.toLowerCase() !== 'gitsdm';
 
       if (isTodoApp) {
