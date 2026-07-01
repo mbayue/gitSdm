@@ -2,10 +2,21 @@ import { useEffect } from "react";
 import { useVizStore } from "@/stores/vizStore";
 
 export function useWorkspaceShortcuts() {
-  const { workspaceMode, setExplorerOpen, setAiSidebarOpen, setSidebarTab } = useVizStore();
+  const { 
+    workspaceMode, 
+    setExplorerOpen, 
+    setAiSidebarOpen, 
+    setSidebarTab
+  } = useVizStore();
 
   // Workspace mode effect
   useEffect(() => {
+    if (window.innerWidth < 1024) {
+      setExplorerOpen(false);
+      setAiSidebarOpen(false);
+      return;
+    }
+
     if (workspaceMode === 'focus') {
       setExplorerOpen(true);
       setAiSidebarOpen(false);
@@ -25,18 +36,26 @@ export function useWorkspaceShortcuts() {
 
   // Responsive panel management
   useEffect(() => {
+    let wasDesktop = window.innerWidth >= 1024;
+
     const handleResize = () => {
-      if (window.innerWidth < 1024) {
-        const state = useVizStore.getState();
-        if (state.explorerOpen && state.aiSidebarOpen) {
-          setExplorerOpen(false);
-        }
+      const isMobile = window.innerWidth < 1024;
+      if (isMobile && wasDesktop) {
+        setExplorerOpen(false);
+        setAiSidebarOpen(false);
       }
+      wasDesktop = !isMobile;
     };
-    handleResize();
+
+    // Initial check on mount
+    if (window.innerWidth < 1024) {
+      setExplorerOpen(false);
+      setAiSidebarOpen(false);
+    }
+
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [setExplorerOpen]);
+  }, [setExplorerOpen, setAiSidebarOpen]);
 
   // Global keyboard shortcuts
   useEffect(() => {

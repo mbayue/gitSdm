@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, GitBranch, Search, X } from 'lucide-react';
+import { ArrowLeft, GitBranch, Search, X, PanelLeft, PanelRight } from 'lucide-react';
 import type { RepoMeta, RepoAnalysis } from '@/types';
 import { RepoIdentity } from './RepoIdentity';
 import { BranchSwitcher } from './BranchSwitcher';
 import { WorkspaceModeSelector } from './WorkspaceModeSelector';
 import { HeaderStats } from './HeaderStats';
 import { HeaderActionMenu } from './HeaderActionMenu';
+import { useVizStore } from '@/stores/vizStore';
+import { cn } from '@/lib/utils';
 
 interface TopNavProps {
   analysis?: RepoAnalysis;
@@ -21,6 +23,13 @@ export function TopNav({
   owner: fallbackOwner = '',
   repo: fallbackRepo = '',
 }: TopNavProps) {
+  const {
+    explorerOpen,
+    setExplorerOpen,
+    aiSidebarOpen,
+    setAiSidebarOpen,
+  } = useVizStore();
+
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -125,7 +134,48 @@ export function TopNav({
 
       <div className="ml-auto flex shrink-0 items-center justify-end">
         <div className="flex items-center gap-2 sm:gap-3">
-          <WorkspaceModeSelector />
+          {/* Tablet-only Sidebar Toggles (hidden on mobile < 640px) */}
+          <div className="hidden sm:flex lg:hidden items-center gap-1.5 mr-1">
+            <button
+              type="button"
+              onClick={() => {
+                setExplorerOpen(!explorerOpen);
+                if (!explorerOpen) setAiSidebarOpen(false);
+              }}
+              className={cn(
+                "flex h-7 w-7 items-center justify-center rounded-md border border-[rgba(240,246,252,0.1)] transition-all outline-none cursor-pointer",
+                explorerOpen 
+                  ? "bg-white/10 text-white border-white/20" 
+                  : "bg-white/5 text-[#8b949e] hover:bg-white/10 hover:text-[#e6edf3]"
+              )}
+              title="Toggle File Explorer"
+              aria-label="Toggle File Explorer"
+            >
+              <PanelLeft className="h-3.5 w-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setAiSidebarOpen(!aiSidebarOpen);
+                if (!aiSidebarOpen) setExplorerOpen(false);
+              }}
+              className={cn(
+                "flex h-7 w-7 items-center justify-center rounded-md border border-[rgba(240,246,252,0.1)] transition-all outline-none cursor-pointer",
+                aiSidebarOpen 
+                  ? "bg-white/10 text-white border-white/20" 
+                  : "bg-white/5 text-[#8b949e] hover:bg-white/10 hover:text-[#e6edf3]"
+              )}
+              title="Toggle AI Sidebar"
+              aria-label="Toggle AI Sidebar"
+            >
+              <PanelRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          <div className="hidden sm:block">
+            <WorkspaceModeSelector />
+          </div>
 
           <div className="hidden md:flex items-center gap-3">
             <div className="w-px h-3.5 bg-[rgba(240,246,252,0.1)]" />
