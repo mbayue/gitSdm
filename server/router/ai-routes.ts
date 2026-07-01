@@ -81,7 +81,7 @@ export async function handleAiRoutes(
     if (!parsed.success) {
       throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
     }
-    const result: AILearningPathResponse = await generateLearningPath(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
+    const result: AILearningPathResponse = await generateLearningPath(parsed.data.owner, parsed.data.repo, parsed.data.branch, parsed.data.goal, userKey, gitHubToken, ctx);
     return Response.json(result, { status: 200 });
   }
 

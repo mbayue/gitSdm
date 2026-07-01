@@ -78,30 +78,12 @@ export interface AIReadmeEnhanceResponse {
 }
 
 export interface AILearningPathResponse {
-  mentalModel: {
-    type: string;
-    concept: string;
-    description: string;
-  };
   recommendedPath: {
     path: string;
     importance: number;
     reason: string;
     role: string;
   }[];
-  executionFlow: {
-    steps: {
-      from: string;
-      to: string;
-      description: string;
-    }[];
-    visualSteps: string[];
-  };
-  insights: {
-    architecture: string;
-    risks: string[];
-    suggestions: string[];
-  };
   cached: boolean;
 }
 

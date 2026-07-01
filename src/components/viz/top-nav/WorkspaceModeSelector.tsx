@@ -66,6 +66,14 @@ export function WorkspaceModeSelector() {
 
   const handleModeChange = (mode: 'focus' | 'analysis' | 'learning' | 'full') => {
     setWorkspaceMode(mode);
+
+    if (window.innerWidth < 1024) {
+      setExplorerOpen(false);
+      setAiSidebarOpen(false);
+      setInspectorOpen(false);
+      return;
+    }
+
     setExplorerOpen(true);
 
     if (mode === 'focus') {

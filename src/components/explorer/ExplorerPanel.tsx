@@ -36,7 +36,7 @@ export function ExplorerPanel({ analysis, selectedFilePath, onSelectFile }: Expl
   }
 
   return (
-    <div className="hidden md:flex h-full w-full shrink-0 flex-col border-r border-[rgba(240,246,252,0.1)] bg-[#0d1117]">
+    <div className="flex h-full w-full shrink-0 flex-col border-r border-[rgba(240,246,252,0.1)] bg-[#0d1117]">
       <header className="flex h-10 shrink-0 items-center justify-between gap-1 border-b border-[rgba(240,246,252,0.1)] px-3 select-none">
         <span className="text-[10px] font-bold uppercase tracking-widest text-[#8b949e]">
           Explorer

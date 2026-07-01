@@ -103,8 +103,10 @@ export function VizPage() {
   const handleSelectFile = useCallback(
     (path: string) => {
       setFocusedFilePath(path);
-      setSidebarTab("analysis");
-      setAiSidebarOpen(true);
+      if (window.innerWidth >= 1024) {
+        setSidebarTab("analysis");
+        setAiSidebarOpen(true);
+      }
     },
     [setFocusedFilePath, setSidebarTab, setAiSidebarOpen],
   );
