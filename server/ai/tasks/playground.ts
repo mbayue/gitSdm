@@ -117,7 +117,7 @@ export async function generateLearningPath(
     owner,
     repo,
     sha: analysis.meta.sha,
-    paramHash: goal ? `v1-goal:${hashContext(goal)}` : 'v1',
+    paramHash: goal?.trim() ? `v1-goal:${hashContext(goal.trim())}` : 'v1',
     systemPrompt: SYSTEM_PROMPT,
     userPrompt: `Analyze this repository and return a JSON with this exact shape:
 {
