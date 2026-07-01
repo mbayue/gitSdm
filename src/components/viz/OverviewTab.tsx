@@ -1,5 +1,4 @@
 import { useCallback, useMemo } from 'react';
-import { useReactFlow } from '@xyflow/react';
 import { useVizStore } from '@/stores/vizStore';
 import type { RepoAnalysis } from '@/types';
 import {
@@ -21,28 +20,13 @@ interface OverviewTabProps {
 }
 
 export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTabProps) {
-  const { setCenter, getNode } = useReactFlow();
-
   // Direct graph centering helper — works for both file and folder nodes
   const focusOnNode = useCallback((nodeId: string, filePath?: string | null) => {
     useVizStore.getState().setSelectedNodeId(nodeId);
     if (filePath !== undefined) {
       useVizStore.getState().setFocusedFilePath(filePath);
     }
-    // Use ReactFlow's getNode for actual rendered positions (from web worker layout)
-    setTimeout(() => {
-      const rfNode = getNode(nodeId);
-      if (rfNode) {
-        const width = typeof rfNode.measured?.width === 'number' ? rfNode.measured.width : rfNode.width ?? 140;
-        const height = typeof rfNode.measured?.height === 'number' ? rfNode.measured.height : rfNode.height ?? 40;
-        setCenter(
-          rfNode.position.x + width / 2,
-          rfNode.position.y + height / 2,
-          { zoom: 1.3, duration: 480 }
-        );
-      }
-    }, 80);
-  }, [setCenter, getNode]);
+  }, []);
 
   const {
     fileCount,

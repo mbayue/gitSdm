@@ -30,7 +30,6 @@ export function useForceCanvasState({
     setHighlightedNodeIds,
     setFocusedFilePath,
     focusedFilePath,
-    layoutType,
     nodeTypeFilters,
     blastRadiusActive,
     fileTypeFilters,
@@ -38,6 +37,7 @@ export function useForceCanvasState({
     setActiveDropdown,
     resetFilters,
     graphActionTrigger,
+    setVisibleCounts,
   } = useVizStore();
 
   const [forceSize, setForceSize] = useState({ width: 1024, height: 720 });
@@ -132,6 +132,10 @@ export function useForceCanvasState({
   ]);
 
   useEffect(() => {
+    setVisibleCounts(forceGraphData.nodes.length, forceGraphData.links.length);
+  }, [forceGraphData.nodes.length, forceGraphData.links.length, setVisibleCounts]);
+
+  useEffect(() => {
     forceInitialViewDoneRef.current = false;
   }, [forceGraphData.nodes.length, forceGraphData.links.length, forceInitialViewDoneRef]);
 
@@ -169,13 +173,11 @@ export function useForceCanvasState({
   }, [forceHostRef]);
 
   useD3Physics({
-    layoutType,
     forceGraphRef,
     nodes: forceGraphData.nodes,
   });
 
   const { prevFocusRef } = useForceSync({
-    layoutType,
     selectedNodeId,
     focusedFilePath,
     nodes: forceGraphData.nodes,

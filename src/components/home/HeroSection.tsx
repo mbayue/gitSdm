@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { GitBranch } from 'lucide-react';
-import { ReactFlowProvider } from '@xyflow/react';
 import { GraphCanvas } from '@/features/graph/canvas/GraphCanvas';
 import { demoGraph } from '@/features/graph/demoGraph';
 import { RepoInput } from '@/components/home/RepoInput';
@@ -109,9 +108,7 @@ export function HeroSection({ initialUrl = '' }: HeroSectionProps) {
 
                 {/* Center Panel (Graph) */}
                 <div className="flex-1 bg-[#0d1117] relative overflow-hidden">
-                  <ReactFlowProvider>
-                    <GraphCanvas graph={demoGraph} readOnly hideChrome />
-                  </ReactFlowProvider>
+                  <GraphCanvas graph={demoGraph} readOnly hideChrome />
                   
                   {/* Selected Node State overlay */}
                   <div className="absolute top-4 right-4 p-3 rounded-md border border-[rgba(240,246,252,0.1)] bg-[#1c2128]/90 backdrop-blur-sm max-w-[200px] shadow-lg">
@@ -175,7 +172,7 @@ export function HeroSection({ initialUrl = '' }: HeroSectionProps) {
                     <span>41 modules</span>
                   </div>
                 </div>
-                <div>dagre layout</div>
+                <div>force layout</div>
               </div>
             </div>
           </motion.div>

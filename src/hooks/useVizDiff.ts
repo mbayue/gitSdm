@@ -80,10 +80,82 @@ export function useVizDiff(
   // Build the combined graph showing added, modified, and deleted elements
   const combinedGraph = useMemo(() => {
     if (!data) return null;
-    if (!compareBranch || !compareData || !graphDiff) return data.graph;
+
+    const healthReport = data.dependencyHealth;
+    const outdatedPackages = new Set<string>();
+    if (healthReport && healthReport.items) {
+      for (const item of healthReport.items) {
+        if (item.state === 'outdated') {
+          outdatedPackages.add(item.name);
+        }
+      }
+    }
+
+    if (!compareBranch || !compareData || !graphDiff) {
+      return {
+        ...data.graph,
+        nodes: data.graph.nodes.map((n) => {
+          const isOutdated =
+            (n.type === 'package' &&
+              healthReport?.items?.some((item) => {
+                if (item.state !== 'outdated') return false;
+                if (item.packageNames.includes(n.data.label)) return true;
+                const rootPath = n.data.path || '';
+                const expectedManifest = rootPath === '.' || rootPath === '' 
+                  ? 'package.json' 
+                  : `${rootPath}/package.json`;
+                return item.manifestPaths.includes(expectedManifest);
+              })) ||
+            (n.type === 'file' &&
+              n.data.path &&
+              (n.data.path === 'package.json' || n.data.path.endsWith('/package.json')) &&
+              healthReport?.items?.some(
+                (item) => item.state === 'outdated' && item.manifestPaths.includes(n.data.path || '')
+              ));
+          if (isOutdated) {
+            return {
+              ...n,
+              data: {
+                ...n.data,
+                hasOutdatedDeps: true,
+              },
+            };
+          }
+          return n;
+        }),
+      };
+    }
 
     const nodesMap = new Map(
-      data.graph.nodes.map((n) => [n.id, { ...n, data: { ...n.data } }]),
+      data.graph.nodes.map((n) => {
+        const isOutdated =
+          (n.type === 'package' &&
+            healthReport?.items?.some((item) => {
+              if (item.state !== 'outdated') return false;
+              if (item.packageNames.includes(n.data.label)) return true;
+              const rootPath = n.data.path || '';
+              const expectedManifest = rootPath === '.' || rootPath === '' 
+                ? 'package.json' 
+                : `${rootPath}/package.json`;
+              return item.manifestPaths.includes(expectedManifest);
+            })) ||
+          (n.type === 'file' &&
+            n.data.path &&
+            (n.data.path === 'package.json' || n.data.path.endsWith('/package.json')) &&
+            healthReport?.items?.some(
+              (item) => item.state === 'outdated' && item.manifestPaths.includes(n.data.path || '')
+            ));
+        return [
+          n.id,
+          {
+            ...n,
+            data: {
+              ...n.data,
+              hasOutdatedDeps: isOutdated || undefined,
+            },
+          },
+        ];
+      }),
     );
 
     // Annotate current nodes with diff statuses

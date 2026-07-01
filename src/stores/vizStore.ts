@@ -2,8 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { NodeType } from "@/types";
 
-export type SidebarTab = "overview" | "analysis" | "ai" | "learning";
-export type LayoutType = "force" | "network";
+export type SidebarTab = "overview" | "analysis" | "dependencies" | "ai" | "learning";
 export type WorkspaceMode = "focus" | "analysis" | "learning" | "full";
 export type GraphScope = "important" | "source" | "grouped" | "full";
 export type ContentFilter = "source" | "config" | "docs" | "tests" | "github" | "examples" | "generated" | "translations";
@@ -21,7 +20,6 @@ interface VizState {
   inspectorOpen: boolean;
   focusedFilePath: string | null;
   onboardingStep: number;
-  layoutType: LayoutType;
   toastMessage: string | null;
   theme: "dark" | "light";
   selectedBranch: string | null;
@@ -85,7 +83,6 @@ interface VizState {
   setInspectorOpen: (open: boolean) => void;
   setFocusedFilePath: (path: string | null) => void;
   setOnboardingStep: (step: number) => void;
-  setLayoutType: (type: LayoutType) => void;
   setTheme: (theme: "dark" | "light") => void;
   toggleTheme: () => void;
   setZoom: (zoom: number) => void;
@@ -135,7 +132,6 @@ export const useVizStore = create<VizState>()(
       inspectorOpen: false,
       focusedFilePath: null,
       onboardingStep: 0,
-      layoutType: "force",
       zoom: 1.0,
       visibleNodeCount: 0,
       visibleEdgeCount: 0,
@@ -229,7 +225,6 @@ export const useVizStore = create<VizState>()(
   setInspectorOpen: (inspectorOpen: boolean) => set({ inspectorOpen }),
   setFocusedFilePath: (focusedFilePath: string | null) => set({ focusedFilePath }),
   setOnboardingStep: (onboardingStep: number) => set({ onboardingStep }),
-  setLayoutType: (layoutType: LayoutType) => set({ layoutType }),
   setZoom: (zoom: number) => set({ zoom }),
   setVisibleCounts: (visibleNodeCount: number, visibleEdgeCount: number) => set({ visibleNodeCount, visibleEdgeCount }),
   setTheme: (theme: "dark" | "light") => {
@@ -292,7 +287,6 @@ export const useVizStore = create<VizState>()(
       inspectorOpen: false,
       focusedFilePath: null,
        onboardingStep: 0,
-      layoutType: "force",
       zoom: 1.0,
       visibleNodeCount: 0,
       visibleEdgeCount: 0,
@@ -324,7 +318,6 @@ export const useVizStore = create<VizState>()(
       aiSidebarOpen: state.aiSidebarOpen,
       inspectorOpen: state.inspectorOpen,
       sidebarTab: state.sidebarTab,
-      layoutType: state.layoutType,
       theme: state.theme,
       activeView: state.activeView,
       graphSidebarOpen: state.graphSidebarOpen,

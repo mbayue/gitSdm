@@ -12,6 +12,7 @@ export interface ForceGraphNode extends NodeObject {
   degree: number;
   color: string;
   diffStatus?: 'added' | 'modified' | 'deleted';
+  hasOutdatedDeps?: boolean;
 }
 
 export interface ForceGraphLink extends LinkObject<ForceGraphNode> {
