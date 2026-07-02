@@ -9,3 +9,7 @@
 ## 2023-11-10 - [O(N*M) Loop Optimization in AnalysisTab]
 **Learning:** Found nested loops inside the `AnalysisTab` render cycle where `.find()` was being used inside a `.map()` to lookup nodes from a graph diff, turning it into an O(N*M) lookup.
 **Action:** Replaced `.find()` inside loops with an O(1) `Map` lookup using `useMemo` to create a `nodeById` map mapping node IDs to nodes. This is a recurring pattern in the visualization codebase.
+
+## 2024-11-20 - [O(N*M) Loop Optimization in LearningPathTab]
+**Learning:** Found nested loops inside the `LearningPathTab` render cycle event handlers (`onKeyDown`, `onClick`) where array `.find()` was being used inside a `.map()` to lookup target node IDs, turning it into an O(N*M) time complexity bottleneck for large codebases.
+**Action:** Replaced `.find()` inside the `.map()` loop with an O(1) `Map` lookup by pre-computing a `nodeById` map mapping node IDs to node IDs using `useMemo` at the component level. This reinforces the pattern of using memoized Hash Maps for list lookups in React components.
