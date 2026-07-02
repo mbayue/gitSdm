@@ -77,38 +77,38 @@ const fetchMock = mock(async (input: RequestInfo | URL) => {
   throw new TypeError(`unexpected fetch for ${packageName}`);
 });
 
-mock.module('../github/fetch-tree', () => ({
-  fetchRepoInfo: async () => mockRepoInfo,
-  fetchFlatTree: async () => ({
-    items: Object.keys(activeFileContents).map((path) => ({ path, type: 'file' })),
-    truncated: false,
-  }),
-  fetchContributors: async () => [],
-  fetchTimeline: async () => [],
-  fetchTotalCommits: async () => 42,
-  buildTreeFromPaths: (items: readonly { readonly path: string; readonly type: string }[]) => items,
-  findManifestPaths: () => ['package.json', 'packages/a/package.json', 'packages/b/package.json'],
-  fetchFileContents: async () => activeFileContents,
-}));
-
-mock.module('../github/parse-url', () => ({
-  parseGitHubUrl: (input: string) => {
-    if (input.includes('invalid')) return null;
-    return { owner: 'test-owner', repo: 'test-repo' };
-  },
-}));
-
-mock.module('../parser/file-classifier', () => ({
-  annotateTree: (tree: readonly { readonly path: string; readonly type: string }[]) => tree,
-  findImportantFiles: () => ['src/main.ts'],
-}));
-
-mock.module('../graph/graph-builder', () => ({
-  buildGraph: buildGraphMock,
-}));
-
 describe('services/analyze-repo', () => {
   beforeEach(() => {
+    mock.module('../github/fetch-tree', () => ({
+      fetchRepoInfo: async () => mockRepoInfo,
+      fetchFlatTree: async () => ({
+        items: Object.keys(activeFileContents).map((path) => ({ path, type: 'file' })),
+        truncated: false,
+      }),
+      fetchContributors: async () => [],
+      fetchTimeline: async () => [],
+      fetchTotalCommits: async () => 42,
+      buildTreeFromPaths: (items: readonly { readonly path: string; readonly type: string }[]) => items,
+      findManifestPaths: () => ['package.json', 'packages/a/package.json', 'packages/b/package.json'],
+      fetchFileContents: async () => activeFileContents,
+    }));
+
+    mock.module('../github/parse-url', () => ({
+      parseGitHubUrl: (input: string) => {
+        if (input.includes('invalid')) return null;
+        return { owner: 'test-owner', repo: 'test-repo' };
+      },
+    }));
+
+    mock.module('../parser/file-classifier', () => ({
+      annotateTree: (tree: readonly { readonly path: string; readonly type: string }[]) => tree,
+      findImportantFiles: () => ['src/main.ts'],
+    }));
+
+    mock.module('../graph/graph-builder', () => ({
+      buildGraph: buildGraphMock,
+    }));
+
     clearAllCaches();
     activeFileContents = workspaceFileContents;
     buildGraphMock.mockClear();

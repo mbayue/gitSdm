@@ -3,9 +3,6 @@ import { AppError } from '../utils/errors';
 import { aiExplainSchema, repoQuerySchema } from './schemas';
 import {
   explainRepo,
-  explainArchitecture,
-  suggestFiles,
-  generateOnboarding,
   generateLearningPath,
   explainRepoELI5,
   generateRefactorSuggestions,
@@ -16,9 +13,6 @@ import {
 } from '../ai/summarizer';
 import type {
   AIExplainResponse,
-  AIArchitectureResponse,
-  AISuggestFilesResponse,
-  AIOnboardingResponse,
   AILearningPathResponse,
   AIExplainLifResponse,
   AIRefactorResponse,
@@ -42,36 +36,6 @@ export async function handleAiRoutes(
       throw new AppError(400, 'Invalid request', 'VALIDATION_ERROR', false, parsed.error.flatten());
     }
     const result: AIExplainResponse = await explainRepo({ ...parsed.data, apiKey: userKey, gitHubToken }, ctx);
-    return Response.json(result, { status: 200 });
-  }
-
-  if (pathname === '/api/ai/architecture') {
-    const body = await req.json().catch(() => ({}));
-    const parsed = repoQuerySchema.safeParse(body);
-    if (!parsed.success) {
-      throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
-    }
-    const result: AIArchitectureResponse = await explainArchitecture(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
-    return Response.json(result, { status: 200 });
-  }
-
-  if (pathname === '/api/ai/suggest-files') {
-    const body = await req.json().catch(() => ({}));
-    const parsed = repoQuerySchema.safeParse(body);
-    if (!parsed.success) {
-      throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
-    }
-    const result: AISuggestFilesResponse = await suggestFiles(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
-    return Response.json(result, { status: 200 });
-  }
-
-  if (pathname === '/api/ai/onboarding') {
-    const body = await req.json().catch(() => ({}));
-    const parsed = repoQuerySchema.safeParse(body);
-    if (!parsed.success) {
-      throw new AppError(400, 'owner and repo required', 'INVALID_PARAMS');
-    }
-    const result: AIOnboardingResponse = await generateOnboarding(parsed.data.owner, parsed.data.repo, parsed.data.branch, userKey, gitHubToken, ctx);
     return Response.json(result, { status: 200 });
   }
 

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 
 import { clearAllCaches } from '../cache/lru';
 import { executeAiTask } from './service';
@@ -19,14 +19,14 @@ const completeMock = mock(async (messages?: any[]) => {
   return '{"value":"live"}';
 });
 
-mock.module('./provider', () => ({
-  getAIProvider: mock(async () => ({
-    complete: completeMock,
-  })),
-}));
-
 describe('ai service', () => {
   beforeEach(() => {
+    mock.module('./provider', () => ({
+      getAIProvider: mock(async () => ({
+        complete: completeMock,
+      })),
+    }));
+
     clearAllCaches();
     completeMock.mockClear();
 
@@ -37,6 +37,10 @@ describe('ai service', () => {
     delete process.env.GEMINI_MODEL;
     delete process.env.OPENAI_MODEL;
     delete process.env.ANTHROPIC_MODEL;
+  });
+
+  afterEach(() => {
+    mock.restore();
   });
 
   it('uses mock fallback without lru cache when provider is mock', async () => {

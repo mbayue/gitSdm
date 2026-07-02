@@ -128,6 +128,8 @@ describe('utils', () => {
     it('returns null for invalid inputs', () => {
       expect(parseRepoFromUrl('invalid-string')).toBeNull();
       expect(parseRepoFromUrl('https://google.com/facebook/react')).toBeNull();
+      expect(parseRepoFromUrl('https://github.com/')).toBeNull();
+      expect(parseRepoFromUrl('https://github.com/owner')).toBeNull();
     });
 
     it('rejects URLs that only contain github.com outside the hostname', () => {

@@ -1,16 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
 import {
-  aiArchitecture,
   aiExplain,
   aiExplainLif,
   aiHealth,
   aiLearningPath,
   aiMermaid,
-  aiOnboarding,
   aiReadmeEnhance,
   aiRefactor,
   aiRoast,
-  aiSuggestFiles,
   analyzeRepo,
   ApiError,
   fetchAppConfig,
@@ -250,50 +247,6 @@ describe('apiClient', () => {
     });
   });
 
-  describe('aiArchitecture', () => {
-    it('forms the correct request payload and parses the response', async () => {
-      const mockResponse = { architecture: 'some-arch' };
-      const fetchMock = mock(async () => new Response(JSON.stringify(mockResponse), { status: 200 }));
-      global.fetch = fetchMock as any;
-
-      const result = await aiArchitecture('test-owner', 'test-repo', 'main');
-
-      const fetchCall = fetchMock.mock.calls[0];
-      expect(fetchCall[0]).toBe('/api/ai/architecture');
-      expect(fetchCall[1]?.method).toBe('POST');
-      expect(fetchCall[1]?.body).toBe(JSON.stringify({ owner: 'test-owner', repo: 'test-repo', branch: 'main' }));
-      expect(fetchCall[1]?.headers).toMatchObject({ 'Content-Type': 'application/json' });
-      expect(result).toEqual(mockResponse as any);
-    });
-
-    it('handles missing branch parameter', async () => {
-      const fetchMock = mock(async () => new Response(JSON.stringify({ architecture: 'some-arch' }), { status: 200 }));
-      global.fetch = fetchMock as any;
-
-      await aiArchitecture('test-owner', 'test-repo');
-
-      expect(fetchMock.mock.calls[0][1]?.body).toBe(JSON.stringify({ owner: 'test-owner', repo: 'test-repo' }));
-    });
-
-    it('throws ApiError if the response is not ok', async () => {
-      global.fetch = mock(async () => new Response(JSON.stringify({ error: 'Internal Server Error', code: '500' }), { status: 500 })) as any;
-
-      let caughtError: unknown;
-      try {
-        await aiArchitecture('test-owner', 'test-repo', 'main');
-      } catch (err) {
-        caughtError = err;
-      }
-
-      expect(caughtError).toBeInstanceOf(ApiError);
-      if (caughtError instanceof ApiError) {
-        expect(caughtError.status).toBe(500);
-        expect(caughtError.message).toBe('Internal Server Error');
-        expect(caughtError.code).toBe('500');
-      }
-    });
-  });
-
   describe('semanticSearch', () => {
     it('makes a POST request with correct payload', async () => {
       const mockFetch = mock(async () => new Response(JSON.stringify({ results: [] }), { status: 200 }));
@@ -366,8 +319,6 @@ describe('apiClient', () => {
     });
 
     it.each([
-      [aiSuggestFiles, '/api/ai/suggest-files'],
-      [aiOnboarding, '/api/ai/onboarding'],
       [aiExplainLif, '/api/ai/explain-lif'],
       [aiRefactor, '/api/ai/refactor'],
       [aiHealth, '/api/ai/health'],

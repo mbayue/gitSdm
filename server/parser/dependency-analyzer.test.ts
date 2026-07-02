@@ -171,4 +171,25 @@ describe('dependency-analyzer', () => {
     const deps = analyzeDependencies({});
     expect(deps).toEqual([]);
   });
+
+  it('handles negative workspace package globs', () => {
+    const fileContents = {
+      'package.json': JSON.stringify({ name: 'root', workspaces: ['packages/*', '!packages/excluded'] }),
+      'packages/a/package.json': JSON.stringify({ name: 'a' }),
+      'packages/excluded/package.json': JSON.stringify({ name: 'excluded' }),
+    };
+
+    const packages = analyzeWorkspacePackages(fileContents);
+    expect(packages.map(p => p.name)).toEqual(['root', 'a']);
+  });
+
+  it('detects multiple workspace manifests and sorts them', () => {
+    const fileContents = {
+      'package.json': JSON.stringify({ name: 'root', workspaces: ['packages/*'] }),
+      'pnpm-workspace.yaml': 'packages:\n  - "apps/*"\n',
+    };
+
+    const packages = analyzeWorkspacePackages(fileContents);
+    expect(packages.length).toBeGreaterThan(0);
+  });
 });

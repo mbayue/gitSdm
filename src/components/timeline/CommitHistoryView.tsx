@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { GitCommit, ExternalLink, Search, Copy, Check, Calendar, User } from 'lucide-react';
 import type { TimelineWeek } from '@/types';
+import { copyToClipboard } from '@/lib/clipboard';
+import { useVizStore } from '@/stores/vizStore';
 
 interface FullCommitHistoryViewProps {
   timeline: TimelineWeek[];
@@ -13,6 +15,7 @@ interface FullCommitHistoryViewProps {
 export function FullCommitHistoryView({ timeline, owner, repo, branch, isLoading }: FullCommitHistoryViewProps) {
   const [search, setSearch] = useState('');
   const [copiedSha, setCopiedSha] = useState<string | null>(null);
+  const setToastMessage = useVizStore((s) => s.setToastMessage);
 
   const commits = useMemo(() => {
     const all = timeline.flatMap((w) => w.commits);
@@ -32,24 +35,13 @@ export function FullCommitHistoryView({ timeline, owner, repo, branch, isLoading
     );
   }, [commits, search]);
 
-  const handleCopySha = (sha: string) => {
+  const handleCopySha = async (sha: string) => {
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(sha);
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = sha;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-      }
+      await copyToClipboard(sha);
       setCopiedSha(sha);
       setTimeout(() => setCopiedSha(null), 2000);
     } catch (err) {
-      console.error('Failed to copy SHA: ', err);
+      setToastMessage('Failed to copy SHA: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 

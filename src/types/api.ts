@@ -16,22 +16,6 @@ export interface AIExplainResponse {
   cached: boolean;
 }
 
-export interface AIArchitectureResponse {
-  overview: string;
-  layers: { name: string; description: string }[];
-  cached: boolean;
-}
-
-export interface AISuggestFilesResponse {
-  files: { path: string; reason: string; priority: 'high' | 'medium' | 'low' }[];
-  cached: boolean;
-}
-
-export interface AIOnboardingResponse {
-  steps: { title: string; description: string; filePath?: string }[];
-  cached: boolean;
-}
-
 export interface AIExplainLifResponse {
   explanation: string;
   cached: boolean;

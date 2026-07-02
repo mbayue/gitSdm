@@ -1,4 +1,5 @@
-import { describe, expect, it, mock, beforeEach } from 'bun:test';
+import { afterAll, afterEach, describe, expect, it, mock, beforeEach } from 'bun:test';
+import * as mockDataModule from '../github/mock-data';
 import { getRepoFileContent } from './get-file';
 
 const mockGetContent = mock(async () => ({
@@ -8,33 +9,44 @@ const mockGetContent = mock(async () => ({
   },
 }));
 
-mock.module('../github/client', () => ({
-  getOctokit: () => ({
-    repos: {
-      getContent: mockGetContent,
+function setupModuleMocks() {
+  mock.module('../github/client', () => ({
+    getOctokit: () => ({
+      repos: {
+        getContent: mockGetContent,
+      },
+    }),
+    handleOctokitError: (err: any) => {
+      throw err;
     },
-  }),
-  handleOctokitError: (err: any) => {
-    throw err;
-  },
-}));
+  }));
 
-mock.module('../github/fetch-tree', () => ({
-  fetchRepoInfo: async () => ({
-    sha: 'test-sha',
-  }),
-}));
+  mock.module('../github/fetch-tree', () => ({
+    fetchRepoInfo: async () => ({
+      sha: 'test-sha',
+    }),
+  }));
 
-mock.module('../github/mock-data', () => ({
-  isMockRepo: (owner: string) => owner === 'mock-owner',
-  fetchMockFileContents: async (owner: string, repo: string, paths: string[]) => ({
-    [paths[0]]: 'mock file content',
-  }),
-}));
+  mock.module('../github/mock-data', () => ({
+    isMockRepo: (owner: string) => owner === 'mock-owner',
+    fetchMockFileContents: async (owner: string, repo: string, paths: string[]) => ({
+      [paths[0]]: 'mock file content',
+    }),
+  }));
+}
 
 describe('services/get-file', () => {
   beforeEach(() => {
+    setupModuleMocks();
     mockGetContent.mockClear();
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  afterAll(() => {
+    mock.module('../github/mock-data', () => ({ ...mockDataModule }));
   });
 
   it('fetches mock file content when owner is mock-owner', async () => {

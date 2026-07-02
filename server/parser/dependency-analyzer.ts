@@ -31,7 +31,7 @@ export function analyzeManifestDependencies(fileContents: Record<string, string>
 }
 
 function packageRootFromManifest(path: string): string {
-  return path === 'package.json' ? '' : path.slice(0, -'/package.json'.length);
+  return path.slice(0, -'/package.json'.length);
 }
 
 function escapeRegex(value: string): string {

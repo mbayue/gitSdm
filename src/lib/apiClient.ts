@@ -1,9 +1,6 @@
 import type {
-  AIArchitectureResponse,
   AIExplainRequest,
   AIExplainResponse,
-  AIOnboardingResponse,
-  AISuggestFilesResponse,
   RepoAnalysis,
   TrendingRepo,
   AIExplainLifResponse,
@@ -162,39 +159,6 @@ export async function aiExplain(body: AIExplainRequest & { branch?: string }): P
   return request<AIExplainResponse>('/api/ai/explain', {
     method: 'POST',
     body: JSON.stringify(body),
-  });
-}
-
-export async function aiArchitecture(
-  owner: string,
-  repo: string,
-  branch?: string,
-): Promise<AIArchitectureResponse> {
-  return request<AIArchitectureResponse>('/api/ai/architecture', {
-    method: 'POST',
-    body: JSON.stringify({ owner, repo, branch }),
-  });
-}
-
-export async function aiSuggestFiles(
-  owner: string,
-  repo: string,
-  branch?: string,
-): Promise<AISuggestFilesResponse> {
-  return request<AISuggestFilesResponse>('/api/ai/suggest-files', {
-    method: 'POST',
-    body: JSON.stringify({ owner, repo, branch }),
-  });
-}
-
-export async function aiOnboarding(
-  owner: string,
-  repo: string,
-  branch?: string,
-): Promise<AIOnboardingResponse> {
-  return request<AIOnboardingResponse>('/api/ai/onboarding', {
-    method: 'POST',
-    body: JSON.stringify({ owner, repo, branch }),
   });
 }
 

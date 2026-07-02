@@ -10,6 +10,7 @@
 - **AI-powered semantic search & Q&A** — Context-aware vector search to ask code questions and locate entry points.
 - **Change impact analysis (Blast Radius)** — Visualizer showing transitive dependents to predict edit breakages.
 - **📦 Dependency Health Report** — Core health panel, version freshness checker (npm), license compliance audits, and real-time visual highlight alerts (amber borders/warning badges) on the force-directed canvas.
+- **🧭 Personalized Onboarding Paths** — AI-generated custom reading tours. User pastes a repo URL + describes their goal, and the system returns a guided walkthrough ("start with these 5 files, in this order") with graph node highlights. Implemented as `LearningPathTab`.
 
 ---
 
@@ -36,22 +37,7 @@ Tools to manually prune, regroup, and export tailored subgraphs from the visuali
 
 ---
 
-### 2. 🧭 Personalized Onboarding Paths
-
-Combine the existing AI + learning-path infrastructure to generate a **custom reading tour**:
-
-1. User pastes a repo URL + describes their goal ("fix a bug in search", "add an API route", "understand auth")
-2. AI analyzes the dependency graph + file contents
-3. Returns: "Start with these 5 files, in this order. Here's what each one does and why it matters for your goal."
-4. Each step highlights the relevant node on the graph and shows annotated source
-
-**Why**: The primary pain point is onboarding — this directly solves it with a guided walkthrough rather than just a static graph.
-
-**Effort**: Medium-Low — AI providers, learning-path player, and semantic search already exist. The new work is stitching them into a path generator (one AI prompt + ordered file list).
-
----
-
-### 3. 🚦 Dependency Rule Engine (Live Architecture Linter)
+### 2. 🚦 Dependency Rule Engine (Live Architecture Linter)
 
 Let teams define custom architecture rules:
 
@@ -67,7 +53,7 @@ Violations are **highlighted on the graph** in real-time and can surface as a PR
 
 ---
 
-### 4. 🔮 "What If?" Refactoring Simulator
+### 3. 🔮 "What If?" Refactoring Simulator
 
 Drag a node from one module to another on the graph and see in real-time:
 
@@ -82,7 +68,7 @@ Drag a node from one module to another on the graph and see in real-time:
 
 ---
 
-### 5. 🔗 Multi-Repository Mapping
+### 4. 🔗 Multi-Repository Mapping
 
 Cross-repo dependency tracing: stitch graphs from multiple repositories into a single unified view.
 
