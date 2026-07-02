@@ -61,9 +61,9 @@ export function useArchitectureState(
         }
       })
       .catch((err) => {
-        const setToastMessage = useVizStore.getState().setToastMessage;
-        setToastMessage('Failed to render diagram: ' + (err instanceof Error ? err.message : String(err)));
         if (active) {
+          const setToastMessage = useVizStore.getState().setToastMessage;
+          setToastMessage('Failed to render diagram: ' + (err instanceof Error ? err.message : String(err)));
           setRenderError('Failed to layout flowchart. This can happen with complex circular dependencies.');
         }
         const badEl = document.getElementById(id);

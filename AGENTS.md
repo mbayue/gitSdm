@@ -156,7 +156,7 @@ Test runner: **Bun** (`bun test --isolate`)
 - Files that import from SDK packages (openai, @anthropic-ai/sdk) in tests must use `mock.module()` before any other imports.
 
 ### Coverage
-- **31 test files**: 22 server-side (AI, graph, parser, search, services, utils), 4 frontend (components, lib, graph utils)
+- **33 test files**: 22 server-side (AI, graph, parser, search, services, utils), 4 frontend (components, lib, graph utils)
 - **320+ tests** passing, 10 pre-existing failures
 
 ---

@@ -14,7 +14,6 @@ function cosineSimilarity(a: Float32Array, b: Float32Array): number {
   if (denom === 0) return 0;
   return Math.max(0, Math.min(1, dot / denom));
 }
-}
 
 const vectorStore = {
   chunks: [] as any[],

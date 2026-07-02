@@ -187,9 +187,16 @@ describe('dependency-analyzer', () => {
     const fileContents = {
       'package.json': JSON.stringify({ name: 'root', workspaces: ['packages/*'] }),
       'pnpm-workspace.yaml': 'packages:\n  - "apps/*"\n',
+      'packages/core/package.json': JSON.stringify({ name: '@repo/core' }),
+      'apps/web/package.json': JSON.stringify({ name: '@repo/web' }),
     };
 
     const packages = analyzeWorkspacePackages(fileContents);
-    expect(packages.length).toBeGreaterThan(0);
+    const names = packages.map((p) => p.name);
+    expect(names).toContain('root');
+    expect(names).toContain('@repo/core');
+    const coreEntry = packages.find((p) => p.name === '@repo/core');
+    expect(coreEntry?.manager).toBeDefined();
+    expect(coreEntry?.rootPath).toBe('packages/core');
   });
 });
