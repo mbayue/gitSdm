@@ -1,5 +1,7 @@
-import { afterAll, afterEach, describe, expect, it, mock, beforeEach } from 'bun:test';
+import { afterEach, describe, expect, it, mock, beforeEach } from 'bun:test';
 import * as mockDataModule from './mock-data';
+
+const realMockDataExports = { ...mockDataModule };
 import {
   fetchRepoBranches,
   fetchRepoInfo,
@@ -28,7 +30,7 @@ const mockGetRepo = mock(async () => ({
     updated_at: '2026-01-02T00:00:00Z',
   },
 }));
-const mockGetBranch = mock(async () => ({ data: { commit: { sha: 'sha123' } } }));
+const mockGetCommit = mock(async () => ({ data: { sha: 'sha123' } }));
 const mockGetTree = mock(async () => ({
   data: {
     tree: [
@@ -76,7 +78,7 @@ describe('github/fetch-tree', () => {
         repos: {
           listBranches: mockListBranches,
           get: mockGetRepo,
-          getBranch: mockGetBranch,
+          getCommit: mockGetCommit,
           getContent: mockGetContent,
           listContributors: mockListContributors,
           listCommits: mockListCommits,
@@ -102,7 +104,7 @@ describe('github/fetch-tree', () => {
 
     mockListBranches.mockClear();
     mockGetRepo.mockClear();
-    mockGetBranch.mockClear();
+    mockGetCommit.mockClear();
     mockGetTree.mockClear();
     mockGetContent.mockClear();
     mockListContributors.mockClear();
@@ -111,10 +113,7 @@ describe('github/fetch-tree', () => {
 
   afterEach(() => {
     mock.restore();
-  });
-
-  afterAll(() => {
-    mock.module('./mock-data', () => ({ ...mockDataModule }));
+    mock.module('./mock-data', () => realMockDataExports);
   });
 
   it('fetchRepoBranches: handles mock and real repo successfully, handles catch', async () => {
@@ -140,22 +139,22 @@ describe('github/fetch-tree', () => {
   });
 
   it('fetchRepoInfo: falls back to default branch when requested branch is missing', async () => {
-    mockGetBranch
+    mockGetCommit
       .mockImplementationOnce(async () => {
         throw { status: 404 };
       })
-      .mockImplementationOnce(async ({ branch }: any) => ({ data: { commit: { sha: `${branch}-sha` } } }));
+      .mockImplementationOnce(async ({ ref }: any) => ({ data: { sha: `${ref}-sha` } }));
 
     const res = await fetchRepoInfo('real-owner', 'repo', 'missing-branch');
 
-    expect(mockGetBranch).toHaveBeenNthCalledWith(1, { owner: 'real-owner', repo: 'repo', branch: 'missing-branch' });
-    expect(mockGetBranch).toHaveBeenNthCalledWith(2, { owner: 'real-owner', repo: 'repo', branch: 'main' });
+    expect(mockGetCommit).toHaveBeenNthCalledWith(1, { owner: 'real-owner', repo: 'repo', ref: 'missing-branch' });
+    expect(mockGetCommit).toHaveBeenNthCalledWith(2, { owner: 'real-owner', repo: 'repo', ref: 'main' });
     expect(res.defaultBranch).toBe('main');
     expect(res.sha).toBe('main-sha');
   });
 
   it('fetchRepoInfo: propagates default branch fallback errors', async () => {
-    mockGetBranch
+    mockGetCommit
       .mockImplementationOnce(async () => {
         throw { status: 404 };
       })
@@ -167,7 +166,7 @@ describe('github/fetch-tree', () => {
   });
 
   it('fetchRepoInfo: propagates non-404 branch errors', async () => {
-    mockGetBranch.mockImplementationOnce(async () => {
+    mockGetCommit.mockImplementationOnce(async () => {
       throw new Error('branch failed');
     });
 
@@ -269,7 +268,7 @@ describe('github/fetch-tree', () => {
       repos: {
         listBranches: mockListBranches,
         get: mockGetRepo,
-        getBranch: mockGetBranch,
+        getCommit: mockGetCommit,
         getContent: mockGetContent,
         listContributors: mockListContributors,
         listCommits: mockListCommits,

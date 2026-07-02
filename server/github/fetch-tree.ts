@@ -61,6 +61,24 @@ export async function fetchRepoBranches(
   }
 }
 
+export async function fetchRepoTags(
+  owner: string,
+  repo: string,
+  tokenOrCtx?: string | RequestContext,
+): Promise<{ name: string; sha: string }[]> {
+  if (isMockRepo(owner)) {
+    return [];
+  }
+  const octokit = resolveOctokit(tokenOrCtx);
+  try {
+    const { data } = await octokit.repos.listTags({ owner, repo, per_page: 30 });
+    return data.map((t) => ({ name: t.name, sha: t.commit.sha }));
+  } catch (e) {
+    handleOctokitError(e);
+    return [];
+  }
+}
+
 export async function fetchRepoInfo(
   owner: string,
   repo: string,
@@ -81,13 +99,17 @@ export async function fetchRepoInfo(
     return undefined as never;
   }
 
-  // Step 2: Resolve branch (fall back to default if specified branch doesn't exist)
-  const targetBranch = branchName || data.default_branch;
+  // Step 2: Resolve ref to a commit SHA.
+  // Uses getCommit instead of getBranch so that tags and commit SHAs are
+  // accepted in addition to branch names. getBranch only accepts branch names
+  // and silently falls back on 404, which would cause tag/SHA comparisons to
+  // diff against the default branch instead of the intended ref.
+  const targetRef = branchName || data.default_branch;
   try {
-    const { data: branch } = await octokit.repos.getBranch({
+    const { data: commit } = await octokit.repos.getCommit({
       owner,
       repo,
-      branch: targetBranch,
+      ref: targetRef,
     });
 
     return {
@@ -99,21 +121,21 @@ export async function fetchRepoInfo(
       stars: data.stargazers_count,
       forks: data.forks_count,
       language: data.language,
-      defaultBranch: targetBranch,
-      sha: branch.commit.sha,
+      defaultBranch: targetRef,
+      sha: commit.sha,
       topics: data.topics ?? [],
       license: data.license?.spdx_id ?? null,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     };
   } catch (e) {
-    // If the requested branch doesn't exist, fall back to default branch
+    // If the requested ref doesn't exist, fall back to default branch
     if (branchName && e && typeof e === 'object' && 'status' in e && (e as { status: number }).status === 404) {
       try {
-        const { data: branch } = await octokit.repos.getBranch({
+        const { data: commit } = await octokit.repos.getCommit({
           owner,
           repo,
-          branch: data.default_branch,
+          ref: data.default_branch,
         });
         return {
           owner,
@@ -125,7 +147,7 @@ export async function fetchRepoInfo(
           forks: data.forks_count,
           language: data.language,
           defaultBranch: data.default_branch,
-          sha: branch.commit.sha,
+          sha: commit.sha,
           topics: data.topics ?? [],
           license: data.license?.spdx_id ?? null,
           createdAt: data.created_at,

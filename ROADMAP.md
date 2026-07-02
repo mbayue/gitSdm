@@ -16,7 +16,25 @@
 
 ## 🚧 In Progress
 
-- *(None)*
+### 📸 Commit & Tag Snapshot Diffing (Compare Branch Extension)
+
+Extend the existing Compare Branch feature — which already diffs two branches with full graph overlay (colored rings, edge coloring, Added/Modified/Deleted counts) — to also accept **commit SHAs and tags** as comparison targets, not just branch names.
+
+**What's already built** (in Compare Branch):
+- `useVizDiff` hook: SHA-based tree diff → added/modified/deleted sets
+- Full graph overlay: colored node rings + colored edges on the force canvas
+- OverviewTab: Added/Modified/Deleted counts + clickable file lists
+- Per-node diff badge in AnalysisTab
+- Filter by diff status (show only added, only deleted, etc.)
+
+**What's net-new** (the actual work):
+- Commit/tag picker UI alongside the existing branch picker — e.g. a timeline scrubber, tag dropdown, or "compare to N days ago" shortcut
+- Verify `/api/repo/analyze` handles commit SHA refs (GitHub API accepts SHAs in the same `ref` param — likely near-zero backend change)
+- "Time travel" framing in the UI: label the comparison as "main → v2.1.0" or "main → abc1234"
+
+**Why**: The existing Compare Branch answers "what's different between two live branches." Extending it to commits/tags answers "how did this architecture evolve over time?" — a different question with the same rendering engine.
+
+**Effort**: Low-Medium — ~70% of the work is already done. New effort is the picker UI and ref validation.
 
 ---
 
@@ -37,7 +55,22 @@ Tools to manually prune, regroup, and export tailored subgraphs from the visuali
 
 ---
 
-### 2. 🚦 Dependency Rule Engine (Live Architecture Linter)
+### 2. � Code Churn + Hotspot Heatmap
+
+Overlay git blame data on the force graph — color nodes by commit frequency, recency, and number of distinct authors. Hotspots (frequently changed, many authors) are classic stability risks.
+
+- Node color intensity reflects churn score (commits in last N days)
+- Node border highlights files touched by 3+ distinct authors
+- Tooltip shows churn rank, top contributors, and last-modified date
+- Filter panel: "show only files changed in last 30 days"
+
+**Why**: The commit timeline already exists. Adding churn as a graph signal is a short hop that surfaces actionable refactoring targets without requiring AI. Engineers immediately see "this file is touched by everyone and changed constantly — it's a problem."
+
+**Effort**: Low-Medium — git history is already parsed for the timeline. New work is computing a churn score per file and mapping it to node visual properties.
+
+---
+
+### 3. �🚦 Dependency Rule Engine (Live Architecture Linter)
 
 Let teams define custom architecture rules:
 
@@ -53,7 +86,51 @@ Violations are **highlighted on the graph** in real-time and can surface as a PR
 
 ---
 
-### 3. 🔮 "What If?" Refactoring Simulator
+### 4. 📊 Complexity Score per Module
+
+Compute a complexity signal per node: LOC + import count + export count + cyclomatic depth estimate. Show it as node size or color saturation.
+
+- No AI required — purely graph-derived metrics
+- Sidebar panel ranks files by complexity score
+- Overlay toggle: "color by complexity" vs. "color by churn" vs. default
+- Pairs naturally with the Hotspot Heatmap for a full health picture
+
+**Why**: Gives engineers a fast "where should I refactor?" answer without any external tooling. Complexity + churn together form a classic maintenance risk matrix.
+
+**Effort**: Low — purely additive computation on top of the existing parsed graph. No backend routes needed, no AI calls.
+
+---
+
+### 5. 💬 Inline AI Annotations in Code Inspector
+
+When a user clicks a file node, offer contextual AI actions directly in the inspector dock:
+
+- "Explain this file" — summarize the module's role in plain language
+- "Why does this file have N dependents?" — trace and explain the dependency chain
+- "Suggest a refactor" — AI-driven recommendation based on complexity + churn signals
+
+**Why**: The AI provider layer, semantic search, and code inspector dock all exist. This is mostly wiring existing pieces together into a tighter loop. Reduces context switching — instead of opening the AI sidebar separately, insight appears where you're already looking.
+
+**Effort**: Low-Medium — new UI affordances in the inspector dock + reusing existing AI task handlers.
+
+---
+
+### 6. 🔔 Dependency Drift Alerts (Scheduled CI Report)
+
+A lightweight GitHub Action / webhook that runs the health report on a schedule and posts a comment or issue when:
+
+- A dependency goes outdated by N major versions
+- A new license incompatibility appears
+- A circular dependency is introduced
+- Churn hotspots exceed a configurable threshold
+
+**Why**: Extends the existing health panel into the CI pipeline without a UI overhaul. Teams get proactive alerts instead of only discovering issues when they open gitSdm manually.
+
+**Effort**: Low-Medium — health report logic already exists. New work is a GitHub Action wrapper + configurable threshold rules + comment/issue posting via Octokit (already a dependency).
+
+---
+
+### 7. 🔮 "What If?" Refactoring Simulator
 
 Drag a node from one module to another on the graph and see in real-time:
 
@@ -68,7 +145,7 @@ Drag a node from one module to another on the graph and see in real-time:
 
 ---
 
-### 4. 🔗 Multi-Repository Mapping
+### 8. 🔗 Multi-Repository Mapping
 
 Cross-repo dependency tracing: stitch graphs from multiple repositories into a single unified view.
 

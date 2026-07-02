@@ -6,6 +6,7 @@ export type SidebarTab = "overview" | "analysis" | "dependencies" | "ai" | "lear
 export type WorkspaceMode = "focus" | "analysis" | "learning" | "full";
 export type GraphScope = "important" | "source" | "grouped" | "full";
 export type ContentFilter = "source" | "config" | "docs" | "tests" | "github" | "examples" | "generated" | "translations";
+export type CompareRefType = "branch" | "tag" | "commit";
 
 interface VizState {
   searchQuery: string;
@@ -23,6 +24,7 @@ interface VizState {
   theme: "dark" | "light";
   selectedBranch: string | null;
   compareBranch: string | null;
+  compareRefType: CompareRefType;
   availableBranches: string[];
   activeView: "graph" | "architecture" | "contributors" | "commits";
   zoom: number;
@@ -63,6 +65,7 @@ interface VizState {
   toggleDiffStatusFilter: (status: "added" | "modified" | "deleted") => void;
   setSelectedBranch: (branch: string | null) => void;
   setCompareBranch: (branch: string | null) => void;
+  setCompareRefType: (type: CompareRefType) => void;
   setAvailableBranches: (branches: string[]) => void;
   setToastMessage: (msg: string | null) => void;
   setSearchQuery: (q: string) => void;
@@ -126,6 +129,7 @@ export const useVizStore = create<VizState>()(
       theme: "dark",
       selectedBranch: null,
       compareBranch: null,
+      compareRefType: "branch" as CompareRefType,
       availableBranches: [],
       activeView: "graph",
       activeRepoKey: null,
@@ -179,8 +183,10 @@ export const useVizStore = create<VizState>()(
   setCompareBranch: (compareBranch: string | null) =>
     set((s: VizState) => ({
       compareBranch,
+      compareRefType: compareBranch ? s.compareRefType : "branch",
       diffStatusFilters: compareBranch ? s.diffStatusFilters : new Set(),
     })),
+  setCompareRefType: (compareRefType: CompareRefType) => set({ compareRefType }),
   setAvailableBranches: (availableBranches: string[]) => set({ availableBranches }),
   setToastMessage: (toastMessage: string | null) => set({ toastMessage }),
   setSearchQuery: (searchQuery: string) => set({ searchQuery }),
@@ -268,6 +274,7 @@ export const useVizStore = create<VizState>()(
       toastMessage: null,
       selectedBranch: null,
       compareBranch: null,
+      compareRefType: "branch" as CompareRefType,
       availableBranches: [],
       activeFocusLayer: "all",
       diffStatusFilters: new Set(),
