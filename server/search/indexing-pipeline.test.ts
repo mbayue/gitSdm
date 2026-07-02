@@ -4,9 +4,16 @@ import * as loggerModule from '../utils/logger';
 
 function cosineSimilarity(a: Float32Array, b: Float32Array): number {
   if (a.length !== b.length) return 0;
-  let dot = 0;
-  for (let i = 0; i < a.length; i++) dot += a[i] * b[i];
-  return Math.max(0, Math.min(1, dot));
+  let dot = 0, magA = 0, magB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    magA += a[i] * a[i];
+    magB += b[i] * b[i];
+  }
+  const denom = Math.sqrt(magA) * Math.sqrt(magB);
+  if (denom === 0) return 0;
+  return Math.max(0, Math.min(1, dot / denom));
+}
 }
 
 const vectorStore = {
