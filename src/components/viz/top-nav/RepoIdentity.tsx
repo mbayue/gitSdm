@@ -35,11 +35,11 @@ export function RepoIdentity({ owner, repoName }: RepoIdentityProps) {
         className="hidden min-[420px]:flex min-w-0 items-center text-xs font-mono transition-colors hover:text-[#58a6ff]"
         title={`${owner}/${repoName}`}
       >
-        <span className="truncate font-medium text-zinc-500 max-w-[48px] sm:max-w-[100px] lg:max-w-[140px]">
+        <span className="truncate font-medium text-zinc-500 max-w-[48px] sm:max-w-[72px] lg:max-w-[140px]">
           {owner}
         </span>
         <span className="mx-1.5 shrink-0 text-zinc-700 font-sans font-light">/</span>
-        <span className="truncate font-bold text-zinc-200 max-w-[64px] sm:max-w-[140px] lg:max-w-[220px]">
+        <span className="truncate font-bold text-zinc-200 max-w-[64px] sm:max-w-[100px] lg:max-w-[220px]">
           {repoName}
         </span>
       </a>
