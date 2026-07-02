@@ -194,9 +194,15 @@ describe('dependency-analyzer', () => {
     const packages = analyzeWorkspacePackages(fileContents);
     const names = packages.map((p) => p.name);
     expect(names).toContain('root');
+    // npm workspace (packages/*) match
     expect(names).toContain('@repo/core');
     const coreEntry = packages.find((p) => p.name === '@repo/core');
     expect(coreEntry?.manager).toBeDefined();
     expect(coreEntry?.rootPath).toBe('packages/core');
+    // pnpm workspace (apps/*) match
+    expect(names).toContain('@repo/web');
+    const webEntry = packages.find((p) => p.name === '@repo/web');
+    expect(webEntry?.manager).toBeDefined();
+    expect(webEntry?.rootPath).toBe('apps/web');
   });
 });
