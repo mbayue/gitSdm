@@ -1,47 +1,47 @@
-import { beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
 import { createEmbeddingProvider } from './embedding-provider';
 
 let openAIError: Error | null = null;
 let geminiFailures = 0;
 
-mock.module('openai', () => {
-  class OpenAI {
-    baseURL = '';
-    embeddings = {
-      create: mock(async ({ input }: { input: string | string[] }) => {
-        if (openAIError) throw openAIError;
-        const one = { embedding: [3, 4, 0] };
-        const many = Array.isArray(input) ? input.map(() => one) : [one];
-        return { data: many };
-      }),
-    };
-
-    constructor(_config: { apiKey: string }) {}
-  }
-
-  return { default: OpenAI };
-});
-
-mock.module('@google/genai', () => ({
-  GoogleGenAI: class {
-    models = {
-      embedContent: mock(async ({ contents }: { contents: string }) => {
-        if (geminiFailures > 0) {
-          geminiFailures--;
-          throw new Error('timeout');
-        }
-        return {
-          embeddings: contents === 'missing' ? [] : [{ values: [0, 3, 4] }],
-        };
-      }),
-    };
-
-    constructor(_config: { apiKey: string }) {}
-  },
-}));
-
 describe('createEmbeddingProvider', () => {
   beforeEach(() => {
+    mock.module('openai', () => {
+      class OpenAI {
+        baseURL = '';
+        embeddings = {
+          create: mock(async ({ input }: { input: string | string[] }) => {
+            if (openAIError) throw openAIError;
+            const one = { embedding: [3, 4, 0] };
+            const many = Array.isArray(input) ? input.map(() => one) : [one];
+            return { data: many };
+          }),
+        };
+
+        constructor(_config: { apiKey: string }) {}
+      }
+
+      return { default: OpenAI };
+    });
+
+    mock.module('@google/genai', () => ({
+      GoogleGenAI: class {
+        models = {
+          embedContent: mock(async ({ contents }: { contents: string }) => {
+            if (geminiFailures > 0) {
+              geminiFailures--;
+              throw new Error('timeout');
+            }
+            return {
+              embeddings: contents === 'missing' ? [] : [{ values: [0, 3, 4] }],
+            };
+          }),
+        };
+
+        constructor(_config: { apiKey: string }) {}
+      },
+    }));
+
     process.env.AI_PROVIDER = 'mock';
     delete process.env.GEMINI_API_KEY;
     delete process.env.OPENAI_API_KEY;
@@ -50,6 +50,10 @@ describe('createEmbeddingProvider', () => {
     delete process.env.GEMINI_EMBEDDING_MODEL;
     openAIError = null;
     geminiFailures = 0;
+  });
+
+  afterEach(() => {
+    mock.restore();
   });
 
   it('creates deterministic mock embeddings and caches provider', async () => {

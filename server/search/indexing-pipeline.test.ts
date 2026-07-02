@@ -1,4 +1,19 @@
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterAll, afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
+import * as lruModule from '../cache/lru';
+import * as loggerModule from '../utils/logger';
+
+function cosineSimilarity(a: Float32Array, b: Float32Array): number {
+  if (a.length !== b.length) return 0;
+  let dot = 0, magA = 0, magB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    magA += a[i] * a[i];
+    magB += b[i] * b[i];
+  }
+  const denom = Math.sqrt(magA) * Math.sqrt(magB);
+  if (denom === 0) return 0;
+  return Math.max(0, Math.min(1, dot / denom));
+}
 
 const vectorStore = {
   chunks: [] as any[],
@@ -12,6 +27,14 @@ const vectorStore = {
   }),
   getChunkCount: mock((repoKey: string) => vectorStore.chunks.filter((chunk) => chunk.metadata.repoKey === repoKey).length),
   hasIndex: mock(() => vectorStore.hasIndexValue || vectorStore.chunks.length > 0),
+  search: mock((queryVector: Float32Array, repoKey: string, topK: number, minScore: number) => {
+    return vectorStore.chunks
+      .filter((c) => c.metadata.repoKey === repoKey)
+      .map((c) => ({ chunk: c.metadata, score: cosineSimilarity(queryVector, c.vector) }))
+      .filter((r) => r.score >= minScore)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topK);
+  }),
 };
 
 let repoInfoSha = 'sha-current';
@@ -42,27 +65,36 @@ const chunkFile = mock((content: string, filePath: string, language: string) => 
 const invalidateSearchCache = mock(() => undefined);
 const logError = mock(() => undefined);
 
-mock.module('./vector-store', () => ({ getVectorStore: () => vectorStore }));
-mock.module('../github/fetch-tree', () => ({ fetchRepoInfo, fetchFlatTree, fetchFileContents }));
-mock.module('./embedding-provider', () => ({ createEmbeddingProvider: async () => ({ embedBatch }) }));
-mock.module('./chunker', () => ({ createChunker: () => ({ chunkFile }) }));
-mock.module('../cache/lru', () => ({ invalidateSearchCache }));
-mock.module('../utils/logger', () => ({ logError }));
-
 const { createIndexingPipeline, getIndexingPipeline } = await import('./indexing-pipeline');
 const { AppError } = await import('../utils/errors');
 
 const options = { owner: 'o', repo: 'r', commitSha: 'sha-current' };
 const key = 'o/r';
 
+function setupModuleMocks() {
+  mock.module('./vector-store', () => ({ getVectorStore: () => vectorStore }));
+  mock.module('../github/fetch-tree', () => ({ fetchRepoInfo, fetchFlatTree, fetchFileContents }));
+  mock.module('./embedding-provider', () => ({
+    createEmbeddingProvider: async () => ({
+      embed: async (text: string) => ({ vector: new Float32Array([1, 0]), tokenCount: 1 }),
+      embedBatch,
+    }),
+  }));
+  mock.module('./chunker', () => ({ createChunker: () => ({ chunkFile }) }));
+  mock.module('../cache/lru', () => ({ ...lruModule, invalidateSearchCache }));
+  mock.module('../utils/logger', () => ({ ...loggerModule, logError }));
+}
+
 beforeEach(() => {
   mock.restore();
+  setupModuleMocks();
   for (const fn of [
     vectorStore.addChunks,
     vectorStore.removeByRepo,
     vectorStore.removeByFile,
     vectorStore.getChunkCount,
     vectorStore.hasIndex,
+    vectorStore.search,
     fetchRepoInfo,
     fetchFlatTree,
     fetchFileContents,
@@ -94,6 +126,14 @@ beforeEach(() => {
   fetchFileContentsError = false;
   embedBatchError = false;
   chunkFileResult = null;
+});
+
+afterEach(() => {
+  mock.restore();
+});
+
+afterAll(() => {
+  mock.module('../utils/logger', () => ({ ...loggerModule }));
 });
 
 describe('indexing pipeline', () => {

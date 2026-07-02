@@ -19,7 +19,6 @@ interface VizState {
   aiSidebarOpen: boolean;
   inspectorOpen: boolean;
   focusedFilePath: string | null;
-  onboardingStep: number;
   toastMessage: string | null;
   theme: "dark" | "light";
   selectedBranch: string | null;
@@ -32,11 +31,6 @@ interface VizState {
   activeRepoKey: string | null;
 
   // Interactive upgrades
-  hoveredNodeId: string | null;
-  hoveredConnectedIds: Set<string>;
-  executionFlowActive: boolean;
-  executionFlowStep: number;
-  executionFlowPaths: string[];
   activeFocusLayer: "all" | "api" | "ui" | "core" | "config";
   diffStatusFilters: Set<"added" | "modified" | "deleted">;
   blastRadiusActive: boolean;
@@ -82,17 +76,11 @@ interface VizState {
   setAiSidebarOpen: (open: boolean) => void;
   setInspectorOpen: (open: boolean) => void;
   setFocusedFilePath: (path: string | null) => void;
-  setOnboardingStep: (step: number) => void;
   setTheme: (theme: "dark" | "light") => void;
   toggleTheme: () => void;
   setZoom: (zoom: number) => void;
   setVisibleCounts: (nodes: number, edges: number) => void;
 
-  setHoveredNodeId: (id: string | null) => void;
-  setHoveredConnectedIds: (ids: Set<string>) => void;
-  setExecutionFlowActive: (active: boolean) => void;
-  setExecutionFlowStep: (step: number) => void;
-  setExecutionFlowPaths: (paths: string[]) => void;
   setActiveFocusLayer: (
     layer: "all" | "api" | "ui" | "core" | "config",
   ) => void;
@@ -131,7 +119,6 @@ export const useVizStore = create<VizState>()(
       aiSidebarOpen: true,
       inspectorOpen: false,
       focusedFilePath: null,
-      onboardingStep: 0,
       zoom: 1.0,
       visibleNodeCount: 0,
       visibleEdgeCount: 0,
@@ -143,11 +130,6 @@ export const useVizStore = create<VizState>()(
       activeView: "graph",
       activeRepoKey: null,
 
-  hoveredNodeId: null,
-  hoveredConnectedIds: new Set(),
-  executionFlowActive: false,
-  executionFlowStep: 0,
-  executionFlowPaths: [],
   activeFocusLayer: "all",
   diffStatusFilters: new Set(),
   blastRadiusActive: false,
@@ -224,7 +206,6 @@ export const useVizStore = create<VizState>()(
   setAiSidebarOpen: (aiSidebarOpen: boolean) => set({ aiSidebarOpen }),
   setInspectorOpen: (inspectorOpen: boolean) => set({ inspectorOpen }),
   setFocusedFilePath: (focusedFilePath: string | null) => set({ focusedFilePath }),
-  setOnboardingStep: (onboardingStep: number) => set({ onboardingStep }),
   setZoom: (zoom: number) => set({ zoom }),
   setVisibleCounts: (visibleNodeCount: number, visibleEdgeCount: number) => set({ visibleNodeCount, visibleEdgeCount }),
   setTheme: (theme: "dark" | "light") => {
@@ -239,11 +220,6 @@ export const useVizStore = create<VizState>()(
       return { theme: nextTheme };
     }),
 
-  setHoveredNodeId: (hoveredNodeId: string | null) => set({ hoveredNodeId }),
-  setHoveredConnectedIds: (hoveredConnectedIds: Set<string>) => set({ hoveredConnectedIds }),
-  setExecutionFlowActive: (executionFlowActive: boolean) => set({ executionFlowActive }),
-  setExecutionFlowStep: (executionFlowStep: number) => set({ executionFlowStep }),
-  setExecutionFlowPaths: (executionFlowPaths: string[]) => set({ executionFlowPaths }),
   setActiveFocusLayer: (activeFocusLayer: "all" | "api" | "ui" | "core" | "config") => set({ activeFocusLayer }),
   setActiveView: (activeView: "graph" | "architecture" | "contributors" | "commits") => set({ activeView }),
   setBlastRadiusActive: (blastRadiusActive: boolean) => set({ blastRadiusActive }),
@@ -286,7 +262,6 @@ export const useVizStore = create<VizState>()(
       aiSidebarOpen: true,
       inspectorOpen: false,
       focusedFilePath: null,
-       onboardingStep: 0,
       zoom: 1.0,
       visibleNodeCount: 0,
       visibleEdgeCount: 0,
@@ -294,11 +269,6 @@ export const useVizStore = create<VizState>()(
       selectedBranch: null,
       compareBranch: null,
       availableBranches: [],
-      hoveredNodeId: null,
-      hoveredConnectedIds: new Set(),
-      executionFlowActive: false,
-      executionFlowStep: 0,
-      executionFlowPaths: [],
       activeFocusLayer: "all",
       diffStatusFilters: new Set(),
       activeView: "graph",

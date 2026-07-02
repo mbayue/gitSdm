@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import { getTotalCommits } from './getRepoStats';
 import { VIEW_TABS } from './viewTabs';
 import { useRepoBranches } from '@/hooks/useRepoBranches';
+import { copyToClipboard } from '@/lib/clipboard';
 
 const LAYOUT_MODES = [
   { id: 'full', label: 'Full Workspace', icon: LayoutPanelLeft },
@@ -100,23 +101,12 @@ export function HeaderActionMenu({ owner, repo, analysis, meta: propsMeta, onSea
   const handleShare = async () => {
     try {
       const url = window.location.href;
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(url);
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = url;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-      }
+      await copyToClipboard(url);
       setCopied(true);
       setToastMessage(url);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy link: ', err);
+      setToastMessage('Failed to copy link: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 

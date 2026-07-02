@@ -3,6 +3,8 @@ import { toPng } from 'html-to-image';
 import { generateProgrammaticMermaid } from '../mermaid-generator';
 import type { RepoAnalysis } from '@/types';
 import { stripMermaidFences } from '../stripMermaidFences';
+import { copyToClipboard } from '@/lib/clipboard';
+import { useVizStore } from '@/stores/vizStore';
 
 export function useArchitectureExport(
   analysis: RepoAnalysis,
@@ -15,6 +17,7 @@ export function useArchitectureExport(
   const [copiedSvg, setCopiedSvg] = useState(false);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const copiedSvgTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const setToastMessage = useVizStore((s) => s.setToastMessage);
 
   useEffect(() => {
     return () => {
@@ -30,23 +33,12 @@ export function useArchitectureExport(
     rawCode = stripMermaidFences(rawCode);
 
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(rawCode);
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = rawCode;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-      }
+      await copyToClipboard(rawCode);
       setCopied(true);
       if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
       copiedTimerRef.current = setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error(err);
+      setToastMessage('Failed to copy code: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -56,23 +48,12 @@ export function useArchitectureExport(
     if (!svgEl) return;
     try {
       const svgData = new XMLSerializer().serializeToString(svgEl);
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(svgData);
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = svgData;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-      }
+      await copyToClipboard(svgData);
       setCopiedSvg(true);
       if (copiedSvgTimerRef.current) clearTimeout(copiedSvgTimerRef.current);
       copiedSvgTimerRef.current = setTimeout(() => setCopiedSvg(false), 2000);
     } catch (err) {
-      console.error(err);
+      setToastMessage('Failed to copy SVG: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -92,7 +73,7 @@ export function useArchitectureExport(
       document.body.removeChild(link);
       setTimeout(() => URL.revokeObjectURL(svgUrl), 100);
     } catch (err) {
-      console.error('Download failed', err);
+      setToastMessage('Download failed: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -113,7 +94,7 @@ export function useArchitectureExport(
       link.click();
       document.body.removeChild(link);
     } catch (err) {
-      console.error('Download PNG failed', err);
+      setToastMessage('Download PNG failed: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 

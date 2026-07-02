@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { createQAEngine, getQAEngine } from './qa-engine';
 import { clearAllCaches } from '../cache/lru';
 import { getVectorStore } from './vector-store';
@@ -38,6 +38,10 @@ describe('createQAEngine', () => {
     clearAllCaches();
     getVectorStore().removeByRepo(repoKey);
     process.env.AI_PROVIDER = 'mock';
+  });
+
+  afterAll(() => {
+    mock.restore();
   });
 
   const qa = createQAEngine();

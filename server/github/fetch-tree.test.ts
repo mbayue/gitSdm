@@ -1,4 +1,5 @@
-import { describe, expect, it, mock, beforeEach } from 'bun:test';
+import { afterAll, afterEach, describe, expect, it, mock, beforeEach } from 'bun:test';
+import * as mockDataModule from './mock-data';
 import {
   fetchRepoBranches,
   fetchRepoInfo,
@@ -8,6 +9,7 @@ import {
   fetchFileContents,
   fetchContributors,
   fetchTimeline,
+  fetchTotalCommits,
 } from './fetch-tree';
 
 const mockListBranches = mock(async () => ({ data: [{ name: 'main', protected: true }] }));
@@ -67,37 +69,37 @@ const mockListCommits = mock(async () => ({
   ],
 }));
 
-mock.module('./client', () => ({
-  getOctokit: () => ({
-    repos: {
-      listBranches: mockListBranches,
-      get: mockGetRepo,
-      getBranch: mockGetBranch,
-      getContent: mockGetContent,
-      listContributors: mockListContributors,
-      listCommits: mockListCommits,
-    },
-    git: {
-      getTree: mockGetTree,
-    },
-  }),
-  handleOctokitError: (err: any) => {
-    throw err;
-  },
-}));
-
-mock.module('./mock-data', () => ({
-  isMockRepo: (owner: string) => owner === 'mock-owner',
-  fetchMockRepoBranches: async () => [{ name: 'mock-main', protected: true }],
-  fetchMockRepoInfo: async () => ({ sha: 'mock-sha' } as any),
-  fetchMockFlatTree: async () => ({ items: [], truncated: false, totalFiles: 0 }),
-  fetchMockFileContents: async () => ({}),
-  fetchMockContributors: async () => [],
-  fetchMockTimeline: async () => [],
-}));
-
 describe('github/fetch-tree', () => {
   beforeEach(() => {
+    mock.module('./client', () => ({
+      getOctokit: () => ({
+        repos: {
+          listBranches: mockListBranches,
+          get: mockGetRepo,
+          getBranch: mockGetBranch,
+          getContent: mockGetContent,
+          listContributors: mockListContributors,
+          listCommits: mockListCommits,
+        },
+        git: {
+          getTree: mockGetTree,
+        },
+      }),
+      handleOctokitError: (err: any) => {
+        throw err;
+      },
+    }));
+
+    mock.module('./mock-data', () => ({
+      isMockRepo: (owner: string) => owner === 'mock-owner',
+      fetchMockRepoBranches: async () => [{ name: 'mock-main', protected: true }],
+      fetchMockRepoInfo: async () => ({ sha: 'mock-sha' } as any),
+      fetchMockFlatTree: async () => ({ items: [], truncated: false, totalFiles: 0 }),
+      fetchMockFileContents: async () => ({}),
+      fetchMockContributors: async () => [],
+      fetchMockTimeline: async () => [],
+    }));
+
     mockListBranches.mockClear();
     mockGetRepo.mockClear();
     mockGetBranch.mockClear();
@@ -105,6 +107,14 @@ describe('github/fetch-tree', () => {
     mockGetContent.mockClear();
     mockListContributors.mockClear();
     mockListCommits.mockClear();
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  afterAll(() => {
+    mock.module('./mock-data', () => ({ ...mockDataModule }));
   });
 
   it('fetchRepoBranches: handles mock and real repo successfully, handles catch', async () => {
@@ -342,5 +352,50 @@ describe('github/fetch-tree', () => {
 
   it('buildTreeFromPaths: handles empty input', () => {
     expect(buildTreeFromPaths([])).toEqual([]);
+  });
+
+  describe('fetchTotalCommits', () => {
+    it('handles mock repositories', async () => {
+      // Mock mock-data fetchMockContributors
+      const mockContributors = [{ contributions: 10 }, { contributions: 20 }] as any;
+      mock.module('./mock-data', () => ({
+        isMockRepo: (owner: string) => owner === 'mock-owner',
+        fetchMockContributors: async () => mockContributors,
+      }));
+
+      const res = await fetchTotalCommits('mock-owner', 'repo');
+      expect(res).toBe(30);
+    });
+
+    it('parses link header for last page on real repository', async () => {
+      mockListCommits.mockImplementationOnce(async () => ({
+        data: [{ sha: 'c1' }],
+        headers: {
+          link: '<https://api.github.com/repositories/123/commits?per_page=1&page=2>; rel="next", <https://api.github.com/repositories/123/commits?per_page=1&page=99>; rel="last"',
+        },
+      } as any));
+
+      const res = await fetchTotalCommits('real-owner', 'repo');
+      expect(res).toBe(99);
+    });
+
+    it('returns data length if link header is missing on real repository', async () => {
+      mockListCommits.mockImplementationOnce(async () => ({
+        data: [{ sha: 'c1' }, { sha: 'c2' }],
+        headers: {},
+      } as any));
+
+      const res = await fetchTotalCommits('real-owner', 'repo');
+      expect(res).toBe(2);
+    });
+
+    it('returns 0 on api error', async () => {
+      mockListCommits.mockImplementationOnce(async () => {
+        throw new Error('Github rate limit');
+      });
+
+      const res = await fetchTotalCommits('real-owner', 'repo');
+      expect(res).toBe(0);
+    });
   });
 });

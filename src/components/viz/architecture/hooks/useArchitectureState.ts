@@ -4,6 +4,7 @@ import type { RepoAnalysis } from '@/types';
 import { generateProgrammaticMermaid } from '../mermaid-generator';
 import mermaid from '../mermaid-config';
 import { stripMermaidFences } from '../stripMermaidFences';
+import { useVizStore } from '@/stores/vizStore';
 
 export function useArchitectureState(
   analysis: RepoAnalysis,
@@ -60,8 +61,9 @@ export function useArchitectureState(
         }
       })
       .catch((err) => {
-        console.error('Failed to parse mermaid syntax:', err);
         if (active) {
+          const setToastMessage = useVizStore.getState().setToastMessage;
+          setToastMessage('Failed to render diagram: ' + (err instanceof Error ? err.message : String(err)));
           setRenderError('Failed to layout flowchart. This can happen with complex circular dependencies.');
         }
         const badEl = document.getElementById(id);

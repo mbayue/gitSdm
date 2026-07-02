@@ -6,6 +6,7 @@ import type {
   ForceGraphNode,
   ForceGraphLink,
 } from "./force/forceGraphConstants";
+import { useVizStore } from "@/stores/vizStore";
 
 type ExportFormat = "png" | "pdf";
 
@@ -168,7 +169,8 @@ export function useGraphExport(options: GraphExportOptions) {
           await handleForceExport(format, options);
         }
       } catch (err) {
-        console.error("Failed to export graph:", err);
+        const setToastMessage = useVizStore.getState().setToastMessage;
+        setToastMessage("Failed to export graph: " + (err instanceof Error ? err.message : String(err)));
       } finally {
         setIsExporting(false);
         setExportFormat(null);

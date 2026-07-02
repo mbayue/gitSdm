@@ -79,3 +79,35 @@ test('computeBlastRadius keeps non-file folder without path to itself', () => {
 
   expect([...ids]).toEqual(['folder:empty']);
 });
+
+test('getForceLinkColor target diffStatus and string source matches', () => {
+  // target status is deleted
+  expect(getForceLinkColor({ source: 'a', target: { id: 'b', diffStatus: 'deleted' } } as ForceGraphLink, null, false, new Set(), 'main')).toBe('rgba(239,68,68,0.45)');
+  // target status is added
+  expect(getForceLinkColor({ source: 'a', target: { id: 'b', diffStatus: 'added' } } as ForceGraphLink, null, false, new Set(), 'main')).toBe('rgba(34,197,94,0.35)');
+  // target status is modified
+  expect(getForceLinkColor({ source: 'a', target: { id: 'b', diffStatus: 'modified' } } as ForceGraphLink, null, false, new Set(), 'main')).toBe('rgba(245,158,11,0.35)');
+  // string source match selectedId fallback color
+  expect(getForceLinkColor({ source: 'a', target: 'b' } as ForceGraphLink, 'a', false, new Set(), null)).toBe('rgba(255,255,255,0.8)');
+  // compareBranch is truthy but no diffStatus -> fallback color
+  expect(getForceLinkColor({ source: 'a', target: 'b' } as ForceGraphLink, null, false, new Set(), 'main')).toBe('rgba(180,190,220,0.35)');
+});
+
+test('computeBlastRadius handles multiple dependents', () => {
+  const ids = computeBlastRadius(
+    'file:core.ts',
+    [
+      { source: 'file:a.ts', target: 'file:core.ts', type: 'imports' },
+      { source: 'file:b.ts', target: 'file:core.ts', type: 'imports' },
+    ],
+  );
+  expect([...ids].sort()).toEqual(['file:a.ts', 'file:b.ts', 'file:core.ts']);
+});
+
+test('getBlastRadiusSeedIds returns empty for non-folder non-file types', () => {
+  const ids = getBlastRadiusSeedIds(
+    'custom-node',
+    [{ id: 'custom-node', type: 'other' as any, data: {} }],
+  );
+  expect(ids).toEqual([]);
+});

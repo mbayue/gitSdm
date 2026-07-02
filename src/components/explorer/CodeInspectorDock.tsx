@@ -5,6 +5,7 @@ import { fetchRepoFile } from '@/lib/apiClient';
 import { HighlightedCode, CodePlaceholder } from '@/components/ui/SyntaxHighlighter';
 import { useVizStore } from '@/stores/vizStore';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { copyToClipboard } from '@/lib/clipboard';
 
 interface CodeInspectorDockProps {
   state: 'peek' | 'expanded';
@@ -43,12 +44,12 @@ export function CodeInspectorDock({ state, setState, filePath, owner, repo }: Co
   // Copy code action
   const handleCopyCode = async () => {
     try {
-      await navigator.clipboard.writeText(data?.content ?? displayContent);
+      await copyToClipboard(data?.content ?? displayContent);
       setCopied(true);
       setToastMessage('Copied code to clipboard');
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy code: ', err);
+      setToastMessage('Failed to copy code: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 

@@ -188,4 +188,41 @@ describe('buildGraph', () => {
     expect(graph.edges.some((edge) => edge.source === 'package:packages/a' && edge.target === 'package:packages/b' && edge.type === 'depends_on')).toBe(false);
     expect(graph.edges.some((edge) => edge.source === 'package:packages/b' && edge.target === 'package:packages/a' && edge.type === 'depends_on')).toBe(false);
   });
+
+  it('handles packageLabel fallbacks when name is missing', () => {
+    const graph = buildGraph({
+      owner: 'test',
+      repo: 'app',
+      tree: [],
+      dependencies: [],
+      contributors: [],
+      workspacePackages: [
+        { ecosystem: 'javascript', manager: 'pnpm', rootPath: '', manifestPath: 'package.json' },
+        { ecosystem: 'javascript', manager: 'pnpm', rootPath: 'packages/c', manifestPath: 'packages/c/package.json' },
+      ],
+    });
+
+    const rootNode = graph.nodes.find((n) => n.id === 'package:.');
+    expect(rootNode?.data.label).toBe('app'); // Fallback to repo name
+
+    const cNode = graph.nodes.find((n) => n.id === 'package:packages/c');
+    expect(cNode?.data.label).toBe('c'); // Fallback to last segment of rootPath
+  });
+
+  it('respects maxFiles limit and skips files', () => {
+    const graph = buildGraph({
+      owner: 'test',
+      repo: 'app',
+      tree: [
+        { path: 'src/index.ts', name: 'index.ts', type: 'file' },
+        { path: 'src/utils.ts', name: 'utils.ts', type: 'file' },
+      ],
+      dependencies: [],
+      contributors: [],
+      limits: { maxFiles: 1 },
+    });
+
+    const fileNodes = graph.nodes.filter((n) => n.type === 'file');
+    expect(fileNodes.length).toBe(1);
+  });
 });

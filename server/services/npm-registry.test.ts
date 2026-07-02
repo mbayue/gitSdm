@@ -57,8 +57,20 @@ describe('services/npm-registry', () => {
         return new Response(JSON.stringify({ name: 'bad-shape' }), { status: 200 });
       }
 
+      if (url.includes('primitive-shape')) {
+        return new Response(JSON.stringify('primitive'), { status: 200 });
+      }
+
       if (url.includes('bad-json')) {
         return new Response('{', { status: 200 });
+      }
+
+      if (url.includes('server-error')) {
+        return new Response('internal error', { status: 500 });
+      }
+
+      if (url.includes('empty-latest')) {
+        return new Response(JSON.stringify({ name: 'empty-latest', 'dist-tags': { latest: '' } }), { status: 200 });
       }
 
       throw new TypeError('network down');
@@ -69,13 +81,25 @@ describe('services/npm-registry', () => {
       kind: 'missing-latest',
       packageName: 'missing-latest',
     }));
+    await expect(fetchNpmDependencyMetadata('empty-latest')).resolves.toEqual(expect.objectContaining({
+      kind: 'missing-latest',
+      packageName: 'empty-latest',
+    }));
     await expect(fetchNpmDependencyMetadata('not-found')).resolves.toEqual(expect.objectContaining({
       kind: 'not-found',
       packageName: 'not-found',
     }));
+    await expect(fetchNpmDependencyMetadata('server-error')).resolves.toEqual(expect.objectContaining({
+      kind: 'invalid-json',
+      packageName: 'server-error',
+    }));
     await expect(fetchNpmDependencyMetadata('bad-shape')).resolves.toEqual(expect.objectContaining({
       kind: 'invalid-shape',
       packageName: 'bad-shape',
+    }));
+    await expect(fetchNpmDependencyMetadata('primitive-shape')).resolves.toEqual(expect.objectContaining({
+      kind: 'invalid-shape',
+      packageName: 'primitive-shape',
     }));
     await expect(fetchNpmDependencyMetadata('bad-json')).resolves.toEqual(expect.objectContaining({
       kind: 'invalid-json',
@@ -136,5 +160,141 @@ describe('services/npm-registry', () => {
       license: 'MIT',
       checkedAt: meta.checkedAt,
     });
+  });
+
+  it('handles buildDependencyHealthMetadata unknown status when version cannot be normalized', async () => {
+    const fetchMock = mock(async () => new Response(JSON.stringify({
+      'dist-tags': { latest: 'invalid-latest' },
+      license: 'MIT',
+    }), { status: 200 }));
+    globalThis.fetch = fetchMock as typeof fetch;
+
+    // Use empty string to force normalizeVersion to return undefined
+    const meta = await fetchNpmDependencyMetadata('test-pkg-normalization', '');
+    expect(meta).toEqual({
+      status: 'unknown',
+      latestVersion: 'invalid-latest',
+      license: 'MIT',
+      checkedAt: meta.checkedAt,
+    });
+
+    // Use undefined currentVersion to cover line 176
+    const meta2 = await fetchNpmDependencyMetadata('test-pkg-normalization-undef', undefined);
+    expect(meta2.status).toBe('unknown');
+    expect(meta2.currentVersion).toBeUndefined();
+  });
+
+  it('handles workspace/file/link local dependencies directly without fetching', async () => {
+    const meta = await fetchNpmDependencyMetadata('local-dep', 'workspace:*');
+    expect(meta.status).toBe('current');
+    expect(meta.latestVersion).toBe('workspace:*');
+  });
+
+  it('handles extractLicense returning undefined for invalid license structure', async () => {
+    const fetchMock = mock(async () => new Response(JSON.stringify({
+      'dist-tags': { latest: '1.0.0' },
+      license: { foo: 'bar' }, // invalid shape
+    }), { status: 200 }));
+    globalThis.fetch = fetchMock as typeof fetch;
+
+    const meta = await fetchNpmDependencyMetadata('test-pkg-license', '1.0.0');
+    expect(meta.license).toBeUndefined();
+  });
+
+  it('handles compareVersions numeric and mixed pre-release comparisons', async () => {
+    // case lpIsNum && rpIsNum (alpha.1 vs alpha.2 -> outdated)
+    const fetchMock1 = mock(async () => new Response(JSON.stringify({
+      'dist-tags': { latest: '1.0.0-alpha.2' },
+    }), { status: 200 }));
+    globalThis.fetch = fetchMock1 as typeof fetch;
+    const meta1 = await fetchNpmDependencyMetadata('test-pkg-pre1', '1.0.0-alpha.1');
+    expect(meta1.status).toBe('outdated');
+
+    // case lpIsNum && !rpIsNum (alpha.1 vs alpha.beta -> outdated since numbers are older/less than non-numbers)
+    const fetchMock2 = mock(async () => new Response(JSON.stringify({
+      'dist-tags': { latest: '1.0.0-alpha.beta' },
+    }), { status: 200 }));
+    globalThis.fetch = fetchMock2 as typeof fetch;
+    const meta2 = await fetchNpmDependencyMetadata('test-pkg-pre2', '1.0.0-alpha.1');
+    expect(meta2.status).toBe('outdated');
+
+    // case lpIsNum && rpIsNum with diff === 0 (alpha.1 vs alpha.1 -> current)
+    const fetchMock3 = mock(async () => new Response(JSON.stringify({
+      'dist-tags': { latest: '1.0.0-alpha.1' },
+    }), { status: 200 }));
+    globalThis.fetch = fetchMock3 as typeof fetch;
+    const meta3 = await fetchNpmDependencyMetadata('test-pkg-pre3', '1.0.0-alpha.1');
+    expect(meta3.status).toBe('current');
+
+    // case lp === undefined && rp !== undefined (alpha vs alpha.1 -> outdated)
+    const fetchMock4 = mock(async () => new Response(JSON.stringify({
+      'dist-tags': { latest: '1.0.0-alpha.1' },
+    }), { status: 200 }));
+    globalThis.fetch = fetchMock4 as typeof fetch;
+    const meta4 = await fetchNpmDependencyMetadata('test-pkg-pre4', '1.0.0-alpha');
+    expect(meta4.status).toBe('outdated');
+
+    // case lp !== undefined && rp === undefined (alpha.1 vs alpha -> current)
+    const fetchMock5 = mock(async () => new Response(JSON.stringify({
+      'dist-tags': { latest: '1.0.0-alpha' },
+    }), { status: 200 }));
+    globalThis.fetch = fetchMock5 as typeof fetch;
+    const meta5 = await fetchNpmDependencyMetadata('test-pkg-pre5', '1.0.0-alpha.1');
+    expect(meta5.status).toBe('current');
+
+    // case different release parts lengths (1 vs 1.0.1 -> outdated)
+    const fetchMock6 = mock(async () => new Response(JSON.stringify({
+      'dist-tags': { latest: '1.0.1' },
+    }), { status: 200 }));
+    globalThis.fetch = fetchMock6 as typeof fetch;
+    const meta6 = await fetchNpmDependencyMetadata('test-pkg-pre6', '1');
+    expect(meta6.status).toBe('outdated');
+
+    // case different release parts lengths reverse (1.0.1 vs 1 -> current)
+    const fetchMock8 = mock(async () => new Response(JSON.stringify({
+      'dist-tags': { latest: '1' },
+    }), { status: 200 }));
+    globalThis.fetch = fetchMock8 as typeof fetch;
+    const meta8 = await fetchNpmDependencyMetadata('test-pkg-pre8', '1.0.1');
+    expect(meta8.status).toBe('current');
+
+    // case non-numeric release part (abc vs 1.0.0 -> outdated since abc maps to 0.0.0)
+    const fetchMock7 = mock(async () => new Response(JSON.stringify({
+      'dist-tags': { latest: '1.0.0' },
+    }), { status: 200 }));
+    globalThis.fetch = fetchMock7 as typeof fetch;
+    const meta7 = await fetchNpmDependencyMetadata('test-pkg-pre7', 'abc');
+    expect(meta7.status).toBe('outdated');
+
+    // case !lpIsNum && rpIsNum (alpha.beta vs alpha.1 -> current)
+    const fetchMock9 = mock(async () => new Response(JSON.stringify({
+      'dist-tags': { latest: '1.0.0-alpha.1' },
+    }), { status: 200 }));
+    globalThis.fetch = fetchMock9 as typeof fetch;
+    const meta9 = await fetchNpmDependencyMetadata('test-pkg-pre9', '1.0.0-alpha.beta');
+    expect(meta9.status).toBe('current');
+  });
+
+  it('handles null registry payload and empty batch input', async () => {
+    const fetchMock = mock(async () => new Response('null', { status: 200 }));
+    globalThis.fetch = fetchMock as typeof fetch;
+
+    const meta = await fetchNpmDependencyMetadata('test-pkg-null', '1.0.0');
+    expect(meta).toEqual(expect.objectContaining({
+      kind: 'invalid-shape',
+    }));
+
+    const batchRes = await fetchNpmDependencyMetadataBatch([]);
+    expect(batchRes).toEqual({});
+
+    const fetchMock2 = mock(async () => new Response(JSON.stringify({
+      'dist-tags': { latest: '1.0.0' },
+    }), { status: 200 }));
+    globalThis.fetch = fetchMock2 as typeof fetch;
+
+    const batchRes2 = await fetchNpmDependencyMetadataBatch([
+      { ecosystem: 'npm', name: 'pkg-no-ver', type: 'prod' },
+    ]);
+    expect(batchRes2).toHaveProperty('npm:pkg-no-ver::prod');
   });
 });

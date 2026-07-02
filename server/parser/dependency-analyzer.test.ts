@@ -171,4 +171,38 @@ describe('dependency-analyzer', () => {
     const deps = analyzeDependencies({});
     expect(deps).toEqual([]);
   });
+
+  it('handles negative workspace package globs', () => {
+    const fileContents = {
+      'package.json': JSON.stringify({ name: 'root', workspaces: ['packages/*', '!packages/excluded'] }),
+      'packages/a/package.json': JSON.stringify({ name: 'a' }),
+      'packages/excluded/package.json': JSON.stringify({ name: 'excluded' }),
+    };
+
+    const packages = analyzeWorkspacePackages(fileContents);
+    expect(packages.map(p => p.name)).toEqual(['root', 'a']);
+  });
+
+  it('detects multiple workspace manifests and sorts them', () => {
+    const fileContents = {
+      'package.json': JSON.stringify({ name: 'root', workspaces: ['packages/*'] }),
+      'pnpm-workspace.yaml': 'packages:\n  - "apps/*"\n',
+      'packages/core/package.json': JSON.stringify({ name: '@repo/core' }),
+      'apps/web/package.json': JSON.stringify({ name: '@repo/web' }),
+    };
+
+    const packages = analyzeWorkspacePackages(fileContents);
+    const names = packages.map((p) => p.name);
+    expect(names).toContain('root');
+    // npm workspace (packages/*) match
+    expect(names).toContain('@repo/core');
+    const coreEntry = packages.find((p) => p.name === '@repo/core');
+    expect(coreEntry?.manager).toBeDefined();
+    expect(coreEntry?.rootPath).toBe('packages/core');
+    // pnpm workspace (apps/*) match
+    expect(names).toContain('@repo/web');
+    const webEntry = packages.find((p) => p.name === '@repo/web');
+    expect(webEntry?.manager).toBeDefined();
+    expect(webEntry?.rootPath).toBe('apps/web');
+  });
 });

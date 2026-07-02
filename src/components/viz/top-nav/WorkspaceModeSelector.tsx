@@ -96,8 +96,8 @@ export function WorkspaceModeSelector() {
     <DropdownMenu>
       <DropdownMenuTrigger className="group flex items-center gap-1.5 h-7 pl-2 pr-1.5 rounded-md text-xs font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/80 transition-all duration-200 select-none outline-none cursor-pointer">
         <currentMode.icon className="h-3.5 w-3.5 shrink-0 transition-colors text-[#8b949e] group-hover:text-[#e6edf3]" />
-        {/* On tablet/desktop show label, on mobile show compact */}
-        <span className="hidden sm:inline font-sans truncate max-w-[110px]">{currentMode.label}</span>
+        {/* Show label on lg+, icon-only on tablet */}
+        <span className="hidden lg:inline font-sans truncate max-w-[110px]">{currentMode.label}</span>
         <ChevronDown className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
       </DropdownMenuTrigger>
       

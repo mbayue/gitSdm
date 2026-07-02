@@ -1,4 +1,4 @@
-import { describe, expect, it, mock, beforeEach } from 'bun:test';
+import { afterEach, describe, expect, it, mock, beforeEach } from 'bun:test';
 import { fetchTrending } from './trending';
 
 const mockSearchRepos = mock(async () => ({
@@ -17,20 +17,23 @@ const mockSearchRepos = mock(async () => ({
   },
 }));
 
-mock.module('../github/client', () => ({
-  getOctokit: () => ({
-    search: {
-      repos: mockSearchRepos,
-    },
-  }),
-  handleOctokitError: (err: any) => {
-    throw err;
-  },
-}));
-
 describe('services/trending', () => {
   beforeEach(() => {
+    mock.module('../github/client', () => ({
+      getOctokit: () => ({
+        search: {
+          repos: mockSearchRepos,
+        },
+      }),
+      handleOctokitError: (err: any) => {
+        throw err;
+      },
+    }));
     mockSearchRepos.mockClear();
+  });
+
+  afterEach(() => {
+    mock.restore();
   });
 
   it('fetches and maps trending repositories successfully', async () => {

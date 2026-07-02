@@ -1,46 +1,46 @@
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { createProvider, getAIProvider } from './provider';
-
-mock.module('@google/genai', () => ({
-  GoogleGenAI: class {
-    models = {
-      generateContent: mock(async () => ({ text: '{"ok":"gemini"}' })),
-    };
-
-    constructor(_config: { apiKey: string; apiVersion?: string }) {}
-  },
-}));
-
-mock.module('openai', () => {
-  class OpenAI {
-    baseURL = '';
-    chat = {
-      completions: {
-        create: mock(async () => ({ choices: [{ message: { content: '{"ok":"openai"}' } }] })),
-      },
-    };
-
-    constructor(_config: { apiKey: string }) {}
-  }
-
-  return { default: OpenAI };
-});
-
-mock.module('@anthropic-ai/sdk', () => {
-  class Anthropic {
-    baseURL = '';
-    messages = {
-      create: mock(async () => ({ content: [{ type: 'text', text: 'anthropic-ok' }] })),
-    };
-
-    constructor(_config: { apiKey: string }) {}
-  }
-
-  return { default: Anthropic };
-});
 
 describe('ai provider', () => {
   beforeEach(() => {
+    mock.module('@google/genai', () => ({
+      GoogleGenAI: class {
+        models = {
+          generateContent: mock(async () => ({ text: '{"ok":"gemini"}' })),
+        };
+
+        constructor(_config: { apiKey: string; apiVersion?: string }) {}
+      },
+    }));
+
+    mock.module('openai', () => {
+      class OpenAI {
+        baseURL = '';
+        chat = {
+          completions: {
+            create: mock(async () => ({ choices: [{ message: { content: '{"ok":"openai"}' } }] })),
+          },
+        };
+
+        constructor(_config: { apiKey: string }) {}
+      }
+
+      return { default: OpenAI };
+    });
+
+    mock.module('@anthropic-ai/sdk', () => {
+      class Anthropic {
+        baseURL = '';
+        messages = {
+          create: mock(async () => ({ content: [{ type: 'text', text: 'anthropic-ok' }] })),
+        };
+
+        constructor(_config: { apiKey: string }) {}
+      }
+
+      return { default: Anthropic };
+    });
+
     delete process.env.AI_PROVIDER;
     delete process.env.GEMINI_API_KEY;
     delete process.env.OPENAI_API_KEY;
@@ -48,6 +48,10 @@ describe('ai provider', () => {
     delete process.env.GEMINI_MODEL;
     delete process.env.OPENAI_MODEL;
     delete process.env.ANTHROPIC_MODEL;
+  });
+
+  afterEach(() => {
+    mock.restore();
   });
 
   it('auto-detects mock provider and covers canned responses', async () => {
