@@ -30,7 +30,7 @@ describe('utils/errors', () => {
 
   it('maps rate-limit errors', () => {
     expect(toErrorPayload(new Error('429 rate limit'))).toEqual({
-      error: '429 rate limit',
+      error: 'Rate limit exceeded',
       code: 'RATE_LIMIT_EXCEEDED',
       status: 429,
       retryable: true,
@@ -39,15 +39,18 @@ describe('utils/errors', () => {
 
   it('maps private/not-found/404 errors', () => {
     expect(toErrorPayload(new Error('private repo'))).toMatchObject({
+      error: 'Repository not found or private',
       code: 'REPO_INACCESSIBLE',
       status: 404,
       retryable: false,
     });
     expect(toErrorPayload(new Error('not found'))).toMatchObject({
+      error: 'Repository not found or private',
       code: 'REPO_INACCESSIBLE',
       status: 404,
     });
     expect(toErrorPayload(new Error('404'))).toMatchObject({
+      error: 'Repository not found or private',
       code: 'REPO_INACCESSIBLE',
       status: 404,
     });
@@ -55,11 +58,13 @@ describe('utils/errors', () => {
 
   it('maps generic, timeout, network, and non-error payloads', () => {
     expect(toErrorPayload(new Error('timeout'))).toMatchObject({
+      error: 'Internal Server Error',
       code: 'INTERNAL_ERROR',
       status: 500,
       retryable: true,
     });
     expect(toErrorPayload(new Error('network failed'))).toMatchObject({
+      error: 'Internal Server Error',
       code: 'INTERNAL_ERROR',
       status: 500,
       retryable: true,
