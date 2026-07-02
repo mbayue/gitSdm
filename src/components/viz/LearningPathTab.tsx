@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useLearningPath } from '@/features/ai/useAiTasks';
 import { useVizStore } from '@/stores/vizStore';
 import type { RepoAnalysis } from '@/types';
@@ -28,6 +28,14 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
   const lp = useLearningPath(owner, repo, selectedBranch, true, submittedGoal || undefined);
 
   const data = lp.data;
+
+  const nodeById = useMemo(() => {
+    const map = new Map<string, string>();
+    analysis.graph.nodes.forEach(n => {
+      map.set(n.id, n.id);
+    });
+    return map;
+  }, [analysis.graph.nodes]);
 
   const handleRefresh = () => {
     lp.refetch();
@@ -151,27 +159,27 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
             const isActive = selectedNodeId === item.path || selectedNodeId === `file:${item.path}` || selectedNodeId === `folder:${item.path}`;
             return (
             <motion.div
-              key={item.path}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05 }}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  const targetId = analysis.graph.nodes.find(n => n.id === `file:${item.path}` || n.id === `folder:${item.path}` || n.id === item.path)?.id || item.path;
+                key={item.path}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    const targetId = nodeById.get(`file:${item.path}`) || nodeById.get(`folder:${item.path}`) || nodeById.get(item.path) || item.path;
+                    setSelectedNodeId(targetId);
+                    setFocusedFilePath(item.path);
+                    triggerGraphAction('focusGraph');
+                  }
+                }}
+                onClick={() => {
+                  const targetId = nodeById.get(`file:${item.path}`) || nodeById.get(`folder:${item.path}`) || nodeById.get(item.path) || item.path;
                   setSelectedNodeId(targetId);
                   setFocusedFilePath(item.path);
                   triggerGraphAction('focusGraph');
-                }
-              }}
-              onClick={() => {
-                const targetId = analysis.graph.nodes.find(n => n.id === `file:${item.path}` || n.id === `folder:${item.path}` || n.id === item.path)?.id || item.path;
-                setSelectedNodeId(targetId);
-                setFocusedFilePath(item.path);
-                triggerGraphAction('focusGraph');
-              }}
+                }}
               className={`group flex gap-3 items-start rounded-md border p-3 transition-all duration-200 cursor-pointer ${
                 isActive 
                   ? 'border-[#58a6ff]/50 bg-[#58a6ff]/10 shadow-[0_0_10px_rgba(88,166,255,0.1)]' 
@@ -219,7 +227,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      const targetId = analysis.graph.nodes.find(n => n.id === `file:${item.path}` || n.id === `folder:${item.path}` || n.id === item.path)?.id || item.path;
+                      const targetId = nodeById.get(`file:${item.path}`) || nodeById.get(`folder:${item.path}`) || nodeById.get(item.path) || item.path;
                       setSelectedNodeId(targetId);
                       setSidebarTab('ai');
                     }}
