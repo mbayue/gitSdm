@@ -20,7 +20,17 @@ function makeEdge(overrides: Partial<GraphEdge> & { id: string; source: string; 
 }
 
 const emptyAnalysis: RepoAnalysis = {
-  meta: { owner: 'test', repo: 'test', fullName: 'test/test', stars: 0, defaultBranch: 'main', topics: [] },
+  meta: {
+    owner: 'test', repo: 'test', fullName: 'test/test', stars: 0, defaultBranch: 'main', topics: [],
+    description: 'test',
+    forks: 0,
+    language: 'typescript',
+    sha: '',
+    url: '',
+    license: null,
+    createdAt: '',
+    updatedAt: ''
+  },
   tree: [],
   treeTruncated: false,
   dependencies: [],
@@ -89,7 +99,7 @@ describe('generateProgrammaticMermaid', () => {
 
     const result = generateProgrammaticMermaid(analysis);
     // Count node entries (indented lines with id["label"] pattern — excludes subgraph headers)
-    const nodeLines = result.match(/^    [a-zA-Z0-9_]+\["/gm);
+    const nodeLines = result.match(/^ {4}[a-zA-Z0-9_]+\["/gm);
     expect(nodeLines).not.toBeNull();
     expect(nodeLines!.length).toBeLessThanOrEqual(25);
   });
@@ -250,7 +260,8 @@ describe('generateProgrammaticMermaid', () => {
     };
 
     const result = generateProgrammaticMermaid(analysis);
-    // Should only have one arrow
+    // Should only have one arrow (matching Mermaid syntax `-->`, not HTML filtering)
+    // lgtm[js/bad-tag-filter]
     const arrowCount = (result.match(/-->/g) || []).length;
     expect(arrowCount).toBe(1);
   });
