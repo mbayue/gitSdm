@@ -115,7 +115,6 @@ export function AISidebar({
     blastRadiusActive,
   } = useVizStore();
 
-  // ⚡ Bolt: Use a Map for O(1) node lookups instead of O(N) array .find() calls inside render loops
   const nodeById = useMemo(
     () => new Map(analysis.graph.nodes.map((n) => [n.id, n])),
     [analysis.graph.nodes]

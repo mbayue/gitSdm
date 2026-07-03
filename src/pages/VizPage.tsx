@@ -120,7 +120,6 @@ export function VizPage() {
     }
   }, [owner, repo, activeRepoKey, reset, setActiveRepoKey]);
 
-  // ⚡ Bolt: Use a Map for O(1) node lookups instead of O(N) array .find() calls inside render loops
   const nodeById = useMemo(() => {
     if (!data) return new Map();
     return new Map(data.graph.nodes.map((n) => [n.id, n]));
