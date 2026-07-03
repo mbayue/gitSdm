@@ -120,10 +120,16 @@ export function VizPage() {
     }
   }, [owner, repo, activeRepoKey, reset, setActiveRepoKey]);
 
+  // ⚡ Bolt: Use a Map for O(1) node lookups instead of O(N) array .find() calls inside render loops
+  const nodeById = useMemo(() => {
+    if (!data) return new Map();
+    return new Map(data.graph.nodes.map((n) => [n.id, n]));
+  }, [data]);
+
   const selectedNode = useMemo<GraphNode | null>(() => {
     if (!data || !selectedNodeId) return null;
-    return data.graph.nodes.find((n) => n.id === selectedNodeId) ?? null;
-  }, [data, selectedNodeId]);
+    return nodeById.get(selectedNodeId) ?? null;
+  }, [data, selectedNodeId, nodeById]);
 
   useEffect(() => {
     if (selectedNode?.type === "file" && selectedNode.data.path) {
