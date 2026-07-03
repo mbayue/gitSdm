@@ -1,6 +1,6 @@
-# 🗺️ gitSdm Roadmap
+# gitSdm Roadmap
 
-## ✅ Completed
+## Completed
 
 - **AI-generated architecture diagrams** — Mermaid flowcharts detailing module boundaries and system workflows.
 - **Commit History & Activity** — Interactive timeline visualizing author patterns and directory churn over time.
@@ -9,38 +9,15 @@
 - **Monorepo-aware dependency grouping** — Automatic workspace detection (npm/pnpm/yarn/bun) and cross-package mapping.
 - **AI-powered semantic search & Q&A** — Context-aware vector search to ask code questions and locate entry points.
 - **Change impact analysis (Blast Radius)** — Visualizer showing transitive dependents to predict edit breakages.
-- **📦 Dependency Health Report** — Core health panel, version freshness checker (npm), license compliance audits, and real-time visual highlight alerts (amber borders/warning badges) on the force-directed canvas.
-- **🧭 Personalized Onboarding Paths** — AI-generated custom reading tours. User pastes a repo URL + describes their goal, and the system returns a guided walkthrough ("start with these 5 files, in this order") with graph node highlights. Implemented as `LearningPathTab`.
+- **Dependency Health Report** — Core health panel, version freshness checker (npm), license compliance audits, and real-time visual highlight alerts (amber borders/warning badges) on the force-directed canvas.
+- **Personalized Onboarding Paths** — AI-generated custom reading tours. User pastes a repo URL + describes their goal, and the system returns a guided walkthrough ("start with these 5 files, in this order") with graph node highlights. Implemented as `LearningPathTab`.
+- **Commit & Tag Snapshot Diffing** — Extended Compare Branch to accept commit SHAs and tags as comparison targets. Includes Branches/Tags/SHA sub-tabs in the picker UI, `/api/repo/tags` endpoint, and full graph overlay for any ref type.
 
 ---
 
-## 🚧 In Progress
+## Up Next
 
-### 📸 Commit & Tag Snapshot Diffing (Compare Branch Extension)
-
-Extend the existing Compare Branch feature — which already diffs two branches with full graph overlay (colored rings, edge coloring, Added/Modified/Deleted counts) — to also accept **commit SHAs and tags** as comparison targets, not just branch names.
-
-**What's already built** (in Compare Branch):
-- `useVizDiff` hook: SHA-based tree diff → added/modified/deleted sets
-- Full graph overlay: colored node rings + colored edges on the force canvas
-- OverviewTab: Added/Modified/Deleted counts + clickable file lists
-- Per-node diff badge in AnalysisTab
-- Filter by diff status (show only added, only deleted, etc.)
-
-**What's net-new** (the actual work):
-- Commit/tag picker UI alongside the existing branch picker — e.g. a timeline scrubber, tag dropdown, or "compare to N days ago" shortcut
-- Verify `/api/repo/analyze` handles commit SHA refs (GitHub API accepts SHAs in the same `ref` param — likely near-zero backend change)
-- "Time travel" framing in the UI: label the comparison as "main → v2.1.0" or "main → abc1234"
-
-**Why**: The existing Compare Branch answers "what's different between two live branches." Extending it to commits/tags answers "how did this architecture evolve over time?" — a different question with the same rendering engine.
-
-**Effort**: Low-Medium — ~70% of the work is already done. New effort is the picker UI and ref validation.
-
----
-
-## 📋 Up Next
-
-### 1. ✂️ Interactive Path Pruning & Editing
+### 1. Interactive Path Pruning & Editing
 
 Tools to manually prune, regroup, and export tailored subgraphs from the visualization:
 
@@ -55,7 +32,7 @@ Tools to manually prune, regroup, and export tailored subgraphs from the visuali
 
 ---
 
-### 2. � Code Churn + Hotspot Heatmap
+### 2. Code Churn + Hotspot Heatmap
 
 Overlay git blame data on the force graph — color nodes by commit frequency, recency, and number of distinct authors. Hotspots (frequently changed, many authors) are classic stability risks.
 
@@ -70,23 +47,7 @@ Overlay git blame data on the force graph — color nodes by commit frequency, r
 
 ---
 
-### 3. �🚦 Dependency Rule Engine (Live Architecture Linter)
-
-Let teams define custom architecture rules:
-
-- `src/features/*` must not import from `src/components/ui/*`
-- `server/` must not import from `src/`
-- No circular dependencies between modules A and B
-
-Violations are **highlighted on the graph** in real-time and can surface as a PR check via a lightweight API endpoint.
-
-**Why**: Turns gitSdm from a read-only viewer into a daily governance tool that enforces architecture as the codebase evolves.
-
-**Effort**: Medium — dependency graph already exists. New work is a rule DSL + violation overlay on ReactFlow + optional PR check endpoint.
-
----
-
-### 4. 📊 Complexity Score per Module
+### 3. Complexity Score per Module
 
 Compute a complexity signal per node: LOC + import count + export count + cyclomatic depth estimate. Show it as node size or color saturation.
 
@@ -101,7 +62,7 @@ Compute a complexity signal per node: LOC + import count + export count + cyclom
 
 ---
 
-### 5. 💬 Inline AI Annotations in Code Inspector
+### 4. Inline AI Annotations in Code Inspector
 
 When a user clicks a file node, offer contextual AI actions directly in the inspector dock:
 
@@ -115,7 +76,7 @@ When a user clicks a file node, offer contextual AI actions directly in the insp
 
 ---
 
-### 6. 🔔 Dependency Drift Alerts (Scheduled CI Report)
+### 5. Dependency Drift Alerts (Scheduled CI Report)
 
 A lightweight GitHub Action / webhook that runs the health report on a schedule and posts a comment or issue when:
 
@@ -130,13 +91,13 @@ A lightweight GitHub Action / webhook that runs the health report on a schedule 
 
 ---
 
-### 7. 🔮 "What If?" Refactoring Simulator
+### 6. "What If?" Refactoring Simulator
 
 Drag a node from one module to another on the graph and see in real-time:
 
 - All import paths that would break (overlaid in red)
 - A diff of every file that needs to change
-- Effort estimate (# files × # imports affected)
+- Effort estimate (# files x # imports affected)
 - Optionally generate a refactoring plan or codemod
 
 **Why**: Turns gitSdm into a planning tool teams use *before* writing code, not just a visualization of what already exists.
@@ -145,7 +106,7 @@ Drag a node from one module to another on the graph and see in real-time:
 
 ---
 
-### 8. 🔗 Multi-Repository Mapping
+### 7. Multi-Repository Mapping
 
 Cross-repo dependency tracing: stitch graphs from multiple repositories into a single unified view.
 
