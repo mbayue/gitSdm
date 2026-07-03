@@ -23,8 +23,10 @@ function countExports(content: string): number {
     if (trimmed.startsWith('//') || trimmed.startsWith('#')) continue;
 
     if (inExportBlock) {
-      blockContent += trimmed;
-      if (trimmed.includes('}')) {
+      // Strip inline // comments before accumulating
+      const withoutComment = trimmed.split('//')[0]!;
+      blockContent += withoutComment;
+      if (withoutComment.includes('}')) {
         // End of multi-line export { ... }
         const inner = blockContent.slice(0, blockContent.indexOf('}'));
         const names = inner.split(',').map(s => s.trim()).filter(Boolean);
