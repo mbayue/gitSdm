@@ -91,18 +91,29 @@ A lightweight GitHub Action / webhook that runs the health report on a schedule 
 
 ---
 
-### 6. Dependency Cycle Visualizer
+### 6. "What If?" Refactoring Simulator
 
-Detect and highlight circular import paths directly on the force graph — animated red edges for cycles, side panel listing cycles grouped by length.
+Drag a node from one module to another on the graph and see in real-time:
 
-- Standard DFS cycle detection against the existing import edges (zero backend changes)
-- Animated red edge rendering for nodes participating in a cycle
-- Side panel: list of cycles with affected files, sorted by cycle length (shortest first)
-- Click a cycle entry → focus the graph on the participating nodes
-- Filter toggle: "show cycles only" — hide non-participating nodes
+- All import paths that would break (overlaid in red)
+- A diff of every file that needs to change
+- Effort estimate (# files x # imports affected)
+- Optionally generate a refactoring plan or codemod
 
-**Why**: Circular dependencies are a real maintenance smell that's hard to spot in a dense graph. Surfacing them visually with animation makes them impossible to ignore. The data is already there — this is pure client-side graph algorithm work.
+**Why**: Turns gitSdm into a planning tool teams use *before* writing code, not just a visualization of what already exists.
 
-**Effort**: Low — ~200 lines. Cycle detection is textbook DFS on existing edges (no backend changes). Edge animation and side panel reuse existing patterns (Blast Radius for the UI, animated edges from the graph renderer).
+**Effort**: Medium — depends on existing dependency graph and parser. The heavy lift is the reverse-dependency cascade (recomputing which imports break when a file moves).
 
 ---
+
+### 7. Multi-Repository Mapping
+
+Cross-repo dependency tracing: stitch graphs from multiple repositories into a single unified view.
+
+- Link packages across repos (e.g. frontend → shared UI library → backend SDK)
+- Detect API contracts between services (shared proto files, OpenAPI specs, message queue topics)
+- Unified search and dependency chain across org boundaries
+
+**Why**: Microservice architectures spread across 10+ repos. Engineers constantly ask "if I change this API in service A, which repos consume it?" gitSdm can't answer that today.
+
+**Effort**: XL — requires choosing a discovery mechanism, building a cross-repo resolver, redesigning the graph data model, and reworking the frontend for multi-repo navigation. High risk, high reward.

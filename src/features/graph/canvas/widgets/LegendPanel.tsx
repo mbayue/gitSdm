@@ -60,6 +60,7 @@ function LegendContent({
         <button
           type="button"
           onClick={onClose}
+          aria-label="Close legend"
           className="rounded text-[#8b949e] hover:text-[#e6edf3] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ui-focus/70"
         >
           <X className="h-3.5 w-3.5" />
@@ -283,6 +284,8 @@ export function LegendPanel({
       <button
         type="button"
         onClick={() => setActiveDropdown(legendOpen ? null : 'legend')}
+        aria-expanded={legendOpen}
+        aria-haspopup="true"
         className={`flex h-8 px-2.5 items-center gap-1.5 rounded-lg text-xs font-medium transition-all active:scale-[0.95] ${
           legendOpen
             ? "bg-[#161b22] text-[#e6edf3] border-[rgba(240,246,252,0.1)]"
