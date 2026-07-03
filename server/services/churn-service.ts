@@ -14,6 +14,15 @@ export interface FileChurnData {
  * Fetch per-file churn data: commit count, distinct authors, last-modified date.
  * For each file path, calls listCommits with the path filter (last N days).
  * Processes paths in concurrent batches.
+ *
+ * Note on commitCount precision:
+ * When the response is paginated (Link header contains a rel="last" page),
+ * commitCount is approximated as `lastPage * 100`. This overestimates when
+ * the last page has fewer than 100 commits. For example, 101 commits → 200,
+ * 201 commits → 300. The error is non-uniform across files and compounds
+ * in the churnScore normalization step. This is an intentional trade-off
+ * to avoid O(repos) extra API calls. If precise counts are needed, callers
+ * should paginate fully.
  */
 export async function fetchRepoChurn(
   owner: string,
@@ -31,9 +40,9 @@ export async function fetchRepoChurn(
   const cached = cache.get<Record<string, FileChurnData>>(cacheKey);
   if (cached) return cached;
 
-  const octokit = getOctokit(
-    typeof tokenOrCtx === 'string' ? tokenOrCtx : undefined,
-  );
+  const octokit = (tokenOrCtx && typeof tokenOrCtx === 'object' && 'octokit' in tokenOrCtx)
+    ? tokenOrCtx.octokit
+    : getOctokit(tokenOrCtx as string | undefined);
 
   const since = new Date();
   since.setDate(since.getDate() - days);
@@ -76,7 +85,11 @@ export async function fetchRepoChurn(
             new Date().toISOString();
 
           return { path, commitCount, authorCount: authors.size, lastModified };
-        } catch {
+        } catch (err) {
+          const status = err && typeof err === 'object' && 'status' in err ? (err as { status: number }).status : undefined;
+          if (status !== 403 && status !== 429) {
+            console.error(`[churn-service] Failed to fetch churn for ${path}:`, err instanceof Error ? err.message : String(err));
+          }
           return null;
         }
       }),
@@ -90,6 +103,16 @@ export async function fetchRepoChurn(
         lastModified: entry.lastModified,
         churnScore: 0, // normalized later
       };
+    }
+
+    // Warn if an entire batch failed — possible auth/rate-limit issue
+    for (const entry of entries) {
+      if (entry === null) {
+        const nullCount = entries.filter(e => e === null).length;
+        if (nullCount === chunk.length && chunk.length > 0) {
+          console.error(`[churn-service] All ${chunk.length} paths in batch failed for ${owner}/${repo} — possible auth/rate-limit issue`);
+        }
+      }
     }
   }
 

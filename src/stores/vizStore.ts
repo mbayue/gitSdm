@@ -256,6 +256,8 @@ export const useVizStore = create<VizState>()(
       searchQuery: "",
       graphScope: "source",
       contentFilters: new Set(defaultContentFilters),
+      colorMode: "default" as ColorMode,
+      sizeMode: "default" as SizeMode,
     }),
 
   setActiveDropdown: (activeDropdown: "filter" | "display" | "layout" | "export" | "legend" | null) => set({ activeDropdown }),

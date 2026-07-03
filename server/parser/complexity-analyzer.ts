@@ -14,14 +14,35 @@ export interface FileComplexityMetrics {
 function countExports(content: string): number {
   let count = 0;
   const lines = content.split('\n');
+  let inExportBlock = false;
+  let blockContent = '';
+
   for (const line of lines) {
     const trimmed = line.trim();
     // Skip comments
     if (trimmed.startsWith('//') || trimmed.startsWith('#')) continue;
+
+    if (inExportBlock) {
+      blockContent += trimmed;
+      if (trimmed.includes('}')) {
+        // End of multi-line export { ... }
+        const inner = blockContent.slice(0, blockContent.indexOf('}'));
+        const names = inner.split(',').map(s => s.trim()).filter(Boolean);
+        count += names.length || 1;
+        inExportBlock = false;
+        blockContent = '';
+      }
+      continue;
+    }
+
     // Match export statements at line start (after whitespace)
     if (/^\bexport\b/.test(trimmed) && !/^export\s+type\s+\{/.test(trimmed)) {
       // Count each named export in a single export { a, b, c } statement
-      if (trimmed.startsWith('export {')) {
+      if (trimmed.startsWith('export {') && !trimmed.includes('}')) {
+        // Multi-line export { ... } block — start accumulating
+        inExportBlock = true;
+        blockContent = trimmed.slice('export {'.length);
+      } else if (trimmed.startsWith('export {')) {
         const inner = trimmed.slice('export {'.length, trimmed.indexOf('}'));
         const names = inner.split(',').map(s => s.trim()).filter(Boolean);
         count += names.length || 1;
@@ -29,6 +50,10 @@ function countExports(content: string): number {
         count++;
       }
     }
+  }
+  // If file ends without closing brace, count as 1 export
+  if (inExportBlock) {
+    count += 1;
   }
   return count;
 }

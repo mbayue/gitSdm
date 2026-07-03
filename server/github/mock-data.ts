@@ -326,8 +326,9 @@ export async function fetchMockChurn(
   paths: string[],
 ): Promise<Record<string, { commitCount: number; authorCount: number; lastModified: string; churnScore: number }>> {
   const result: Record<string, { commitCount: number; authorCount: number; lastModified: string; churnScore: number }> = {};
-  const maxCommits = Math.max(1, paths.length);
   const now = new Date();
+
+  // First pass: generate all entries
   for (let i = 0; i < paths.length; i++) {
     const commitCount = Math.floor(Math.random() * 15) + 1;
     const authorCount = Math.min(commitCount, Math.floor(Math.random() * 4) + 1);
@@ -337,9 +338,16 @@ export async function fetchMockChurn(
       commitCount,
       authorCount,
       lastModified,
-      churnScore: +(commitCount / maxCommits).toFixed(4),
+      churnScore: 0, // placeholder, normalized in second pass
     };
   }
+
+  // Second pass: normalize from actual max
+  const maxCommits = Math.max(1, ...Object.values(result).map((d) => d.commitCount));
+  for (const data of Object.values(result)) {
+    data.churnScore = +(data.commitCount / maxCommits).toFixed(4);
+  }
+
   return result;
 }
 

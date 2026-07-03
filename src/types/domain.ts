@@ -29,7 +29,7 @@ export interface GraphNode {
     lastModified?: string;
     /** Lines of code count */
     loc?: number;
-    /** Number of import statements (incoming edges) */
+    /** Number of import statements (outgoing edges to dependencies) */
     importCount?: number;
     /** Number of export statements */
     exportCount?: number;

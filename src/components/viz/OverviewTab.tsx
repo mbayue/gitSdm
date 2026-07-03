@@ -355,10 +355,11 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                 </p>
                 <div className="space-y-0.5">
                   {maintenanceHotspots.map(({ node }) => (
-                    <div key={node.id} className="flex items-center justify-between group px-1.5 py-1 hover:bg-[rgba(240,246,252,0.05)] rounded-sm transition-colors cursor-pointer"
+                    <button key={node.id} type="button"
                          onClick={() => {
                            focusOnNode(node.id, node.data?.path || node.id);
-                         }}>
+                         }}
+                         className="w-full flex items-center justify-between px-1.5 py-1 hover:bg-[rgba(240,246,252,0.05)] rounded-sm transition-colors cursor-pointer text-left">
                       <span className="text-[10px] font-mono text-[#e6edf3] truncate flex-1">{node.data.path || node.id}</span>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {node.data.churnScore != null && (
@@ -374,7 +375,7 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                           </span>
                         )}
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
