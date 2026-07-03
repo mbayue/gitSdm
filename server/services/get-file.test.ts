@@ -1,6 +1,8 @@
-import { afterAll, afterEach, describe, expect, it, mock, beforeEach } from 'bun:test';
+import { afterEach, describe, expect, it, mock, beforeEach } from 'bun:test';
 import * as mockDataModule from '../github/mock-data';
 import { getRepoFileContent } from './get-file';
+
+const realMockDataExports = { ...mockDataModule };
 
 const mockGetContent = mock(async () => ({
   data: {
@@ -43,10 +45,7 @@ describe('services/get-file', () => {
 
   afterEach(() => {
     mock.restore();
-  });
-
-  afterAll(() => {
-    mock.module('../github/mock-data', () => ({ ...mockDataModule }));
+    mock.module('../github/mock-data', () => realMockDataExports);
   });
 
   it('fetches mock file content when owner is mock-owner', async () => {

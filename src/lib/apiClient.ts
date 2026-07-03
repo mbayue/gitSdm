@@ -132,6 +132,14 @@ export async function fetchRepoBranches(
   return request<{ name: string; protected: boolean }[]>(`/api/repo/branches?${params}`);
 }
 
+export async function fetchRepoTags(
+  owner: string,
+  repo: string,
+): Promise<{ name: string; sha: string }[]> {
+  const params = new URLSearchParams({ owner, repo });
+  return request<{ name: string; sha: string }[]>(`/api/repo/tags?${params}`);
+}
+
 export async function fetchRepoFile(
   owner: string,
   repo: string,

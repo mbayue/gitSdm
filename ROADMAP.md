@@ -1,6 +1,6 @@
-# 🗺️ gitSdm Roadmap
+# gitSdm Roadmap
 
-## ✅ Completed
+## Completed
 
 - **AI-generated architecture diagrams** — Mermaid flowcharts detailing module boundaries and system workflows.
 - **Commit History & Activity** — Interactive timeline visualizing author patterns and directory churn over time.
@@ -9,20 +9,15 @@
 - **Monorepo-aware dependency grouping** — Automatic workspace detection (npm/pnpm/yarn/bun) and cross-package mapping.
 - **AI-powered semantic search & Q&A** — Context-aware vector search to ask code questions and locate entry points.
 - **Change impact analysis (Blast Radius)** — Visualizer showing transitive dependents to predict edit breakages.
-- **📦 Dependency Health Report** — Core health panel, version freshness checker (npm), license compliance audits, and real-time visual highlight alerts (amber borders/warning badges) on the force-directed canvas.
-- **🧭 Personalized Onboarding Paths** — AI-generated custom reading tours. User pastes a repo URL + describes their goal, and the system returns a guided walkthrough ("start with these 5 files, in this order") with graph node highlights. Implemented as `LearningPathTab`.
+- **Dependency Health Report** — Core health panel, version freshness checker (npm), license compliance audits, and real-time visual highlight alerts (amber borders/warning badges) on the force-directed canvas.
+- **Personalized Onboarding Paths** — AI-generated custom reading tours. User pastes a repo URL + describes their goal, and the system returns a guided walkthrough ("start with these 5 files, in this order") with graph node highlights. Implemented as `LearningPathTab`.
+- **Commit & Tag Snapshot Diffing** — Extended Compare Branch to accept commit SHAs and tags as comparison targets. Includes Branches/Tags/SHA sub-tabs in the picker UI, `/api/repo/tags` endpoint, and full graph overlay for any ref type.
 
 ---
 
-## 🚧 In Progress
+## Up Next
 
-- *(None)*
-
----
-
-## 📋 Up Next
-
-### 1. ✂️ Interactive Path Pruning & Editing
+### 1. Interactive Path Pruning & Editing
 
 Tools to manually prune, regroup, and export tailored subgraphs from the visualization:
 
@@ -37,29 +32,72 @@ Tools to manually prune, regroup, and export tailored subgraphs from the visuali
 
 ---
 
-### 2. 🚦 Dependency Rule Engine (Live Architecture Linter)
+### 2. Code Churn + Hotspot Heatmap
 
-Let teams define custom architecture rules:
+Overlay git blame data on the force graph — color nodes by commit frequency, recency, and number of distinct authors. Hotspots (frequently changed, many authors) are classic stability risks.
 
-- `src/features/*` must not import from `src/components/ui/*`
-- `server/` must not import from `src/`
-- No circular dependencies between modules A and B
+- Node color intensity reflects churn score (commits in last N days)
+- Node border highlights files touched by 3+ distinct authors
+- Tooltip shows churn rank, top contributors, and last-modified date
+- Filter panel: "show only files changed in last 30 days"
 
-Violations are **highlighted on the graph** in real-time and can surface as a PR check via a lightweight API endpoint.
+**Why**: The commit timeline already exists. Adding churn as a graph signal is a short hop that surfaces actionable refactoring targets without requiring AI. Engineers immediately see "this file is touched by everyone and changed constantly — it's a problem."
 
-**Why**: Turns gitSdm from a read-only viewer into a daily governance tool that enforces architecture as the codebase evolves.
-
-**Effort**: Medium — dependency graph already exists. New work is a rule DSL + violation overlay on ReactFlow + optional PR check endpoint.
+**Effort**: Low-Medium — git history is already parsed for the timeline. New work is computing a churn score per file and mapping it to node visual properties.
 
 ---
 
-### 3. 🔮 "What If?" Refactoring Simulator
+### 3. Complexity Score per Module
+
+Compute a complexity signal per node: LOC + import count + export count + cyclomatic depth estimate. Show it as node size or color saturation.
+
+- No AI required — purely graph-derived metrics
+- Sidebar panel ranks files by complexity score
+- Overlay toggle: "color by complexity" vs. "color by churn" vs. default
+- Pairs naturally with the Hotspot Heatmap for a full health picture
+
+**Why**: Gives engineers a fast "where should I refactor?" answer without any external tooling. Complexity + churn together form a classic maintenance risk matrix.
+
+**Effort**: Low — purely additive computation on top of the existing parsed graph. No backend routes needed, no AI calls.
+
+---
+
+### 4. Inline AI Annotations in Code Inspector
+
+When a user clicks a file node, offer contextual AI actions directly in the inspector dock:
+
+- "Explain this file" — summarize the module's role in plain language
+- "Why does this file have N dependents?" — trace and explain the dependency chain
+- "Suggest a refactor" — AI-driven recommendation based on complexity + churn signals
+
+**Why**: The AI provider layer, semantic search, and code inspector dock all exist. This is mostly wiring existing pieces together into a tighter loop. Reduces context switching — instead of opening the AI sidebar separately, insight appears where you're already looking.
+
+**Effort**: Low-Medium — new UI affordances in the inspector dock + reusing existing AI task handlers.
+
+---
+
+### 5. Dependency Drift Alerts (Scheduled CI Report)
+
+A lightweight GitHub Action / webhook that runs the health report on a schedule and posts a comment or issue when:
+
+- A dependency goes outdated by N major versions
+- A new license incompatibility appears
+- A circular dependency is introduced
+- Churn hotspots exceed a configurable threshold
+
+**Why**: Extends the existing health panel into the CI pipeline without a UI overhaul. Teams get proactive alerts instead of only discovering issues when they open gitSdm manually.
+
+**Effort**: Low-Medium — health report logic already exists. New work is a GitHub Action wrapper + configurable threshold rules + comment/issue posting via Octokit (already a dependency).
+
+---
+
+### 6. "What If?" Refactoring Simulator
 
 Drag a node from one module to another on the graph and see in real-time:
 
 - All import paths that would break (overlaid in red)
 - A diff of every file that needs to change
-- Effort estimate (# files × # imports affected)
+- Effort estimate (# files x # imports affected)
 - Optionally generate a refactoring plan or codemod
 
 **Why**: Turns gitSdm into a planning tool teams use *before* writing code, not just a visualization of what already exists.
@@ -68,7 +106,7 @@ Drag a node from one module to another on the graph and see in real-time:
 
 ---
 
-### 4. 🔗 Multi-Repository Mapping
+### 7. Multi-Repository Mapping
 
 Cross-repo dependency tracing: stitch graphs from multiple repositories into a single unified view.
 

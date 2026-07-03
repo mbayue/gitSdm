@@ -1,6 +1,8 @@
-import { afterAll, afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 import * as lruModule from '../cache/lru';
 import * as loggerModule from '../utils/logger';
+
+const realLoggerExports = { ...loggerModule };
 
 function cosineSimilarity(a: Float32Array, b: Float32Array): number {
   if (a.length !== b.length) return 0;
@@ -130,10 +132,7 @@ beforeEach(() => {
 
 afterEach(() => {
   mock.restore();
-});
-
-afterAll(() => {
-  mock.module('../utils/logger', () => ({ ...loggerModule }));
+  mock.module('../utils/logger', () => realLoggerExports);
 });
 
 describe('indexing pipeline', () => {

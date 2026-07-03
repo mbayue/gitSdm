@@ -2,7 +2,7 @@ import type { RequestContext } from '../utils/context';
 import { AppError } from '../utils/errors';
 import { analyzeBodySchema, repoQuerySchema, fileQuerySchema } from './schemas';
 import { analyzeRepository } from '../services/analyze-repo';
-import { fetchRepoBranches, fetchContributors } from '../github/fetch-tree';
+import { fetchRepoBranches, fetchContributors, fetchRepoTags } from '../github/fetch-tree';
 import { getRepoFileContent } from '../services/get-file';
 import { parseRepoParams } from '../github/parse-url';
 import { logApi } from '../utils/logger';
@@ -45,6 +45,15 @@ export async function handleRepoRoutes(
     }
     const branches = await fetchRepoBranches(q.data.owner, q.data.repo, ctx);
     return Response.json(branches, { status: 200 });
+  }
+
+  if (pathname === '/api/repo/tags') {
+    const q = repoQuerySchema.safeParse(query);
+    if (!q.success) {
+      throw new AppError(400, 'Invalid owner/repo', 'INVALID_PARAMS');
+    }
+    const tags = await fetchRepoTags(q.data.owner, q.data.repo, ctx);
+    return Response.json(tags, { status: 200 });
   }
 
   if (pathname === '/api/repo/graph') {
