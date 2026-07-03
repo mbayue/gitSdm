@@ -106,13 +106,8 @@ export async function fetchRepoChurn(
     }
 
     // Warn if an entire batch failed — possible auth/rate-limit issue
-    for (const entry of entries) {
-      if (entry === null) {
-        const nullCount = entries.filter(e => e === null).length;
-        if (nullCount === chunk.length && chunk.length > 0) {
-          console.error(`[churn-service] All ${chunk.length} paths in batch failed for ${owner}/${repo} — possible auth/rate-limit issue`);
-        }
-      }
+    if (chunk.length > 0 && entries.every((e) => e === null)) {
+      console.error(`[churn-service] All ${chunk.length} paths in batch failed for ${owner}/${repo} — possible auth/rate-limit issue`);
     }
   }
 
