@@ -1,5 +1,5 @@
 <!-- markdownlint-disable MD033 -->
-<h1 align="center">gitSdm (Git Software Dependency Map v2.3.0)</h1>
+<h1 align="center">gitSdm (Git Software Dependency Map v2.7.5)</h1>
 
 <p align="center">
   <strong>Graph-first repository analysis for exploring files, dependencies, modules, and architecture notes.</strong>
@@ -33,12 +33,12 @@ Set `AI_PROVIDER=mock` (default) or `gemini`/`openai`/`anthropic` with the match
 
 ## More
 
-| Document            | Contents                         |
-| ------------------- | -------------------------------- |
+| Document | Contents |
+| --- | --- |
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Folder structure and module layout |
-| [`ROADMAP.md`](./ROADMAP.md)           | Planned and proposed features     |
-| [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Dev workflow, testing, PR guide   |
-| [`SECURITY.md`](./SECURITY.md)         | Vulnerability reporting           |
+| [`ROADMAP.md`](./ROADMAP.md) | Planned and proposed features |
+| [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Dev workflow, testing, PR guide |
+| [`SECURITY.md`](./SECURITY.md) | Vulnerability reporting |
 
 ---
 

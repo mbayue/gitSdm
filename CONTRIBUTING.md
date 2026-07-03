@@ -1,4 +1,4 @@
-# 🤝 Contributing to gitSdm
+# Contributing to gitSdm
 
 Thanks for contributing to **gitSdm**. Bug fixes, features, docs, and UI improvements all welcome.
 
@@ -6,7 +6,7 @@ Please review this guide to get started.
 
 ---
 
-## 🚀 Quick Setup
+## Quick Setup
 
 ### 1. Prerequisites
 
@@ -37,7 +37,7 @@ Make sure to add your `GITHUB_TOKEN` and any AI provider API keys (`GEMINI_API_K
 
 ---
 
-## 🛠️ Development Workflow
+## Development Workflow
 
 ### Starting the Dev Servers
 
@@ -60,7 +60,7 @@ bun run dev:backend   # Express backend on http://localhost:3001
 
 ---
 
-## 🧪 Testing & Linting
+## Testing & Linting
 
 Before opening a pull request, please make sure your changes pass all tests and linting checks:
 
@@ -80,7 +80,7 @@ bun run lint
 
 ---
 
-## 🗺️ Updating the Codebase Graph
+## Updating the Codebase Graph
 
 This project uses **graphify** to build its interactive directory-topology mapping. If you add new files or modify exports:
 
@@ -90,7 +90,7 @@ bunx graphify update .
 
 ---
 
-## 📬 Pull Request Guidelines
+## Pull Request Guidelines
 
 1. **Create a Branch**:
 

@@ -1,15 +1,15 @@
-# 🏗️ Architecture
+# Architecture
 
 ```text
 gitSdm/
-├── 📁 api/                    # Vercel serverless functions
+├──  api/                    # Vercel serverless functions
 │   ├── ai/                    # AI insight endpoints
 │   └── repo/                  # Repository analysis endpoints
-├── 📁 assets/                 # Static images (graph.png)
-├── 📁 docs/                   # Project documentation (naming.md)
-├── 📁 public/                 # Static assets (including layout worker)
-├── 📁 scripts/                # Utility scripts (graphify cleanup)
-├── 📁 server/                 # Backend services & router
+├──  assets/                 # Static images (graph.png)
+├──  docs/                   # Project documentation (naming.md)
+├──  public/                 # Static assets (including layout worker)
+├──  scripts/                # Utility scripts (graphify cleanup)
+├──  server/                 # Backend services & router
 │   ├── ai/                    # AI provider, prompt & task handlers
 │   │   └── tasks/             # Individual AI task handlers
 │   ├── cache/                 # LRU caching layer
@@ -22,7 +22,7 @@ gitSdm/
 │   ├── search/                # Semantic search, embeddings & QA engine
 │   ├── services/              # Business logic layer
 │   └── utils/                 # HTTP, logging utilities
-├── 📁 src/                    # Frontend application
+├──  src/                    # Frontend application
 │   ├── app/                   # App providers & routing
 │   ├── components/            # UI components
 │   │   ├── contributors/      # Contributor analytics
