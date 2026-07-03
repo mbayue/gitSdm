@@ -71,8 +71,13 @@ export async function fetchRepoTags(
   }
   const octokit = resolveOctokit(tokenOrCtx);
   try {
-    const { data } = await octokit.repos.listTags({ owner, repo, per_page: 30 });
-    return data.map((t) => ({ name: t.name, sha: t.commit.sha }));
+    const tags: { name: string; sha: string }[] = [];
+    for (let page = 1; ; page++) {
+      const { data } = await octokit.repos.listTags({ owner, repo, per_page: 100, page });
+      tags.push(...data.map((t) => ({ name: t.name, sha: t.commit.sha })));
+      if (data.length < 100) break;
+    }
+    return tags;
   } catch (e) {
     handleOctokitError(e);
     return [];
