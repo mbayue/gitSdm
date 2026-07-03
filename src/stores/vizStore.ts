@@ -183,7 +183,7 @@ export const useVizStore = create<VizState>()(
   setCompareBranch: (compareBranch: string | null) =>
     set((s: VizState) => ({
       compareBranch,
-      compareRefType: compareBranch ? s.compareRefType : "branch",
+      compareRefType: "branch",
       diffStatusFilters: compareBranch ? s.diffStatusFilters : new Set(),
     })),
   setCompareRefType: (compareRefType: CompareRefType) => set({ compareRefType }),
