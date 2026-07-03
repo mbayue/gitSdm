@@ -1,16 +1,18 @@
 import type {
-	  Contributor,
-	  Dependency,
-	  GraphData,
-	  GraphEdge,
-	  GraphNode,
-	  ScopedDependency,
-	  TreeNode,
-	  WorkspacePackage,
-	} from '../../src/types';
-	import { getNodeCircleColor, getNodeCircleSize } from './node-colors';
-	import { buildImportEdges } from '../parser/import-resolver';
-	import { findWorkspacePackageForPath } from '../parser/dependency-analyzer';
+  Contributor,
+  Dependency,
+  GraphData,
+  GraphEdge,
+  GraphNode,
+  ScopedDependency,
+  TreeNode,
+  WorkspacePackage,
+} from '../../src/types';
+import type { FileChurnData } from '../services/churn-service';
+import type { FileComplexityMetrics } from '../parser/complexity-analyzer';
+import { getNodeCircleColor, getNodeCircleSize } from './node-colors';
+import { buildImportEdges } from '../parser/import-resolver';
+import { findWorkspacePackageForPath } from '../parser/dependency-analyzer';
 
 const MAX_FOLDER_NODES = 300;
 const MAX_FILE_NODES = 1200;
@@ -19,16 +21,18 @@ export interface GraphBuildInput {
   owner: string;
   repo: string;
   tree: TreeNode[];
-	  dependencies: Dependency[];
-	  contributors: Contributor[];
-	  fileContents?: Record<string, string>;
-	  workspacePackages?: readonly WorkspacePackage[];
-	  scopedDependencies?: readonly ScopedDependency[];
-	  limits?: {
-	    readonly maxFolders?: number;
-	    readonly maxFiles?: number;
-	  };
-	}
+  dependencies: Dependency[];
+  contributors: Contributor[];
+  fileContents?: Record<string, string>;
+  workspacePackages?: readonly WorkspacePackage[];
+  scopedDependencies?: readonly ScopedDependency[];
+  churnData?: Record<string, FileChurnData>;
+  complexityData?: Record<string, FileComplexityMetrics>;
+  limits?: {
+    readonly maxFolders?: number;
+    readonly maxFiles?: number;
+  };
+}
 
 function countDescendants(node: TreeNode): number {
   if (node.type === 'file') return 1;
@@ -115,6 +119,8 @@ export function buildGraph(input: GraphBuildInput): GraphData {
         fileCount++;
         const id = `file:${node.path}`;
         const ext = node.name.includes('.') ? node.name.split('.').pop() : undefined;
+        const fileChurn = input.churnData?.[node.path];
+        const fileComplexity = input.complexityData?.[node.path];
         nodes.push({
           id,
           type: 'file',
@@ -123,6 +129,17 @@ export function buildGraph(input: GraphBuildInput): GraphData {
             ...enrichNodeData('file', node.name, node.path, ext),
             fileClass: node.fileClass,
             size: node.size,
+            ...(fileChurn && {
+              churnScore: fileChurn.churnScore,
+              authorCount: fileChurn.authorCount,
+              lastModified: fileChurn.lastModified,
+            }),
+            ...(fileComplexity && {
+              loc: fileComplexity.loc,
+              importCount: fileComplexity.importCount,
+              exportCount: fileComplexity.exportCount,
+              complexityScore: fileComplexity.complexityScore,
+            }),
           },
         });
         edges.push({

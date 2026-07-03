@@ -21,6 +21,20 @@ export interface GraphNode {
     diffStatus?: 'added' | 'modified' | 'deleted';
     isGenerated?: boolean;
     hasOutdatedDeps?: boolean;
+    /** Churn score: commit frequency in last N days (0-1 normalized) */
+    churnScore?: number;
+    /** Number of distinct authors who touched this file */
+    authorCount?: number;
+    /** ISO date of last modification */
+    lastModified?: string;
+    /** Lines of code count */
+    loc?: number;
+    /** Number of import statements (incoming edges) */
+    importCount?: number;
+    /** Number of export statements */
+    exportCount?: number;
+    /** Composite complexity score (0-1 normalized) */
+    complexityScore?: number;
   };
 }
 

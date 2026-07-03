@@ -1,6 +1,11 @@
 import type { ForceGraphNode } from '../../force/forceGraphConstants';
 import { getForceNodeRadius } from '../../force/forceGraphUtils';
-import { DIFF_STATUS_COLORS } from '../../force/forceGraphConstants';
+import {
+  DIFF_STATUS_COLORS,
+  GRAPH_NODE_LAYER_OFFSETS,
+  GRAPH_NODE_PALETTES,
+} from '../../force/forceGraphConstants';
+import type { ColorMode, SizeMode } from '@/stores/vizStore';
 
 interface NodePaintProps {
   node: ForceGraphNode;
@@ -11,6 +16,68 @@ interface NodePaintProps {
   blastRadiusActive: boolean;
   compareBranch: boolean;
   hoveredForceNode: ForceGraphNode | null;
+  colorMode?: ColorMode;
+  sizeMode?: SizeMode;
+}
+
+/** Map a 0-1 score to a color from the given 5-stop gradient */
+function heatmapColor(score: number, stops: readonly string[]): string {
+  if (score <= 0) return stops[0];
+  if (score >= 1) return stops[stops.length - 1];
+  const pos = score * (stops.length - 1);
+  const i = Math.floor(pos);
+  const t = pos - i;
+  const a = i >= stops.length - 1 ? stops[stops.length - 1] : stops[i];
+  const b = i >= stops.length - 1 ? stops[stops.length - 1] : stops[i + 1];
+  return lerpColor(a, b, t);
+}
+
+function lerpColor(a: string, b: string, t: number): string {
+  const ar = parseInt(a.slice(1, 3), 16);
+  const ag = parseInt(a.slice(3, 5), 16);
+  const ab = parseInt(a.slice(5, 7), 16);
+  const br = parseInt(b.slice(1, 3), 16);
+  const bg = parseInt(b.slice(3, 5), 16);
+  const bb = parseInt(b.slice(5, 7), 16);
+  const r = Math.round(ar + (br - ar) * t);
+  const g = Math.round(ag + (bg - ag) * t);
+  const b_ = Math.round(ab + (bb - ab) * t);
+  return `rgb(${r},${g},${b_})`;
+}
+
+function drawRing(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+  strokeStyle: string,
+  lineWidth: number,
+  globalScale: number,
+  alpha: number,
+  dash?: number[],
+): void {
+  const prevAlpha = ctx.globalAlpha;
+  const prevDash = ctx.getLineDash();
+  ctx.globalAlpha = alpha;
+  ctx.setLineDash(dash ?? []);
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.strokeStyle = strokeStyle;
+  ctx.lineWidth = lineWidth / globalScale;
+  ctx.stroke();
+  ctx.setLineDash(prevDash);
+  ctx.globalAlpha = prevAlpha;
+}
+
+/** Resolve node fill color based on current overlay mode */
+function resolveNodeColor(node: ForceGraphNode, colorMode: ColorMode): string {
+  if (colorMode === 'churn' && node.churnScore != null) {
+    return heatmapColor(node.churnScore, GRAPH_NODE_PALETTES.churn);
+  }
+  if (colorMode === 'complexity' && node.complexityScore != null) {
+    return heatmapColor(node.complexityScore, GRAPH_NODE_PALETTES.complexity);
+  }
+  return node.color;
 }
 
 export function drawForceNode({
@@ -22,49 +89,41 @@ export function drawForceNode({
   blastRadiusActive,
   compareBranch,
   hoveredForceNode,
+  colorMode = 'default',
+  sizeMode = 'default',
 }: NodePaintProps) {
   const isSelected = node.id === selectedNodeId;
   const isNeighbor = highlightedNodeIds.has(node.id);
   const isDimmed = selectedNodeId && !isSelected && !isNeighbor;
-  const radius = getForceNodeRadius(node);
+  const radius = getForceNodeRadius(node, sizeMode);
   const x = node.x ?? 0;
   const y = node.y ?? 0;
   const diffColor =
     compareBranch && node.diffStatus
       ? DIFF_STATUS_COLORS[node.diffStatus]
       : undefined;
+  const compareRingRadius = radius + GRAPH_NODE_LAYER_OFFSETS.compareRing;
+  const multiAuthorRadius = radius + GRAPH_NODE_LAYER_OFFSETS.multiAuthor;
+  const selectionRingRadius = radius + GRAPH_NODE_LAYER_OFFSETS.selection;
 
   ctx.globalAlpha = isDimmed ? (blastRadiusActive ? 0.08 : 0.22) : 1;
 
-  const amberRadius = diffColor ? radius + 5.5 : radius + 2.5;
-
-  if (node.hasOutdatedDeps) {
-    ctx.beginPath();
-    ctx.arc(x, y, amberRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = '#f59e0b';
-    ctx.lineWidth = 1.8 / globalScale;
-    ctx.globalAlpha = isDimmed ? 0.15 : 0.85;
-    ctx.stroke();
-    ctx.globalAlpha = isDimmed ? (blastRadiusActive ? 0.08 : 0.22) : 1;
-  }
-
   if (diffColor) {
-    ctx.beginPath();
-    ctx.arc(x, y, radius + 2.5, 0, Math.PI * 2);
-    ctx.strokeStyle = diffColor;
-    ctx.lineWidth = 2.5 / globalScale;
-    ctx.globalAlpha = isDimmed ? 0.15 : 0.85;
-    ctx.stroke();
-    ctx.globalAlpha = isDimmed
-      ? blastRadiusActive
-        ? 0.08
-        : 0.22
-      : 1;
+    drawRing(
+      ctx,
+      x,
+      y,
+      compareRingRadius,
+      diffColor,
+      2.5,
+      globalScale,
+      isDimmed ? 0.15 : 0.85,
+    );
   }
 
   ctx.beginPath();
   ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.fillStyle = node.color;
+  ctx.fillStyle = resolveNodeColor(node, colorMode);
   
   if (blastRadiusActive) {
     ctx.shadowColor = isSelected ? "#22d3ee" : isNeighbor ? "#0891b2" : "transparent";
@@ -78,22 +137,45 @@ export function drawForceNode({
   ctx.fill();
   ctx.shadowBlur = 0;
 
-  if (isSelected || hoveredForceNode?.id === node.id || (!blastRadiusActive && isNeighbor)) {
-    ctx.beginPath();
-    ctx.arc(x, y, radius + 4, 0, Math.PI * 2);
-    
-    if (blastRadiusActive) {
-      ctx.strokeStyle = isSelected ? "#22d3ee" : isNeighbor ? "#0891b2" : "#ffffff";
-    } else {
-      ctx.strokeStyle = isSelected 
-        ? "#a78bfa" // Violet-400 (Legend Selected)
-        : isNeighbor 
-          ? "rgba(139, 92, 246, 0.4)" // Violet-500/40 (Legend Neighbor)
-          : "#ffffff"; // Hover default
+  if (colorMode === 'churn' && node.authorCount != null && node.authorCount >= 3) {
+    if (globalScale >= 0.75) {
+      drawRing(
+        ctx,
+        x,
+        y,
+        multiAuthorRadius,
+        GRAPH_NODE_PALETTES.multiAuthor,
+        2.2,
+        globalScale,
+        isDimmed ? 0.35 : 0.85,
+        [5, 3],
+      );
     }
-    
-    ctx.lineWidth = isSelected ? 1.8 / globalScale : 1.2 / globalScale;
-    ctx.stroke();
+  }
+
+  if (isSelected || hoveredForceNode?.id === node.id || (!blastRadiusActive && isNeighbor)) {
+    const strokeStyle = blastRadiusActive
+      ? isSelected
+        ? GRAPH_NODE_PALETTES.blastSelection
+        : isNeighbor
+          ? 'rgba(8,145,178,0.95)'
+          : '#ffffff'
+      : isSelected
+        ? GRAPH_NODE_PALETTES.standardSelection
+        : isNeighbor
+          ? 'rgba(139,92,246,0.4)'
+          : '#ffffff';
+
+    drawRing(
+      ctx,
+      x,
+      y,
+      selectionRingRadius,
+      strokeStyle,
+      isSelected ? 1.8 : 1.2,
+      globalScale,
+      1,
+    );
   }
 
   if (
@@ -137,8 +219,9 @@ export function drawForcePointerArea(
   node: ForceGraphNode,
   color: string,
   ctx: CanvasRenderingContext2D,
+  sizeMode?: SizeMode,
 ) {
-  const radius = getForceNodeRadius(node) + 3;
+  const radius = getForceNodeRadius(node, sizeMode) + 3;
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.arc(node.x ?? 0, node.y ?? 0, radius, 0, Math.PI * 2);

@@ -13,6 +13,8 @@ import { parseGitHubUrl } from '../github/parse-url';
 import { buildGraph } from '../graph/graph-builder';
 import { analyzeDependencies, analyzeManifestDependencies, analyzeWorkspacePackages } from '../parser/dependency-analyzer';
 import { annotateTree, findImportantFiles } from '../parser/file-classifier';
+import { analyzeAllFileComplexity } from '../parser/complexity-analyzer';
+import { fetchRepoChurn } from './churn-service';
 import { buildDependencyHealthReport } from './dependency-health';
 import { fetchNpmDependencyMetadataBatch } from './npm-registry';
 import type { RepoAnalysis } from '../../src/types';
@@ -61,21 +63,29 @@ export async function analyzeRepository(
 	const dependencies = analyzeDependencies(fileContents);
 	const scopedDependencies = analyzeManifestDependencies(fileContents);
 	const workspacePackages = analyzeWorkspacePackages(fileContents);
-	const [npmDependencyMetadata, graph] = await Promise.all([
+	// Compute complexity from file content (synchronous, no API calls)
+	const complexityData = analyzeAllFileComplexity(fileContents);
+
+	// Fetch churn (async API calls) and npm metadata in parallel
+	const [npmDependencyMetadata, churnData] = await Promise.all([
 		fetchNpmDependencyMetadataBatch(
 			dependencies.filter((dependency) => dependency.ecosystem === 'npm'),
 		),
-		Promise.resolve().then(() => buildGraph({
-			owner,
-			repo,
-			tree,
-			dependencies,
-			contributors,
-			fileContents,
-			workspacePackages,
-			scopedDependencies,
-		})),
+		fetchRepoChurn(owner, repo, pathsToFetch, branch, tokenOrCtx),
 	]);
+
+	const graph = await buildGraph({
+		owner,
+		repo,
+		tree,
+		dependencies,
+		contributors,
+		fileContents,
+		workspacePackages,
+		scopedDependencies,
+		churnData,
+		complexityData,
+	});
 	const dependencyHealth = buildDependencyHealthReport(dependencies, scopedDependencies, npmDependencyMetadata);
 
   const analysis: RepoAnalysis = {
