@@ -115,8 +115,13 @@ export function AISidebar({
     blastRadiusActive,
   } = useVizStore();
 
+  const nodeById = useMemo(
+    () => new Map(analysis.graph.nodes.map((n) => [n.id, n])),
+    [analysis.graph.nodes]
+  );
+
   const selectedNode = selectedNodeId
-    ? analysis.graph.nodes.find((n) => n.id === selectedNodeId)
+    ? nodeById.get(selectedNodeId) ?? null
     : null;
 
 

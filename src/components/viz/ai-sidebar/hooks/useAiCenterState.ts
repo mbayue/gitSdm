@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useVizStore } from '@/stores/vizStore';
 import {
   useHealth, useRefactor, useRoast, useReadmeEnhance
@@ -78,8 +78,13 @@ export function useAiCenterState(analysis: RepoAnalysis) {
   const roastData = roast.data ?? roastCache.get(roastKey);
   const readmeEnhanceData = readmeEnhance.data ?? readmeEnhanceCache.get(readmeEnhanceKey);
 
+  const nodeById = useMemo(
+    () => new Map(analysis.graph.nodes.map((n) => [n.id, n])),
+    [analysis.graph.nodes]
+  );
+
   const selectedNode = selectedNodeId
-    ? analysis.graph.nodes.find((n) => n.id === selectedNodeId)
+    ? nodeById.get(selectedNodeId) ?? null
     : null;
 
   // Trigger standard explain when AI tab or node changes

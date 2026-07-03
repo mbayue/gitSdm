@@ -13,3 +13,6 @@
 ## 2024-11-20 - [O(N*M) Loop Optimization in LearningPathTab]
 **Learning:** Found nested loops inside the `LearningPathTab` render cycle event handlers (`onKeyDown`, `onClick`) where array `.find()` was being used inside a `.map()` to lookup target node IDs, turning it into an O(N*M) time complexity bottleneck for large codebases.
 **Action:** Replaced `.find()` inside the `.map()` loop with an O(1) `Map` lookup by pre-computing a `nodeById` map mapping node IDs to node IDs using `useMemo` at the component level. This reinforces the pattern of using memoized Hash Maps for list lookups in React components.
+## 2024-11-20 - [O(N) Lookups Optimization in Map/React state processing]
+**Learning:** Found O(N) linear array lookups utilizing `.find()` inside the render blocks and hook dependencies where React components determine active `selectedNode`. Given graph datasets with potentially thousands of nodes, this blocks the main UI thread during renders.
+**Action:** Replace `.find()` lookup inside render cycles / custom hooks with an O(1) `Map` generated using `useMemo` caching `n.id -> n`, retrieving nodes efficiently via `Map.get()`.
