@@ -14,6 +14,6 @@
 **Prevention:** Always sanitize or map raw error strings to predefined, generic fallback messages (e.g., "Internal Server Error", "Rate limit exceeded") before returning them in an HTTP response.
 
 ## 2025-03-09 - Missing HTTP Security Headers
-**Vulnerability:** The application was not setting basic HTTP security headers (e.g., `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Strict-Transport-Security`). This could potentially expose the application to clickjacking, mime-sniffing, and XSS attacks if other mitigations fail.
+**Vulnerability:** The application was not setting basic HTTP security headers (e.g., `X-Content-Type-Options`, `X-Frame-Options`, `Strict-Transport-Security`). This could potentially expose the application to clickjacking and mime-sniffing attacks if other mitigations fail.
 **Learning:** By not setting these standard HTTP response headers, browsers are left to their default behaviors which can be insecure in some contexts. Implementing defense-in-depth helps protect the application even if another vulnerability is found.
 **Prevention:** Always implement a middleware or wrapper for all HTTP responses that enforces safe security headers in both development and production API responses.
