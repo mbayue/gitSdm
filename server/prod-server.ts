@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { handleApiRequest } from './api-router';
 import { resetOctokit } from './github/client';
+import { addSecurityHeaders } from './utils/http';
 
 const distDir = path.resolve(import.meta.dir, '../dist');
 const indexFile = path.join(distDir, 'index.html');
@@ -29,11 +30,11 @@ Bun.serve({
     const filePath = safeJoin(distDir, decodeURIComponent(pathname));
     const file = Bun.file(filePath);
     if (await file.exists()) {
-      return new Response(file);
+      return addSecurityHeaders(new Response(file));
     }
 
     // SPA fallback
-    return new Response(Bun.file(indexFile));
+    return addSecurityHeaders(new Response(Bun.file(indexFile)));
   },
 });
 
