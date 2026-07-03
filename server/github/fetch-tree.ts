@@ -121,7 +121,7 @@ export async function fetchRepoInfo(
       stars: data.stargazers_count,
       forks: data.forks_count,
       language: data.language,
-      defaultBranch: targetRef,
+      defaultBranch: data.default_branch,
       sha: commit.sha,
       topics: data.topics ?? [],
       license: data.license?.spdx_id ?? null,
