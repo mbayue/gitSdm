@@ -151,6 +151,6 @@ Manually verify:
 | `src/stores/vizStore.ts` | ✅ Add `compareRefType` state + setter |
 | `src/components/viz/top-nav/BranchSwitcher.tsx` | ✅ Add Branches/Tags/Commit tabs + pill label update |
 
-**7 files touched. 1 new file (`useRepoTags.ts`).**
+**6 files touched. 1 new file (`useRepoTags.ts`).**
 
 **Build verified:** `bun run build` passes.

@@ -99,7 +99,7 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
       setSelectedBranch(branchName);
       if (compareBranch === branchName) setCompareBranch(null);
     } else {
-      if (compareBranch === branchName) {
+      if (compareBranch === branchName && compareRefType === 'branch') {
         setCompareBranch(null);
       } else if (activeBranch === branchName) {
         return; // can't compare same branch
@@ -113,7 +113,7 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
   };
 
   const handleTagSelect = (tagName: string) => {
-    if (compareBranch === tagName) {
+    if (compareBranch === tagName && compareRefType === 'tag') {
       setCompareBranch(null);
     } else {
       setCompareBranch(tagName);
@@ -293,8 +293,8 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
             {/* ── Content area ── */}
             <div className="max-h-60 overflow-y-auto space-y-3 custom-scrollbar pr-1">
 
-              {/* Switch mode: branch list */}
-              {mode === 'switch' && (
+              {/* Switch mode OR Compare mode Branches tab */}
+              {(mode === 'switch' || (mode === 'compare' && compareTab === 'branch')) && (
                 <>
                   {branchesLoading && <LoadingRow label="Loading branches..." />}
                   {branchesError && <ErrorRow label="Failed to fetch branches." />}
@@ -304,43 +304,16 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
                   {!branchesLoading && !branchesError && hasBranchResults && (
                     <div className="space-y-3">
                       {current.length > 0 && (
-                        <BranchGroup label="Current" items={current} compareBranch={compareBranch} mode={mode} onSelect={handleBranchSelect} activeBranch={activeBranch} />
+                        <BranchGroup label="Current" items={current} compareBranch={compareBranch} compareRefType={compareRefType} mode={mode} onSelect={handleBranchSelect} activeBranch={activeBranch} />
                       )}
                       {recent.length > 0 && (
-                        <BranchGroup label="Recent" items={recent} compareBranch={compareBranch} mode={mode} onSelect={handleBranchSelect} activeBranch={activeBranch} />
+                        <BranchGroup label="Recent" items={recent} compareBranch={compareBranch} compareRefType={compareRefType} mode={mode} onSelect={handleBranchSelect} activeBranch={activeBranch} />
                       )}
                       {feature.length > 0 && (
-                        <BranchGroup label="Feature" items={feature} compareBranch={compareBranch} mode={mode} onSelect={handleBranchSelect} activeBranch={activeBranch} />
+                        <BranchGroup label="Feature" items={feature} compareBranch={compareBranch} compareRefType={compareRefType} mode={mode} onSelect={handleBranchSelect} activeBranch={activeBranch} />
                       )}
                       {other.length > 0 && (
-                        <BranchGroup label="Other" items={other} compareBranch={compareBranch} mode={mode} onSelect={handleBranchSelect} activeBranch={activeBranch} />
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Compare mode — Branches tab */}
-              {mode === 'compare' && compareTab === 'branch' && (
-                <>
-                  {branchesLoading && <LoadingRow label="Loading branches..." />}
-                  {branchesError && <ErrorRow label="Failed to fetch branches." />}
-                  {!branchesLoading && !branchesError && !hasBranchResults && (
-                    <EmptyRow label="No branches found." />
-                  )}
-                  {!branchesLoading && !branchesError && hasBranchResults && (
-                    <div className="space-y-3">
-                      {current.length > 0 && (
-                        <BranchGroup label="Current" items={current} compareBranch={compareBranch} mode={mode} onSelect={handleBranchSelect} activeBranch={activeBranch} />
-                      )}
-                      {recent.length > 0 && (
-                        <BranchGroup label="Recent" items={recent} compareBranch={compareBranch} mode={mode} onSelect={handleBranchSelect} activeBranch={activeBranch} />
-                      )}
-                      {feature.length > 0 && (
-                        <BranchGroup label="Feature" items={feature} compareBranch={compareBranch} mode={mode} onSelect={handleBranchSelect} activeBranch={activeBranch} />
-                      )}
-                      {other.length > 0 && (
-                        <BranchGroup label="Other" items={other} compareBranch={compareBranch} mode={mode} onSelect={handleBranchSelect} activeBranch={activeBranch} />
+                        <BranchGroup label="Other" items={other} compareBranch={compareBranch} compareRefType={compareRefType} mode={mode} onSelect={handleBranchSelect} activeBranch={activeBranch} />
                       )}
                     </div>
                   )}
@@ -440,12 +413,13 @@ interface BranchGroupProps {
   label: string;
   items: { name: string; protected: boolean }[];
   compareBranch: string | null;
+  compareRefType: string | null;
   mode: 'switch' | 'compare';
   activeBranch: string;
   onSelect: (name: string) => void;
 }
 
-function BranchGroup({ label, items, compareBranch, mode, activeBranch, onSelect }: BranchGroupProps) {
+function BranchGroup({ label, items, compareBranch, compareRefType, mode, activeBranch, onSelect }: BranchGroupProps) {
   return (
     <div>
       <div className="px-2 pb-1 text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider font-mono">{label}</div>
@@ -454,7 +428,7 @@ function BranchGroup({ label, items, compareBranch, mode, activeBranch, onSelect
           key={b.name}
           branch={b}
           isCurrent={b.name === activeBranch}
-          isCompared={compareBranch === b.name}
+          isCompared={compareBranch === b.name && compareRefType === 'branch'}
           mode={mode}
           onSelect={onSelect}
         />
