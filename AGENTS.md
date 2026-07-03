@@ -4,65 +4,118 @@
 
 ## Project Identity
 
-**gitSdm** (Git Software Dependency Map) — v2.3.0. Graph-first repository analysis tool: visualize file dependencies, AI-powered codebase insights, semantic search, commit timelines, architecture diagrams, and dependency health. Single-page app with an embedded Express backend + Vercel serverless functions.
+**gitSdm** (Git Software Dependency Map) — v2.7.5. Graph-first repository analysis tool: visualize file dependencies, AI-powered codebase insights, semantic search, commit timelines, architecture diagrams, and dependency health. Single-page app with an embedded Express backend + Vercel serverless functions.
 
 ---
 
 ## Tech Stack
 
-| Layer       | Technology                                               |
-| ----------- | -------------------------------------------------------- |
-| Runtime     | Bun 1.3 (package manager, test runner, TS executor)      |
-| Frontend    | React 19, Vite 8, TypeScript 6, Tailwind CSS 4           |
-| State Mgmt  | Zustand 5 (global store) + TanStack React Query 5 (server state) |
-| UI Primitives | shadcn/ui (Base UI), lucide-react icons, Framer Motion 12 |
-| Graph Viz   | react-force-graph-2d, d3-force, @xyflow/react (ReactFlow) |
-| Diagrams    | Mermaid 11, html-to-image, jsPDF                          |
-| Backend     | Express (dev + prod server), Zod validation               |
-| AI Providers | Gemini (default), OpenAI, Anthropic — unified via `createProvider()` |
-| GitHub API  | Octokit REST v21                                          |
-| Search      | In-memory vector store with chunking + embedding + QA engine |
-| Auth        | GitHub PAT (optional, for private repos / rate limits)     |
+| Layer          | Technology                                                                                      |
+| -------------- | ----------------------------------------------------------------------------------------------- |
+| Runtime        | Bun 1.3.14 (package manager, test runner, TS executor)                                          |
+| Frontend       | React 19, Vite 8, TypeScript 6, Tailwind CSS 4                                                  |
+| State Mgmt     | Zustand 5 (global store) + TanStack React Query 5 (server state)                                |
+| Routing        | react-router-dom v7                                                                             |
+| UI Primitives  | shadcn/ui + @base-ui/react (Base UI), lucide-react v1 icons, Framer Motion 12, recharts         |
+| Graph Viz      | react-force-graph-2d, d3-force                                                                  |
+| Diagrams       | Mermaid 11, html-to-image, jsPDF                                                                |
+| Backend        | Express (dev + prod server), Zod validation                                                     |
+| AI Providers   | Gemini (default), OpenAI, Anthropic — unified via `createProvider()`                            |
+| GitHub API     | Octokit REST v21                                                                                |
+| Search         | In-memory vector store with chunking + embedding + QA engine                                    |
+| Security       | dompurify (sanitization)                                                                        |
+| Code Display   | highlight.js (syntax highlighting)                                                              |
+| Auth           | GitHub PAT (optional, for private repos / rate limits)                                          |
 
 ---
 
 ## Directory Layout
 
-```
+```text
 gitSdm/
 ├── api/                 # Vercel serverless entry points (thin wrappers)
-│   └── ai/              # AI endpoint wrappers (architecture, explain, suggest-files — mostly deleted)
+│   ├── ai/              # AI endpoint wrappers
+│   ├── repo/            # Repo API endpoint wrappers
+│   └── trending.ts      # Trending repos endpoint
 ├── server/              # Backend services & router
-│   ├── ai/              # AI provider abstraction + task handlers (summarizer.ts)
-│   │   └── tasks/       # Individual AI tasks (explain, onboarding, playground — deprecated)
-│   ├── config/          # Env validation & public config
-│   ├── github/          # GitHub API client (Octokit), fetch-tree, mock-data
-│   ├── graph/           # Graph building algorithms from repo structure
+│   ├── ai/              # AI provider abstraction + task handlers
+│   │   ├── prompts.ts           # Shared AI prompt templates
+│   │   ├── provider.ts/test.ts  # AI provider (Gemini/OpenAI/Anthropic/Mock)
+│   │   ├── service.ts/test.ts   # AI service orchestration
+│   │   ├── summarizer.ts        # AI summarization
+│   │   └── tasks/               # Individual AI tasks (diagram, explain, onboarding, playground, refactor)
+│   ├── cache/           # LRU caching layer (lru.ts/test.ts)
+│   ├── config/          # Env validation & public config (app-config.ts/test.ts)
+│   ├── env.ts           # Environment variable exports
+│   ├── github/          # GitHub API client (Octokit), fetch-tree, mock-data (+ test files)
+│   ├── graph/           # Graph building algorithms (graph-builder.ts/test.ts, node-colors.ts)
 │   ├── parser/          # Dependency analysis, file classifier, import resolver
-│   │   └── manifest-parsers/  # npm/pip/go/rust/java/docker workspace detection
-│   ├── router/          # Route handlers (ai-routes, repo-routes, search-routes)
-│   ├── search/          # Semantic search: chunker, embeddings, vector store, QA engine
-│   ├── services/        # Business logic (analyze-repo, trending, npm-registry, etc.)
-│   └── utils/           # Errors, context, logger, HTTP helpers
+│   │   ├── dependency-analyzer.ts/test.ts
+│   │   ├── file-classifier.ts/test.ts
+│   │   ├── import-resolver.ts/test.ts
+│   │   └── manifest-parsers/  # docker, go, java, npm, pip, rust + shared registry/types
+│   ├── router/          # Route handlers (ai-routes, repo-routes, search-routes, schemas)
+│   ├── search/          # Semantic search: chunker, embeddings, vector store, QA engine, indexing pipeline
+│   ├── services/        # Business logic (analyze-repo, dependency-health, get-file, npm-registry, trending)
+│   ├── utils/           # Errors, context, logger, HTTP helpers
+│   ├── api-router.ts    # Unified API router
+│   ├── dev-api.ts       # Dev server API middleware
+│   ├── prod-server.ts   # Production Express server
+│   └── vercel-handler.ts # Vercel serverless entry
 ├── src/                 # Frontend SPA
-│   ├── app/             # Router setup, app providers
+│   ├── app/             # Router setup (router.tsx), app providers (providers.tsx)
 │   ├── components/      # UI components organized by domain
-│   │   ├── ui/          # shadcn primitives (button, card, tooltip, etc.)
-│   │   ├── viz/         # Main workspace: architecture, ai-sidebar, learning-path, top-nav
-│   │   ├── explorer/    # File explorer sidebar + code inspector dock
-│   │   ├── timeline/    # Commit history view
-│   │   ├── contributors/ # Contributor analytics
-│   │   └── home/        # Landing page sections
+│   │   ├── ui/          # shadcn primitives (badge, button, card, dropdown-menu, GlassCard, GlowButton, Input, separator, sheet, sidebar, Skeleton, SyntaxHighlighter, tabs, tooltip)
+│   │   ├── viz/         # Main workspace: ai-sidebar/, architecture/, layout/, learning-path/, top-nav/
+│   │   │   ├── ai-sidebar/   # AI center tab, action buttons, intelligence cards, markdown, tool cards
+│   │   │   ├── architecture/ # Mermaid diagram generation + pan/zoom hooks
+│   │   │   ├── layout/       # VizSidebar
+│   │   │   ├── learning-path/# Focus layers
+│   │   │   ├── top-nav/      # TopNav, BranchSwitcher, HeaderActionMenu, HeaderStats, viewTabs, WorkspaceModeSelector
+│   │   │   ├── AIErrorCard.tsx, AISidebar.tsx, AnalysisTab.tsx, ArchitectureView.tsx
+│   │   │   ├── BottomStatusBar.tsx, DependencyHealthTab.tsx, LearningPathTab.tsx
+│   │   │   ├── OverviewTab.tsx, SettingsPopover.tsx, StagedLoader.tsx, VizError.tsx
+│   │   ├── explorer/    # File explorer sidebar + code inspector dock (4 components)
+│   │   ├── timeline/    # Commit history view + repo timeline
+│   │   ├── contributors/# Contributor analytics
+│   │   ├── home/        # Landing page: HeroSection, RepoInput, CapabilityGroups, StatsStrip, Trending, HowItWorks + repoPresets
+│   │   ├── layout/      # Navbar
+│   │   ├── theme/       # ThemeSync
+│   │   └── ErrorBoundary.tsx
 │   ├── features/        # Feature modules
-│   │   ├── graph/       # Graph rendering (ForceGraph canvas, ReactFlow, panels, nodes)
+│   │   ├── graph/       # Graph rendering canvas (ForceGraphCanvas, GraphCanvas), force engine, hooks, widgets, helpers, export
 │   │   ├── ai/          # AI task frontend hooks (useAiTasks)
-│   │   └── search/      # Semantic search UI integration
-│   ├── hooks/           # Shared React hooks (useAnalyzeRepo, useRepoBranches, etc.)
-│   ├── lib/             # Shared utilities: apiClient, clipboard, utils
+│   │   └── search/      # Semantic search UI: SearchBar, SearchResults, QAAnswerView, IndexingStatusPanel, ModeToggle, stores + hooks
+│   ├── hooks/           # 7 shared hooks (useAnalyzeRepo, useCodeInspectorState, useMobile, useRepoBranches, useRepoTags, useVizDiff, useWorkspaceShortcuts)
+│   ├── lib/             # Shared utilities: apiClient, clipboard, utils (+ test files)
 │   ├── stores/          # Zustand stores (vizStore — canonical global store)
-│   ├── pages/           # Route pages (VizPage, HomePage, SearchPage)
-│   ├── types/           # TypeScript type definitions
-│   └── styles/          # Tailwind global CSS
+│   ├── pages/           # Route pages (VizPage, HomePage, SearchPage, NotFoundPage)
+│   ├── types/           # TypeScript type definitions (api, domain, github, index)
+│   ├── styles/          # Tailwind global CSS (globals.css)
+│   ├── main.tsx         # App entry point
+│   └── vite-env.d.ts    # Vite type declarations
+├── public/              # Static assets
+├── docs/                # Documentation (NAMING.md)
+├── design-system/       # Design system definitions (gitsdm/)
+├── scripts/             # Utility scripts (clean_graphify.py)
+├── .github/             # CI workflows (ci.yml, codeql.yml, dependency-review.yml), issue/PR templates, copilot-instructions.md, dependabot.yml
+├── .agent/              # Agent configuration
+├── .agents/             # Agent skills/workflows
+├── .codegraph/          # Codegraph index
+├── .codex/              # Codex configuration
+├── coverage/            # Test coverage reports
+├── graphify-out/        # Graphify knowledge graph output
+├── dist/                # Frontend build output
+├── dist-server/         # Server build output
+├── components.json      # shadcn/ui configuration
+├── bunfig.toml          # Bun configuration
+├── vercel.json          # Vercel deployment config
+├── vite.config.ts       # Vite bundler config + plugin setup
+├── eslint.config.js     # ESLint flat config
+├── tsconfig.json        # TypeScript config (strict, path aliases @/ @server/)
+├── tsconfig.app.json    # App-specific TS config
+├── tsconfig.node.json   # Node-specific TS config
+└── Dockerfile           # Docker build
 ```
 
 ---
@@ -73,7 +126,7 @@ gitSdm/
 
 All AI interactions go through `server/ai/provider.ts`. Do NOT call SDKs directly in task code.
 
-```
+```text
 Task handler → summarizer.ts → createProvider(type) → { Gemini | OpenAI | Anthropic } provider
 ```
 
@@ -92,9 +145,11 @@ Task handler → summarizer.ts → createProvider(type) → { Gemini | OpenAI | 
 Not Express routers — a manual pathname-matching pattern in `server/router/`. Each route file exports a `handleXRoutes(pathname, req, ...)` function. The dev server (`server/dev-api.ts`) and prod server (`server/prod-server.ts`) call these.
 
 Available route handlers:
+
 - `server/router/ai-routes.ts` — `/api/ai/explain`, `/api/ai/learning-path`, `/api/ai/mermaid`, `/api/ai/health`, etc.
 - `server/router/repo-routes.ts` — `/api/repo/analyze`, `/api/repo/files`, `/api/repo/branches`, etc.
 - `server/router/search-routes.ts` — `/api/search/query`, `/api/search/status`, `/api/search/index`
+- `server/router/schemas.ts` — Zod schemas for request validation
 
 ### API Client (Frontend)
 
@@ -103,6 +158,7 @@ Available route handlers:
 ### Toast Notification Pattern
 
 Error feedback uses the vizStore `toastMessage` system:
+
 - `setToastMessage('message')` from `useVizStore((s) => s.setToastMessage)`
 - Auto-dismisses after 3 seconds
 - Rendered in `VizPage.tsx` as an animated card at bottom-right
@@ -145,19 +201,21 @@ Error feedback uses the vizStore `toastMessage` system:
 Test runner: **Bun** (`bun test --isolate`)
 
 ### Conventions
+
 - Test files co-located: `foo.ts` → `foo.test.ts` (server side) or in `__tests__/` (some frontend)
 - Uses `bun:test` — `describe`, `it`, `expect`, `mock`, `beforeEach`/`afterEach`
 - Mocking: `mock.module('module-name', () => ({ ... }))` for external packages
 - Spying: `spyOn(console, 'error').mockImplementation(() => {})` then `expect(spy).toHaveBeenCalled()`
 
 ### Known Issues
-- **10 pre-existing test isolation failures** when running full suite (pass individually). Root cause: `global.fetch` mock pollution leaks between test files. The `--isolate` flag is already passed.
+
 - `mock.restore()` resets ALL mocks including `mock.module()` overrides — be careful with global mock cleanup.
 - Files that import from SDK packages (openai, @anthropic-ai/sdk) in tests must use `mock.module()` before any other imports.
 
 ### Coverage
+
 - **33 test files**: 22 server-side (AI, graph, parser, search, services, utils), 4 frontend (components, lib, graph utils)
-- **320+ tests** passing, 10 pre-existing failures
+- **352 tests** passing, 0 failures
 
 ---
 
@@ -168,7 +226,10 @@ bun dev              # Start dev server (frontend + backend)
 bun test             # Run full test suite (--isolate)
 bun test:watch       # Run tests in watch mode
 bun test:coverage    # Run with coverage report
-bun run build        # Production build
+bun run build        # Production build (frontend)
+bun run build:server # Build Express server for production
+bun run build:docker # Frontend + server build for Docker
+bun start            # Start production server (after build:docker)
 bun run typecheck    # TypeScript check (tsc --noEmit)
 bun run lint         # ESLint check
 ```
@@ -177,19 +238,25 @@ bun run lint         # ESLint check
 
 ## Environment Variables
 
-| Variable                  | Default                     | Description                            |
-| ------------------------- | --------------------------- | -------------------------------------- |
-| `GITHUB_TOKEN`            | —                           | GitHub PAT for API rate limits         |
-| `AI_PROVIDER`             | `mock`                      | Provider: gemini, openai, anthropic    |
-| `GEMINI_API_KEY`          | —                           | Gemini API key                         |
-| `OPENAI_API_KEY`          | —                           | OpenAI API key                         |
-| `ANTHROPIC_API_KEY`       | —                           | Anthropic API key                      |
-| `OPENAI_API_BASE`         | OpenAI default              | Custom API base URL                    |
-| `ANTHROPIC_API_BASE`      | Anthropic default           | Custom API base URL                    |
-| `OPENAI_EMBEDDING_MODEL`  | `openrouter/openai/text-embedding-3-large` | Embedding model        |
-| `EMBEDDING_DIMENSIONS`    | `3072`                      | Vector dimension count                 |
-| `HOST`                    | `0.0.0.0`                   | Production server bind                 |
-| `PORT`                    | `3000`                      | Production server port                 |
+| Variable                 | Default                                    | Description                            |
+| ------------------------ | ------------------------------------------ | -------------------------------------- |
+| `GITHUB_TOKEN`           | —                                          | GitHub PAT for API rate limits         |
+| `AI_PROVIDER`            | `mock`                                     | Provider: gemini, openai, anthropic    |
+| `GEMINI_API_KEY`         | —                                          | Gemini API key                         |
+| `OPENAI_API_KEY`         | —                                          | OpenAI API key                         |
+| `ANTHROPIC_API_KEY`      | —                                          | Anthropic API key                      |
+| `OPENAI_API_BASE`        | OpenAI default                             | Custom API base URL                    |
+| `ANTHROPIC_API_BASE`     | Anthropic default                          | Custom API base URL                    |
+| `OPENAI_EMBEDDING_MODEL` | `openrouter/openai/text-embedding-3-large` | Embedding model                        |
+| `EMBEDDING_DIMENSIONS`   | `3072`                                     | Vector dimension count                 |
+| `GEMINI_MODEL`           | `gemini-2.5-flash`                         | Gemini model override                  |
+| `GEMINI_API_VERSION`     | `v1alpha`                                  | Gemini API version                     |
+| `OPENAI_MODEL`           | `gpt-4o-mini`                              | OpenAI model override                  |
+| `ANTHROPIC_MODEL`        | `claude-3-5-haiku-latest`                  | Anthropic model override               |
+| `GEMINI_EMBEDDING_MODEL` | `gemini-embedding-001`                     | Gemini embedding model override        |
+| `TOKEN_CACHE_HASH_SECRET`| —                                          | Cache key hashing secret (production)  |
+| `HOST`                   | `0.0.0.0`                                  | Production server bind                 |
+| `PORT`                   | `3000`                                     | Production server port                 |
 
 ---
 
@@ -197,13 +264,12 @@ bun run lint         # ESLint check
 
 - Branch naming: `feature/description`, `bugfix/description`, `chore/description`
 - Commits: conventional commits (`feat:`, `fix:`, `chore:`, `docs:`, `perf:`, `refactor:`)
-- Emoji prefixes for significant changes: `⚡ Bolt:` (perf), `🛡️ Sentinel:` (security), `🎨 Palette:` (UI)
 
 ---
 
 ## Common Gotchas
 
-1. **Test isolation**: Running `bun test` without `--isolate` causes cross-file mock pollution. The `--isolate` flag is in the npm script, but some leakage still happens.
+1. **Test isolation**: Running `bun test` without `--isolate` causes cross-file mock pollution. The `--isolate` flag is in the npm script to prevent this.
 2. **mock.restore()**: Calling `mock.restore()` resets ALL mocks including `mock.module()` overrides. Use targeted `.mockRestore()` on individual spies instead.
 3. **Vite + Bun**: The dev server runs `bunx --bun vite`. The `--bun` flag ensures Vite uses Bun's runtime. Building also uses `bunx --bun`.
 4. **@anthropic-ai/sdk** is pre-1.0 — API changes may require provider.ts updates.
