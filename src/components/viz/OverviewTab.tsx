@@ -3,7 +3,7 @@ import { useVizStore } from '@/stores/vizStore';
 import type { RepoAnalysis } from '@/types';
 import {
   Plus, Activity, AlertTriangle, GitBranch,
-  FileCode, Folder, Package, Users, Code2, ShieldAlert, Info
+  FileCode, Folder, Package, Users, Code2, ShieldAlert, Info, Flame
 } from 'lucide-react';
 
 const GRAPH_FILE_NODE_CAP = 1200;
@@ -36,7 +36,8 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
     highCoupling,
     entryPoints,
     degrees,
-    nodeById
+    nodeById,
+    maintenanceHotspots,
   } = useMemo(() => {
     const fileCount = analysis.graph.nodes.filter(n => n.type === 'file').length;
     const folderCount = analysis.graph.nodes.filter(n => n.type === 'folder').length;
@@ -58,10 +59,21 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
       .filter(n => n.data.fileClass === 'entry')
       .slice(0, 5);
 
-	    const nodeById = new Map(analysis.graph.nodes.map(n => [n.id, n]));
-	
-	    return { fileCount, folderCount, depCount, contributorCount, highCoupling, entryPoints, degrees, nodeById };
-	  }, [analysis]);
+  const nodeById = new Map(analysis.graph.nodes.map(n => [n.id, n]));
+
+  // Compute Maintenance Hotspots: files with churnScore or complexityScore,
+  // ranked by combined score
+  const maintenanceHotspots = analysis.graph.nodes
+    .filter(n => n.type === 'file' && (n.data.churnScore != null || n.data.complexityScore != null))
+    .map(n => ({
+      node: n,
+      combinedScore: (n.data.churnScore ?? 0) * 0.5 + (n.data.complexityScore ?? 0) * 0.5,
+    }))
+    .sort((a, b) => b.combinedScore - a.combinedScore)
+    .slice(0, 5);
+
+  return { fileCount, folderCount, depCount, contributorCount, highCoupling, entryPoints, degrees, nodeById, maintenanceHotspots };
+  }, [analysis]);
 
   const totalFiles = analysis.totalFiles ?? fileCount;
   const isGraphCapped = totalFiles > fileCount;
@@ -327,6 +339,43 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                         {degrees[node.id]} edges
                       </span>
                     </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {maintenanceHotspots.length > 0 && (
+              <div>
+                <h4 className="flex items-center gap-1.5 text-[10px] font-semibold text-[#8b949e] uppercase tracking-widest mb-1.5">
+                  <Flame className="h-3 w-3 text-rose-400" />
+                  Maintenance Hotspots
+                </h4>
+                <p className="text-[9px] text-[#8b949e] mb-1.5 leading-tight">
+                  Files ranked by combined churn + complexity. Switch to Churn or Complexity overlay in the filter menu to visualize.
+                </p>
+                <div className="space-y-0.5">
+                  {maintenanceHotspots.map(({ node }) => (
+                    <button key={node.id} type="button"
+                         onClick={() => {
+                           focusOnNode(node.id, node.data?.path || node.id);
+                         }}
+                         className="w-full flex items-center justify-between px-1.5 py-1 hover:bg-[rgba(240,246,252,0.05)] rounded-sm transition-colors cursor-pointer text-left">
+                      <span className="text-[10px] font-mono text-[#e6edf3] truncate flex-1">{node.data.path || node.id}</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {node.data.churnScore != null && (
+                          <span className="text-[9px] font-mono text-orange-400 bg-orange-500/10 px-1 rounded-sm border border-orange-500/20"
+                                title={`Churn: ${node.data.churnScore}`}>
+                            C{node.data.churnScore.toFixed(2)}
+                          </span>
+                        )}
+                        {node.data.complexityScore != null && (
+                          <span className="text-[9px] font-mono text-rose-400 bg-rose-500/10 px-1 rounded-sm border border-rose-500/20"
+                                title={`Complexity: ${node.data.complexityScore}`}>
+                            X{node.data.complexityScore.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                    </button>
                   ))}
                 </div>
               </div>

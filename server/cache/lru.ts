@@ -30,10 +30,16 @@ const indexCache = new LRUCache<string, CacheValue>({
   ttl: 1000 * 60 * 60 * 2,
 });
 
+const churnCache = new LRUCache<string, CacheValue>({
+  max: 200,
+  ttl: 1000 * 60 * 60,
+});
+
 function getBucket(key: string): LRUCache<string, CacheValue> {
   if (key.startsWith('ai:')) return aiCache;
   if (key.startsWith('search:')) return searchCache;
   if (key.startsWith('index:')) return indexCache;
+  if (key.startsWith('churn:')) return churnCache;
   return analyzeCache;
 }
 
@@ -57,14 +63,16 @@ export function clearAllCaches(): void {
   aiCache.clear();
   searchCache.clear();
   indexCache.clear();
+  churnCache.clear();
 }
 
-export function getCacheSizes(): { analyze: number; ai: number; search: number; index: number } {
+export function getCacheSizes(): { analyze: number; ai: number; search: number; index: number; churn: number } {
   return {
     analyze: analyzeCache.size,
     ai: aiCache.size,
     search: searchCache.size,
     index: indexCache.size,
+    churn: churnCache.size,
   };
 }
 
@@ -94,6 +102,12 @@ export function aiCacheKey(
   return discriminator
     ? `ai:${kind}:${owner}/${repo}@${sha}:${contextHash}:${discriminator}`
     : `ai:${kind}:${owner}/${repo}@${sha}:${contextHash}`;
+}
+
+export function churnCacheKey(owner: string, repo: string, branch?: string, days = 90): string {
+  return branch
+    ? `churn:${owner}/${repo}@${branch}:${days}d`
+    : `churn:${owner}/${repo}@default:${days}d`;
 }
 
 export function hashContext(input: string): string {

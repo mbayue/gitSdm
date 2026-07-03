@@ -13,6 +13,8 @@ import { parseGitHubUrl } from '../github/parse-url';
 import { buildGraph } from '../graph/graph-builder';
 import { analyzeDependencies, analyzeManifestDependencies, analyzeWorkspacePackages } from '../parser/dependency-analyzer';
 import { annotateTree, findImportantFiles } from '../parser/file-classifier';
+import { analyzeAllFileComplexity } from '../parser/complexity-analyzer';
+import { fetchRepoChurn } from './churn-service';
 import { buildDependencyHealthReport } from './dependency-health';
 import { fetchNpmDependencyMetadataBatch } from './npm-registry';
 import type { RepoAnalysis } from '../../src/types';
@@ -56,26 +58,52 @@ export async function analyzeRepository(
     sourceExtensions.some((ext) => path.endsWith(ext))
   );
 
+  // All source files from the tree — used for churn (API endpoint: listCommits)
+  // and to expand content fetching for complexity coverage
+  const allSourceFilePaths = items
+    .filter(i => i.type === 'blob' && sourceExtensions.some(ext => i.path.endsWith(ext)))
+    .map(i => i.path);
+
   const pathsToFetch = Array.from(new Set([...manifestPaths, ...importantSourceFiles]));
-	const fileContents = await fetchFileContents(owner, repo, pathsToFetch, info.sha, tokenOrCtx);
-	const dependencies = analyzeDependencies(fileContents);
-	const scopedDependencies = analyzeManifestDependencies(fileContents);
-	const workspacePackages = analyzeWorkspacePackages(fileContents);
-	const [npmDependencyMetadata, graph] = await Promise.all([
-		fetchNpmDependencyMetadataBatch(
-			dependencies.filter((dependency) => dependency.ecosystem === 'npm'),
-		),
-		Promise.resolve().then(() => buildGraph({
-			owner,
-			repo,
-			tree,
-			dependencies,
-			contributors,
-			fileContents,
-			workspacePackages,
-			scopedDependencies,
-		})),
-	]);
+
+  // Expand content paths to include more source files so complexity covers
+  // more graph file nodes. Cap at 50 total to stay within API rate limits.
+  const contentFetchPaths = Array.from(new Set([...pathsToFetch, ...allSourceFilePaths])).slice(0, 50);
+
+  const fileContents = await fetchFileContents(owner, repo, contentFetchPaths, info.sha, tokenOrCtx);
+  const dependencies = analyzeDependencies(fileContents);
+  const scopedDependencies = analyzeManifestDependencies(fileContents);
+  const workspacePackages = analyzeWorkspacePackages(fileContents);
+  // Compute complexity from file content (synchronous, no API calls)
+  const complexityData = analyzeAllFileComplexity(fileContents);
+
+  // For churn: use all source file paths from the tree (not just important ones)
+  // so the overlay covers all rendered graph file nodes. Cap at 200 to
+  // avoid excessive API calls on large repos.
+  const churnFetchPaths = allSourceFilePaths.length > 0
+    ? allSourceFilePaths.slice(0, 200)
+    : pathsToFetch;
+
+  // Fetch churn (async API calls) and npm metadata in parallel
+  const [npmDependencyMetadata, churnData] = await Promise.all([
+    fetchNpmDependencyMetadataBatch(
+      dependencies.filter((dependency) => dependency.ecosystem === 'npm'),
+    ),
+    fetchRepoChurn(owner, repo, churnFetchPaths, branch, tokenOrCtx),
+  ]);
+
+	const graph = await buildGraph({
+		owner,
+		repo,
+		tree,
+		dependencies,
+		contributors,
+		fileContents,
+		workspacePackages,
+		scopedDependencies,
+		churnData,
+		complexityData,
+	});
 	const dependencyHealth = buildDependencyHealthReport(dependencies, scopedDependencies, npmDependencyMetadata);
 
   const analysis: RepoAnalysis = {

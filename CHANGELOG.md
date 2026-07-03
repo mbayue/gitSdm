@@ -6,28 +6,45 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-+
-+## [2.7.5] - 2026-07-03
-+
-+### Added
-+
-+- **Compare Mode Extension**: Added support for comparing tags and specific commit SHAs in the visual workspace.
-+- **AI Playground**: New dedicated interface for testing AI prompts and logic directly within the app.
-+- **Dependency Health Highlights**: Real-time visual alerts and health status mapping for project dependencies.
-+- Mobile-responsive layout improvements for the home and visualization pages.
-+
-+### Changed
-+
-+- **AI Provider Unification**: Refactored the core AI logic to use a unified provider flow, improving reliability across Gemini, OpenAI, and Anthropic.
-+- Purged unused React Flow dependencies in favor of optimized canvas-based rendering for large graphs.
-+- Optimized O(N) array lookups to O(1) Map lookups in several critical UI components (LearningPathTab, AnalysisTab).
-+
-+### Fixed
-+
-+- ** Sentinel (HIGH)**: Fixed XSS vulnerability in the SyntaxHighlighter component.
-+- ** Sentinel (MEDIUM)**: Fixed information disclosure in server-side error handling.
-+- Fixed logic bugs in the `BranchSwitcher` component.
-+
+
+## [2.8.0] - 2026-07-03
+
+### Added
+
+- Code Churn overlay (Color by Churn mode) with LRU-cached churn service
+- Complexity Score overlay (Color by Complexity / Size by Complexity)
+- Unified color architecture with `GRAPH_NODE_PALETTES` and `GRAPH_NODE_LAYER_OFFSETS`
+- Legend panel with churn/complexity ramp and blast radius section
+- Churn cache bucket in LRU cache (200 max, 1hr TTL)
+
+### Changed
+
+- Color architecture refactored for strict visual lane separation (fill/ring/glow/badge)
+- Multi-author ring visibility gated at zoom ≥ 0.75
+- Compare-branch modified color: amber (#f59e0b)
+- Churn/complexity low end: `#3f3f46` → `#ffffff`
+- Legend swatches unified to circles
+
+## [2.7.5] - 2026-07-03
+
+### Added
+
+- **Compare Mode Extension**: Added support for comparing tags and specific commit SHAs in the visual workspace.
+- **AI Playground**: New dedicated interface for testing AI prompts and logic directly within the app.
+- **Dependency Health Highlights**: Real-time visual alerts and health status mapping for project dependencies.
+- Mobile-responsive layout improvements for the home and visualization pages.
+
+### Changed
+
+- **AI Provider Unification**: Refactored the core AI logic to use a unified provider flow, improving reliability across Gemini, OpenAI, and Anthropic.
+- Purged unused React Flow dependencies in favor of optimized canvas-based rendering for large graphs.
+- Optimized O(N) array lookups to O(1) Map lookups in several critical UI components (LearningPathTab, AnalysisTab).
+
+### Fixed
+
+- **Sentinel (HIGH)**: Fixed XSS vulnerability in the SyntaxHighlighter component.
+- **Sentinel (MEDIUM)**: Fixed information disclosure in server-side error handling.
+- Fixed logic bugs in the `BranchSwitcher` component.
 
 ## [2.3.0] - 2026-06-30
 

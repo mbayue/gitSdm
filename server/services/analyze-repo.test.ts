@@ -109,6 +109,10 @@ describe('services/analyze-repo', () => {
       buildGraph: buildGraphMock,
     }));
 
+    mock.module('./churn-service', () => ({
+      fetchRepoChurn: async () => ({}),
+    }));
+
     clearAllCaches();
     activeFileContents = workspaceFileContents;
     buildGraphMock.mockClear();

@@ -48,6 +48,9 @@ export function NetworkCanvas({
   const forceInitialViewDoneRef = useRef(false);
   const lastMinimapTickRef = useRef(0);
 
+  const colorMode = useVizStore((s) => s.colorMode);
+  const sizeMode = useVizStore((s) => s.sizeMode);
+
   const {
     selectedNodeId,
     setSelectedNodeId,
@@ -170,9 +173,9 @@ export function NetworkCanvas({
 
   const drawNodePointerArea = useCallback(
     (node: ForceGraphNode, color: string, ctx: CanvasRenderingContext2D) => {
-      drawForcePointerArea(node, color, ctx);
+      drawForcePointerArea(node, color, ctx, sizeMode);
     },
-    [],
+    [sizeMode],
   );
 
   const drawNodeCanvasObject = useCallback(
@@ -186,14 +189,18 @@ export function NetworkCanvas({
         blastRadiusActive,
         compareBranch: !!compareBranch,
         hoveredForceNode,
+        colorMode,
+        sizeMode,
       });
     },
     [
       blastRadiusActive,
+      colorMode,
       compareBranch,
       highlightedNodeIds,
       hoveredForceNode,
       selectedNodeId,
+      sizeMode,
     ],
   );
 

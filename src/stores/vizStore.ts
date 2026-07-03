@@ -7,6 +7,8 @@ export type WorkspaceMode = "focus" | "analysis" | "learning" | "full";
 export type GraphScope = "important" | "source" | "grouped" | "full";
 export type ContentFilter = "source" | "config" | "docs" | "tests" | "github" | "examples" | "generated" | "translations";
 export type CompareRefType = "branch" | "tag" | "commit";
+export type ColorMode = "default" | "churn" | "complexity";
+export type SizeMode = "default" | "complexity";
 
 interface VizState {
   searchQuery: string;
@@ -37,6 +39,10 @@ interface VizState {
   diffStatusFilters: Set<"added" | "modified" | "deleted">;
   blastRadiusActive: boolean;
 
+  // Churn / Complexity overlay
+  colorMode: ColorMode;
+  sizeMode: SizeMode;
+
   graphScope: GraphScope;
   contentFilters: Set<ContentFilter>;
 
@@ -51,8 +57,7 @@ interface VizState {
   };
 
   // Shared UI synchronization states
-  activeDropdown: "filter" | "layout" | "export" | null;
-  legendOpen: boolean;
+  activeDropdown: "filter" | "display" | "layout" | "export" | "legend" | null;
   graphActionTrigger: {
     action: "zoomIn" | "zoomOut" | "fitView" | "reset" | "focusGraph";
     timestamp: number;
@@ -91,14 +96,15 @@ interface VizState {
     view: "graph" | "architecture" | "contributors" | "commits",
   ) => void;
   setBlastRadiusActive: (active: boolean) => void;
+  setColorMode: (mode: ColorMode) => void;
+  setSizeMode: (mode: SizeMode) => void;
   setGraphSidebarOpen: (open: boolean) => void;
   toggleGraphSidebarSection: (
     key: keyof VizState["graphSidebarSections"],
   ) => void;
   resetFilters: () => void;
 
-  setActiveDropdown: (dropdown: "filter" | "layout" | "export" | null) => void;
-  setLegendOpen: (open: boolean) => void;
+  setActiveDropdown: (dropdown: "filter" | "display" | "layout" | "export" | "legend" | null) => void;
   triggerGraphAction: (action: "zoomIn" | "zoomOut" | "fitView" | "reset" | "focusGraph") => void;
 
   setActiveRepoKey: (key: string | null) => void;
@@ -137,6 +143,8 @@ export const useVizStore = create<VizState>()(
   activeFocusLayer: "all",
   diffStatusFilters: new Set(),
   blastRadiusActive: false,
+  colorMode: "default" as ColorMode,
+  sizeMode: "default" as SizeMode,
 
   graphScope: "source",
   contentFilters: new Set(defaultContentFilters),
@@ -151,7 +159,6 @@ export const useVizStore = create<VizState>()(
   },
 
   activeDropdown: null,
-  legendOpen: false,
   graphActionTrigger: null,
 
   setGraphScope: (graphScope: GraphScope) => set((s: VizState) => {
@@ -229,6 +236,8 @@ export const useVizStore = create<VizState>()(
   setActiveFocusLayer: (activeFocusLayer: "all" | "api" | "ui" | "core" | "config") => set({ activeFocusLayer }),
   setActiveView: (activeView: "graph" | "architecture" | "contributors" | "commits") => set({ activeView }),
   setBlastRadiusActive: (blastRadiusActive: boolean) => set({ blastRadiusActive }),
+  setColorMode: (colorMode: ColorMode) => set({ colorMode }),
+  setSizeMode: (sizeMode: SizeMode) => set({ sizeMode }),
   setGraphSidebarOpen: (graphSidebarOpen: boolean) => set({ graphSidebarOpen }),
   toggleGraphSidebarSection: (key: keyof VizState["graphSidebarSections"]) =>
     set((s: VizState) => ({
@@ -247,10 +256,11 @@ export const useVizStore = create<VizState>()(
       searchQuery: "",
       graphScope: "source",
       contentFilters: new Set(defaultContentFilters),
+      colorMode: "default" as ColorMode,
+      sizeMode: "default" as SizeMode,
     }),
 
-  setActiveDropdown: (activeDropdown: "filter" | "layout" | "export" | null) => set({ activeDropdown }),
-  setLegendOpen: (legendOpen: boolean) => set({ legendOpen }),
+  setActiveDropdown: (activeDropdown: "filter" | "display" | "layout" | "export" | "legend" | null) => set({ activeDropdown }),
   triggerGraphAction: (action: "zoomIn" | "zoomOut" | "fitView" | "reset" | "focusGraph") => set({ graphActionTrigger: { action, timestamp: Date.now() } }),
 
   setActiveRepoKey: (activeRepoKey: string | null) => set({ activeRepoKey }),
@@ -280,10 +290,11 @@ export const useVizStore = create<VizState>()(
       diffStatusFilters: new Set(),
       activeView: "graph",
       blastRadiusActive: false,
+      colorMode: "default" as ColorMode,
+      sizeMode: "default" as SizeMode,
       graphScope: "source",
       contentFilters: new Set(defaultContentFilters),
       activeDropdown: null,
-      legendOpen: false,
       graphActionTrigger: null,
     }),
   }),
@@ -299,7 +310,6 @@ export const useVizStore = create<VizState>()(
       activeView: state.activeView,
       graphSidebarOpen: state.graphSidebarOpen,
       activeDropdown: state.activeDropdown,
-      legendOpen: state.legendOpen,
       graphScope: state.graphScope,
       contentFilters: Array.from(state.contentFilters),
     }),

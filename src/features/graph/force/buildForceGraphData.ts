@@ -61,9 +61,19 @@ export function buildForceGraphData(
         fileType,
         nodeType: node.type,
         degree: degreeById.get(node.id) ?? 0,
-        color: node.data.nodeColor || NODE_TYPE_COLORS[node.type] || getCommunityColor(community),
+        color:
+          node.type === 'file'
+            ? NODE_TYPE_COLORS.file
+            : node.data.nodeColor || NODE_TYPE_COLORS[node.type] || getCommunityColor(community),
         diffStatus: node.data.diffStatus,
         hasOutdatedDeps: node.data.hasOutdatedDeps,
+        churnScore: node.data.churnScore,
+        authorCount: node.data.authorCount,
+        complexityScore: node.data.complexityScore,
+        loc: node.data.loc,
+        importCount: node.data.importCount,
+        exportCount: node.data.exportCount,
+        lastModified: node.data.lastModified,
       };
     });
 

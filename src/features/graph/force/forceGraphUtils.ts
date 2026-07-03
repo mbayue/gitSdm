@@ -1,8 +1,13 @@
 import { computeBlastRadius } from './blastRadius';
 import type { ForceGraphNode, ForceGraphLink } from './forceGraphConstants';
+import type { SizeMode } from '@/stores/vizStore';
 
-export function getForceNodeRadius(node: ForceGraphNode): number {
-  return Math.max(3.5, Math.min(13, 3.8 + Math.sqrt(Math.max(0, node.degree)) * 1.45));
+export function getForceNodeRadius(node: ForceGraphNode, sizeMode?: SizeMode): number {
+  const base = Math.max(3.5, Math.min(13, 3.8 + Math.sqrt(Math.max(0, node.degree)) * 1.45));
+  if (sizeMode === 'complexity' && node.complexityScore) {
+    return Math.min(24, base + node.complexityScore * 12);
+  }
+  return base;
 }
 
 export function getForceLinkColor(

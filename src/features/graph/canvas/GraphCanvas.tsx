@@ -11,7 +11,6 @@ import { NetworkCanvas } from "./ForceGraphCanvas";
 
 import { useGraphCanvasState } from "./hooks/useGraphCanvasState";
 import { ToolbarDropdowns } from "./ToolbarDropdowns";
-import { LegendPanel } from "./widgets/LegendPanel";
 import { FloatingGraphControls } from "./widgets/FloatingGraphControls";
 import { useGraphExport } from "../useGraphExport";
 import type { ForceGraphMethods } from "react-force-graph-2d";
@@ -44,12 +43,14 @@ export function GraphCanvas({
     compareBranch,
     diffStatusFilters,
     activeDropdown,
-    legendOpen,
-    setLegendOpen,
     graphScope,
     setGraphScope,
     contentFilters,
     toggleContentFilter,
+    colorMode,
+    setColorMode,
+    sizeMode,
+    setSizeMode,
   } = useVizStore();
 
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -112,11 +113,12 @@ export function GraphCanvas({
               setGraphScope={setGraphScope}
               contentFilters={contentFilters}
               toggleContentFilter={toggleContentFilter}
+              colorMode={colorMode}
+              setColorMode={setColorMode}
+              sizeMode={sizeMode}
+              setSizeMode={setSizeMode}
             />
           </div>
-
-          {/* Legend Panel */}
-          <LegendPanel legendOpen={legendOpen} setLegendOpen={setLegendOpen} />
 
           {/* Floating Graph Controls */}
           <FloatingGraphControls showMinimap={!!showMinimap} setShowMinimap={setShowMinimap || (() => {})} />

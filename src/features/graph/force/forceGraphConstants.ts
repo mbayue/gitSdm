@@ -13,6 +13,13 @@ export interface ForceGraphNode extends NodeObject {
   color: string;
   diffStatus?: 'added' | 'modified' | 'deleted';
   hasOutdatedDeps?: boolean;
+  churnScore?: number;
+  authorCount?: number;
+  complexityScore?: number;
+  loc?: number;
+  importCount?: number;
+  exportCount?: number;
+  lastModified?: string;
 }
 
 export interface ForceGraphLink extends LinkObject<ForceGraphNode> {
@@ -38,3 +45,20 @@ export const DIFF_STATUS_COLORS: Record<string, string> = {
   modified: '#f59e0b',
   deleted: '#ef4444',
 };
+
+export const GRAPH_NODE_PALETTES = {
+  defaultFile: '#3b82f6',
+  blastSelection: '#22d3ee',
+  standardSelection: '#a78bfa',
+  outdatedDeps: '#f59e0b',
+  multiAuthor: '#22d3ee',
+  compareRing: DIFF_STATUS_COLORS,
+  churn: ['#ffffff', '#78716c', '#d97706', '#ea580c', '#dc2626'],
+  complexity: ['#ffffff', '#78716c', '#d97706', '#ea580c', '#dc2626'],
+} as const;
+
+export const GRAPH_NODE_LAYER_OFFSETS = {
+  compareRing: 4,
+  multiAuthor: 5.5,
+  selection: 7.5,
+} as const;

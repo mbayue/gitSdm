@@ -1,5 +1,5 @@
 <!-- markdownlint-disable MD033 -->
-<h1 align="center">gitSdm (Git Software Dependency Map v2.7.5)</h1>
+<h1 align="center">gitSdm (Git Software Dependency Map v2.8.0)</h1>
 
 <p align="center">
   <strong>Graph-first repository analysis for exploring files, dependencies, modules, and architecture notes.</strong>

@@ -4,7 +4,7 @@
 
 ## Project Identity
 
-**gitSdm** (Git Software Dependency Map) — v2.7.5. Graph-first repository analysis tool: visualize file dependencies, AI-powered codebase insights, semantic search, commit timelines, architecture diagrams, and dependency health. Single-page app with an embedded Express backend + Vercel serverless functions.
+**gitSdm** (Git Software Dependency Map) — v2.8.0. Graph-first repository analysis tool: visualize file dependencies, AI-powered codebase insights, semantic search, commit timelines, architecture diagrams, and dependency health. Single-page app with an embedded Express backend + Vercel serverless functions.
 
 ---
 
@@ -49,14 +49,15 @@ gitSdm/
 │   ├── env.ts           # Environment variable exports
 │   ├── github/          # GitHub API client (Octokit), fetch-tree, mock-data (+ test files)
 │   ├── graph/           # Graph building algorithms (graph-builder.ts/test.ts, node-colors.ts)
-│   ├── parser/          # Dependency analysis, file classifier, import resolver
+│   ├── parser/          # Dependency analysis, file classifier, import resolver, complexity
+│   │   ├── complexity-analyzer.ts
 │   │   ├── dependency-analyzer.ts/test.ts
 │   │   ├── file-classifier.ts/test.ts
 │   │   ├── import-resolver.ts/test.ts
 │   │   └── manifest-parsers/  # docker, go, java, npm, pip, rust + shared registry/types
 │   ├── router/          # Route handlers (ai-routes, repo-routes, search-routes, schemas)
 │   ├── search/          # Semantic search: chunker, embeddings, vector store, QA engine, indexing pipeline
-│   ├── services/        # Business logic (analyze-repo, dependency-health, get-file, npm-registry, trending)
+│   ├── services/        # Business logic (analyze-repo, churn-service, dependency-health, get-file, npm-registry, trending)
 │   ├── utils/           # Errors, context, logger, HTTP helpers
 │   ├── api-router.ts    # Unified API router
 │   ├── dev-api.ts       # Dev server API middleware
