@@ -11,6 +11,7 @@ import type { TrendingRepo } from '../src/types';
 import { handleAiRoutes } from './router/ai-routes';
 import { handleRepoRoutes } from './router/repo-routes';
 import { handleSearchRoutes } from './router/search-routes';
+import { addSecurityHeaders } from './utils/http';
 
 export async function handleApiRequest(
   req: Request,
@@ -38,35 +39,35 @@ export async function handleApiRequest(
     if (pathname === '/api/trending' && method === 'GET') {
       const repos: TrendingRepo[] = await fetchTrending();
       logApi('/api/trending', { durationMs: Date.now() - start, count: repos.length });
-      return Response.json({ repos }, { status: 200 });
+      return addSecurityHeaders(Response.json({ repos }, { status: 200 }));
     }
 
     if (pathname === '/api/config' && method === 'GET') {
-      return Response.json(getPublicAppConfig(), { status: 200 });
+      return addSecurityHeaders(Response.json(getPublicAppConfig(), { status: 200 }));
     }
 
     if (pathname === '/api/cache/clear' && method === 'POST') {
       clearAllCaches();
       logApi('/api/cache/clear', { durationMs: Date.now() - start });
-      return Response.json({ cleared: true }, { status: 200 });
+      return addSecurityHeaders(Response.json({ cleared: true }, { status: 200 }));
     }
 
     // ── Repository Routes ───────────────────────────────────────────
     const repoResponse = await handleRepoRoutes(pathname, req, query, ctx, start);
-    if (repoResponse) return repoResponse;
+    if (repoResponse) return addSecurityHeaders(repoResponse);
 
     // ── AI Summary & Analysis Routes ────────────────────────────────
     const aiResponse = await handleAiRoutes(pathname, req, userKey, gitHubToken, ctx);
-    if (aiResponse) return aiResponse;
+    if (aiResponse) return addSecurityHeaders(aiResponse);
 
     // ── Semantic Search & Ingest Routes ─────────────────────────────
     const searchResponse = await handleSearchRoutes(pathname, req, query, userKey, ctx, start);
-    if (searchResponse) return searchResponse;
+    if (searchResponse) return addSecurityHeaders(searchResponse);
 
     return null;
   } catch (error) {
     const payload = toErrorPayload(error);
     logError(pathname, error, { durationMs: Date.now() - start });
-    return Response.json(payload, { status: payload.status });
+    return addSecurityHeaders(Response.json(payload, { status: payload.status }));
   }
 }

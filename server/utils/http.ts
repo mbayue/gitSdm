@@ -58,3 +58,11 @@ export async function handleNodeRequest(
   nodeRes.end(Buffer.from(arrayBuffer));
   return true;
 }
+
+export function addSecurityHeaders(response: Response): Response {
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  // X-XSS-Protection is deprecated; use CSP instead
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  return response;
+}
