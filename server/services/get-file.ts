@@ -38,7 +38,7 @@ export async function getRepoFileContent(
     throw new Error('File is not a regular file or too large to display.');
   } catch (error) {
     if (error && typeof error === 'object' && 'status' in error && (error as { status: number }).status === 404) {
-      throw new Error(`File not found: ${path}`);
+      throw new Error(`File not found: ${path}`, { cause: error });
     }
     handleOctokitError(error);
   }

@@ -75,7 +75,7 @@ export function useArchitectureState(
     return () => {
       active = false;
     };
-  }, [mode, data, analysis]);
+  }, [mode, data, analysis, resetView]);
 
   return {
     generate,
