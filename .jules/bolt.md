@@ -24,3 +24,5 @@
 ## 2024-11-20 - [O(N) Iteration Optimization in buildDependencyHealthSummary]
 **Learning:** Found multiple O(N) linear array lookups utilizing `.filter()` repeatedly to compute counts across categories inside the `buildDependencyHealthSummary` calculation logic.
 **Action:** Replace multiple `.filter()` passes with a single `for` loop pass over the array utilizing a mutable tally counter struct, reducing iteration overhead and allocations to $O(N)$ exactly.
+
+- In backend data processing pipelines, avoid nested O(N) array operations (like `.find()` inside `.filter()`). Pre-compute a `Map` keyed by unique identifiers (e.g., `path`) for O(1) lookups to optimize performance and prevent O(N*M) bottlenecks. For example, converting array lookups inside incremental indexing mapping logic.
