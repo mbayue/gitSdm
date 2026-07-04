@@ -85,9 +85,6 @@ async function runIndexing(options: IndexingOptions, ctx: RequestContext, key: s
 
   // 4. Determine files to process (incremental: only changed files)
   let filesToProcess = sourceFiles;
-  let filesToDelete: string[] = [];
-  // Use for incremental index cleanup
-  console.log(filesToDelete.length);
 
   if (previousSha && vectorStore.hasIndex(key)) {
     const { items: prevItems } = await fetchFlatTree(owner, repo, previousSha, ctx);
@@ -98,7 +95,7 @@ async function runIndexing(options: IndexingOptions, ctx: RequestContext, key: s
 
     // Files in current but not prev, or SHA changed → treat as modified
     // Files in prev but not current → delete
-    filesToDelete = [...prevFiles].filter((f) => !currFiles.has(f));
+    const filesToDelete = [...prevFiles].filter((f) => !currFiles.has(f));
     const modifiedOrAdded = sourceFiles.filter((item) => {
       const prevItem = prevItems.find((p) => p.path === item.path);
       return !prevItem || prevItem.sha !== item.sha; // SHA changed or new file

@@ -24,18 +24,15 @@ export function useArchitectureState(
   }, [mode, owner, repo, generate]);
 
   useEffect(() => {
-    let code = '';
-    if (mode === 'code') {
-      if (!analysis) return;
-      code = generateProgrammaticMermaid(analysis);
-    } else {
-      if (!data?.diagram) {
-        setSvg('');
-        setRenderError(null);
-        return;
-      }
-      code = stripMermaidFences(data.diagram);
+    if (mode === 'code' && !analysis) return;
+    if (mode === 'ai' && !data?.diagram) {
+      setSvg('');
+      setRenderError(null);
+      return;
     }
+    const code = mode === 'code'
+      ? generateProgrammaticMermaid(analysis)
+      : stripMermaidFences(data?.diagram ?? '');
 
     if (!code) return;
 
@@ -43,7 +40,6 @@ export function useArchitectureState(
     setRenderError(null);
     setSvg('');
     resetView();
-    console.log(active);
 
     const id = `mermaid-view-svg-${Math.floor(Math.random() * 1000000)}`;
 
