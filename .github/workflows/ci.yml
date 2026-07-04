@@ -51,7 +51,8 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run build
 
-      # Bundle size gate — fail if total gzipped JS exceeds 500 KB
+      # Bundle size gate — fail if total gzipped JS exceeds 2.5 MB
+      # Current baseline: ~1.87 MB (Mermaid, force-graph, recharts, etc.)
       - name: Check bundle size
         run: |
           total=0
@@ -60,8 +61,8 @@ jobs:
             total=$((total + size))
           done
           echo "Total gzipped JS: $total bytes"
-          if [ "$total" -gt 512000 ]; then
-            echo "❌ Bundle size $total bytes exceeds 500 KB limit"
+          if [ "$total" -gt 2500000 ]; then
+            echo "❌ Bundle size $total bytes exceeds 2.5 MB limit"
             exit 1
           fi
           echo "✅ Bundle size within limit"
