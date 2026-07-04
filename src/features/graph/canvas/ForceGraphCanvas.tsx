@@ -269,7 +269,7 @@ export function NetworkCanvas({
           graphData={forceGraphData}
           backgroundColor="#0f0f1a"
           nodeRelSize={1}
-          linkCurvature={0}
+          linkCurvature={0.18}
           linkDirectionalArrowLength={6}
           linkDirectionalArrowRelPos={0.96}
           linkDirectionalArrowColor={getLinkColor}
