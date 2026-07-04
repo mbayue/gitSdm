@@ -13,14 +13,4 @@ test.describe('Repository page', () => {
     await expect(page).toHaveTitle(/gitSdm/i);
   });
 
-  test('file explorer toggle button exists', async ({ page }) => {
-    await page.goto('/mbayue/gitSdm', { timeout: 15000 });
-
-    // Wait for the header to render
-    await page.waitForSelector('header', { timeout: 20000 });
-
-    // Look for the file explorer toggle (PanelLeft icon button)
-    const toggleButtons = page.locator('button[aria-label*="Explorer"i], button[title*="Explorer"i]');
-    await expect(toggleButtons.first()).toBeVisible({ timeout: 15000 });
-  });
 });

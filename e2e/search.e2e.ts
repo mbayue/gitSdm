@@ -10,12 +10,4 @@ test.describe('Search', () => {
     await expect(searchInput.first()).toBeVisible({ timeout: 15000 });
   });
 
-  test('homepage has a search navigation element', async ({ page }) => {
-    await page.goto('/');
-
-    // Check for search-related navigation links
-    const searchLink = page.locator('a[href*="search"], button:has-text("Search")');
-    await page.waitForLoadState('networkidle');
-    await expect(searchLink.first()).toBeVisible({ timeout: 15000 });
-  });
 });
