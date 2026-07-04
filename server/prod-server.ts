@@ -27,7 +27,14 @@ Bun.serve({
     }
 
     // Serve static files
-    const filePath = safeJoin(distDir, decodeURIComponent(pathname));
+    let decodedPath: string;
+    try {
+      decodedPath = decodeURIComponent(pathname);
+    } catch {
+      return new Response('Bad Request', { status: 400 });
+    }
+
+    const filePath = safeJoin(distDir, decodedPath);
     const file = Bun.file(filePath);
     if (await file.exists()) {
       return addSecurityHeaders(new Response(file));
