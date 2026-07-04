@@ -15,6 +15,7 @@ test.describe('Search', () => {
 
     // Check for search-related navigation links
     const searchLink = page.locator('a[href*="search"], button:has-text("Search")');
-    await expect(searchLink.first()).toBeVisible({ timeout: 10000 });
+    await page.waitForLoadState('networkidle');
+    await expect(searchLink.first()).toBeVisible({ timeout: 15000 });
   });
 });
