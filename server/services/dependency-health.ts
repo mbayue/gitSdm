@@ -53,6 +53,21 @@ function groupDependencies(
 ): readonly DependencyGroup[] {
   const grouped = new Map<DependencyKey, DependencyGroup>();
 
+  // Performance Optimization (Bolt):
+  // Pre-compute a Map of scoped dependencies grouped by dependencyKey.
+  // This eliminates the need for an O(M) .filter() array lookup inside the
+  // O(N) loop below, reducing time complexity from O(N*M) to O(N+M).
+  const scopedByDepKey = new Map<DependencyKey, ScopedDependency[]>();
+  for (const scoped of scopedDependencies) {
+    const key = dependencyKey(scoped);
+    let arr = scopedByDepKey.get(key);
+    if (!arr) {
+      arr = [];
+      scopedByDepKey.set(key, arr);
+    }
+    arr.push(scoped);
+  }
+
   for (const dependency of dependencies) {
     const key = dependencyKey(dependency);
     const existing = grouped.get(key);
@@ -60,7 +75,7 @@ function groupDependencies(
 
     grouped.set(key, {
       dependency,
-      scopedDependencies: scopedDependencies.filter((scopedDependency) => dependencyKey(scopedDependency) === key),
+      scopedDependencies: scopedByDepKey.get(key) || [],
     });
   }
 
