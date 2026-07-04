@@ -123,18 +123,25 @@ export function drawForceNode({
 
   ctx.beginPath();
   ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.fillStyle = resolveNodeColor(node, colorMode);
   
   if (blastRadiusActive) {
     ctx.shadowColor = isSelected ? "#22d3ee" : isNeighbor ? "#0891b2" : "transparent";
     ctx.shadowBlur = isSelected ? 18 : isNeighbor ? 12 : 0;
   } else {
-    // Match the Legend (Selected/Focus Node uses Violet glow, Neighbor Connections use subtle Violet/Purple)
     ctx.shadowColor = isSelected ? "#a78bfa" : isNeighbor ? "rgba(139, 92, 246, 0.35)" : "transparent";
     ctx.shadowBlur = isSelected ? 18 : isNeighbor ? 8 : 0;
   }
   
-  ctx.fill();
+  if (node.nodeType === 'file') {
+    ctx.fillStyle = resolveNodeColor(node, colorMode);
+    ctx.fill();
+  } else {
+    ctx.fillStyle = '#0f0f1a';
+    ctx.fill();
+    ctx.strokeStyle = resolveNodeColor(node, colorMode);
+    ctx.lineWidth = 1.8 / globalScale;
+    ctx.stroke();
+  }
   ctx.shadowBlur = 0;
 
   if (colorMode === 'churn' && node.authorCount != null && node.authorCount >= 3) {
