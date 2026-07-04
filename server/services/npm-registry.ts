@@ -89,7 +89,8 @@ async function fetchNpmRegistryPackage(packageName: string): Promise<NpmRegistry
 
   let response: Response;
   try {
-    response = await fetch(url);
+    // Prevent unbounded network requests which can lead to Denial of Service (DoS)
+    response = await fetch(url, { signal: AbortSignal.timeout(5000) });
   } catch {
     return typedError('network-error', packageName, 'network error');
   }
