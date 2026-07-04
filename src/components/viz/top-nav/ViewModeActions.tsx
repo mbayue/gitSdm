@@ -1,19 +1,13 @@
-import { Check, LayoutPanelLeft, Monitor, ActivitySquare, BookOpen } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { VIEW_TABS } from './viewTabs';
-
-const LAYOUT_MODES = [
-  { id: 'full', label: 'Full Workspace', icon: LayoutPanelLeft },
-  { id: 'focus', label: 'Focus Mode', icon: Monitor },
-  { id: 'analysis', label: 'Analysis Mode', icon: ActivitySquare },
-  { id: 'learning', label: 'Learning Mode', icon: BookOpen },
-] as const;
+import { VIEW_TABS, type ViewTab } from './viewTabs';
+import { WORKSPACE_MODES, type WorkspaceModeId } from './workspaceModes';
 
 interface ViewModeActionsProps {
-  activeView: string;
-  workspaceMode: string;
-  onViewChange: (viewId: string) => void;
-  onWorkspaceModeChange: (modeId: string) => void;
+  activeView: ViewTab['id'];
+  workspaceMode: WorkspaceModeId;
+  onViewChange: (viewId: ViewTab['id']) => void;
+  onWorkspaceModeChange: (modeId: WorkspaceModeId) => void;
   onClose: () => void;
 }
 
@@ -48,7 +42,7 @@ export function ViewModeActions({ activeView, workspaceMode, onViewChange, onWor
       <div className="px-2.5 py-1 text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider font-mono select-none">
         Workspace Layout
       </div>
-      {LAYOUT_MODES.map((item) => {
+      {WORKSPACE_MODES.map((item) => {
         const isSelected = workspaceMode === item.id;
         return (
           <button

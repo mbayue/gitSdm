@@ -11,7 +11,7 @@ export default defineConfig({
     viewport: { width: 1280, height: 720 },
   },
   webServer: {
-    command: 'bun run build && bun run build:server && bun start',
+    command: process.env.CI ? 'bun start' : 'bun run build && bun run build:server && bun start',
     port: 3000,
     timeout: 60000,
     reuseExistingServer: !process.env.CI,

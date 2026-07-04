@@ -18,6 +18,7 @@ export function CommitShaInput({ shaInput, shaError, onShaInput, onKeyDown, onCo
         <input
           type="text"
           placeholder="e.g. abc1234 or full SHA"
+          aria-label="Commit SHA"
           value={shaInput}
           onChange={(e) => { onShaInput(e.target.value); }}
           onKeyDown={onKeyDown}
@@ -33,7 +34,7 @@ export function CommitShaInput({ shaInput, shaError, onShaInput, onKeyDown, onCo
         </button>
       </div>
       {shaError && (
-        <p className="text-[10px] text-red-400 px-1 flex items-center gap-1">
+        <p className="text-[10px] text-red-400 px-1 flex items-center gap-1" role="alert">
           <AlertCircle className="h-3 w-3 shrink-0" />
           {shaError}
         </p>

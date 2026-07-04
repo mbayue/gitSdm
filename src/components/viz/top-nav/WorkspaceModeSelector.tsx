@@ -1,4 +1,4 @@
-import { Monitor, BookOpen, ActivitySquare, LayoutPanelLeft, Check, ChevronDown } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 import { useVizStore } from '@/stores/vizStore';
 import {
   DropdownMenu,
@@ -7,50 +7,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-
-interface WorkspaceModeOption {
-  id: 'focus' | 'analysis' | 'learning' | 'full';
-  label: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-  color: string;
-  bgColor: string;
-}
-
-const MODES: WorkspaceModeOption[] = [
-  {
-    id: 'full',
-    label: 'Full Workspace',
-    description: 'All panels, file explorer, and inspector visible',
-    icon: LayoutPanelLeft,
-    color: 'text-[#e6edf3]',
-    bgColor: 'bg-white/5 border-white/10 text-[#e6edf3]',
-  },
-  {
-    id: 'focus',
-    label: 'Focus Mode',
-    description: 'Minimizes sidebars to focus purely on the canvas',
-    icon: Monitor,
-    color: 'text-[#e6edf3]',
-    bgColor: 'bg-white/5 border-white/10 text-[#e6edf3]',
-  },
-  {
-    id: 'analysis',
-    label: 'Analysis Mode',
-    description: 'Focuses sidebar on AI analysis and insights',
-    icon: ActivitySquare,
-    color: 'text-[#e6edf3]',
-    bgColor: 'bg-white/5 border-white/10 text-[#e6edf3]',
-  },
-  {
-    id: 'learning',
-    label: 'Learning Mode',
-    description: 'Walk through codebase concepts with timelines',
-    icon: BookOpen,
-    color: 'text-[#e6edf3]',
-    bgColor: 'bg-white/5 border-white/10 text-[#e6edf3]',
-  },
-];
+import { WORKSPACE_MODES, type WorkspaceModeId } from './workspaceModes';
 
 export function WorkspaceModeSelector() {
   const {
@@ -62,9 +19,9 @@ export function WorkspaceModeSelector() {
     setInspectorOpen,
   } = useVizStore();
 
-  const currentMode = MODES.find((m) => m.id === workspaceMode) || MODES[0];
+  const currentMode = WORKSPACE_MODES.find((m) => m.id === workspaceMode) || WORKSPACE_MODES[0];
 
-  const handleModeChange = (mode: 'focus' | 'analysis' | 'learning' | 'full') => {
+  const handleModeChange = (mode: WorkspaceModeId) => {
     setWorkspaceMode(mode);
 
     if (window.innerWidth < 1024) {
@@ -106,7 +63,7 @@ export function WorkspaceModeSelector() {
           Workspace Layout
         </div>
         <div className="space-y-0.5">
-          {MODES.map((mode) => {
+          {WORKSPACE_MODES.map((mode) => {
             const isSelected = workspaceMode === mode.id;
             return (
               <DropdownMenuItem

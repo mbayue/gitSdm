@@ -73,7 +73,7 @@ jobs:
         if: always()
         with:
           name: bundle-stats
-          path: stats.html
+          path: dist/stats.html
           retention-days: 7
 
   e2e:

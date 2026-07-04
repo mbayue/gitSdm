@@ -7,11 +7,9 @@ test.describe('AI Explain (mock mode)', () => {
     // Wait for the header to render
     await page.waitForSelector('header', { timeout: 20000 });
 
-    // Look for the AI sidebar toggle (PanelRight icon or AI-related button)
-    const aiButton = page.locator('button[aria-label*="AI"i], button[title*="AI"i], button[title*="Sidebar"i]');
-    if (await aiButton.count() > 0) {
-      await expect(aiButton.first()).toBeVisible();
-    }
+    // Look for the AI sidebar toggle button
+    const aiButton = page.locator('button[aria-label*="AI"i], button[title*="AI"i]');
+    await expect(aiButton.first()).toBeVisible();
   });
 
   test('AI sidebar renders when toggled', async ({ page }) => {
@@ -20,17 +18,11 @@ test.describe('AI Explain (mock mode)', () => {
     await page.waitForSelector('header', { timeout: 20000 });
 
     // Try to find and click the AI sidebar toggle
-    const aiButton = page.locator('button[aria-label*="AI"i], button[title*="AI"i], button[title*="Sidebar"i]');
-    if (await aiButton.count() > 0) {
-      await aiButton.first().click();
-      await page.waitForTimeout(500);
+    const aiButton = page.locator('button[aria-label*="AI"i], button[title*="AI"i]');
+    await aiButton.first().click();
 
-      // The AI sidebar should appear with content
-      // Look for AI-related text or panel
-      const aiPanel = page.locator('text=/explain|AI|assistant/i');
-      if (await aiPanel.count() > 0) {
-        await expect(aiPanel.first()).toBeVisible({ timeout: 5000 });
-      }
-    }
+    // The AI sidebar should appear with content
+    const aiPanel = page.locator('text=/explain|AI|assistant/i');
+    await expect(aiPanel.first()).toBeVisible({ timeout: 5000 });
   });
 });

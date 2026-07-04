@@ -38,7 +38,7 @@ export function MobileBranchPanel({
           type="button"
           onClick={onBack}
           aria-label="Back to actions menu"
-          className="flex h-5 w-5 items-center justify-center rounded text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3] transition-colors outline-none cursor-pointer"
+          className="flex h-5 w-5 items-center justify-center rounded text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3] transition-colors outline-none focus-visible:ring-1 focus-visible:ring-[#58a6ff] cursor-pointer"
         >
           <ArrowLeft className="h-3 w-3" />
         </button>
@@ -55,6 +55,7 @@ export function MobileBranchPanel({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Find a branch..."
+          aria-label="Find a branch"
           className="h-7 w-full rounded border border-[rgba(240,246,252,0.1)] bg-[#0d1117] pl-7 pr-2 text-[11px] text-[#e6edf3] outline-none placeholder:text-[#8b949e] focus:border-[#58a6ff]"
         />
       </div>

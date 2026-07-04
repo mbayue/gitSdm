@@ -9,9 +9,8 @@ test.describe('Repository page', () => {
     // Wait for the app shell to render
     await page.waitForSelector('header, [class*="top-nav"], [class*="header"]', { timeout: 20000 });
 
-    // The page title should update
-    const title = await page.title();
-    expect(title).toBeTruthy();
+    // The page title should contain the project name
+    await expect(page).toHaveTitle(/gitSdm/i);
   });
 
   test('file explorer toggle button exists', async ({ page }) => {
@@ -22,8 +21,6 @@ test.describe('Repository page', () => {
 
     // Look for the file explorer toggle (PanelLeft icon button)
     const toggleButtons = page.locator('button[aria-label*="Explorer"i], button[title*="Explorer"i]');
-    if (await toggleButtons.count() > 0) {
-      await expect(toggleButtons.first()).toBeVisible();
-    }
+    await expect(toggleButtons.first()).toBeVisible();
   });
 });
