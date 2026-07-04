@@ -5,18 +5,11 @@ import {
   Share2,
   Check,
   MoreHorizontal,
-  History,
-  Star,
   Settings,
   PanelLeft,
   PanelRight,
   GitBranch,
-  ArrowLeft,
   ArrowLeftRight,
-  LayoutPanelLeft,
-  Monitor,
-  ActivitySquare,
-  BookOpen,
 } from 'lucide-react';
 import { useVizStore } from '@/stores/vizStore';
 import { SettingsPopover } from '../SettingsPopover';
@@ -25,16 +18,10 @@ import { formatStars } from '@/lib/utils';
 import type { RepoMeta, RepoAnalysis } from '@/types';
 import { cn } from '@/lib/utils';
 import { getTotalCommits } from './getRepoStats';
-import { VIEW_TABS } from './viewTabs';
 import { useRepoBranches } from '@/hooks/useRepoBranches';
 import { copyToClipboard } from '@/lib/clipboard';
-
-const LAYOUT_MODES = [
-  { id: 'full', label: 'Full Workspace', icon: LayoutPanelLeft },
-  { id: 'focus', label: 'Focus Mode', icon: Monitor },
-  { id: 'analysis', label: 'Analysis Mode', icon: ActivitySquare },
-  { id: 'learning', label: 'Learning Mode', icon: BookOpen },
-] as const;
+import { ViewModeActions } from './ViewModeActions';
+import { MobileBranchPanel } from './MobileBranchPanel';
 
 interface HeaderActionMenuProps {
   owner: string;
@@ -49,7 +36,6 @@ export function HeaderActionMenu({ owner, repo, analysis, meta: propsMeta, onSea
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeSubPanel, setActiveSubPanel] = useState<'main' | 'branch-switch' | 'branch-compare'>('main');
-  const [branchSearchQuery, setBranchSearchQuery] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
   const setToastMessage = useVizStore((s) => s.setToastMessage);
 
@@ -84,10 +70,8 @@ export function HeaderActionMenu({ owner, repo, analysis, meta: propsMeta, onSea
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsMenuOpen(false);
         setActiveSubPanel('main');
-        setBranchSearchQuery('');
       }
     }
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
@@ -95,7 +79,6 @@ export function HeaderActionMenu({ owner, repo, analysis, meta: propsMeta, onSea
   const closeMenu = () => {
     setIsMenuOpen(false);
     setActiveSubPanel('main');
-    setBranchSearchQuery('');
   };
 
   const handleShare = async () => {
@@ -110,18 +93,26 @@ export function HeaderActionMenu({ owner, repo, analysis, meta: propsMeta, onSea
     }
   };
 
-  const desktopButtonClass =
-    'h-7 px-2.5 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800/80 text-xs font-medium transition-all duration-200 flex items-center justify-center gap-1.5 outline-none cursor-pointer';
+  const handleBranchSelect = (branchName: string) => {
+    if (activeSubPanel === 'branch-switch') {
+      setSelectedBranch(branchName);
+      if (compareBranch === branchName) setCompareBranch(null);
+    } else {
+      if (compareBranch === branchName) {
+        setCompareBranch(null);
+      } else {
+        setCompareBranch(branchName);
+      }
+    }
+  };
+
+  const mobileButtonClass =
+    'flex h-7 px-2.5 items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-all duration-200 outline-none cursor-pointer';
 
   return (
     <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-
       <Tooltip>
-        <TooltipTrigger
-          type="button"
-          className={desktopButtonClass}
-          onClick={onSearch}
-        >
+        <TooltipTrigger type="button" className={mobileButtonClass + ' text-zinc-400 hover:text-white hover:bg-zinc-800/80'} onClick={onSearch}>
           <Search className="h-3.5 w-3.5" />
           <span className="hidden lg:inline font-sans">Search</span>
         </TooltipTrigger>
@@ -131,51 +122,28 @@ export function HeaderActionMenu({ owner, repo, analysis, meta: propsMeta, onSea
       <Tooltip>
         <TooltipTrigger
           type="button"
-          className={cn(
-            desktopButtonClass,
-            'hidden sm:flex',
-            copied
-              ? 'bg-green-600/10 text-green-400'
-              : '',
-          )}
+          className={cn(mobileButtonClass, 'hidden sm:flex', copied ? 'bg-green-600/10 text-green-400' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/80')}
           onClick={handleShare}
         >
           {copied ? (
-            <>
-              <Check className="h-3.5 w-3.5 text-green-400 animate-in fade-in-0 scale-in-95 duration-100" />
-              <span className="hidden lg:inline font-sans">Copied!</span>
-            </>
+            <><Check className="h-3.5 w-3.5 text-green-400 animate-in fade-in-0 scale-in-95 duration-100" /><span className="hidden lg:inline font-sans">Copied!</span></>
           ) : (
-            <>
-              <Share2 className="h-3.5 w-3.5" />
-              <span className="hidden lg:inline font-sans">Share</span>
-            </>
+            <><Share2 className="h-3.5 w-3.5" /><span className="hidden lg:inline font-sans">Share</span></>
           )}
         </TooltipTrigger>
         <TooltipContent side="bottom">Copy shareable link</TooltipContent>
       </Tooltip>
 
-      <div className="hidden lg:block">
-        <SettingsPopover />
-      </div>
+      <div className="hidden lg:block"><SettingsPopover /></div>
       <div className="lg:hidden">
-        <SettingsPopover
-          open={isSettingsOpen}
-          onOpenChange={setIsSettingsOpen}
-          hideTrigger
-        />
+        <SettingsPopover open={isSettingsOpen} onOpenChange={setIsSettingsOpen} hideTrigger />
       </div>
 
       <div className="relative sm:hidden" ref={menuRef}>
         <button
           type="button"
           onClick={() => setIsMenuOpen((open) => !open)}
-          className={cn(
-            'flex h-7 px-2.5 items-center justify-center rounded-md text-xs font-medium transition-all duration-200 outline-none cursor-pointer',
-            isMenuOpen
-              ? 'text-white bg-zinc-800/80'
-              : 'text-zinc-400 hover:text-white hover:bg-zinc-800/80',
-          )}
+          className={cn(mobileButtonClass, isMenuOpen ? 'text-white bg-zinc-800/80' : 'text-zinc-400 hover:text-white hover:bg-zinc-800/80')}
           aria-label="Open menu"
           aria-expanded={isMenuOpen}
         >
@@ -186,144 +154,55 @@ export function HeaderActionMenu({ owner, repo, analysis, meta: propsMeta, onSea
           <div className="absolute right-0 top-full z-[100] mt-2 w-56 max-h-[calc(100vh-70px)] overflow-y-auto custom-scrollbar rounded-md border border-[rgba(240,246,252,0.1)] bg-[#161b22] p-1.5 shadow-2xl animate-in fade-in slide-in-from-top-1 duration-150">
             {activeSubPanel === 'main' ? (
               <>
-                <div className="px-2.5 py-1 text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider font-mono select-none">
-                  Actions
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    void handleShare();
-                    closeMenu();
-                  }}
-                  className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors sm:hidden"
-                >
+                <div className="px-2.5 py-1 text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider font-mono select-none">Actions</div>
+                <button type="button" onClick={() => { void handleShare(); closeMenu(); }}
+                  className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors sm:hidden">
                   {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Share2 className="h-3.5 w-3.5 text-[#8b949e]" />}
                   <span>{copied ? 'Copied link' : 'Share'}</span>
                 </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setExplorerOpen(!explorerOpen);
-                    if (!explorerOpen) setAiSidebarOpen(false);
-                    closeMenu();
-                  }}
-                  className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors"
-                >
+                <button type="button" onClick={() => { setExplorerOpen(!explorerOpen); if (!explorerOpen) setAiSidebarOpen(false); closeMenu(); }}
+                  className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors">
                   <PanelLeft className="h-3.5 w-3.5 text-[#8b949e]" />
                   <span>{explorerOpen ? 'Hide Explorer' : 'Open Explorer'}</span>
                 </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAiSidebarOpen(!aiSidebarOpen);
-                    if (!aiSidebarOpen) setExplorerOpen(false);
-                    closeMenu();
-                  }}
-                  className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors"
-                >
+                <button type="button" onClick={() => { setAiSidebarOpen(!aiSidebarOpen); if (!aiSidebarOpen) setExplorerOpen(false); closeMenu(); }}
+                  className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors">
                   <PanelRight className="h-3.5 w-3.5 text-[#8b949e]" />
                   <span>{aiSidebarOpen ? 'Hide AI Sidebar' : 'Open AI Sidebar'}</span>
                 </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveSubPanel('branch-switch')}
-                  className="flex w-full items-center justify-between rounded-sm px-2.5 py-1.5 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors"
-                >
+                <button type="button" onClick={() => setActiveSubPanel('branch-switch')}
+                  className="flex w-full items-center justify-between rounded-sm px-2.5 py-1.5 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors">
                   <div className="flex items-center gap-2 min-w-0">
                     <GitBranch className="h-3.5 w-3.5 text-[#8b949e] shrink-0" />
                     <span className="truncate">Switch Branch</span>
                   </div>
-                  <span className="text-[10px] text-[#8b949e] font-mono truncate max-w-[80px] ml-2">
-                    {activeBranch}
-                  </span>
+                  <span className="text-[10px] text-[#8b949e] font-mono truncate max-w-[80px] ml-2">{activeBranch}</span>
                 </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveSubPanel('branch-compare')}
-                  className="flex w-full items-center justify-between rounded-sm px-2.5 py-1.5 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors"
-                >
+                <button type="button" onClick={() => setActiveSubPanel('branch-compare')}
+                  className="flex w-full items-center justify-between rounded-sm px-2.5 py-1.5 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors">
                   <div className="flex items-center gap-2 min-w-0">
                     <ArrowLeftRight className="h-3.5 w-3.5 text-[#8b949e] shrink-0" />
                     <span className="truncate">Compare Branch</span>
                   </div>
-                  <span className="text-[10px] text-[#8b949e] font-mono truncate max-w-[80px] ml-2">
-                    {compareBranch || 'None'}
-                  </span>
+                  <span className="text-[10px] text-[#8b949e] font-mono truncate max-w-[80px] ml-2">{compareBranch || 'None'}</span>
                 </button>
 
                 <div className="my-1.5 h-px bg-[rgba(240,246,252,0.1)]" />
-                <div className="px-2.5 py-1 text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider font-mono select-none">
-                  View mode
-                </div>
-                {VIEW_TABS.map((item) => {
-                  const isSelected = activeView === item.id;
-                  return (
-                    <button
-                      type="button"
-                      key={item.id}
-                      onClick={() => {
-                        setActiveView(item.id);
-                        closeMenu();
-                      }}
-                      className={cn(
-                        'flex w-full cursor-pointer items-center justify-between rounded-sm px-2.5 py-1.5 text-left text-xs transition-colors',
-                        isSelected ? 'bg-[#1c2128] text-[#e6edf3] font-medium' : 'text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3]',
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <item.icon className={cn('h-3.5 w-3.5', isSelected ? 'text-[#e6edf3]' : 'text-[#8b949e]')} />
-                        <span>{item.label}</span>
-                      </div>
-                      {isSelected && <Check className="h-3.5 w-3.5 text-[#e6edf3]" />}
-                    </button>
-                  );
-                })}
-
-                <div className="my-1.5 h-px bg-[rgba(240,246,252,0.1)]" />
-                <div className="px-2.5 py-1 text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider font-mono select-none">
-                  Workspace Layout
-                </div>
-                {LAYOUT_MODES.map((item) => {
-                  const isSelected = workspaceMode === item.id;
-                  return (
-                    <button
-                      type="button"
-                      key={item.id}
-                      onClick={() => {
-                        setWorkspaceMode(item.id);
-                        if (window.innerWidth < 1024) {
-                          setExplorerOpen(false);
-                          setAiSidebarOpen(false);
-                        }
-                        closeMenu();
-                      }}
-                      className={cn(
-                        'flex w-full cursor-pointer items-center justify-between rounded-sm px-2.5 py-1.5 text-left text-xs transition-colors',
-                        isSelected ? 'bg-[#1c2128] text-[#e6edf3] font-medium' : 'text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3]',
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <item.icon className={cn('h-3.5 w-3.5', isSelected ? 'text-[#e6edf3]' : 'text-[#8b949e]')} />
-                        <span>{item.label}</span>
-                      </div>
-                      {isSelected && <Check className="h-3.5 w-3.5 text-[#e6edf3]" />}
-                    </button>
-                  );
-                })}
-
-                <div className="my-1.5 h-px bg-[rgba(240,246,252,0.1)]" />
-                <button
-                  type="button"
-                  onClick={() => {
+                <ViewModeActions
+                  activeView={activeView}
+                  workspaceMode={workspaceMode}
+                  onViewChange={(id) => { setActiveView(id as 'graph' | 'architecture' | 'contributors' | 'commits'); closeMenu(); }}
+                  onWorkspaceModeChange={(id) => {
+                    setWorkspaceMode(id as 'focus' | 'analysis' | 'learning' | 'full');
+                    if (window.innerWidth < 1024) { setExplorerOpen(false); setAiSidebarOpen(false); }
                     closeMenu();
-                    setIsSettingsOpen(true);
                   }}
-                  className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors lg:hidden"
-                >
+                  onClose={closeMenu}
+                />
+
+                <div className="my-1.5 h-px bg-[rgba(240,246,252,0.1)]" />
+                <button type="button" onClick={() => { closeMenu(); setIsSettingsOpen(true); }}
+                  className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors lg:hidden">
                   <Settings className="h-3.5 w-3.5 text-[#8b949e]" />
                   <span>Settings</span>
                 </button>
@@ -331,24 +210,17 @@ export function HeaderActionMenu({ owner, repo, analysis, meta: propsMeta, onSea
                 {(totalCommits > 0 || meta) && (
                   <>
                     <div className="my-1.5 h-px bg-[rgba(240,246,252,0.1)]" />
-                    <div className="px-2.5 py-1 text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider font-mono select-none">
-                      Repository stats
-                    </div>
+                    <div className="px-2.5 py-1 text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider font-mono select-none">Repository stats</div>
                     {totalCommits > 0 && (
                       <div className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-[#8b949e]">
-                        <History className="h-3.5 w-3.5 text-[#8b949e]" />
+                        <HistoryIcon />
                         <span className="truncate">{totalCommits.toLocaleString()} commits</span>
                       </div>
                     )}
                     {meta && (
-                      <a
-                        href={`https://github.com/${meta.fullName}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={closeMenu}
-                        className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors"
-                      >
-                        <Star className="h-3.5 w-3.5 text-[#8b949e] fill-[#8b949e]/10" />
+                      <a href={`https://github.com/${meta.fullName}`} target="_blank" rel="noopener noreferrer" onClick={closeMenu}
+                        className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors">
+                        <StarIcon />
                         <span className="font-mono">{formatStars(meta.stars)} stars</span>
                       </a>
                     )}
@@ -356,100 +228,36 @@ export function HeaderActionMenu({ owner, repo, analysis, meta: propsMeta, onSea
                 )}
               </>
             ) : (
-              <div className="flex flex-col max-h-[300px]">
-                {/* Sub-panel Header */}
-                <div className="flex items-center gap-1.5 border-b border-[rgba(240,246,252,0.1)] pb-1.5 mb-1.5 px-1 select-none">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveSubPanel('main');
-                      setBranchSearchQuery('');
-                    }}
-                    aria-label="Back to actions menu"
-                    className="flex h-5 w-5 items-center justify-center rounded text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3] transition-colors outline-none cursor-pointer"
-                  >
-                    <ArrowLeft className="h-3 w-3" />
-                  </button>
-                  <span className="text-xs font-semibold text-[#e6edf3]">
-                    {activeSubPanel === 'branch-switch' ? 'Switch Branch' : 'Compare Branch'}
-                  </span>
-                </div>
-
-                {/* Search branch */}
-                <div className="relative px-1 mb-1.5 shrink-0">
-                  <Search className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-[#8b949e]" />
-                  <input
-                    type="text"
-                    value={branchSearchQuery}
-                    onChange={(e) => setBranchSearchQuery(e.target.value)}
-                    placeholder="Find a branch..."
-                    className="h-7 w-full rounded border border-[rgba(240,246,252,0.1)] bg-[#0d1117] pl-7 pr-2 text-[11px] text-[#e6edf3] outline-none placeholder:text-[#8b949e] focus:border-[#58a6ff]"
-                  />
-                </div>
-
-                {/* Scrollable list of branches */}
-                <div className="flex-1 overflow-y-auto space-y-0.5 max-h-[220px] pr-0.5 custom-scrollbar">
-                  {isBranchesLoading ? (
-                    <div className="py-6 text-center text-[10px] text-[#8b949e]">Loading branches...</div>
-                  ) : branches && branches.length > 0 ? (
-                    (() => {
-                      const filteredBranches = branches.filter((b) =>
-                        b.name.toLowerCase().includes(branchSearchQuery.toLowerCase())
-                      );
-                      
-                      if (filteredBranches.length === 0) {
-                        return <div className="py-4 text-center text-[10px] text-[#8b949e]">No branches found</div>;
-                      }
-
-                      return filteredBranches.map((b) => {
-                        const isSwitchMode = activeSubPanel === 'branch-switch';
-                        const isSelected = isSwitchMode 
-                          ? b.name === activeBranch
-                          : b.name === compareBranch;
-
-                        const isDisabled = !isSwitchMode && b.name === activeBranch;
-
-                        return (
-                          <button
-                            type="button"
-                            key={b.name}
-                            disabled={isDisabled}
-                            onClick={() => {
-                              if (isSwitchMode) {
-                                setSelectedBranch(b.name);
-                                if (compareBranch === b.name) setCompareBranch(null);
-                              } else {
-                                if (compareBranch === b.name) {
-                                  setCompareBranch(null);
-                                } else {
-                                  setCompareBranch(b.name);
-                                }
-                              }
-                              closeMenu();
-                            }}
-                            className={cn(
-                              "flex w-full items-center justify-between rounded px-2 py-1 text-left text-xs transition-colors",
-                              isDisabled 
-                                ? "opacity-40 cursor-not-allowed text-[#8b949e]" 
-                                : "hover:bg-[rgba(240,246,252,0.1)] text-[#e6edf3]",
-                              isSelected && "bg-[#1c2128] font-medium"
-                            )}
-                          >
-                            <span className="truncate pr-2">{b.name}</span>
-                            {isSelected && <Check className="h-3 w-3 text-[#e6edf3] shrink-0" />}
-                          </button>
-                        );
-                      });
-                    })()
-                  ) : (
-                    <div className="py-4 text-center text-[10px] text-[#8b949e]">No branches available</div>
-                  )}
-                </div>
-              </div>
+              <MobileBranchPanel
+                activeSubPanel={activeSubPanel}
+                onBack={() => setActiveSubPanel('main')}
+                branches={branches}
+                isLoading={isBranchesLoading}
+                activeBranch={activeBranch}
+                compareBranch={compareBranch}
+                onBranchSelect={handleBranchSelect}
+                onClose={closeMenu}
+              />
             )}
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+function HistoryIcon() {
+  return (
+    <svg className="h-3.5 w-3.5 text-[#8b949e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+function StarIcon() {
+  return (
+    <svg className="h-3.5 w-3.5 text-[#8b949e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+    </svg>
   );
 }

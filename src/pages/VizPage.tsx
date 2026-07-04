@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useCallback, useState } from "react";
+import { useEffect, useMemo, useCallback, useState, lazy, Suspense } from "react";
 import { useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { GraphCanvas } from "@/features/graph/canvas/GraphCanvas";
 import { useAnalyzeRepo } from "@/hooks/useAnalyzeRepo";
 import { useVizStore } from "@/stores/vizStore";
 import { useVizDiff } from "@/hooks/useVizDiff";
@@ -9,7 +8,14 @@ import { useCodeInspectorState } from "@/hooks/useCodeInspectorState";
 import { useWorkspaceShortcuts } from "@/hooks/useWorkspaceShortcuts";
 import { TopNav } from "@/components/viz/top-nav/TopNav";
 import { AISidebar } from "@/components/viz/AISidebar";
-import { ArchitectureView } from "@/components/viz/ArchitectureView";
+
+const GraphCanvas = lazy(() =>
+  import("@/features/graph/canvas/GraphCanvas").then((m) => ({ default: m.GraphCanvas })),
+);
+
+const ArchitectureView = lazy(() =>
+  import("@/components/viz/ArchitectureView").then((m) => ({ default: m.ArchitectureView })),
+);
 import { ContributorsView } from "@/components/contributors/ContributorsView";
 import { ExplorerPanel } from "@/components/explorer/ExplorerPanel";
 import { VizError } from "@/components/viz/VizError";
@@ -179,28 +185,36 @@ export function VizPage() {
                 className="relative min-h-0 min-w-0 flex-1 overflow-hidden bg-background flex flex-col"
               >
                 <div className="flex-1 min-h-0 relative">
-                  <div
-                    className={`h-full w-full relative ${activeView !== "graph" ? "hidden" : ""
-                      }`}
-                  >
-                    <GraphCanvas
-                      graph={combinedGraph || data.graph}
-                      showMinimap={showMinimap}
-                      setShowMinimap={setShowMinimap}
-                    />
-                    {data.treeTruncated && (
-                      <div className="absolute left-3 top-2 z-10 rounded-lg bg-[#1c2128] px-2 py-1 text-[10px] text-[#8b949e] ring-1 ring-[rgba(240,246,252,0.1)]">
-                        Tree truncated
-                      </div>
-                    )}
-                  </div>
+                  <Suspense fallback={null}>
+                    <div
+                      className={`h-full w-full relative ${activeView !== "graph" ? "hidden" : ""
+                        }`}
+                    >
+                      <GraphCanvas
+                        graph={combinedGraph || data.graph}
+                        showMinimap={showMinimap}
+                        setShowMinimap={setShowMinimap}
+                      />
+                      {data.treeTruncated && (
+                        <div className="absolute left-3 top-2 z-10 rounded-lg bg-[#1c2128] px-2 py-1 text-[10px] text-[#8b949e] ring-1 ring-[rgba(240,246,252,0.1)]">
+                          Tree truncated
+                        </div>
+                      )}
+                    </div>
+                  </Suspense>
 
                   {activeView === "architecture" && (
-                    <ArchitectureView
-                      analysis={data}
-                      owner={owner}
-                      repo={repo}
-                    />
+                    <Suspense fallback={
+                      <div className="flex h-full w-full items-center justify-center bg-background">
+                        <div className="h-8 w-8 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
+                      </div>
+                    }>
+                      <ArchitectureView
+                        analysis={data}
+                        owner={owner}
+                        repo={repo}
+                      />
+                    </Suspense>
                   )}
                   {activeView === "contributors" && (
                     <ContributorsView

@@ -57,3 +57,9 @@ gitSdm/
 │   ├── styles/                # Tailwind CSS global styles
 │   └── types/                 # TypeScript definitions
 ```
+
+## Known Limitations
+
+### Semantic search is in-memory only
+
+The vector store backing semantic search (`server/search/vector-store.ts`) lives in process memory. On Vercel serverless, each cold start spins up a fresh instance with an empty index — so the first query after a cold start must re-index the repository before returning results. Indexing is cached in the LRU layer for the lifetime of a warm instance, but there is no cross-instance persistence. For consistently fast search, prefer the Express production server (`bun start`) over the serverless deployment.

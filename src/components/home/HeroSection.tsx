@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { GitBranch } from 'lucide-react';
-import { GraphCanvas } from '@/features/graph/canvas/GraphCanvas';
 import { demoGraph } from '@/features/graph/demoGraph';
+
+const GraphCanvas = lazy(() =>
+  import("@/features/graph/canvas/GraphCanvas").then((m) => ({ default: m.GraphCanvas })),
+);
 import { RepoInput } from '@/components/home/RepoInput';
 import { fetchAppConfig } from '@/lib/apiClient';
 
@@ -108,7 +111,9 @@ export function HeroSection({ initialUrl = '' }: HeroSectionProps) {
 
                 {/* Center Panel (Graph) */}
                 <div className="flex-1 bg-[#0d1117] relative overflow-hidden">
-                  <GraphCanvas graph={demoGraph} readOnly hideChrome />
+                  <Suspense fallback={<div className="h-full w-full bg-[#0d1117]" />}>
+                    <GraphCanvas graph={demoGraph} readOnly hideChrome />
+                  </Suspense>
                   
                   {/* Selected Node State overlay */}
                   <div className="absolute top-4 right-4 p-3 rounded-md border border-[rgba(240,246,252,0.1)] bg-[#1c2128]/90 backdrop-blur-sm max-w-[200px] shadow-lg">
