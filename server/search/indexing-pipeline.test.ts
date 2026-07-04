@@ -78,7 +78,7 @@ function setupModuleMocks() {
   mock.module('../github/fetch-tree', () => ({ fetchRepoInfo, fetchFlatTree, fetchFileContents }));
   mock.module('./embedding-provider', () => ({
     createEmbeddingProvider: async () => ({
-      embed: async (text: string) => ({ vector: new Float32Array([1, 0]), tokenCount: 1 }),
+      embed: async (_text: string) => ({ vector: new Float32Array([1, 0]), tokenCount: 1 }),
       embedBatch,
     }),
   }));

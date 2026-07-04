@@ -116,7 +116,6 @@ export function parsePnpmWorkspace(path: string, content: string): WorkspaceMani
     // Stop parsing if we hit another top-level key or invalid formatting
     if (inPackages) {
       if (!line.startsWith(' ') && !line.startsWith('-')) {
-        inPackages = false;
         break;
       }
       // If we are inside the packages block, lines should start with "- "
