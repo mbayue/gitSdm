@@ -1,16 +1,11 @@
 import type { RequestContext } from '../utils/context';
 import { AppError } from '../utils/errors';
 import { aiExplainSchema, repoQuerySchema } from './schemas';
-import {
-  explainRepo,
-  generateLearningPath,
-  explainRepoELI5,
-  generateRefactorSuggestions,
-  generateHealthReport,
-  generateMermaidDiagram,
-  generateRepoRoast,
-  generateReadmeEnhancement,
-} from '../ai/summarizer';
+import { explainRepo } from '../ai/tasks/explain';
+import { explainRepoELI5 } from '../ai/tasks/onboarding';
+import { generateRefactorSuggestions, generateHealthReport } from '../ai/tasks/refactor';
+import { generateMermaidDiagram } from '../ai/tasks/diagram';
+import { generateRepoRoast, generateReadmeEnhancement, generateLearningPath } from '../ai/tasks/playground';
 import type {
   AIExplainResponse,
   AILearningPathResponse,
