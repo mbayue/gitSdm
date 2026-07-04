@@ -9,6 +9,6 @@ describe('addSecurityHeaders', () => {
     expect(secureResponse.headers.get('X-Content-Type-Options')).toBe('nosniff');
     expect(secureResponse.headers.get('X-Frame-Options')).toBe('DENY');
     expect(secureResponse.headers.get('Strict-Transport-Security')).toBe('max-age=31536000; includeSubDomains');
-    expect(secureResponse.headers.get('Content-Security-Policy')).toBe("default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:;");
+    expect(secureResponse.headers.get('Content-Security-Policy')).toBe("default-src 'self'; base-uri 'self'; script-src 'self' 'sha256-mhDq8RP/TAuNwiFSk7hwZsZ3tIWH410AupSuJ9xEhZg=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:;");
   });
 });
