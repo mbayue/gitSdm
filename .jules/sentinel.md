@@ -17,3 +17,8 @@
 **Vulnerability:** The application was not setting basic HTTP security headers (e.g., `X-Content-Type-Options`, `X-Frame-Options`, `Strict-Transport-Security`). This could potentially expose the application to clickjacking and mime-sniffing attacks if other mitigations fail.
 **Learning:** By not setting these standard HTTP response headers, browsers are left to their default behaviors which can be insecure in some contexts. Implementing defense-in-depth helps protect the application even if another vulnerability is found.
 **Prevention:** Always implement a middleware or wrapper for all HTTP responses that enforces safe security headers in both development and production API responses.
+
+## 2025-03-09 - Unhandled Exception (Denial of Service) in URI Decoding
+**Vulnerability:** In `server/prod-server.ts`, the application used `decodeURIComponent(pathname)` directly on user-provided pathnames without a `try...catch` block. If an attacker provided a malformed URI component (like `/%FF`), it would throw an unhandled `URIError`, potentially crashing the process or causing Denial of Service when serving static files.
+**Learning:** Functions that parse or decode user-controlled strings (like `decodeURIComponent`, `JSON.parse`) can throw exceptions on malformed input. When these are used in top-level request handlers without proper error boundaries, they become vectors for DoS.
+**Prevention:** Always wrap parsing or decoding functions that operate on user input in `try...catch` blocks. In request handlers, catch these exceptions and return a safe HTTP status like `400 Bad Request`.
