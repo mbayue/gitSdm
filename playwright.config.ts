@@ -11,9 +11,10 @@ export default defineConfig({
     viewport: { width: 1280, height: 720 },
   },
   webServer: {
-    command: 'AI_PROVIDER=mock bun run build && AI_PROVIDER=mock bun run build:server && AI_PROVIDER=mock bun start',
+    command: 'bun run build && bun run build:server && bun start',
     port: 3000,
     timeout: 60000,
     reuseExistingServer: !process.env.CI,
+    env: { AI_PROVIDER: 'mock' },
   },
 });
