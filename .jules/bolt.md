@@ -21,3 +21,6 @@
 ## 2024-11-20 - [O(N) Filter Optimization in AnalysisTab edge filtering]
 **Learning:** Found O(N) linear array lookups utilizing `.filter()` multiple times directly inside the render cycle (e.g. `AnalysisTab` parsing `inEdges` and `outEdges`). Given graph datasets with potentially thousands of nodes, this runs `O(K * N)` filtering logic repeatedly during normal state renders.
 **Action:** Replace multiple `.filter()` calls inside render cycles with a single pass using `useMemo` caching to efficiently group relations before mapping logic in the render, effectively shifting complexity back to a singular `O(N)` lookup.
+## 2024-11-20 - [O(N) Iteration Optimization in buildDependencyHealthSummary]
+**Learning:** Found multiple O(N) linear array lookups utilizing `.filter()` repeatedly to compute counts across categories inside the `buildDependencyHealthSummary` calculation logic.
+**Action:** Replace multiple `.filter()` passes with a single `for` loop pass over the array utilizing a mutable tally counter struct, reducing iteration overhead and allocations to $O(N)$ exactly.
