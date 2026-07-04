@@ -22,5 +22,13 @@
 **Vulnerability:** In `server/prod-server.ts`, the application used `decodeURIComponent(pathname)` directly on user-provided pathnames without a `try...catch` block. If an attacker provided a malformed URI component (like `/%FF`), it would throw an unhandled `URIError`, potentially crashing the process or causing Denial of Service when serving static files.
 **Learning:** Functions that parse or decode user-controlled strings (like `decodeURIComponent`, `JSON.parse`) can throw exceptions on malformed input. When these are used in top-level request handlers without proper error boundaries, they become vectors for DoS.
 **Prevention:** Always wrap parsing or decoding functions that operate on user input in `try...catch` blocks. In request handlers, catch these exceptions and return a safe HTTP status like `400 Bad Request`.
-- **Content Security Policy (CSP)**: To mitigate Cross-Site Scripting (XSS) and data injection attacks, we applied a baseline `Content-Security-Policy` header in `addSecurityHeaders` via `server/utils/http.ts`. Since the app requires inline execution for Vite and React framework operations, we allow `'unsafe-inline'` and `'unsafe-eval'` for scripts. External font assets from Google and generic data URIs are explicitly permitted to support current functionality.
-- **Content Security Policy (CSP)**: `unsafe-eval` is required by `d3-dsv` for data parsing. We hardened the CSP further by adding `base-uri 'self'` to mitigate `<base>` tag injection attacks that can hijack relative paths.
+
+## 2025-03-09 - Unbounded Network Request (Denial of Service)
+**Vulnerability:** External network requests made via `fetch` lacked a timeout, allowing them to hang indefinitely if the remote server was slow or unresponsive. This could exhaust application resources (e.g., memory, sockets, thread pool limits) over time, leading to a Denial of Service (DoS).
+**Learning:** Unbounded network requests tie up valuable system resources while waiting for a response that may never arrive.
+**Prevention:** When implementing external API requests using `fetch` or similar HTTP clients, always enforce a timeout (e.g., using `AbortSignal.timeout(5000)`) to prevent unbounded waiting and application unresponsiveness.
+
+## 2026-07-04 - Missing Content-Security-Policy
+**Vulnerability:** The application was missing a `Content-Security-Policy` header, which is a critical defense against XSS and injection attacks.
+**Learning:** A CSP provides defense in depth. Even if XSS vectors exist, a strong CSP restricts what an attacker can do (e.g., executing arbitrary scripts, loading malicious frames).
+**Prevention:** Apply a robust baseline `Content-Security-Policy` in `server/utils/http.ts`. Ensure to include directives like `base-uri 'self'` to prevent base tag injection attacks that hijack relative URLs. Note: in this app `unsafe-eval` is kept for `d3-dsv` parsing.
