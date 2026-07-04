@@ -176,7 +176,7 @@ export function Markdownish({ text }: { text: string }) {
 
   if (insideCodeBlock && codeBlockContent.length > 0) {
     const code = codeBlockContent.join('\n');
-  if (code.length === 0) console.log("empty");
+    console.log(code);
     renderedElements.push(
       <pre key={`code-${codeBlockKey++}`} className="my-2.5 max-w-full overflow-x-auto rounded-lg bg-zinc-900/80 p-3 text-[10px] font-mono text-zinc-300 border border-white/5 scrollbar-thin">
         <code className="block w-max min-w-full whitespace-pre">{code}</code>

@@ -43,6 +43,7 @@ export function useArchitectureState(
     setRenderError(null);
     setSvg('');
     resetView();
+    console.log(active);
 
     const id = `mermaid-view-svg-${Math.floor(Math.random() * 1000000)}`;
 
