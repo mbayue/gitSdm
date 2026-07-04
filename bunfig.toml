@@ -1,4 +1,5 @@
 [test]
+exclude = ["e2e/**"]
 coverageSkipTestFiles = true
 coveragePathIgnorePatterns = [
   "coverage/**",

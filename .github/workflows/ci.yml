@@ -74,3 +74,19 @@ jobs:
           name: bundle-stats
           path: stats.html
           retention-days: 7
+
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+      - run: npx playwright install chromium
+      - run: AI_PROVIDER=mock bun run build
+      - run: AI_PROVIDER=mock bun run build:server
+      - run: AI_PROVIDER=mock bun run test:e2e
+        env:
+          CI: true
