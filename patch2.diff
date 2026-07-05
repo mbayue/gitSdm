@@ -1,0 +1,7 @@
+--- src/components/viz/top-nav/WorkspaceModeSelector.tsx
++++ src/components/viz/top-nav/WorkspaceModeSelector.tsx
+@@ -23,3 +23,3 @@
+
+-  const handleModeChange = (mode: WorkspaceModeId) => {
++  const handleModeChange = (mode: typeof WORKSPACE_MODES[number]['id']) => {
+     setWorkspaceMode(mode);
