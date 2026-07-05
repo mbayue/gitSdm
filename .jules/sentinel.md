@@ -27,3 +27,5 @@
 **Vulnerability:** External network requests made via `fetch` lacked a timeout, allowing them to hang indefinitely if the remote server was slow or unresponsive. This could exhaust application resources (e.g., memory, sockets, thread pool limits) over time, leading to a Denial of Service (DoS).
 **Learning:** Unbounded network requests tie up valuable system resources while waiting for a response that may never arrive.
 **Prevention:** When implementing external API requests using `fetch` or similar HTTP clients, always enforce a timeout (e.g., using `AbortSignal.timeout(5000)`) to prevent unbounded waiting and application unresponsiveness.
+
+* **Information Disclosure in API Errors**: When returning errors from the backend to the client, avoid passing the raw `.message` property of system or internal errors for 500-level statuses. Instead, sanitize 500-level errors by substituting a generic fallback message like `"Internal Server Error"` to prevent exposing sensitive internal state (e.g., file paths, IPs, connection strings, API keys) which might be contained in the raw error message.
