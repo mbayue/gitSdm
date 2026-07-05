@@ -28,4 +28,7 @@
 **Learning:** Unbounded network requests tie up valuable system resources while waiting for a response that may never arrive.
 **Prevention:** When implementing external API requests using `fetch` or similar HTTP clients, always enforce a timeout (e.g., using `AbortSignal.timeout(5000)`) to prevent unbounded waiting and application unresponsiveness.
 
-* **Information Disclosure in API Errors**: When returning errors from the backend to the client, avoid passing the raw `.message` property of system or internal errors for 500-level statuses. Instead, sanitize 500-level errors by substituting a generic fallback message like `"Internal Server Error"` to prevent exposing sensitive internal state (e.g., file paths, IPs, connection strings, API keys) which might be contained in the raw error message.
+## 2026-07-04 - Missing Content-Security-Policy
+**Vulnerability:** The application was missing a `Content-Security-Policy` header, which is a critical defense against XSS and injection attacks.
+**Learning:** A CSP provides defense in depth. Even if XSS vectors exist, a strong CSP restricts what an attacker can do (e.g., executing arbitrary scripts, loading malicious frames).
+**Prevention:** Apply a robust baseline `Content-Security-Policy` in `server/utils/http.ts`. Ensure to include directives like `base-uri 'self'` to prevent base tag injection attacks that hijack relative URLs. Note: in this app `unsafe-eval` is kept for `d3-dsv` parsing.
