@@ -39,10 +39,13 @@ export function logError(
 export function logInfo(message: string, meta?: Record<string, unknown>): void {
   console.log(
     JSON.stringify({
+      ...meta,
       level: 'info',
       message,
       timestamp: new Date().toISOString(),
-      ...meta,
+    }),
+  );
+}
     }),
   );
 }
