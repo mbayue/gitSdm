@@ -18,7 +18,7 @@ export function isAppError(err: unknown): err is AppError {
 export function toErrorPayload(err: unknown) {
   if (isAppError(err)) {
     return {
-      error: err.message,
+      error: err.status >= 500 ? 'Internal Server Error' : err.message,
       code: err.code,
       status: err.status,
       retryable: err.retryable,
