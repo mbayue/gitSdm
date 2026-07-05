@@ -1,5 +1,5 @@
 import { describe, expect, it, spyOn } from 'bun:test';
-import { logApi, logError } from './logger';
+import { logApi, logError, logInfo } from './logger';
 
 describe('utils/logger', () => {
   it('logs API request metadata to console.log', () => {
@@ -75,5 +75,21 @@ describe('utils/logger', () => {
       process.env.NODE_ENV = originalEnv;
       errorSpy.mockRestore();
     }
+  });
+
+  it('logs info messages to console.log', () => {
+    const logSpy = spyOn(console, 'log').mockImplementation(() => {});
+
+    logInfo('Server started', { port: 3000 });
+
+    expect(logSpy).toHaveBeenCalled();
+    const arg = logSpy.mock.calls[0][0];
+    const parsed = JSON.parse(arg);
+    expect(parsed.level).toBe('info');
+    expect(parsed.message).toBe('Server started');
+    expect(parsed.port).toBe(3000);
+    expect(parsed.timestamp).toBeDefined();
+
+    logSpy.mockRestore();
   });
 });
