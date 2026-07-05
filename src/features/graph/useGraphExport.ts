@@ -1,4 +1,4 @@
-import { useCallback, useState, type RefObject } from "react";
+import React, { useCallback, useState } from "react";
 import { toPng } from "html-to-image";
 import { jsPDF } from "jspdf";
 import type { ForceGraphMethods } from "react-force-graph-2d";
@@ -26,10 +26,10 @@ interface DomGraphExportOptions extends BaseGraphExportOptions {
 
 interface ForceGraphExportOptions extends BaseGraphExportOptions {
   mode: "force";
-  forceGraphRef: RefObject<
+  forceGraphRef: React.RefObject<
     ForceGraphMethods<ForceGraphNode, ForceGraphLink> | undefined
   >;
-  forceHostRef: RefObject<HTMLDivElement | null>;
+  forceHostRef: React.RefObject<HTMLDivElement | null>;
   backgroundColor?: string;
 }
 
