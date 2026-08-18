@@ -81,9 +81,8 @@ describe('churn-service', () => {
     );
     expect(cachedRes).toEqual(res);
 
-    consoleErrorSpy.mockRestore();
-
-    // Test 403/429 silent error handling
+    // Test 403/429 silent error handling (console.error still suppressed so the
+    // whole-batch-failure warning does not leak into the test output)
     const rateLimitMock = {
       repos: {
         listCommits: mock(async () => {
@@ -102,6 +101,7 @@ describe('churn-service', () => {
     );
     expect(rateLimitRes).toEqual({});
 
+    consoleErrorSpy.mockRestore();
   });
 });
 

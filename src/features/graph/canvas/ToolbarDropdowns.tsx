@@ -442,6 +442,7 @@ export function ToolbarDropdowns({
                   <button
                     key={type}
                     type="button"
+                    aria-pressed={active}
                     onClick={() => {
                       setLayoutType(type);
                       setActiveDropdown(null);

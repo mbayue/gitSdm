@@ -34,7 +34,7 @@ export async function createEmbeddingProvider(): Promise<EmbeddingProvider> {
     } else {
       throw new AppError(
         400,
-        'Anthropic does not support embeddings. Configure OPENAI_API_KEY, EDGEONE_API_KEY, or GEMINI_API_KEY as fallback.',
+        'Anthropic does not support embeddings. Configure OPENAI_API_KEY, EDGEONE_API_KEY, MAKERS_MODELS_KEY, or GEMINI_API_KEY as fallback.',
         'EMBEDDING_PROVIDER_UNAVAILABLE',
       );
     }
@@ -90,55 +90,23 @@ function deterministicEmbedding(text: string, dims: number): Float32Array {
   return vec;
 }
 
-// ── OpenAI Provider ────────────────────────────────────────────────────
+// ── OpenAI-compatible Provider ────────────────────────────────────────
 
-function createOpenAIEmbeddingProvider(): EmbeddingProvider {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new AppError(401, 'OPENAI_API_KEY is required for OpenAI embeddings.', 'MISSING_API_KEY');
-  }
-
-  const model = process.env.OPENAI_EMBEDDING_MODEL ?? 'openrouter/openai/text-embedding-3-large';
-  const maxTokens = 8191;
-
-  return {
-    dimensions: EMBEDDING_DIMENSIONS,
-    maxTokens,
-    providerName: 'openai',
-
-    async embed(text: string): Promise<EmbeddingResult> {
-      const truncated = truncateText(text, maxTokens);
-      const vector = await openAIEmbed(apiKey, model, truncated);
-      return { vector, tokenCount: estimateTokens(truncated) };
-    },
-
-    async embedBatch(texts: string[]): Promise<EmbeddingResult[]> {
-      const truncated = texts.map((t) => truncateText(t, maxTokens));
-      const vectors = await openAIEmbedBatch(apiKey, model, truncated);
-      return vectors.map((v, i) => ({ vector: v, tokenCount: estimateTokens(truncated[i]) }));
-    },
-  };
+interface OpenAICompatibleConfig {
+  providerName: string;
+  apiKey: string;
+  baseURL?: string;
+  model: string;
 }
 
-function createEdgeOneEmbeddingProvider(): EmbeddingProvider {
-  // ponytail: EdgeOne Makers Models embedding endpoint is OpenAI-compatible
-  const apiKey = process.env.EDGEONE_API_KEY ?? process.env.MAKERS_MODELS_KEY;
-  if (!apiKey) {
-    throw new AppError(
-      401,
-      'EDGEONE_API_KEY or MAKERS_MODELS_KEY is required for EdgeOne embeddings.',
-      'MISSING_API_KEY',
-    );
-  }
-
-  const baseURL = process.env.EDGEONE_API_BASE ?? 'https://ai-gateway.edgeone.link/v1';
-  const model = process.env.EDGEONE_EMBEDDING_MODEL ?? process.env.OPENAI_EMBEDDING_MODEL ?? 'openrouter/openai/text-embedding-3-large';
+function createOpenAICompatibleEmbeddingProvider(config: OpenAICompatibleConfig): EmbeddingProvider {
+  const { providerName, apiKey, baseURL, model } = config;
   const maxTokens = 8191;
 
   return {
     dimensions: EMBEDDING_DIMENSIONS,
     maxTokens,
-    providerName: 'edgeone',
+    providerName,
 
     async embed(text: string): Promise<EmbeddingResult> {
       const truncated = truncateText(text, maxTokens);
@@ -152,6 +120,38 @@ function createEdgeOneEmbeddingProvider(): EmbeddingProvider {
       return vectors.map((v, i) => ({ vector: v, tokenCount: estimateTokens(truncated[i]) }));
     },
   };
+}
+
+function createOpenAIEmbeddingProvider(): EmbeddingProvider {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new AppError(401, 'OPENAI_API_KEY is required for OpenAI embeddings.', 'MISSING_API_KEY');
+  }
+
+  return createOpenAICompatibleEmbeddingProvider({
+    providerName: 'openai',
+    apiKey,
+    model: process.env.OPENAI_EMBEDDING_MODEL ?? 'openrouter/openai/text-embedding-3-large',
+  });
+}
+
+function createEdgeOneEmbeddingProvider(): EmbeddingProvider {
+  // ponytail: EdgeOne Makers Models embedding endpoint is OpenAI-compatible
+  const apiKey = process.env.EDGEONE_API_KEY || process.env.MAKERS_MODELS_KEY;
+  if (!apiKey) {
+    throw new AppError(
+      401,
+      'EDGEONE_API_KEY or MAKERS_MODELS_KEY is required for EdgeOne embeddings.',
+      'MISSING_API_KEY',
+    );
+  }
+
+  return createOpenAICompatibleEmbeddingProvider({
+    providerName: 'edgeone',
+    apiKey,
+    baseURL: process.env.EDGEONE_API_BASE ?? 'https://ai-gateway.edgeone.link/v1',
+    model: process.env.EDGEONE_EMBEDDING_MODEL ?? process.env.OPENAI_EMBEDDING_MODEL ?? 'openrouter/openai/text-embedding-3-large',
+  });
 }
 
 async function openAIEmbed(apiKey: string, model: string, text: string, baseURL?: string): Promise<Float32Array> {

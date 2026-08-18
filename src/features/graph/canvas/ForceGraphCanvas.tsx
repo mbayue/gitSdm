@@ -43,7 +43,10 @@ const getArrowRelPos = (link: ForceGraphLink): number => {
   const sizeMode = useVizStore.getState().sizeMode;
   const targetRadius = getForceNodeRadius(target, sizeMode);
   const offset = targetRadius + 1.2;
-  return Math.max(0.1, Math.min(0.99, 1 - offset / dist));
+  // Link shorter than the target's radius: 1 - offset/dist would go negative and
+  // clamp to 0.1, parking the arrowhead near the source. Fall back to mid-link.
+  if (dist <= offset) return 0.5;
+  return Math.min(0.99, 1 - offset / dist);
 };
 
 export function NetworkCanvas({
@@ -68,6 +71,8 @@ export function NetworkCanvas({
 
   const colorMode = useVizStore((s) => s.colorMode);
   const sizeMode = useVizStore((s) => s.sizeMode);
+  const layoutType = useVizStore((s) => s.layoutType);
+  const isD3TreeLayout = layoutType === 'd3-tree-horiz' || layoutType === 'd3-tree-vert';
 
   const {
     selectedNodeId,
@@ -317,7 +322,7 @@ export function NetworkCanvas({
           onNodeHover={handleNodeHover}
           onBackgroundClick={onForceBackgroundClick}
           enablePointerInteraction
-          enableNodeDrag
+          enableNodeDrag={!isD3TreeLayout}
           enablePanInteraction
           enableZoomInteraction
         />

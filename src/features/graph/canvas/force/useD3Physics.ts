@@ -57,12 +57,23 @@ export function useD3Physics({ forceGraphRef, nodes, layoutType }: D3PhysicsProp
         const layout = tree<typeof stratifyData[0]>().nodeSize(isVert ? [35, 95] : [16, 95]);
         layout(rootHierarchy);
 
+        // d3-tree places the virtual root at (0,0); real roots (depth 1) land at
+        // depth-coordinate ≥ nodeSize[1] (95), pushing the whole tree off-center.
+        // Re-center by subtracting the smallest depth coordinate.
+        let minDepthCoord = Infinity;
+        rootHierarchy.descendants().forEach(d => {
+          if (d.id === virtualRootId) return;
+          const dy = d.y ?? 0;
+          if (dy < minDepthCoord) minDepthCoord = dy;
+        });
+        const depthOffset = minDepthCoord === Infinity ? 0 : minDepthCoord;
+
         const coords = new Map<string, { x: number, y: number }>();
         rootHierarchy.descendants().forEach(d => {
           if (d.id === virtualRootId) return;
           coords.set(d.id!, {
-            x: isVert ? (d.x ?? 0) : (d.y ?? 0),
-            y: isVert ? (d.y ?? 0) : (d.x ?? 0)
+            x: isVert ? (d.x ?? 0) : (d.y ?? 0) - depthOffset,
+            y: isVert ? (d.y ?? 0) - depthOffset : (d.x ?? 0)
           });
         });
 

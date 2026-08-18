@@ -149,7 +149,7 @@ async function createOpenAIProvider(overrideKey?: string): Promise<AIProvider> {
 async function createEdgeOneProvider(overrideKey?: string): Promise<AIProvider> {
   // ponytail: EdgeOne Makers Models exposes OpenAI-compatible endpoint. Reuse openai SDK client.
   const { default: OpenAI } = await import('openai');
-  const apiKey = overrideKey ?? process.env.EDGEONE_API_KEY ?? process.env.MAKERS_MODELS_KEY;
+  const apiKey = overrideKey ?? (process.env.EDGEONE_API_KEY?.trim() || process.env.MAKERS_MODELS_KEY?.trim());
   if (!apiKey) {
     throw new Error('EDGEONE_API_KEY or MAKERS_MODELS_KEY is required when using EdgeOne provider');
   }
@@ -213,8 +213,14 @@ export async function getAIProvider(overrideKey?: string): Promise<AIProvider> {
   if (overrideKey) {
     return createProvider(overrideKey);
   }
-  // Cache by the resolved provider type so changing AI_PROVIDER invalidates the cache
-  const currentKey = process.env.AI_PROVIDER ?? process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'mock';
+  // Cache by the resolved provider type so changing AI_PROVIDER invalidates the cache.
+  // Mirror createProvider()'s auto-detection order (edgeone keys take precedence).
+  const currentKey = process.env.AI_PROVIDER
+    || ((process.env.EDGEONE_API_KEY?.trim() || process.env.MAKERS_MODELS_KEY?.trim()) ? 'edgeone'
+      : process.env.GEMINI_API_KEY?.trim() ? 'gemini'
+        : process.env.OPENAI_API_KEY?.trim() ? 'openai'
+          : process.env.ANTHROPIC_API_KEY?.trim() ? 'anthropic'
+            : 'mock');
   if (!providerInstance || providerInstanceKey !== currentKey) {
     providerInstance = await createProvider();
     providerInstanceKey = currentKey;
