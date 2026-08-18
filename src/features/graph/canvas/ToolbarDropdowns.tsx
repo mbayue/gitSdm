@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Filter, ChevronDown, Check, FolderGit2, Folder, FileCode, Download, AlertTriangle, Layers } from 'lucide-react';
+import { Filter, ChevronDown, Check, FolderGit2, Folder, FileCode, Download, AlertTriangle, Layers, Workflow } from 'lucide-react';
 import type { ReactNode } from 'react';
-import type { GraphScope, ContentFilter, ColorMode, SizeMode } from '@/stores/vizStore';
+import type { GraphScope, ContentFilter, ColorMode, SizeMode, LayoutType } from '@/stores/vizStore';
 import { LegendPanel } from './widgets/LegendPanel';
 
 const sectionHeaderClass = "mb-1.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#c9d1d9] font-mono";
@@ -108,6 +108,8 @@ interface ToolbarDropdownProps {
   setColorMode: (mode: ColorMode) => void;
   sizeMode: SizeMode;
   setSizeMode: (mode: SizeMode) => void;
+  layoutType: LayoutType;
+  setLayoutType: (layout: LayoutType) => void;
 }
 
 export function ToolbarDropdowns({
@@ -131,6 +133,8 @@ export function ToolbarDropdowns({
   setColorMode,
   sizeMode,
   setSizeMode,
+  layoutType,
+  setLayoutType,
 }: ToolbarDropdownProps) {
   const [contentCustomize, setContentCustomize] = useState(false);
 
@@ -413,6 +417,47 @@ export function ToolbarDropdowns({
                   </div>
                 </div>
               </div>
+            </div>
+          </DropdownPanel>
+        )}
+      </div>
+
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setActiveDropdown(activeDropdown === 'layout' ? null : 'layout')}
+          className={toolbarButtonClass(activeDropdown === 'layout')}
+        >
+          <Workflow className="h-3.5 w-3.5" />
+          <span>Layout</span>
+          <ChevronDown className="h-3 w-3 opacity-60" />
+        </button>
+
+        {activeDropdown === 'layout' && (
+          <DropdownPanel width="w-40">
+            <div className="space-y-1">
+              {(['tree', 'd3-tree-horiz', 'd3-tree-vert'] as LayoutType[]).map((type) => {
+                const active = layoutType === type;
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => {
+                      setLayoutType(type);
+                      setActiveDropdown(null);
+                    }}
+                    className={`flex w-full items-center justify-between rounded px-2.5 py-1.5 text-left text-xs transition-colors ${
+                      active
+                        ? "bg-[#1c2128] text-ui-active-text-green font-medium"
+                        : "text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3]"
+                    }`}
+                  >
+                    <span>{type === 'tree' ? 'Tree Force' : type === 'd3-tree-horiz' ? 'D3 Tree (Horiz)' : 'D3 Tree (Vert)'}</span>
+                    {active && <Check className="h-3 w-3 text-ui-active-text-green" />}
+                  </button>
+                );
+              })}
             </div>
           </DropdownPanel>
         )}

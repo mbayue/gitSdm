@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, mock, beforeEach } from 'bun:test';
 import { analyzeRepository } from './analyze-repo';
 import { clearAllCaches } from '../cache/lru';
 import type { GraphBuildInput } from '../graph/graph-builder';
+import type { RequestContext } from '../utils/context';
 
 const mockRepoInfo = {
   fullName: 'test-owner/test-repo',
@@ -57,6 +58,15 @@ const buildGraphMock = mock((input: GraphBuildInput) => ({
 }));
 
 const originalFetch = globalThis.fetch;
+const stubOctokit = {
+  repos: {
+    listCommits: async () => ({
+      data: [{ commit: { author: { name: 'test-user', date: '2026-01-01T00:00:00Z' } } }],
+      headers: {},
+    }),
+  },
+};
+const mockCtx = { octokit: stubOctokit } as RequestContext;
 const fetchMock = mock(async (input: RequestInfo | URL) => {
   const packageName = decodeURIComponent(new URL(String(input)).pathname.slice(1));
 
@@ -109,10 +119,6 @@ describe('services/analyze-repo', () => {
       buildGraph: buildGraphMock,
     }));
 
-    mock.module('./churn-service', () => ({
-      fetchRepoChurn: async () => ({}),
-    }));
-
     clearAllCaches();
     activeFileContents = workspaceFileContents;
     buildGraphMock.mockClear();
@@ -130,7 +136,7 @@ describe('services/analyze-repo', () => {
   });
 
   it('runs the full repository analysis pipeline and caches the result', async () => {
-    const analysis = await analyzeRepository('https://github.com/test-owner/test-repo');
+    const analysis = await analyzeRepository('https://github.com/test-owner/test-repo', mockCtx);
     expect(analysis.meta.fullName).toBe('test-owner/test-repo');
     expect(analysis.importantFiles).toEqual(['src/main.ts']);
     expect(analysis.treeTruncated).toBe(false);
@@ -163,7 +169,7 @@ describe('services/analyze-repo', () => {
   it('keeps no-workspace repository analysis backward-compatible', async () => {
     activeFileContents = plainFileContents;
 
-    const analysis = await analyzeRepository('https://github.com/test-owner/test-repo');
+    const analysis = await analyzeRepository('https://github.com/test-owner/test-repo', mockCtx);
 
     expect(analysis.dependencies).toEqual([
       { name: 'react', version: '^19', type: 'prod', ecosystem: 'npm' },
@@ -180,7 +186,7 @@ describe('services/analyze-repo', () => {
       'src/main.go': 'package main',
     };
 
-    const analysis = await analyzeRepository('https://github.com/test-owner/test-repo');
+    const analysis = await analyzeRepository('https://github.com/test-owner/test-repo', mockCtx);
 
     expect(fetchMock).toHaveBeenCalledTimes(0);
     expect(analysis.dependencyHealth).toEqual(expect.objectContaining({
@@ -194,7 +200,7 @@ describe('services/analyze-repo', () => {
   it('honors negated workspace globs and explicit yarn packageManager', async () => {
     activeFileContents = excludedWorkspaceFileContents;
 
-    const analysis = await analyzeRepository('https://github.com/test-owner/test-repo');
+    const analysis = await analyzeRepository('https://github.com/test-owner/test-repo', mockCtx);
 
     expect(analysis.workspacePackages).toEqual([
       expect.objectContaining({ rootPath: '', manager: 'yarn' }),

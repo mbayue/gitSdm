@@ -14,11 +14,18 @@ import {
   fetchIndexingStatus,
   fetchRepoBranches,
   fetchRepoFile,
+  fetchRepoTags,
   fetchTrending,
   semanticAsk,
   semanticSearch,
   triggerIndexing,
 } from './apiClient';
+
+type FetchMockImpl = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+
+function makeFetchMock(impl?: FetchMockImpl) {
+  return mock<FetchMockImpl>(impl ?? (async () => new Response('', { status: 200 })));
+}
 
 describe('apiClient', () => {
   let originalFetch: typeof global.fetch;
@@ -148,12 +155,25 @@ describe('apiClient', () => {
         expect(error.message).toBe('Invalid JSON response');
       }
     });
+
+    it('fetches repo tags successfully', async () => {
+      const mockTags = [{ name: 'v1.0.0', sha: '123' }];
+      spyOn(global, 'fetch').mockResolvedValueOnce(
+        new Response(JSON.stringify(mockTags), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      const result = await fetchRepoTags('owner', 'repo');
+      expect(result).toEqual(mockTags);
+    });
   });
 
   describe('fetchRepoBranches', () => {
     it('fetches repository branches successfully', async () => {
       const mockBranches = [{ name: 'main', protected: true }, { name: 'dev', protected: false }];
-      const fetchMock = mock(async () => new Response(JSON.stringify(mockBranches), { status: 200 }));
+      const fetchMock = makeFetchMock(async () => new Response(JSON.stringify(mockBranches), { status: 200 }));
       global.fetch = fetchMock as any;
 
       const result = await fetchRepoBranches('facebook', 'react');
@@ -175,7 +195,7 @@ describe('apiClient', () => {
   describe('fetchTrending', () => {
     it('fetches trending repos successfully', async () => {
       const mockRepos = [{ author: 'test', name: 'repo1', stars: 100 }, { author: 'test', name: 'repo2', stars: 200 }];
-      const fetchMock = mock(async () => new Response(JSON.stringify({ repos: mockRepos }), { status: 200 }));
+      const fetchMock = makeFetchMock(async () => new Response(JSON.stringify({ repos: mockRepos }), { status: 200 }));
       global.fetch = fetchMock as any;
 
       const result = await fetchTrending();
@@ -194,7 +214,7 @@ describe('apiClient', () => {
   describe('fetchRepoFile', () => {
     it('appends owner, repo, and path to query params', async () => {
       const mockData = { path: 'src/index.js', content: 'console.log("hello")', sha: 'abc' };
-      const fetchMock = mock(async () => new Response(JSON.stringify(mockData), { status: 200 }));
+      const fetchMock = makeFetchMock(async () => new Response(JSON.stringify(mockData), { status: 200 }));
       global.fetch = fetchMock as any;
 
       const result = await fetchRepoFile('testOwner', 'testRepo', 'src/index.js');
@@ -210,7 +230,7 @@ describe('apiClient', () => {
 
     it('appends branch to query params if provided', async () => {
       const mockData = { path: 'src/index.js', content: 'console.log("hello")', sha: 'abc' };
-      const fetchMock = mock(async () => new Response(JSON.stringify(mockData), { status: 200 }));
+      const fetchMock = makeFetchMock(async () => new Response(JSON.stringify(mockData), { status: 200 }));
       global.fetch = fetchMock as any;
 
       const result = await fetchRepoFile('testOwner', 'testRepo', 'src/index.js', 'main-branch');
@@ -228,7 +248,7 @@ describe('apiClient', () => {
   describe('analyzeRepo', () => {
     it('makes a POST request to /api/repo/analyze and returns data', async () => {
       const mockData = { name: 'test-repo', summary: 'test' };
-      const fetchMock = mock(async () => new Response(JSON.stringify(mockData), { status: 200 }));
+      const fetchMock = makeFetchMock(async () => new Response(JSON.stringify(mockData), { status: 200 }));
       global.fetch = fetchMock as any;
 
       const result = await analyzeRepo('https://github.com/foo/bar', 'main');
@@ -249,7 +269,8 @@ describe('apiClient', () => {
 
   describe('semanticSearch', () => {
     it('makes a POST request with correct payload', async () => {
-      const mockFetch = mock(async () => new Response(JSON.stringify({ results: [] }), { status: 200 }));
+      const searchResponse = { results: [], query: 'test query', cached: false };
+      const mockFetch = makeFetchMock(async () => new Response(JSON.stringify(searchResponse), { status: 200 }));
       global.fetch = mockFetch as any;
 
       const response = await semanticSearch('test query', 'facebook', 'react');
@@ -257,11 +278,11 @@ describe('apiClient', () => {
       expect(mockFetch.mock.calls[0][0]).toBe('/api/search');
       expect(mockFetch.mock.calls[0][1]?.method).toBe('POST');
       expect(mockFetch.mock.calls[0][1]?.body).toBe(JSON.stringify({ query: 'test query', owner: 'facebook', repo: 'react' }));
-      expect(response).toEqual({ results: [] });
+      expect(response).toEqual(searchResponse);
     });
 
     it('includes branch in the payload when provided', async () => {
-      const mockFetch = mock(async () => new Response(JSON.stringify({ results: [] }), { status: 200 }));
+      const mockFetch = makeFetchMock(async () => new Response(JSON.stringify({ results: [], query: 'q', cached: false }), { status: 200 }));
       global.fetch = mockFetch as any;
 
       await semanticSearch('test query', 'facebook', 'react', 'main');
@@ -279,14 +300,15 @@ describe('apiClient', () => {
   describe('aiExplain', () => {
     it('successfully calls /api/ai/explain and returns data', async () => {
       const mockResponse = { explanation: 'This is a test explanation.' };
-      const fetchMock = mock(async () => new Response(JSON.stringify(mockResponse), { status: 200 }));
+      const fetchMock = makeFetchMock(async () => new Response(JSON.stringify(mockResponse), { status: 200 }));
       globalThis.fetch = fetchMock as any;
       const requestBody = {
         owner: 'test-owner',
         repo: 'test-repo',
         filePath: 'src/index.ts',
-        content: 'console.log("hello");',
+        context: 'console.log("hello");',
         branch: 'main',
+        scope: 'file' as const,
       };
 
       const result = await aiExplain(requestBody);
@@ -304,14 +326,15 @@ describe('apiClient', () => {
         owner: 'test-owner',
         repo: 'test-repo',
         filePath: 'src/index.ts',
-        content: 'console.log("hello");',
+        context: 'console.log("hello");',
+        scope: 'file',
       })).rejects.toThrow(ApiError);
     });
   });
 
   describe('thin wrappers', () => {
     it('fetches app config', async () => {
-      const fetchMock = mock(async () => new Response(JSON.stringify({ aiProvider: 'mock' }), { status: 200 }));
+      const fetchMock = makeFetchMock(async () => new Response(JSON.stringify({ aiProvider: 'mock' }), { status: 200 }));
       global.fetch = fetchMock as any;
 
       await expect(fetchAppConfig()).resolves.toEqual({ aiProvider: 'mock' });
@@ -327,7 +350,7 @@ describe('apiClient', () => {
       [aiReadmeEnhance, '/api/ai/readme-enhance'],
       [aiLearningPath, '/api/ai/learning-path'],
     ] as const)('POSTs owner, repo, and branch to %s', async (fn, path) => {
-      const fetchMock = mock(async () => new Response(JSON.stringify({ ok: true }), { status: 200 }));
+      const fetchMock = makeFetchMock(async () => new Response(JSON.stringify({ ok: true }), { status: 200 }));
       global.fetch = fetchMock as any;
 
       await fn('owner', 'repo', 'branch');
@@ -338,7 +361,7 @@ describe('apiClient', () => {
     });
 
     it('asks semantic question', async () => {
-      const fetchMock = mock(async () => new Response(JSON.stringify({ answer: '42', citations: [], cached: false }), { status: 200 }));
+      const fetchMock = makeFetchMock(async () => new Response(JSON.stringify({ answer: '42', citations: [], cached: false }), { status: 200 }));
       global.fetch = fetchMock as any;
 
       await semanticAsk('why?', 'owner', 'repo', 'branch');
@@ -349,7 +372,7 @@ describe('apiClient', () => {
     });
 
     it('triggers indexing', async () => {
-      const fetchMock = mock(async () => new Response(JSON.stringify({ status: 'queued' }), { status: 200 }));
+      const fetchMock = makeFetchMock(async () => new Response(JSON.stringify({ status: 'queued' }), { status: 200 }));
       global.fetch = fetchMock as any;
 
       await expect(triggerIndexing('owner', 'repo', 'branch')).resolves.toEqual({ status: 'queued' });
@@ -359,7 +382,7 @@ describe('apiClient', () => {
     });
 
     it('fetches indexing status', async () => {
-      const fetchMock = mock(async () => new Response(JSON.stringify({ state: 'idle' }), { status: 200 }));
+      const fetchMock = makeFetchMock(async () => new Response(JSON.stringify({ state: 'idle' }), { status: 200 }));
       global.fetch = fetchMock as any;
 
       await expect(fetchIndexingStatus('owner', 'repo')).resolves.toEqual({ state: 'idle' });

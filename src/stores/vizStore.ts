@@ -10,6 +10,8 @@ export type CompareRefType = "branch" | "tag" | "commit";
 export type ColorMode = "default" | "churn" | "complexity";
 export type SizeMode = "default" | "complexity";
 
+export type LayoutType = "tree" | "d3-tree-horiz" | "d3-tree-vert";
+
 interface VizState {
   searchQuery: string;
   nodeTypeFilters: Set<NodeType>;
@@ -42,6 +44,7 @@ interface VizState {
   // Churn / Complexity overlay
   colorMode: ColorMode;
   sizeMode: SizeMode;
+  layoutType: LayoutType;
 
   graphScope: GraphScope;
   contentFilters: Set<ContentFilter>;
@@ -98,6 +101,7 @@ interface VizState {
   setBlastRadiusActive: (active: boolean) => void;
   setColorMode: (mode: ColorMode) => void;
   setSizeMode: (mode: SizeMode) => void;
+  setLayoutType: (layout: LayoutType) => void;
   setGraphSidebarOpen: (open: boolean) => void;
   toggleGraphSidebarSection: (
     key: keyof VizState["graphSidebarSections"],
@@ -145,6 +149,7 @@ export const useVizStore = create<VizState>()(
   blastRadiusActive: false,
   colorMode: "default" as ColorMode,
   sizeMode: "default" as SizeMode,
+  layoutType: "tree" as LayoutType,
 
   graphScope: "source",
   contentFilters: new Set(defaultContentFilters),
@@ -238,6 +243,7 @@ export const useVizStore = create<VizState>()(
   setBlastRadiusActive: (blastRadiusActive: boolean) => set({ blastRadiusActive }),
   setColorMode: (colorMode: ColorMode) => set({ colorMode }),
   setSizeMode: (sizeMode: SizeMode) => set({ sizeMode }),
+  setLayoutType: (layoutType: LayoutType) => set({ layoutType }),
   setGraphSidebarOpen: (graphSidebarOpen: boolean) => set({ graphSidebarOpen }),
   toggleGraphSidebarSection: (key: keyof VizState["graphSidebarSections"]) =>
     set((s: VizState) => ({
@@ -292,6 +298,7 @@ export const useVizStore = create<VizState>()(
       blastRadiusActive: false,
       colorMode: "default" as ColorMode,
       sizeMode: "default" as SizeMode,
+      layoutType: "tree" as LayoutType,
       graphScope: "source",
       contentFilters: new Set(defaultContentFilters),
       activeDropdown: null,
@@ -311,6 +318,7 @@ export const useVizStore = create<VizState>()(
       graphSidebarOpen: state.graphSidebarOpen,
       activeDropdown: state.activeDropdown,
       graphScope: state.graphScope,
+      layoutType: state.layoutType,
       contentFilters: Array.from(state.contentFilters),
     }),
     merge: (persistedState: unknown, currentState: VizState): VizState => {

@@ -129,7 +129,6 @@ export function drawForceNode({
     ctx.shadowColor = isSelected ? "#22d3ee" : isNeighbor ? "#0891b2" : "transparent";
     ctx.shadowBlur = isSelected ? 18 : isNeighbor ? 12 : 0;
   } else {
-    // Match the Legend (Selected/Focus Node uses Violet glow, Neighbor Connections use subtle Violet/Purple)
     ctx.shadowColor = isSelected ? "#a78bfa" : isNeighbor ? "rgba(139, 92, 246, 0.35)" : "transparent";
     ctx.shadowBlur = isSelected ? 18 : isNeighbor ? 8 : 0;
   }

@@ -38,6 +38,7 @@ export function useForceCanvasState({
     resetFilters,
     graphActionTrigger,
     setVisibleCounts,
+    layoutType,
   } = useVizStore();
 
   const [forceSize, setForceSize] = useState({ width: 1024, height: 720 });
@@ -175,6 +176,7 @@ export function useForceCanvasState({
   useD3Physics({
     forceGraphRef,
     nodes: forceGraphData.nodes,
+    layoutType,
   });
 
   const { prevFocusRef } = useForceSync({

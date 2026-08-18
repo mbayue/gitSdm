@@ -9,7 +9,7 @@ let cachedProviderKey: string | null = null;
 
 export async function createEmbeddingProvider(): Promise<EmbeddingProvider> {
   const envProvider = (process.env.AI_PROVIDER ?? 'mock').toLowerCase();
-  const cacheKey = `${envProvider}:${process.env.GEMINI_API_KEY ? 'g' : ''}${process.env.OPENAI_API_KEY ? 'o' : ''}`;
+  const cacheKey = `${envProvider}:${process.env.GEMINI_API_KEY ? 'g' : ''}${process.env.OPENAI_API_KEY ? 'o' : ''}${process.env.EDGEONE_API_KEY || process.env.MAKERS_MODELS_KEY ? 'e' : ''}`;
 
   if (cachedProvider && cachedProviderKey === cacheKey) {
     return cachedProvider;
@@ -19,6 +19,8 @@ export async function createEmbeddingProvider(): Promise<EmbeddingProvider> {
 
   if (envProvider === 'openai') {
     provider = createOpenAIEmbeddingProvider();
+  } else if (envProvider === 'edgeone') {
+    provider = createEdgeOneEmbeddingProvider();
   } else if (envProvider === 'gemini') {
     provider = await createGeminiEmbeddingProvider();
   } else if (envProvider === 'anthropic') {
@@ -27,10 +29,12 @@ export async function createEmbeddingProvider(): Promise<EmbeddingProvider> {
       provider = await createGeminiEmbeddingProvider();
     } else if (process.env.OPENAI_API_KEY) {
       provider = createOpenAIEmbeddingProvider();
+    } else if (process.env.EDGEONE_API_KEY || process.env.MAKERS_MODELS_KEY) {
+      provider = createEdgeOneEmbeddingProvider();
     } else {
       throw new AppError(
         400,
-        'Anthropic does not support embeddings. Configure OPENAI_API_KEY or GEMINI_API_KEY as fallback.',
+        'Anthropic does not support embeddings. Configure OPENAI_API_KEY, EDGEONE_API_KEY, MAKERS_MODELS_KEY, or GEMINI_API_KEY as fallback.',
         'EMBEDDING_PROVIDER_UNAVAILABLE',
       );
     }
@@ -86,7 +90,37 @@ function deterministicEmbedding(text: string, dims: number): Float32Array {
   return vec;
 }
 
-// ── OpenAI Provider ────────────────────────────────────────────────────
+// ── OpenAI-compatible Provider ────────────────────────────────────────
+
+interface OpenAICompatibleConfig {
+  providerName: string;
+  apiKey: string;
+  baseURL?: string;
+  model: string;
+}
+
+function createOpenAICompatibleEmbeddingProvider(config: OpenAICompatibleConfig): EmbeddingProvider {
+  const { providerName, apiKey, baseURL, model } = config;
+  const maxTokens = 8191;
+
+  return {
+    dimensions: EMBEDDING_DIMENSIONS,
+    maxTokens,
+    providerName,
+
+    async embed(text: string): Promise<EmbeddingResult> {
+      const truncated = truncateText(text, maxTokens);
+      const vector = await openAIEmbed(apiKey, model, truncated, baseURL);
+      return { vector, tokenCount: estimateTokens(truncated) };
+    },
+
+    async embedBatch(texts: string[]): Promise<EmbeddingResult[]> {
+      const truncated = texts.map((t) => truncateText(t, maxTokens));
+      const vectors = await openAIEmbedBatch(apiKey, model, truncated, baseURL);
+      return vectors.map((v, i) => ({ vector: v, tokenCount: estimateTokens(truncated[i]) }));
+    },
+  };
+}
 
 function createOpenAIEmbeddingProvider(): EmbeddingProvider {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -94,34 +128,35 @@ function createOpenAIEmbeddingProvider(): EmbeddingProvider {
     throw new AppError(401, 'OPENAI_API_KEY is required for OpenAI embeddings.', 'MISSING_API_KEY');
   }
 
-  const model = process.env.OPENAI_EMBEDDING_MODEL ?? 'openrouter/openai/text-embedding-3-large';
-  const maxTokens = 8191;
-
-  return {
-    dimensions: EMBEDDING_DIMENSIONS,
-    maxTokens,
+  return createOpenAICompatibleEmbeddingProvider({
     providerName: 'openai',
-
-    async embed(text: string): Promise<EmbeddingResult> {
-      const truncated = truncateText(text, maxTokens);
-      const vector = await openAIEmbed(apiKey, model, truncated);
-      return { vector, tokenCount: estimateTokens(truncated) };
-    },
-
-    async embedBatch(texts: string[]): Promise<EmbeddingResult[]> {
-      const truncated = texts.map((t) => truncateText(t, maxTokens));
-      const vectors = await openAIEmbedBatch(apiKey, model, truncated);
-      return vectors.map((v, i) => ({ vector: v, tokenCount: estimateTokens(truncated[i]) }));
-    },
-  };
+    apiKey,
+    model: process.env.OPENAI_EMBEDDING_MODEL ?? 'openrouter/openai/text-embedding-3-large',
+  });
 }
 
-async function openAIEmbed(apiKey: string, model: string, text: string): Promise<Float32Array> {
-  const { default: OpenAI } = await import('openai');
-  const client = new OpenAI({ apiKey });
-  if (process.env.OPENAI_API_BASE) {
-    client.baseURL = process.env.OPENAI_API_BASE;
+function createEdgeOneEmbeddingProvider(): EmbeddingProvider {
+  // ponytail: EdgeOne Makers Models embedding endpoint is OpenAI-compatible
+  const apiKey = process.env.EDGEONE_API_KEY?.trim() || process.env.MAKERS_MODELS_KEY?.trim();
+  if (!apiKey) {
+    throw new AppError(
+      401,
+      'EDGEONE_API_KEY or MAKERS_MODELS_KEY is required for EdgeOne embeddings.',
+      'MISSING_API_KEY',
+    );
   }
+
+  return createOpenAICompatibleEmbeddingProvider({
+    providerName: 'edgeone',
+    apiKey,
+    baseURL: process.env.EDGEONE_API_BASE ?? 'https://ai-gateway.edgeone.link/v1',
+    model: process.env.EDGEONE_EMBEDDING_MODEL ?? process.env.OPENAI_EMBEDDING_MODEL ?? 'openrouter/openai/text-embedding-3-large',
+  });
+}
+
+async function openAIEmbed(apiKey: string, model: string, text: string, baseURL?: string): Promise<Float32Array> {
+  const { default: OpenAI } = await import('openai');
+  const client = new OpenAI({ apiKey, baseURL: baseURL ?? process.env.OPENAI_API_BASE });
 
   const response = await withRetry(() =>
     client.embeddings.create({
@@ -133,13 +168,10 @@ async function openAIEmbed(apiKey: string, model: string, text: string): Promise
   return normalizeVector(new Float32Array(response.data[0].embedding));
 }
 
-async function openAIEmbedBatch(apiKey: string, model: string, texts: string[]): Promise<Float32Array[]> {
+async function openAIEmbedBatch(apiKey: string, model: string, texts: string[], baseURL?: string): Promise<Float32Array[]> {
   if (texts.length === 0) return [];
   const { default: OpenAI } = await import('openai');
-  const client = new OpenAI({ apiKey });
-  if (process.env.OPENAI_API_BASE) {
-    client.baseURL = process.env.OPENAI_API_BASE;
-  }
+  const client = new OpenAI({ apiKey, baseURL: baseURL ?? process.env.OPENAI_API_BASE });
 
   // OpenAI supports batch – send in chunks of 100
   const results: Float32Array[] = [];

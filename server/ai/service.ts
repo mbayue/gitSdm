@@ -40,24 +40,32 @@ const aiQueue = new PromiseQueue(2);
 function getAiCacheDiscriminator(apiKey?: string): string {
   const envProvider = process.env.AI_PROVIDER?.trim().toLowerCase();
   const provider = apiKey?.trim()
-    ? (apiKey.trim().startsWith('sk-ant-') ? 'anthropic' : apiKey.trim().startsWith('sk-') ? 'openai' : 'gemini')
+    ? (apiKey.trim().startsWith('sk-ant-')
+      ? 'anthropic'
+      : apiKey.trim().startsWith('sk-')
+        ? (envProvider === 'edgeone' ? 'edgeone' : 'openai')
+        : 'gemini')
     : (envProvider && envProvider.length > 0
       ? envProvider
-      : (process.env.GEMINI_API_KEY?.trim()
-        ? 'gemini'
-        : process.env.OPENAI_API_KEY?.trim()
-          ? 'openai'
-          : process.env.ANTHROPIC_API_KEY?.trim()
-            ? 'anthropic'
-            : 'mock'));
+      : (process.env.EDGEONE_API_KEY?.trim() || process.env.MAKERS_MODELS_KEY?.trim()
+        ? 'edgeone'
+        : process.env.GEMINI_API_KEY?.trim()
+          ? 'gemini'
+          : process.env.OPENAI_API_KEY?.trim()
+            ? 'openai'
+            : process.env.ANTHROPIC_API_KEY?.trim()
+              ? 'anthropic'
+              : 'mock'));
 
-  const model = provider === 'gemini'
-    ? (process.env.GEMINI_MODEL ?? 'gemini-2.5-flash')
-    : provider === 'openai'
-      ? (process.env.OPENAI_MODEL ?? 'gpt-4o-mini')
-      : provider === 'anthropic'
-        ? (process.env.ANTHROPIC_MODEL ?? 'claude-3-5-haiku-latest')
-        : 'mock';
+  const model = provider === 'edgeone'
+    ? (process.env.EDGEONE_MODEL ?? '@makers/deepseek-v4-flash')
+    : provider === 'gemini'
+      ? (process.env.GEMINI_MODEL ?? 'gemini-2.5-flash')
+      : provider === 'openai'
+        ? (process.env.OPENAI_MODEL ?? 'gpt-4o-mini')
+        : provider === 'anthropic'
+          ? (process.env.ANTHROPIC_MODEL ?? 'claude-3-5-haiku-latest')
+          : 'mock';
 
   const keyScope = apiKey?.trim() ? `user-key:${hashToken(apiKey)}` : 'env-key';
   return `${provider}:${model}:${keyScope}`;
