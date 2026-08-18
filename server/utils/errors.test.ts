@@ -16,13 +16,25 @@ describe('utils/errors', () => {
     expect(isAppError(new Error('x'))).toBe(false);
   });
 
-  it('serializes AppError payload', () => {
+  it('serializes AppError payload and preserves message for < 500 status', () => {
     const error = new AppError(400, 'bad', 'BAD', false, { field: 'x' });
 
     expect(toErrorPayload(error)).toEqual({
       error: 'bad',
       code: 'BAD',
       status: 400,
+      retryable: false,
+      context: { field: 'x' },
+    });
+  });
+
+  it('serializes AppError payload and sanitizes message for >= 500 status', () => {
+    const error = new AppError(500, 'database connection failed: secret_password', 'DB_ERROR', false, { field: 'x' });
+
+    expect(toErrorPayload(error)).toEqual({
+      error: 'Internal Server Error',
+      code: 'DB_ERROR',
+      status: 500,
       retryable: false,
       context: { field: 'x' },
     });

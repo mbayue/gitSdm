@@ -96,8 +96,9 @@ async function runIndexing(options: IndexingOptions, ctx: RequestContext, key: s
     // Files in current but not prev, or SHA changed → treat as modified
     // Files in prev but not current → delete
     const filesToDelete = [...prevFiles].filter((f) => !currFiles.has(f));
+    const prevItemsMap = new Map(prevItems.map((p) => [p.path, p]));
     const modifiedOrAdded = sourceFiles.filter((item) => {
-      const prevItem = prevItems.find((p) => p.path === item.path);
+      const prevItem = prevItemsMap.get(item.path);
       return !prevItem || prevItem.sha !== item.sha; // SHA changed or new file
     });
     filesToProcess = modifiedOrAdded;

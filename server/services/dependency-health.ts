@@ -53,6 +53,21 @@ function groupDependencies(
 ): readonly DependencyGroup[] {
   const grouped = new Map<DependencyKey, DependencyGroup>();
 
+  // Performance Optimization (Bolt):
+  // Pre-compute a Map of scoped dependencies grouped by dependencyKey.
+  // This eliminates the need for an O(M) .filter() array lookup inside the
+  // O(N) loop below, reducing time complexity from O(N*M) to O(N+M).
+  const scopedByDepKey = new Map<DependencyKey, ScopedDependency[]>();
+  for (const scoped of scopedDependencies) {
+    const key = dependencyKey(scoped);
+    let arr = scopedByDepKey.get(key);
+    if (!arr) {
+      arr = [];
+      scopedByDepKey.set(key, arr);
+    }
+    arr.push(scoped);
+  }
+
   for (const dependency of dependencies) {
     const key = dependencyKey(dependency);
     const existing = grouped.get(key);
@@ -60,7 +75,7 @@ function groupDependencies(
 
     grouped.set(key, {
       dependency,
-      scopedDependencies: scopedDependencies.filter((scopedDependency) => dependencyKey(scopedDependency) === key),
+      scopedDependencies: scopedByDepKey.get(key) || [],
     });
   }
 
@@ -156,18 +171,23 @@ function resolveNpmDependencyState(
 }
 
 function buildDependencyHealthSummary(items: readonly DependencyHealthItem[]): DependencyHealthSummary {
-  return {
+  const summary = {
     total: items.length,
-    current: countByState(items, 'current'),
-    outdated: countByState(items, 'outdated'),
-    unknown: countByState(items, 'unknown'),
-    errors: countByState(items, 'error'),
-    unsupported: countByState(items, 'unsupported'),
+    current: 0,
+    outdated: 0,
+    unknown: 0,
+    errors: 0,
+    unsupported: 0,
   };
-}
-
-function countByState(items: readonly DependencyHealthItem[], state: DependencyHealthState): number {
-  return items.filter((item) => item.state === state).length;
+  for (let i = 0; i < items.length; i++) {
+    const state = items[i].state;
+    if (state === 'current') summary.current++;
+    else if (state === 'outdated') summary.outdated++;
+    else if (state === 'unknown') summary.unknown++;
+    else if (state === 'error') summary.errors++;
+    else if (state === 'unsupported') summary.unsupported++;
+  }
+  return summary;
 }
 
 function dependencyKey(dependency: Dependency): DependencyKey {

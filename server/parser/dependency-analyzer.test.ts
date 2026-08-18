@@ -161,7 +161,9 @@ describe('dependency-analyzer', () => {
     });
 
     // When: ownership is resolved for a nested source file
-    const owner = findWorkspacePackageForPath('packages/a/nested/src/index.ts', packages);
+    // Note: findWorkspacePackageForPath expects packages to be pre-sorted by rootPath length descending
+    const sortedPackages = [...packages].sort((a, b) => b.rootPath.length - a.rootPath.length);
+    const owner = findWorkspacePackageForPath('packages/a/nested/src/index.ts', sortedPackages);
 
     // Then: deepest matching package root wins
     expect(owner?.rootPath).toBe('packages/a/nested');

@@ -107,7 +107,7 @@ export function findWorkspacePackageForPath(
   path: string,
   packages: readonly WorkspacePackage[],
 ): WorkspacePackage | undefined {
-  return packages
-    .filter((pkg) => pkg.rootPath === '' || path === pkg.rootPath || path.startsWith(`${pkg.rootPath}/`))
-    .sort((a, b) => b.rootPath.length - a.rootPath.length)[0];
+  return packages.find(
+    (pkg) => pkg.rootPath === '' || path === pkg.rootPath || path.startsWith(`${pkg.rootPath}/`),
+  );
 }

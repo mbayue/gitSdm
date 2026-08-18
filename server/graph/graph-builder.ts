@@ -171,8 +171,10 @@ export function buildGraph(input: GraphBuildInput): GraphData {
   const fileNodes = nodes.filter((n) => n.type === 'file');
   const allFilePaths = fileNodes.map((n) => n.id.replace(/^file:/, ''));
 
+  const sortedWorkspacePackages = [...workspacePackages].sort((a, b) => b.rootPath.length - a.rootPath.length);
+
   for (const path of allFilePaths) {
-    const ownerPackage = findWorkspacePackageForPath(path, workspacePackages);
+    const ownerPackage = findWorkspacePackageForPath(path, sortedWorkspacePackages);
     if (!ownerPackage) continue;
     edges.push({
       id: `e:${packageNodeId(ownerPackage)}->file:${path}`,

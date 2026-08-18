@@ -2,6 +2,7 @@ import path from 'node:path';
 import { handleApiRequest } from './api-router';
 import { resetOctokit } from './github/client';
 import { addSecurityHeaders } from './utils/http';
+import { logInfo } from './utils/logger';
 
 const distDir = path.resolve(import.meta.dir, '../dist');
 const indexFile = path.join(distDir, 'index.html');
@@ -46,8 +47,8 @@ Bun.serve({
 });
 
 const hasToken = Boolean(process.env.GITHUB_TOKEN?.trim());
-console.log(`[gitSdm] listening on http://${host}:${port}`);
-console.log(`[gitSdm] GitHub API: ${hasToken ? 'authenticated' : 'unauthenticated'}`);
+logInfo(`[gitSdm] listening on http://${host}:${port}`);
+logInfo(`[gitSdm] GitHub API: ${hasToken ? 'authenticated' : 'unauthenticated'}`);
 
 function safeJoin(root: string, pathname: string): string {
   const normalized = pathname.replace(/^[/\\]+/, '');
