@@ -137,7 +137,7 @@ function createOpenAIEmbeddingProvider(): EmbeddingProvider {
 
 function createEdgeOneEmbeddingProvider(): EmbeddingProvider {
   // ponytail: EdgeOne Makers Models embedding endpoint is OpenAI-compatible
-  const apiKey = process.env.EDGEONE_API_KEY || process.env.MAKERS_MODELS_KEY;
+  const apiKey = process.env.EDGEONE_API_KEY?.trim() || process.env.MAKERS_MODELS_KEY?.trim();
   if (!apiKey) {
     throw new AppError(
       401,

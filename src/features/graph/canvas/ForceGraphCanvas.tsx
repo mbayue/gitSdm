@@ -43,10 +43,11 @@ const getArrowRelPos = (link: ForceGraphLink): number => {
   const sizeMode = useVizStore.getState().sizeMode;
   const targetRadius = getForceNodeRadius(target, sizeMode);
   const offset = targetRadius + 1.2;
-  // Link shorter than the target's radius: 1 - offset/dist would go negative and
-  // clamp to 0.1, parking the arrowhead near the source. Fall back to mid-link.
+  // Link shorter than the target's radius: 1 - offset/dist would go negative.
+  // Fall back to mid-link, and clamp the normal branch at the same 0.5 so the
+  // arrowhead position stays continuous as links oscillate across the threshold.
   if (dist <= offset) return 0.5;
-  return Math.min(0.99, 1 - offset / dist);
+  return Math.max(0.5, Math.min(0.99, 1 - offset / dist));
 };
 
 export function NetworkCanvas({
