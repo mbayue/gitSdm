@@ -45,9 +45,12 @@ describe('ai provider', () => {
     delete process.env.GEMINI_API_KEY;
     delete process.env.OPENAI_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.EDGEONE_API_KEY;
+    delete process.env.MAKERS_MODELS_KEY;
     delete process.env.GEMINI_MODEL;
     delete process.env.OPENAI_MODEL;
     delete process.env.ANTHROPIC_MODEL;
+    delete process.env.EDGEONE_MODEL;
   });
 
   afterEach(() => {
@@ -97,9 +100,19 @@ describe('ai provider', () => {
       { role: 'assistant', content: 'prev' },
       { role: 'user', content: 'now' },
     ])).toBe('anthropic-ok');
+
+    delete process.env.ANTHROPIC_API_KEY;
+    process.env.EDGEONE_API_KEY = 'sk-eo-env';
+    process.env.EDGEONE_MODEL = 'deepseek-test';
+    provider = await createProvider();
+    expect(await provider.complete([{ role: 'user', content: 'now' }], { json: true })).toContain('openai');
   });
 
   it('uses override key detection and validates missing env keys', async () => {
+    process.env.AI_PROVIDER = 'edgeone';
+    expect(await (await createProvider('sk-eo-key')).complete([{ role: 'user', content: 'x' }])).toContain('openai');
+    delete process.env.AI_PROVIDER;
+
     expect(await (await createProvider('sk-openai')).complete([{ role: 'user', content: 'x' }])).toContain('openai');
     expect(await (await createProvider('sk-ant-anthropic')).complete([{ role: 'user', content: 'x' }])).toBe('anthropic-ok');
     expect(await (await createProvider('gemini-override')).complete([{ role: 'user', content: 'x' }])).toContain('gemini');
@@ -109,6 +122,9 @@ describe('ai provider', () => {
 
     process.env.AI_PROVIDER = 'openai';
     await expect(createProvider()).rejects.toThrow('OPENAI_API_KEY');
+
+    process.env.AI_PROVIDER = 'edgeone';
+    await expect(createProvider()).rejects.toThrow('EDGEONE_API_KEY');
 
     process.env.AI_PROVIDER = 'anthropic';
     await expect(createProvider()).rejects.toThrow('ANTHROPIC_API_KEY');

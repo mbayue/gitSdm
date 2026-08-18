@@ -12,6 +12,8 @@ import {
   fetchContributors,
   fetchTimeline,
   fetchTotalCommits,
+  fetchRepoTags,
+
 } from './fetch-tree';
 
 const mockListBranches = mock(async () => ({ data: [{ name: 'main', protected: true }] }));
@@ -30,7 +32,7 @@ const mockGetRepo = mock(async () => ({
     updated_at: '2026-01-02T00:00:00Z',
   },
 }));
-const mockGetCommit = mock(async () => ({ data: { sha: 'sha123' } }));
+const mockGetCommit = mock(async (_params?: { owner?: string; repo?: string; ref?: string }) => ({ data: { sha: 'sha123' } }));
 const mockGetTree = mock(async () => ({
   data: {
     tree: [
@@ -128,6 +130,39 @@ describe('github/fetch-tree', () => {
     });
     await expect(fetchRepoBranches('real-owner', 'repo')).rejects.toThrow('Github failure');
   });
+  it('fetchRepoTags: handles mock and real repo successfully, handles catch', async () => {
+    const mockRes = await fetchRepoTags('mock-owner', 'repo');
+    expect(mockRes).toEqual([]);
+
+    const octokitMock = {
+      repos: {
+        listTags: mock(async ({ page }: { page: number }) => {
+          if (page === 1) {
+            return {
+              data: [
+                { name: 'v1.0.0', commit: { sha: 'sha-v1' } },
+              ],
+            };
+          }
+          return { data: [] };
+        }),
+      },
+    };
+
+    const realRes = await fetchRepoTags('real-owner', 'repo', { octokit: octokitMock } as any);
+    expect(realRes).toEqual([{ name: 'v1.0.0', sha: 'sha-v1' }]);
+
+    const octokitFail = {
+      repos: {
+        listTags: mock(async () => {
+          throw new Error('Fail to fetch tags');
+        }),
+      },
+    };
+    await expect(fetchRepoTags('real-owner', 'repo', { octokit: octokitFail } as any)).rejects.toThrow('Fail to fetch tags');
+  });
+
+
 
   it('fetchRepoInfo: handles mock and real repo successfully', async () => {
     const mockRes = await fetchRepoInfo('mock-owner', 'repo');

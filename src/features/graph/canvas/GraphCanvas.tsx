@@ -51,6 +51,8 @@ export function GraphCanvas({
     setColorMode,
     sizeMode,
     setSizeMode,
+    layoutType,
+    setLayoutType,
   } = useVizStore();
 
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -117,6 +119,8 @@ export function GraphCanvas({
               setColorMode={setColorMode}
               sizeMode={sizeMode}
               setSizeMode={setSizeMode}
+              layoutType={layoutType}
+              setLayoutType={setLayoutType}
             />
           </div>
 

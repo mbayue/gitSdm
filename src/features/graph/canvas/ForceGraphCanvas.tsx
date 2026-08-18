@@ -9,7 +9,7 @@ import {
   type ForceGraphNode,
   type ForceGraphLink,
 } from "../force/forceGraphConstants";
-import { getForceLinkColor } from "../force/forceGraphUtils";
+import { getForceLinkColor, getForceNodeRadius } from "../force/forceGraphUtils";
 
 // Subcomponents & Helpers
 import { drawForceNode, drawForcePointerArea } from "./force/forcePainter";
@@ -27,6 +27,24 @@ interface NetworkCanvasProps {
   forceGraphRef?: React.MutableRefObject<ForceGraphMethods<ForceGraphNode, ForceGraphLink> | undefined>;
   forceHostRef?: React.MutableRefObject<HTMLDivElement | null>;
 }
+
+const getArrowRelPos = (link: ForceGraphLink): number => {
+  const source = link.source;
+  const target = link.target;
+  if (typeof source === 'string' || typeof target === 'string') return 0.96;
+  const sx = source.x ?? 0;
+  const sy = source.y ?? 0;
+  const tx = target.x ?? 0;
+  const ty = target.y ?? 0;
+  const dx = tx - sx;
+  const dy = ty - sy;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist === 0) return 0.96;
+  const sizeMode = useVizStore.getState().sizeMode;
+  const targetRadius = getForceNodeRadius(target, sizeMode);
+  const offset = targetRadius + 1.2;
+  return Math.max(0.1, Math.min(0.99, 1 - offset / dist));
+};
 
 export function NetworkCanvas({
   graph,
@@ -90,7 +108,7 @@ export function NetworkCanvas({
         forceGraphRef.current?.zoom(3.2, 300);
       }
     },
-    [setFocusedFilePath, setSelectedNodeId, prevFocusRef],
+    [setFocusedFilePath, setSelectedNodeId, prevFocusRef, forceGraphRef],
   );
 
   const onForceBackgroundClick = useCallback(() => {
@@ -217,7 +235,7 @@ export function NetworkCanvas({
       if (forceHostRef.current)
         forceHostRef.current.style.cursor = node ? "pointer" : "grab";
     },
-    [setHoveredForceNode],
+    [setHoveredForceNode, forceHostRef],
   );
 
   // --- Render ---
@@ -269,9 +287,9 @@ export function NetworkCanvas({
           graphData={forceGraphData}
           backgroundColor="#0f0f1a"
           nodeRelSize={1}
-          linkCurvature={0.18}
+          linkCurvature={0}
           linkDirectionalArrowLength={6}
-          linkDirectionalArrowRelPos={0.96}
+          linkDirectionalArrowRelPos={getArrowRelPos}
           linkDirectionalArrowColor={getLinkColor}
           cooldownTicks={120}
           d3AlphaDecay={0.028}

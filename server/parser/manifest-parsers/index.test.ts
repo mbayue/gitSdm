@@ -2,6 +2,8 @@ import { describe, it, expect } from 'bun:test';
 import {
   detectWorkspaceManifest,
   parsePackageJson,
+  parsePackageJsonScoped,
+  parsePackageJsonName,
   parsePnpmWorkspace,
   parseGoMod,
   parseManifest,
@@ -148,6 +150,12 @@ describe('manifest parsers', () => {
   it('handles empty go.mod input gracefully', () => {
     const deps = parseGoMod('');
     expect(deps).toEqual([]);
+  });
+
+  it('covers parsePackageJsonScoped and parsePackageJsonName edge cases', () => {
+    expect(parsePackageJsonScoped('pkg.json', 'invalid-json')).toEqual([]);
+    expect(parsePackageJsonName('invalid-json')).toBeUndefined();
+    expect(parsePackageJsonName(JSON.stringify({ name: 'my-pkg' }))).toBe('my-pkg');
   });
 
   it('parses requirements.txt dependencies', () => {

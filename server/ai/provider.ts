@@ -9,12 +9,15 @@ export interface AIProvider {
   complete(messages: Message[], options?: { json?: boolean }): Promise<string>;
 }
 
-function detectProviderType(key: string): 'gemini' | 'openai' | 'anthropic' {
+function detectProviderType(key: string): 'gemini' | 'openai' | 'anthropic' | 'edgeone' {
   const trimmed = key.trim();
   if (trimmed.startsWith('sk-ant-')) {
     return 'anthropic';
   }
   if (trimmed.startsWith('sk-')) {
+    if (process.env.AI_PROVIDER?.toLowerCase() === 'edgeone') {
+      return 'edgeone';
+    }
     return 'openai';
   }
   return 'gemini';
@@ -24,6 +27,8 @@ export async function createProvider(overrideKey?: string): Promise<AIProvider> 
   if (overrideKey && overrideKey.trim()) {
     const type = detectProviderType(overrideKey);
     switch (type) {
+      case 'edgeone':
+        return createEdgeOneProvider(overrideKey);
       case 'openai':
         return createOpenAIProvider(overrideKey);
       case 'anthropic':
@@ -35,14 +40,24 @@ export async function createProvider(overrideKey?: string): Promise<AIProvider> 
   }
 
   // Auto-detect provider based on available environment API keys
-  let providerType: 'gemini' | 'openai' | 'anthropic' | 'mock' = 'mock';
+  let providerType: 'gemini' | 'openai' | 'anthropic' | 'edgeone' | 'mock' = 'mock';
 
   // AI_PROVIDER takes explicit precedence over key-based auto-detection
   if (process.env.AI_PROVIDER) {
     const envProvider = process.env.AI_PROVIDER.toLowerCase();
-    if (envProvider === 'gemini' || envProvider === 'openai' || envProvider === 'anthropic' || envProvider === 'mock') {
-      providerType = envProvider as 'gemini' | 'openai' | 'anthropic' | 'mock';
+    if (
+      envProvider === 'gemini' ||
+      envProvider === 'openai' ||
+      envProvider === 'anthropic' ||
+      envProvider === 'edgeone' ||
+      envProvider === 'mock'
+    ) {
+      providerType = envProvider as 'gemini' | 'openai' | 'anthropic' | 'edgeone' | 'mock';
     }
+  } else if (process.env.EDGEONE_API_KEY && process.env.EDGEONE_API_KEY.trim()) {
+    providerType = 'edgeone';
+  } else if (process.env.MAKERS_MODELS_KEY && process.env.MAKERS_MODELS_KEY.trim()) {
+    providerType = 'edgeone';
   } else if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim()) {
     providerType = 'gemini';
   } else if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim()) {
@@ -52,6 +67,8 @@ export async function createProvider(overrideKey?: string): Promise<AIProvider> 
   }
 
   switch (providerType) {
+    case 'edgeone':
+      return createEdgeOneProvider();
     case 'openai':
       return createOpenAIProvider();
     case 'anthropic':
@@ -114,6 +131,31 @@ async function createOpenAIProvider(overrideKey?: string): Promise<AIProvider> {
     client.baseURL = process.env.OPENAI_API_BASE;
   }
   const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
+
+  return {
+    async complete(messages, options) {
+      const response = await client.chat.completions.create({
+        model,
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        max_tokens: 4096,
+        temperature: 0.2,
+        response_format: options?.json ? { type: 'json_object' } : undefined,
+      });
+      return response.choices[0]?.message?.content ?? '';
+    },
+  };
+}
+
+async function createEdgeOneProvider(overrideKey?: string): Promise<AIProvider> {
+  // ponytail: EdgeOne Makers Models exposes OpenAI-compatible endpoint. Reuse openai SDK client.
+  const { default: OpenAI } = await import('openai');
+  const apiKey = overrideKey ?? process.env.EDGEONE_API_KEY ?? process.env.MAKERS_MODELS_KEY;
+  if (!apiKey) {
+    throw new Error('EDGEONE_API_KEY or MAKERS_MODELS_KEY is required when using EdgeOne provider');
+  }
+  const baseURL = process.env.EDGEONE_API_BASE ?? 'https://ai-gateway.edgeone.link/v1';
+  const model = process.env.EDGEONE_MODEL ?? '@makers/deepseek-v4-flash';
+  const client = new OpenAI({ apiKey, baseURL });
 
   return {
     async complete(messages, options) {

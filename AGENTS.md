@@ -199,7 +199,7 @@ Error feedback uses the vizStore `toastMessage` system:
 
 ## Testing Patterns
 
-Test runner: **Bun** (`bun test --isolate`)
+Test runner: **Bun** (`bun test --isolate`). `--parallel` implies `--isolate` and defaults to CPU core count.
 
 ### Conventions
 
@@ -210,13 +210,25 @@ Test runner: **Bun** (`bun test --isolate`)
 
 ### Known Issues
 
+- **`mock.module()` leaks across parallel test files.** Mocks registered in one test file can
+  affect other test files running in parallel workers — `--isolate` does NOT prevent this
+  (`--parallel` implies `--isolate`, and parallel is the default). Symptom: a test passes alone
+  but fails in the full run. Fix pattern: avoid `mock.module()` on modules that other test files
+  import (e.g. `churn-service`); instead inject stubs through the function's own parameters
+  (`RequestContext.octokit`) or mock a lower-level seam. `analyze-repo.test.ts` uses this pattern.
 - `mock.restore()` resets ALL mocks including `mock.module()` overrides — be careful with global mock cleanup.
 - Files that import from SDK packages (openai, @anthropic-ai/sdk) in tests must use `mock.module()` before any other imports.
+- `bun test` (bunfig.toml) ignores `e2e/**` — browser tests are Playwright, not Bun.
 
 ### Coverage
 
-- **33 test files**: 22 server-side (AI, graph, parser, search, services, utils), 4 frontend (components, lib, graph utils)
-- **352 tests** passing, 0 failures
+- **35 test files, 361 tests passing** (889 expect calls), 0 failures
+- `bun test --coverage` ≈ **99.3% funcs / 99.6% lines** (only `analyze-repo.ts` and `vector-store.ts` dip below 100%)
+
+### E2E (Playwright)
+
+- `bun run test:e2e` — 5 specs in `e2e/*.e2e.ts`. Requires `npx playwright install chromium` first.
+- `playwright.config.ts` webServer builds, then starts the prod server on `:3000` with `AI_PROVIDER=mock`.
 
 ---
 
@@ -242,18 +254,22 @@ bun run lint         # ESLint check
 | Variable                 | Default                                    | Description                            |
 | ------------------------ | ------------------------------------------ | -------------------------------------- |
 | `GITHUB_TOKEN`           | —                                          | GitHub PAT for API rate limits         |
-| `AI_PROVIDER`            | `mock`                                     | Provider: gemini, openai, anthropic    |
+| `AI_PROVIDER`            | `mock`                                     | Provider: gemini, openai, anthropic, edgeone |
 | `GEMINI_API_KEY`         | —                                          | Gemini API key                         |
 | `OPENAI_API_KEY`         | —                                          | OpenAI API key                         |
 | `ANTHROPIC_API_KEY`      | —                                          | Anthropic API key                      |
+| `EDGEONE_API_KEY`        | —                                          | EdgeOne Makers Models API key (alias: `MAKERS_MODELS_KEY`) |
 | `OPENAI_API_BASE`        | OpenAI default                             | Custom API base URL                    |
 | `ANTHROPIC_API_BASE`     | Anthropic default                          | Custom API base URL                    |
+| `EDGEONE_API_BASE`       | `https://ai-gateway.edgeone.link/v1`       | EdgeOne API base URL                   |
 | `OPENAI_EMBEDDING_MODEL` | `openrouter/openai/text-embedding-3-large` | Embedding model                        |
+| `EDGEONE_EMBEDDING_MODEL`| `openrouter/openai/text-embedding-3-large` | Embedding model                        |
 | `EMBEDDING_DIMENSIONS`   | `3072`                                     | Vector dimension count                 |
 | `GEMINI_MODEL`           | `gemini-2.5-flash`                         | Gemini model override                  |
 | `GEMINI_API_VERSION`     | `v1alpha`                                  | Gemini API version                     |
 | `OPENAI_MODEL`           | `gpt-4o-mini`                              | OpenAI model override                  |
 | `ANTHROPIC_MODEL`        | `claude-3-5-haiku-latest`                  | Anthropic model override               |
+| `EDGEONE_MODEL`          | `@makers/deepseek-v4-flash`                | EdgeOne model override                 |
 | `GEMINI_EMBEDDING_MODEL` | `gemini-embedding-001`                     | Gemini embedding model override        |
 | `TOKEN_CACHE_HASH_SECRET`| —                                          | Cache key hashing secret (production)  |
 | `HOST`                   | `0.0.0.0`                                  | Production server bind                 |
@@ -270,13 +286,15 @@ bun run lint         # ESLint check
 
 ## Common Gotchas
 
-1. **Test isolation**: Running `bun test` without `--isolate` causes cross-file mock pollution. The `--isolate` flag is in the npm script to prevent this.
+1. **mock.module() leaks across parallel test files** — mocks registered in one file can affect
+   others in the same run (`--isolate` does not help; parallel is default). Prefer dependency
+   injection through parameters (`RequestContext.octokit`) over mocking shared service modules.
 2. **mock.restore()**: Calling `mock.restore()` resets ALL mocks including `mock.module()` overrides. Use targeted `.mockRestore()` on individual spies instead.
 3. **Vite + Bun**: The dev server runs `bunx --bun vite`. The `--bun` flag ensures Vite uses Bun's runtime. Building also uses `bunx --bun`.
 4. **@anthropic-ai/sdk** is pre-1.0 — API changes may require provider.ts updates.
 5. **DO NOT add new npm SDK dependencies for AI calls** — always route through the provider layer.
 6. **Vercel serverless** (`api/` directory): Thin wrappers only. The real routing is in `server/router/`.
-7. **graphify** (`bunx graphify update .`): Rerun after adding files or changing exports to keep the knowledge graph current.
+7. **graphify** (`bun run graphify:update`): Rerun after adding files or changing exports to keep the knowledge graph current.
 
 ---
 
@@ -288,3 +306,8 @@ bun run lint         # ESLint check
 - Zero eval / injection vectors
 - Zero hardcoded secrets
 - 250+ LOC ceiling approached only by generated shadcn components
+
+## CI
+
+- `.github/workflows/ci.yml`: pinned Bun 1.3.14 (`setup-bun`). Jobs: lint, typecheck, test, build (with a 2.5 MB gzipped-JS bundle gate), e2e (`AI_PROVIDER=mock`).
+- `bun install --frozen-lockfile` — always install with the lockfile frozen before running checks.

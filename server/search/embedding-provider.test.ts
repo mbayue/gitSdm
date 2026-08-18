@@ -119,6 +119,28 @@ describe('createEmbeddingProvider', () => {
     delete process.env.OPENAI_API_BASE;
   });
 
+  it('uses edgeone embeddings', async () => {
+    process.env.AI_PROVIDER = 'edgeone';
+    process.env.EDGEONE_API_KEY = 'sk-eo-test';
+
+    const provider = await createEmbeddingProvider();
+    expect(provider.providerName).toBe('edgeone');
+    expect(provider.maxTokens).toBe(8191);
+
+    const one = await provider.embed('hello');
+    expect(one.tokenCount).toBe(2);
+    delete process.env.EDGEONE_API_KEY;
+    const batch = await provider.embedBatch(['a', 'b']);
+    expect(batch).toHaveLength(2);
+
+    delete process.env.AI_PROVIDER;
+    delete process.env.EDGEONE_API_KEY;
+    delete process.env.MAKERS_MODELS_KEY;
+    process.env.AI_PROVIDER = 'edgeone';
+    await expect(createEmbeddingProvider()).rejects.toThrow('EDGEONE_API_KEY or MAKERS_MODELS_KEY is required for EdgeOne embeddings.');
+
+  });
+
   it('uses gemini embeddings and batch path', async () => {
     process.env.AI_PROVIDER = 'gemini';
     process.env.GEMINI_API_KEY = 'gemini-key';
