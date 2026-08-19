@@ -8,7 +8,7 @@
     "build": "bunx --bun vite build",
     "build:server": "bunx --bun vite build --ssr server/prod-server.ts --outDir dist-server",
     "build:docker": "bun run build && bun run build:server",
-    "build:edgeone": "bun run build && bun build server/edgeone-core.ts --target=node --format=esm --outfile \"dist/cloud-functions/api/bundle.js\" && node scripts/postprocess-edgeone-bundle.mjs \"dist/cloud-functions/api/bundle.js\" && node scripts/write-edgeone-entry.mjs \"dist/cloud-functions/api/[[default]].js\" && node -e \"const fs=require('fs'); fs.copyFileSync('edgeone.json','dist/edgeone.json'); fs.writeFileSync('dist/package.json', JSON.stringify({name:'gitsdm',version:'2.8.0',type:'module'}));\"",
+    "build:edgeone": "bun run build && bun build server/edgeone-core.ts --target=node --format=esm --outfile \"cloud-functions/api/bundle.js\" && node scripts/postprocess-edgeone-bundle.mjs \"cloud-functions/api/bundle.js\" && node scripts/write-edgeone-entry.mjs \"cloud-functions/api/[[default]].js\" && node -e \"const fs=require('fs'); fs.rmSync('dist/cloud-functions',{recursive:true,force:true}); fs.cpSync('cloud-functions','dist/cloud-functions',{recursive:true}); fs.copyFileSync('edgeone.json','dist/edgeone.json'); fs.writeFileSync('dist/package.json', JSON.stringify({name:'gitsdm',version:'2.8.0',type:'module'}));\"",
     "start": "bun dist-server/prod-server.js",
     "preview": "bunx --bun vite preview",
     "test": "bun test --isolate",
