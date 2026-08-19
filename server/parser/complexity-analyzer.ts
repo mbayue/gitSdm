@@ -1,5 +1,9 @@
 import { extractRawImports } from './import-resolver';
 
+const OPEN_BRACE = String.fromCharCode(123);
+const CLOSE_BRACE = String.fromCharCode(125);
+const EXPORT_OPEN = 'export ' + OPEN_BRACE;
+
 export interface FileComplexityMetrics {
   loc: number;
   importCount: number;
@@ -28,7 +32,7 @@ function countExports(content: string): number {
       blockContent += withoutComment;
       if (withoutComment.includes('}')) {
         // End of multi-line export { ... }
-        const inner = blockContent.slice(0, blockContent.indexOf('}'));
+        const inner = blockContent.slice(0, blockContent.indexOf(CLOSE_BRACE));
         const names = inner.split(',').map(s => s.trim()).filter(Boolean);
         count += names.length || 1;
         inExportBlock = false;
@@ -38,14 +42,14 @@ function countExports(content: string): number {
     }
 
     // Match export statements at line start (after whitespace)
-    if (/^\bexport\b/.test(trimmed) && !/^export\s+type\s+\{/.test(trimmed)) {
+    if (/^\bexport\b/.test(trimmed) && !(trimmed.startsWith('export type') && trimmed.includes(OPEN_BRACE))) {
       // Count each named export in a single export { a, b, c } statement
-      if (trimmed.startsWith('export {') && !trimmed.includes('}')) {
+      if (trimmed.startsWith(EXPORT_OPEN) && !trimmed.includes(CLOSE_BRACE)) {
         // Multi-line export { ... } block — start accumulating
         inExportBlock = true;
-        blockContent = trimmed.slice('export {'.length);
-      } else if (trimmed.startsWith('export {')) {
-        const inner = trimmed.slice('export {'.length, trimmed.indexOf('}'));
+        blockContent = trimmed.slice(EXPORT_OPEN.length);
+      } else if (trimmed.startsWith(EXPORT_OPEN)) {
+        const inner = trimmed.slice(EXPORT_OPEN.length, trimmed.indexOf(CLOSE_BRACE));
         const names = inner.split(',').map(s => s.trim()).filter(Boolean);
         count += names.length || 1;
       } else {

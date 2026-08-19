@@ -82,13 +82,13 @@ function safeParseJSON<T>(raw: string): T {
   }
 
   // 2. Locate the first { or [ and last } or ] if there is outer noise
-  const firstBrace = cleaned.indexOf('{');
+  const firstBrace = cleaned.indexOf(String.fromCharCode(123));
   const firstBracket = cleaned.indexOf('[');
   const startIdx = (firstBrace !== -1 && firstBracket !== -1)
     ? Math.min(firstBrace, firstBracket)
     : (firstBrace !== -1 ? firstBrace : firstBracket);
 
-  const lastBrace = cleaned.lastIndexOf('}');
+  const lastBrace = cleaned.lastIndexOf(String.fromCharCode(125));
   const lastBracket = cleaned.lastIndexOf(']');
   const endIdx = (lastBrace !== -1 && lastBracket !== -1)
     ? Math.max(lastBrace, lastBracket)

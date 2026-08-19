@@ -1,4 +1,7 @@
 import { createMockProvider } from './mock-provider';
+import { GoogleGenAI } from '@google/genai';
+import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 
 export interface Message {
   role: 'system' | 'user' | 'assistant';
@@ -81,7 +84,6 @@ export async function createProvider(overrideKey?: string): Promise<AIProvider> 
 }
 
 async function createGeminiProvider(overrideKey?: string): Promise<AIProvider> {
-  const { GoogleGenAI } = await import('@google/genai');
   const apiKey = overrideKey ?? process.env.GEMINI_API_KEY;
   const model = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
   const apiVersion = process.env.GEMINI_API_VERSION ?? 'v1alpha';
@@ -121,7 +123,6 @@ async function createGeminiProvider(overrideKey?: string): Promise<AIProvider> {
 }
 
 async function createOpenAIProvider(overrideKey?: string): Promise<AIProvider> {
-  const { default: OpenAI } = await import('openai');
   const apiKey = overrideKey ?? process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY is required when using OpenAI provider');
@@ -148,7 +149,6 @@ async function createOpenAIProvider(overrideKey?: string): Promise<AIProvider> {
 
 async function createEdgeOneProvider(overrideKey?: string): Promise<AIProvider> {
   // ponytail: EdgeOne Makers Models exposes OpenAI-compatible endpoint. Reuse openai SDK client.
-  const { default: OpenAI } = await import('openai');
   const apiKey = overrideKey ?? (process.env.EDGEONE_API_KEY?.trim() || process.env.MAKERS_MODELS_KEY?.trim());
   if (!apiKey) {
     throw new Error('EDGEONE_API_KEY or MAKERS_MODELS_KEY is required when using EdgeOne provider');
@@ -172,7 +172,6 @@ async function createEdgeOneProvider(overrideKey?: string): Promise<AIProvider> 
 }
 
 async function createAnthropicProvider(overrideKey?: string): Promise<AIProvider> {
-  const Anthropic = (await import('@anthropic-ai/sdk')).default;
   const apiKey = overrideKey ?? process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error('ANTHROPIC_API_KEY is required when using Anthropic provider');

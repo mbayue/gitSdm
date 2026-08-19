@@ -16,7 +16,7 @@ export function parseCargoToml(content: string): Dependency[] {
     const val = trimmed.substring(eqIdx + 1).trim();
 
     let version = '';
-    if (val.startsWith('{')) {
+    if (val.startsWith(String.fromCharCode(123))) {
       const versionMatch = val.match(/version\s*=\s*["']([^"']+)["']/);
       if (versionMatch) {
         version = versionMatch[1];

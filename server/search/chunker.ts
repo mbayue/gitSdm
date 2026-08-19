@@ -218,10 +218,10 @@ function findBraceBlockEnd(lines: string[], startLine: number): number {
   for (let i = startLine; i < lines.length; i++) {
     const line = lines[i];
     for (const ch of line) {
-      if (ch === '{') {
+      if (ch === String.fromCharCode(123)) {
         depth++;
         foundOpen = true;
-      } else if (ch === '}') {
+      } else if (ch === String.fromCharCode(125)) {
         depth--;
         if (foundOpen && depth === 0) return i;
       }

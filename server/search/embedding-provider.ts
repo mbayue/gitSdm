@@ -1,4 +1,6 @@
 import type { EmbeddingProvider, EmbeddingResult } from './types';
+import OpenAI from 'openai';
+import { GoogleGenAI } from '@google/genai';
 import { EMBEDDING_DIMENSIONS } from './constants';
 import { AppError } from '../utils/errors';
 
@@ -155,7 +157,6 @@ function createEdgeOneEmbeddingProvider(): EmbeddingProvider {
 }
 
 async function openAIEmbed(apiKey: string, model: string, text: string, baseURL?: string): Promise<Float32Array> {
-  const { default: OpenAI } = await import('openai');
   const client = new OpenAI({ apiKey, baseURL: baseURL ?? process.env.OPENAI_API_BASE });
 
   const response = await withRetry(() =>
@@ -170,7 +171,6 @@ async function openAIEmbed(apiKey: string, model: string, text: string, baseURL?
 
 async function openAIEmbedBatch(apiKey: string, model: string, texts: string[], baseURL?: string): Promise<Float32Array[]> {
   if (texts.length === 0) return [];
-  const { default: OpenAI } = await import('openai');
   const client = new OpenAI({ apiKey, baseURL: baseURL ?? process.env.OPENAI_API_BASE });
 
   // OpenAI supports batch – send in chunks of 100
@@ -198,7 +198,6 @@ async function createGeminiEmbeddingProvider(): Promise<EmbeddingProvider> {
     throw new AppError(401, 'GEMINI_API_KEY is required for Gemini embeddings.', 'MISSING_API_KEY');
   }
 
-  const { GoogleGenAI } = await import('@google/genai');
   const ai = new GoogleGenAI({ apiKey });
   const model = process.env.GEMINI_EMBEDDING_MODEL ?? 'gemini-embedding-001';
   const maxTokens = 2048;

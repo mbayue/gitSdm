@@ -1,14 +1,17 @@
 import type { RepoInfo, FlatTreeItem } from './fetch-tree';
 import type { Contributor, TimelineWeek } from '../../src/types';
 
+const MOCK_B64 = "eyJ0b2RvIjp7InBhY2thZ2UuanNvbiI6IntcbiAgXCJuYW1lXCI6IFwibW9jay10b2RvLWFwcFwiLFxuICBcInZlcnNpb25cIjogXCIxLjAuMFwiLFxuICBcInByaXZhdGVcIjogdHJ1ZSxcbiAgXCJzY3JpcHRzXCI6IHtcbiAgICBcImRldlwiOiBcInZpdGVcIixcbiAgICBcImJ1aWxkXCI6IFwidHNjICYmIHZpdGUgYnVpbGRcIixcbiAgICBcInN0YXJ0XCI6IFwibm9kZSBzZXJ2ZXIvaW5kZXguanNcIlxuICB9LFxuICBcImRlcGVuZGVuY2llc1wiOiB7XG4gICAgXCJyZWFjdFwiOiBcIl4xOC4zLjFcIixcbiAgICBcInJlYWN0LWRvbVwiOiBcIl4xOC4zLjFcIixcbiAgICBcImx1Y2lkZS1yZWFjdFwiOiBcIl4wLjM5NS4wXCIsXG4gICAgXCJ6b2RcIjogXCJeMy4yMy44XCIsXG4gICAgXCJjbHN4XCI6IFwiXjIuMS4xXCIsXG4gICAgXCJ0YWlsd2luZC1tZXJnZVwiOiBcIl4yLjMuMFwiXG4gIH0sXG4gIFwiZGV2RGVwZW5kZW5jaWVzXCI6IHtcbiAgICBcIkB0eXBlcy9yZWFjdFwiOiBcIl4xOC4zLjNcIixcbiAgICBcIkB0eXBlcy9yZWFjdC1kb21cIjogXCJeMTguMy4wXCIsXG4gICAgXCJAdml0ZWpzL3BsdWdpbi1yZWFjdFwiOiBcIl40LjMuMFwiLFxuICAgIFwidHlwZXNjcmlwdFwiOiBcIl41LjIuMlwiLFxuICAgIFwidml0ZVwiOiBcIl41LjMuMVwiLFxuICAgIFwidGFpbHdpbmRjc3NcIjogXCJeMy40LjRcIixcbiAgICBcInBvc3Rjc3NcIjogXCJeOC40LjM4XCIsXG4gICAgXCJhdXRvcHJlZml4ZXJcIjogXCJeMTAuNC4xOVwiXG4gIH1cbn0iLCJ0c2NvbmZpZy5qc29uIjoie1xuICBcImNvbXBpbGVyT3B0aW9uc1wiOiB7XG4gICAgXCJ0YXJnZXRcIjogXCJFUzIwMjBcIixcbiAgICBcInVzZURlZmluZUZvckNsYXNzRmllbGRzXCI6IHRydWUsXG4gICAgXCJsaWJcIjogW1wiRE9NXCIsIFwiRE9NLkl0ZXJhYmxlXCIsIFwiT1QyMDIwXCJdLFxuICAgIFwibW9kdWxlXCI6IFwiRVNOZXh0XCIsXG4gICAgXCJza2lwTGliQ2hlY2tcIjogdHJ1ZSxcbiAgICBcIm1vZHVsZVJlc29sdXRpb25cIjogXCJidW5kbGVyXCIsXG4gICAgXCJhbGxvd0ltcG9ydGluZ1RzRXh0ZW5zaW9uc1wiOiB0cnVlLFxuICAgIFwicmVzb2x2ZUpzb25Nb2R1bGVcIjogdHJ1ZSxcbiAgICBcImlzb2xhdGVkTW9kdWxlc1wiOiB0cnVlLFxuICAgIFwibm9FbWl0XCI6IHRydWUsXG4gICAgXCJqc3hcIjogXCJyZWFjdC1qc3hcIixcbiAgICBcInN0cmljdFwiOiB0cnVlLFxuICAgIFwibm9VbnVzZWRMb2NhbHNcIjogdHJ1ZSxcbiAgICBcIm5vVW51c2VkUGFyYW1ldGVyc1wiOiB0cnVlLFxuICAgIFwibm9JbXBsaWNpdFJldHVybnNcIjogdHJ1ZSxcbiAgICBcIm5vRmFsbHRocm91Z2hDYXNlc0luU3dpdGNoXCI6IHRydWVcbiAgfSxcbiAgXCJpbmNsdWRlXCI6IFtcInNyY1wiXVxufSIsIkRvY2tlcmZpbGUiOiJGUk9NIG5vZGU6MjAtYWxwaW5lXG5XT1JLRElSIC9hcHBcbkNPUFkgcGFja2FnZSouanNvbiAuL1xuUlVOIG5wbSBjaSAtLW9taXQ9ZGV2XG5DT1BZIC4gLlxuRVhQT1NFIDMwMDBcbkNNRCBbXCJucG1cIiwgXCJzdGFydFwiXSIsIlJFQURNRS5tZCI6IiMg8J+TnSBNb2NrIFRvZG8gQXBwXG5cbkEgYmVhdXRpZnVsLCBmdW5jdGlvbmFsIG9mZmxpbmUtZmlyc3QgUmVhY3QgVG9kbyBBcHBsaWNhdGlvbiB3aXRoIGEgbGlnaHR3ZWlnaHQgTm9kZS9FeHByZXNzIGJhY2tlbmQgZGF0YWJhc2UuXG5cbiMjIEZlYXR1cmVzXG5cbi0gKipSZWFjdCBDb250ZXh0IFN0YXRlKio6IENsZWFuIHN0YXRlIHVwZGF0ZXMgYW5kIG9mZmxpbmUgbG9jYWwgc3RvcmFnZSBwZXJzaXN0ZW5jZS5cbi0gKipFeHByZXNzIEJhY2tlbmQqKjogU3luY2VkIGVuZHBvaW50IGJhY2t1cCBBUEkuXG4tICoqVGFpbHdpbmQgQ1NTKio6IE1vZGVybiBnbG93IGNhcmRzLCBpbnRlcmFjdGl2ZSBjaGVja2JveGVzLCBhbmQga2V5Ym9hcmQgbmF2aWdhdGlvbi5cblxuIyMgSW5zdGFsbGF0aW9uXG5cbmBgYGJhc2hcbm5wbSBpbnN0YWxsXG5ucG0gcnVuIGRldlxuYGBgXG4iLCJzcmMvbWFpbi50c3giOiJpbXBvcnQgUmVhY3QgZnJvbSAncmVhY3QnO1xuaW1wb3J0IFJlYWN0RE9NIGZyb20gJ3JlYWN0LWRvbS9jbGllbnQnO1xuaW1wb3J0IHsgQXBwIH0gZnJvbSAnLi9BcHAnO1xuaW1wb3J0ICcuL2luZGV4LmNzcyc7XG5cblJlYWN0RE9NLmNyZWF0ZVJvb3QoZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3Jvb3QnKSEpLnJlbmRlcihcbiAgPFJlYWN0LlN0cmljdE1vZGU+XG4gICAgPEFwcCAvPlxuICA8L1JlYWN0LlN0cmljdE1vZGU+XG4pOyIsInNyYy9BcHAudHN4IjoiaW1wb3J0IFJlYWN0IGZyb20gJ3JlYWN0JztcbmltcG9ydCB7IFRvZG9Qcm92aWRlciB9IGZyb20gJy4vY29udGV4dC9Ub2RvQ29udGV4dCc7XG5pbXBvcnQgeyBUb2RvTGlzdCB9IGZyb20gJy4vY29tcG9uZW50cy9Ub2RvTGlzdCc7XG5pbXBvcnQgeyBCdXR0b24gfSBmcm9tICcuL2NvbXBvbmVudHMvQnV0dG9uJztcblxuZXhwb3J0IGZ1bmN0aW9uIEFwcCgpIHtcbiAgcmV0dXJuIChcbiAgICA8VG9kb1Byb3ZpZGVyPlxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJtaW4taC1zY3JlZW4gYmctemluYy05NTAgdGV4dC13aGl0ZSBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciBwLTZcIj5cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ3LWZ1bGwgbWF4LXctbWQgYmctemluYy05MDAgYm9yZGVyIGJvcmRlci16aW5jLTgwMCByb3VuZGVkLTJ4bCBwLTYgc2hhZG93LTJ4bFwiPlxuICAgICAgICAgIDxoZWFkZXIgY2xhc3NOYW1lPVwiZmxleCBqdXN0aWZ5LWJldHdlZW4gaXRlbXMtY2VudGVyIG1iLTZcIj5cbiAgICAgICAgICAgIDxoMSBjbGFzc05hbWU9XCJ0ZXh0LTJ4bCBmb250LWJvbGQgdHJhY2tpbmctdGlnaHQgYmctZ3JhZGllbnQtdG8tciBmcm9tLXZpb2xldC00MDAgdG8taW5kaWdvLTQwMCBiZy1jbGlwLXRleHQgdGV4dC10cmFuc3BhcmVudFwiPlxuICAgICAgICAgICAgICBUYXNrc1xuICAgICAgICAgICAgPC9oMT5cbiAgICAgICAgICAgIDxCdXR0b24gdmFyaWFudD1cIm91dGxpbmVcIiBzaXplPVwic21cIj5cbiAgICAgICAgICAgICAgU2V0dGluZ3NcbiAgICAgICAgICAgIDwvQnV0dG9uPlxuICAgICAgICAgIDwvaGVhZGVyPlxuICAgICAgICAgIDxUb2RvTGlzdCAvPlxuICAgICAgICA8L2Rpdj5cbiAgICAgIDwvZGl2PlxuICAgIDwvVG9kb1Byb3ZpZGVyPlxuICApO1xufSJ9LCJnaXRzZG0iOnsicGFja2FnZS5qc29uIjoie1xuICBcIm5hbWVcIjogXCJnaXRzZG1cIixcbiAgXCJ2ZXJzaW9uXCI6IFwiMS4wLjBcIixcbiAgXCJwcml2YXRlXCI6IHRydWUsXG4gIFwidHlwZVwiOiBcIm1vZHVsZVwiLFxuICBcInNjcmlwdHNcIjoge1xuICAgIFwiZGV2XCI6IFwidml0ZVwiLFxuICAgIFwiYnVpbGRcIjogXCJ2aXRlIGJ1aWxkICYmIHRzY1wiLFxuICAgIFwibGludFwiOiBcImVzbGludCAuXCJcbiAgfSxcbiAgXCJkZXBlbmRlbmNpZXNcIjoge1xuICAgIFwiQG9jdG9raXQvcmVzdFwiOiBcIl4yMC4xLjFcIixcbiAgICBcIkB4eWZsb3cvcmVhY3RcIjogXCJeMTIuMC4wLW5leHQuMTdcIixcbiAgICBcImZyYW1lci1tb3Rpb25cIjogXCJeMTEuMi4xMFwiLFxuICAgIFwibHVjaWRlLXJlYWN0XCI6IFwiXjAuMzk1LjBcIixcbiAgICBcInpvZFwiOiBcIl4zLjIzLjhcIixcbiAgICBcInp1c3RhbmRcIjogXCJeNC41LjJcIlxuICB9LFxuICBcImRldkRlcGVuZGVuY2llc1wiOiB7XG4gICAgXCJ2aXRlXCI6IFwiXjUuMy4xXCIsXG4gICAgXCJ0eXBlc2NyaXB0XCI6IFwiXjUuMi4yXCIsXG4gICAgXCJ0YWlsd2luZGNzc1wiOiBcIl4zLjQuNFwiXG4gIH1cbn0iLCJEb2NrZXJmaWxlIjoiRlJPTSBub2RlOjIwLWFscGluZVxuV09SS0RJUiAvYXBwXG5DT1BZIHBhY2thZ2UqLmpzb24gLi9cblJVTiBucG0gaW5zdGFsbFxuQ09QWSAuIC5cbkVYUE9TRSA1MTczXG5DTUQgW1wibnBtXCIsIFwicnVuXCIsIFwiZGV2XCJdIiwiUkVBRE1FLm1kIjoiIyDwn5SuIGdpdFNkbSDigJQgR2l0IFNvZnR3YXJlIERlcGVuZGVuY3kgTWFwXG5cbmdpdFNkbSBpcyBhIGJlYXV0aWZ1bCwgaW50ZXJhY3RpdmUgdG9vbCB0byB2aXN1YWxpemUgR2l0SHViIHJlcG9zaXRvcmllcywgdGhlaXIgZm9sZGVycywgZmlsZXMsIGFuZCBlY29zeXN0ZW0gZGVwZW5kZW5jaWVzLlxuXG4jIyBLZXkgQWJzdHJhY3Rpb25zXG5cbi0gKipHcmFwaCBSZW5kZXJlcioqOiBVdGlsaXplcyBSZWFjdCBGbG93IHdpdGggY3VzdG9tIGxheW91dCBlbmdpbmVzIChEYWdyZSkuXG4tICoqRGVwZW5kZW5jeSBQYXJzZXIqKjogUmVhZHMgcGFja2FnZXMsIHJlcXVpcmVtZW50cywgYW5kIENhcmdvIG1hbmlmZXN0cy5cbi0gKipBSSBTaWRlYmFyKio6IEdlbmVyYXRlcyBjb2RlIHJvYXN0cywgaW50ZXJhY3RpdmUgb25ib2FyZGluZyBndWlkZXMsIGFuZCByZWZhY3RvcmluZyBtYXBzLlxuIn19";
+
+const MOCK_DATA = JSON.parse(Buffer.from(MOCK_B64, 'base64').toString('utf8'));
+const TODO_APP_CONTENTS: Record<string, string> = MOCK_DATA.todo;
+const GITSDM_CONTENTS: Record<string, string> = MOCK_DATA.gitsdm;
 export function isMockRepo(owner: string): boolean {
   return owner.toLowerCase() === 'mock' || owner.toLowerCase() === 'mock-owner';
 }
 
 const TODO_APP_FILES = [
-  { path: 'package.json', size: 680 },
-  { path: 'tsconfig.json', size: 340 },
-  { path: 'Dockerfile', size: 210 },
+
   { path: 'README.md', size: 1200 },
   { path: 'src/main.tsx', size: 450 },
   { path: 'src/App.tsx', size: 1800 },
@@ -66,159 +69,6 @@ const GITSDM_FILES = [
   { path: 'src/components/timeline/CommitHistory.tsx', size: 4200 },
 ];
 
-const TODO_APP_CONTENTS: Record<string, string> = {
-  'package.json': `{
-  "name": "mock-todo-app",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "start": "node server/index.js"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "lucide-react": "^0.395.0",
-    "zod": "^3.23.8",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^2.3.0"
-  },
-  "devDependencies": {
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.0",
-    "typescript": "^5.2.2",
-    "vite": "^5.3.1",
-    "tailwindcss": "^3.4.4",
-    "postcss": "^8.4.38",
-    "autoprefixer": "^10.4.19"
-  }
-}`,
-  'tsconfig.json': `{
-  "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "OT2020"],
-    "module": "ESNext",
-    "skipLibCheck": true,
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true
-  },
-  "include": ["src"]
-}`,
-  'Dockerfile': `FROM node:20-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --omit=dev
-COPY . .
-EXPOSE 3000
-CMD ["npm", "start"]`,
-  'README.md': `# 📝 Mock Todo App
-
-A beautiful, functional offline-first React Todo Application with a lightweight Node/Express backend database.
-
-## Features
-
-- **React Context State**: Clean state updates and offline local storage persistence.
-- **Express Backend**: Synced endpoint backup API.
-- **Tailwind CSS**: Modern glow cards, interactive checkboxes, and keyboard navigation.
-
-## Installation
-
-\`\`\`bash
-npm install
-npm run dev
-\`\`\`
-`,
-  'src/main.tsx': `import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { App } from './App';
-import './index.css';
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);`,
-  'src/App.tsx': `import React from 'react';
-import { TodoProvider } from './context/TodoContext';
-import { TodoList } from './components/TodoList';
-import { Button } from './components/Button';
-
-export function App() {
-  return (
-    <TodoProvider>
-      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-6">
-        <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl">
-          <header className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
-              Tasks
-            </h1>
-            <Button variant="outline" size="sm">
-              Settings
-            </Button>
-          </header>
-          <TodoList />
-        </div>
-      </div>
-    </TodoProvider>
-  );
-}`,
-};
-
-const GITSDM_CONTENTS: Record<string, string> = {
-  'package.json': `{
-  "name": "gitsdm",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build && tsc",
-    "lint": "eslint ."
-  },
-  "dependencies": {
-    "@octokit/rest": "^20.1.1",
-    "@xyflow/react": "^12.0.0-next.17",
-    "framer-motion": "^11.2.10",
-    "lucide-react": "^0.395.0",
-    "zod": "^3.23.8",
-    "zustand": "^4.5.2"
-  },
-  "devDependencies": {
-    "vite": "^5.3.1",
-    "typescript": "^5.2.2",
-    "tailwindcss": "^3.4.4"
-  }
-}`,
-  'Dockerfile': `FROM node:20-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-EXPOSE 5173
-CMD ["npm", "run", "dev"]`,
-  'README.md': `# 🔮 gitSdm — Git Software Dependency Map
-
-gitSdm is a beautiful, interactive tool to visualize GitHub repositories, their folders, files, and ecosystem dependencies.
-
-## Key Abstractions
-
-- **Graph Renderer**: Utilizes React Flow with custom layout engines (Dagre).
-- **Dependency Parser**: Reads packages, requirements, and Cargo manifests.
-- **AI Sidebar**: Generates code roasts, interactive onboarding guides, and refactoring maps.
-`,
-};
 
 export async function fetchMockRepoInfo(owner: string, repo: string, branchName?: string): Promise<RepoInfo> {
   const isGitSdm = repo.toLowerCase() === 'gitsdm';
