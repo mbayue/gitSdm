@@ -6,6 +6,9 @@ on:
     branches: [master]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     name: Lint
@@ -99,6 +102,9 @@ jobs:
   e2e:
     name: E2E
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CI_MOCK_GITHUB: "true"   # optional: instruct the server to use fixtures in CI
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
