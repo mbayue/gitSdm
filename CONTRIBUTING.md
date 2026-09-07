@@ -33,7 +33,7 @@ bun install
 cp .env.example .env
 ```
 
-Make sure to add your `GITHUB_TOKEN` and any AI provider API keys (`GEMINI_API_KEY`, `OPENAI_API_KEY`, or `ANTHROPIC_API_KEY`) to the `.env` file for full feature support during development.
+Make sure to add your `GITHUB_TOKEN` and any AI provider API keys (`GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `EDGEONE_API_KEY`) to the `.env` file for full feature support during development. Offline development works out-of-the-box with `AI_PROVIDER=mock`.
 
 ---
 
@@ -74,8 +74,14 @@ bun run test:watch
 # Run test coverage
 bun run test:coverage
 
+# Run TypeScript check
+bun run typecheck
+
 # Run ESLint check
 bun run lint
+
+# Run Playwright E2E tests
+bun run test:e2e
 ```
 
 ---
@@ -102,4 +108,4 @@ bunx graphify update .
 
 2. **Commit Messages**: Use conventional commits — e.g. `feat(ui): center badges in README` or `fix(viz): correct trace highlight state`.
 3. **Verify Build**: Ensure `bun run build` runs successfully.
-4. **Submit**: Push your branch and open a Pull Request against the `main` branch of the upstream repository.
+4. **Submit**: Push your branch and open a Pull Request against the `master` branch of the upstream repository.

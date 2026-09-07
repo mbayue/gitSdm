@@ -10,6 +10,9 @@
 - **AI-powered semantic search & Q&A** — Context-aware vector search to ask code questions and locate entry points.
 - **Change impact analysis (Blast Radius)** — Visualizer showing transitive dependents to predict edit breakages.
 - **Dependency Health Report** — Core health panel, version freshness checker (npm), license compliance audits, and real-time visual highlight alerts (amber borders/warning badges) on the force-directed canvas.
+- **Code Churn & Hotspot Overlays** — Visual overlay for 90-day commit frequency, author ownership risk (3+ distinct authors), and LRU-cached churn service.
+- **Complexity Score per Module** — Graph-derived complexity metrics (LOC, import count, export count) with Color/Size by Complexity modes.
+- **Unified Multi-Provider AI** — Support for Gemini, OpenAI, Anthropic, EdgeOne Makers, and an offline Mock provider.
 - **Personalized Onboarding Paths** — AI-generated custom reading tours. User pastes a repo URL + describes their goal, and the system returns a guided walkthrough ("start with these 5 files, in this order") with graph node highlights. Implemented as `LearningPathTab`.
 - **Commit & Tag Snapshot Diffing** — Extended Compare Branch to accept commit SHAs and tags as comparison targets. Includes Branches/Tags/SHA sub-tabs in the picker UI, `/api/repo/tags` endpoint, and full graph overlay for any ref type.
 
@@ -17,52 +20,22 @@
 
 ## Up Next
 
-### 1. Interactive Path Pruning & Editing
+### 1. Interactive Path Pruning & Subgraph Isolation
 
 Tools to manually prune, regroup, and export tailored subgraphs from the visualization:
 
-- Click to select/deselect nodes on the @xyflow/react canvas
-- Delete or group selected nodes with live re-layout (force-directed or dagre)
+- Click to select/deselect nodes on the canvas
+- Group or isolate selected nodes with live re-layout (force-directed or D3 tree)
 - "Focus on selection" — zoom to and isolate a subgraph, hiding everything else
 - Export the pruned subgraph as PNG, SVG, or standalone JSON
 
 **Why**: Users today get the full repo graph or nothing. For large codebases, being able to carve out a focused subgraph (e.g. "just the auth module + its dependencies") and export it for docs or presentation is a natural next step.
 
-**Effort**: Medium — pure frontend work on the existing ReactFlow canvas. No backend changes.
+**Effort**: Medium — frontend enhancements on top of the force graph canvas. No backend changes.
 
 ---
 
-### 2. Code Churn + Hotspot Heatmap
-
-Overlay git blame data on the force graph — color nodes by commit frequency, recency, and number of distinct authors. Hotspots (frequently changed, many authors) are classic stability risks.
-
-- Node color intensity reflects churn score (commits in last N days)
-- Node border highlights files touched by 3+ distinct authors
-- Tooltip shows churn rank, top contributors, and last-modified date
-- Filter panel: "show only files changed in last 30 days"
-
-**Why**: The commit timeline already exists. Adding churn as a graph signal is a short hop that surfaces actionable refactoring targets without requiring AI. Engineers immediately see "this file is touched by everyone and changed constantly — it's a problem."
-
-**Effort**: Low-Medium — git history is already parsed for the timeline. New work is computing a churn score per file and mapping it to node visual properties.
-
----
-
-### 3. Complexity Score per Module
-
-Compute a complexity signal per node: LOC + import count + export count + cyclomatic depth estimate. Show it as node size or color saturation.
-
-- No AI required — purely graph-derived metrics
-- Sidebar panel ranks files by complexity score
-- Overlay toggle: "color by complexity" vs. "color by churn" vs. default
-- Pairs naturally with the Hotspot Heatmap for a full health picture
-
-**Why**: Gives engineers a fast "where should I refactor?" answer without any external tooling. Complexity + churn together form a classic maintenance risk matrix.
-
-**Effort**: Low — purely additive computation on top of the existing parsed graph. No backend routes needed, no AI calls.
-
----
-
-### 4. Inline AI Annotations in Code Inspector
+### 2. Inline AI Annotations in Code Inspector
 
 When a user clicks a file node, offer contextual AI actions directly in the inspector dock:
 
@@ -76,7 +49,7 @@ When a user clicks a file node, offer contextual AI actions directly in the insp
 
 ---
 
-### 5. Dependency Drift Alerts (Scheduled CI Report)
+### 3. Dependency Drift Alerts (Scheduled CI Report)
 
 A lightweight GitHub Action / webhook that runs the health report on a schedule and posts a comment or issue when:
 
@@ -91,7 +64,7 @@ A lightweight GitHub Action / webhook that runs the health report on a schedule 
 
 ---
 
-### 6. "What If?" Refactoring Simulator
+### 4. "What If?" Refactoring Simulator
 
 Drag a node from one module to another on the graph and see in real-time:
 
@@ -106,7 +79,7 @@ Drag a node from one module to another on the graph and see in real-time:
 
 ---
 
-### 7. Multi-Repository Mapping
+### 5. Multi-Repository Mapping
 
 Cross-repo dependency tracing: stitch graphs from multiple repositories into a single unified view.
 

@@ -10,8 +10,9 @@ Security updates are actively applied to the latest major release branch.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| v1.x    | :white_check_mark: |
-| < v1.0  | :x:                |
+| v3.x    | :white_check_mark: |
+| v2.x    | :white_check_mark: |
+| < v2.0  | :x:                |
 
 ---
 
@@ -79,6 +80,6 @@ Research conducted in good faith under this policy is authorized:
 
 ## Security Best Practices for Users
 
-* **Environment Variables:** Never check in your `GITHUB_TOKEN`, `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, or `OPENAI_API_KEY` into git repositories. Use the local `.env` file (which is gitignored).
+* **Environment Variables:** Never check in your `GITHUB_TOKEN`, `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `EDGEONE_API_KEY` into git repositories. Use the local `.env` file (which is gitignored).
 * **Private Repositories:** Ensure access tokens passed to `gitSdm` use the minimum necessary scopes (ideally read-only permissions for repository metadata/trees).
 * **Docker Deployments:** When running via Docker, bind the server to `127.0.0.1` unless external access is explicitly required, and configure a reverse proxy with TLS.

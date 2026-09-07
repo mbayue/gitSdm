@@ -4,7 +4,7 @@
 
 ## Project Identity
 
-**gitSdm** (Git Software Dependency Map) — v2.8.0. Graph-first repository analysis tool: visualize file dependencies, AI-powered codebase insights, semantic search, commit timelines, architecture diagrams, and dependency health. Single-page app with an embedded Express backend + Vercel serverless functions.
+**gitSdm** (Git Software Dependency Map) — v3.0.0. Graph-first repository analysis tool: visualize file dependencies, AI-powered codebase insights, semantic search, commit timelines, architecture diagrams, and dependency health. Single-page app with an embedded Express backend + Vercel serverless functions.
 
 ---
 
