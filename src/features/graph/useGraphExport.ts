@@ -148,7 +148,11 @@ export function useGraphExport(options: GraphExportOptions) {
       if (format === 'png') {
         downloadDataUrl(dataUrl, `${filename}.png`);
       } else {
-        savePdf(dataUrl, `${filename}.pdf`, width, height);
+        // jsPDF page size is in CSS px; native canvas pixels are scaled by
+        // devicePixelRatio, so use layout dims to avoid oversized pages on HiDPI.
+        const cssWidth = host.clientWidth || canvas.clientWidth || width;
+        const cssHeight = host.clientHeight || canvas.clientHeight || height;
+        savePdf(dataUrl, `${filename}.pdf`, cssWidth, cssHeight);
       }
     },
     [],

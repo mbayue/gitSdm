@@ -52,7 +52,7 @@ export function NotFoundPage() {
         <div className="flex flex-col gap-2.5">
           <Button
             onClick={() => navigate('/')}
-            className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-medium border-0 shadow-[0_4px_20px_rgba(139,92,246,0.25)] gap-2"
+            className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-medium border-0 shadow-[0_4px_20px] shadow-primary/25 gap-2"
           >
             <Home className="h-4 w-4" />
             Go Home

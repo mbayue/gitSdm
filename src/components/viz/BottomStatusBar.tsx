@@ -36,7 +36,7 @@ export function BottomStatusBar({
         {/* Branch chip */}
         <div className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
           <GitBranch className="h-3 w-3 text-muted-foreground shrink-0" />
-          <TooltipHint content={branchName}><span className="max-w-24 truncate font-medium text-foreground font-mono sm:max-w-40">{branchName}</span></TooltipHint>
+          <TooltipHint content={branchName} disabledTrigger><span title={branchName} className="max-w-24 truncate font-medium text-foreground font-mono sm:max-w-40">{branchName}</span></TooltipHint>
         </div>
 
         <span className="text-border font-light select-none">|</span>

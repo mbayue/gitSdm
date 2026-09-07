@@ -14,6 +14,35 @@ interface RepoInputProps {
 
 export { REPO_PRESETS as PRESETS } from "@/components/home/repoPresets";
 
+export interface RepoNavigation {
+  owner: string;
+  repo: string;
+  route: string;
+  pendingUrl: string;
+}
+
+/** Build the canonical GitHub URL for an `owner/repo` preset slug. */
+export function getPresetUrl(repo: string): string {
+  return `https://github.com/${repo}`;
+}
+
+/**
+ * Resolve a raw input (URL or `owner/repo`) to its navigation target.
+ * Returns `null` when the input is not a valid GitHub repo reference.
+ * Pure helper so the preset-click → navigate contract is unit-testable.
+ */
+export function resolveRepoNavigation(value: string): RepoNavigation | null {
+  const trimmed = value.trim();
+  const parsed = parseRepoFromUrl(trimmed);
+  if (!parsed) return null;
+  return {
+    owner: parsed.owner,
+    repo: parsed.repo,
+    route: `/${parsed.owner}/${parsed.repo}`,
+    pendingUrl: trimmed,
+  };
+}
+
 export function RepoInput({ initialUrl = "" }: RepoInputProps) {
   const [url, setUrl] = useState(initialUrl);
   const [error, setError] = useState("");
@@ -36,19 +65,19 @@ export function RepoInput({ initialUrl = "" }: RepoInputProps) {
 
   const openRepository = (value: string) => {
     setError("");
-    const parsed = parseRepoFromUrl(value.trim());
-    if (!parsed) {
+    const nav = resolveRepoNavigation(value);
+    if (!nav) {
       setError("Enter a valid GitHub URL or owner/repo (e.g. facebook/react)");
       inputRef.current?.focus();
       return;
     }
 
-    localStorage.setItem(LAST_REPO_KEY, value.trim());
+    localStorage.setItem(LAST_REPO_KEY, nav.pendingUrl);
     setLoading(true);
 
     try {
-      navigate(`/${parsed.owner}/${parsed.repo}`, {
-        state: { pendingUrl: value.trim() },
+      navigate(nav.route, {
+        state: { pendingUrl: nav.pendingUrl },
       });
     } catch {
       setError("Failed to navigate");
@@ -62,7 +91,9 @@ export function RepoInput({ initialUrl = "" }: RepoInputProps) {
   };
 
   const handlePreset = (repo: string) => {
-    const presetUrl = `https://github.com/${repo}`;
+    // Preset clicks navigate immediately ("Open an example"), they don't
+    // just fill the input. Keep the input in sync for context.
+    const presetUrl = getPresetUrl(repo);
     setUrl(presetUrl);
     openRepository(presetUrl);
   };

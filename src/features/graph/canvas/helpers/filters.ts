@@ -140,7 +140,10 @@ export function useNodeFiltering({
         if (isGenerated && !contentFilters.has('generated')) return false;
         if (isLocales && !contentFilters.has('translations')) return false;
         if (isConfig && !contentFilters.has('config') && !isDocs && !isTests && !isGithub) return false;
-        if (n.type === 'file' && !isDocs && !isTests && !isGithub && !isExamples && !isGenerated && !isLocales && !isConfig && !contentFilters.has('source')) return false;
+        if (n.type === 'file' && !isDocs && !isTests && !isGithub && !isExamples && !isGenerated && !isLocales && !isConfig && !contentFilters.has('source')) {
+          const keepForImportantScope = graphScope === 'important' && (n.data.fileClass === 'entry' || n.data.fileClass === 'source');
+          if (!keepForImportantScope) return false;
+        }
         
         return true;
       });

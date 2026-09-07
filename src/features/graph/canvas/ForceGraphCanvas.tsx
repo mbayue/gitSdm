@@ -98,6 +98,7 @@ export function NetworkCanvas({
     forceGraphRef,
     forceHostRef,
     forceInitialViewDoneRef,
+    readOnly,
   });
 
   // --- Callbacks ---
@@ -109,6 +110,7 @@ export function NetworkCanvas({
         selectedNodeId: node.id,
         focusedFilePath: node.nodeType === 'file' && node.sourceFile ? node.sourceFile : null,
         sidebarTab: 'analysis',
+        ...(typeof window !== 'undefined' && window.innerWidth >= 1024 ? { aiSidebarOpen: true } : {}),
       });
       if (typeof node.x === "number" && typeof node.y === "number") {
         forceGraphRef.current?.centerAt(node.x, node.y, 300);
@@ -211,7 +213,7 @@ export function NetworkCanvas({
         node,
         ctx,
         globalScale,
-        nodeCount: graph.nodes.length,
+        nodeCount: forceGraphData.nodes.length,
         selectedNodeId,
         highlightedNodeIds,
         blastRadiusActive,
@@ -228,7 +230,7 @@ export function NetworkCanvas({
       compareBranch,
       highlightedNodeIds,
       hoveredForceNode,
-      graph.nodes.length,
+      forceGraphData.nodes.length,
       selectedNodeId,
       sizeMode,
       theme,

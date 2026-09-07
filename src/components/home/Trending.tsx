@@ -31,19 +31,21 @@ export function Trending() {
       </div>
       {isLoading && (
         <div
+          role="status"
           className="grid gap-4 md:grid-cols-3"
           aria-label="Loading repositories"
         >
           {[0, 1, 2].map((item) => (
             <div
               key={item}
+              aria-hidden="true"
               className="h-48 animate-pulse rounded-xl border border-border bg-card"
             />
           ))}
         </div>
       )}
       {error && (
-        <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
+        <div role="alert" className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
           Could not load trending repositories.{" "}
           <button
             type="button"

@@ -482,26 +482,28 @@ export function ToolbarDropdowns({
           <ChevronDown className="h-3 w-3 opacity-60" />
         </button></TooltipHint>
 
-        {activeDropdown === 'export' && (
+        {activeDropdown === 'export' && !exportDisabled && (
           <DropdownPanel width="w-48">
             <button
               type="button"
+              disabled={exportDisabled}
               onClick={() => {
                 handleExport("png");
                 setActiveDropdown(null);
               }}
-              className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-foreground hover:bg-secondary transition-colors"
+              className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-foreground hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Download className="h-3.5 w-3.5 text-muted-foreground" />
               <span>PNG Image</span>
             </button>
             <button
               type="button"
+              disabled={exportDisabled}
               onClick={() => {
                 handleExport("pdf");
                 setActiveDropdown(null);
               }}
-              className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-foreground hover:bg-secondary transition-colors"
+              className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-foreground hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Download className="h-3.5 w-3.5 text-muted-foreground" />
               <span>PDF Document</span>

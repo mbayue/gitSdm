@@ -201,9 +201,11 @@ export function VizPage() {
               >
                 <div className="flex-1 min-h-0 relative">
                   <Suspense fallback={
-                    <div role="status" className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="h-5 w-5 animate-spin text-accent" /> Loading graph…
-                    </div>
+                    activeView === "graph" ? (
+                      <div role="status" className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin text-accent" /> Loading graph…
+                      </div>
+                    ) : null
                   }>
                     <div
                       className={`h-full w-full relative ${activeView !== "graph" ? "hidden" : ""

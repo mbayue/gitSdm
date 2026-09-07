@@ -57,12 +57,12 @@ function SidebarHeader() {
 
 function TabNavigation() {
   return (
-    <TabsList aria-label="Repository insights" className="grid h-auto w-full min-w-0 grid-cols-3 gap-1 bg-transparent p-0 group-data-horizontal/tabs:h-auto">
+    <TabsList aria-label="Repository insights" className="flex h-auto w-full min-w-0 flex-wrap gap-0.5 bg-transparent p-0 group-data-horizontal/tabs:h-auto">
       {tabs.map((tab) => (
         <TabsTrigger key={tab.id} value={tab.id}
-          className="h-9 gap-1 rounded-md px-1 text-sm data-active:bg-secondary data-active:text-accent dark:data-active:bg-secondary dark:data-active:text-accent">
+          className="h-9 min-w-[30%] flex-1 gap-1 rounded-md px-1.5 text-xs whitespace-nowrap data-active:bg-secondary data-active:text-accent dark:data-active:bg-secondary dark:data-active:text-accent [&_svg]:shrink-0">
           <tab.icon className="size-3.5" />
-          {tab.label}
+          <span className="truncate">{tab.label}</span>
         </TabsTrigger>
       ))}
     </TabsList>

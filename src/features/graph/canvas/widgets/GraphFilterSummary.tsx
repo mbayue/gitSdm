@@ -1,5 +1,5 @@
 import { RotateCcw, X } from 'lucide-react';
-import { useVizStore } from '@/stores/vizStore';
+import { useVizStore, type ContentFilter } from '@/stores/vizStore';
 
 export function GraphFilterSummary({ selectionHidden }: {
   selectionHidden: boolean;
@@ -14,7 +14,10 @@ export function GraphFilterSummary({ selectionHidden }: {
   if (state.searchQuery) chips.push({ label: `Search: ${state.searchQuery}`, clear: () => state.setSearchQuery('') });
   for (const extension of state.fileTypeFilters) chips.push({ label: extension, clear: () => state.toggleFileTypeFilter(extension) });
   for (const status of state.diffStatusFilters) chips.push({ label: `Changes: ${status}`, clear: () => state.toggleDiffStatusFilter(status) });
-  const customContent = state.contentFilters.size !== 2 || !state.contentFilters.has('source') || !state.contentFilters.has('config');
+  const presetContent: ContentFilter[] = state.graphScope === 'full'
+    ? ['source', 'config', 'docs', 'tests', 'github', 'examples', 'generated', 'translations']
+    : ['source', 'config'];
+  const customContent = presetContent.length !== state.contentFilters.size || presetContent.some((c) => !state.contentFilters.has(c));
   const changed = chips.length > 0 || state.graphScope !== 'source' || customContent;
   return (
     <div className="shrink-0 border-b border-border bg-background px-3 py-2 text-xs">
@@ -33,7 +36,7 @@ export function GraphFilterSummary({ selectionHidden }: {
           <span className="truncate">{chip.label}</span><X className="size-3 shrink-0" />
         </button>)}
       </div>}
-      {selectionHidden && <p className="mt-2 text-warning">The selected file is hidden by these filters. Its details remain available.</p>}
+      {selectionHidden && <p className="mt-2 text-warning">The selected node is hidden by these filters. Its details remain available.</p>}
     </div>
   );
 }

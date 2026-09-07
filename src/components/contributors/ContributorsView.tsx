@@ -13,6 +13,14 @@ interface ContributorsViewProps {
 const statLabelClass = "block text-xs leading-5 text-muted-foreground font-medium";
 const statValueClass = "text-2xl leading-8 font-bold text-foreground mt-0.5 truncate";
 
+/**
+ * Fixed chart height for the commit activity timeline.
+ * Responsive-height contract: the wrapper's `min-h-[280px]` must match this
+ * value so the recharts `ResponsiveContainer` always has a sized parent
+ * (it renders nothing when the parent height is 0). Width stays fluid.
+ */
+export const CONTRIBUTOR_TIMELINE_HEIGHT = 280;
+
 export function ContributorsView({ analysis, owner, repo }: ContributorsViewProps) {
   const { contributors, timeline } = analysis;
 
@@ -202,7 +210,7 @@ export function ContributorsView({ analysis, owner, repo }: ContributorsViewProp
             Commit Activity Timeline
           </h3>
           <div className="flex-1 min-h-[280px] flex items-center justify-center bg-card rounded-lg p-2">
-            <RepoTimeline timeline={timeline} height="280px" />
+            <RepoTimeline timeline={timeline} height={CONTRIBUTOR_TIMELINE_HEIGHT} />
           </div>
         </div>
       </div>

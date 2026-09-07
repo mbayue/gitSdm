@@ -52,22 +52,45 @@ export function SettingsPopover({
   }, [controlledOpen, onOpenChange, open]);
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  // Stable focus anchor across every close path (X button, outside click,
+  // Escape). Captured on open so handlers that run after unmounts still
+  // restore to a connected element; triggerRef covers the desktop opener and
+  // previousFocus covers the mobile (hideTrigger) opener.
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  const restoreOpenerFocus = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (trigger && document.contains(trigger)) {
+      trigger.focus();
+      return;
+    }
+    const previous = previousFocusRef.current;
+    if (previous && document.contains(previous)) {
+      previous.focus();
+    }
+  }, []);
+
+  const requestClose = useCallback(() => {
+    setOpen(false);
+    // Restore after the dialog unmounts so focus lands on a live element.
+    queueMicrotask(restoreOpenerFocus);
+  }, [restoreOpenerFocus, setOpen]);
 
   useEffect(() => {
     if (!open) return;
-    const previousFocus = document.activeElement;
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     popoverRef.current?.querySelector<HTMLElement>('[role="dialog"] input')?.focus();
     function handleEscape(event: KeyboardEvent) {
       if (event.key !== 'Escape') return;
-      event.preventDefault();
-      event.stopPropagation();
-      setOpen(false);
-      if (triggerRef.current) triggerRef.current.focus();
-      else if (previousFocus instanceof HTMLElement) previousFocus.focus();
+      // Scope to the dialog subtree and let the event bubble so global
+      // Escape handling (workspace shortcuts, dropdowns, tooltips) still runs.
+      if (!popoverRef.current?.contains(event.target as Node)) return;
+      requestClose();
     }
-    document.addEventListener('keydown', handleEscape, true);
-    return () => document.removeEventListener('keydown', handleEscape, true);
-  }, [open, setOpen]);
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [open, requestClose]);
 
   // Gemini State
   const [geminiValue, setGeminiValue] = useState(() => getStoredKey(GEMINI_KEY) ?? '');
@@ -81,17 +104,17 @@ export function SettingsPopover({
 
   const hasAnyKey = !!getStoredKey(GEMINI_KEY) || !!getStoredKey(PAT_KEY);
 
-  // Close on click outside
+  // Close on click outside (restores opener focus like all close paths)
   useEffect(() => {
     if (!open) return;
     function handler(e: MouseEvent) {
       if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-        setOpen(false);
+        requestClose();
       }
     }
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [open, setOpen]);
+  }, [open, requestClose]);
 
   const saveGemini = useCallback(() => {
     const trimmed = geminiValue.trim();
@@ -121,7 +144,18 @@ export function SettingsPopover({
 
   return (
     <div className="relative" ref={popoverRef}>
-      {!hideTrigger && (
+      {hideTrigger ? (
+        // Stable hidden opener anchor so focus restore has a connected
+        // target on mobile, where the visible Settings menu item unmounts
+        // when the menu closes before the dialog opens.
+        <button
+          ref={triggerRef}
+          type="button"
+          tabIndex={-1}
+          aria-label="Settings and credentials"
+          className="sr-only"
+        />
+      ) : (
         <Tooltip>
           <TooltipTrigger
             ref={triggerRef}
@@ -162,7 +196,7 @@ export function SettingsPopover({
             <button
               type="button"
               aria-label="Close settings"
-              onClick={() => setOpen(false)}
+              onClick={requestClose}
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="h-4 w-4" />

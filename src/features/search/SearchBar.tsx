@@ -45,6 +45,8 @@ export function SearchBar({ onSubmit, disabled }: SearchBarProps) {
         <TooltipHint content={disabled ? 'Index the repository first to enable search' : undefined}>
         <div
           tabIndex={disabled ? 0 : undefined}
+          role={disabled ? "group" : undefined}
+          aria-label={disabled ? "Search unavailable. Index the repository first to enable search." : undefined}
           className={clsx(
             'flex items-center rounded-md border bg-background transition-all duration-200',
             disabled

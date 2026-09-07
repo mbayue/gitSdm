@@ -23,7 +23,7 @@ export function ActionButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "group relative flex items-center bg-secondary border border-border hover:bg-secondary hover:border-ring/50 rounded-2xl transition-all duration-300 active:scale-[0.98] overflow-hidden w-full",
+        "group relative flex items-center bg-secondary border border-border hover:bg-muted hover:border-ring/50 rounded-2xl transition-all duration-300 active:scale-[0.98] overflow-hidden w-full",
         compact ? "p-3 flex-col items-start gap-3" : "p-4 justify-between"
       )}
     >
@@ -55,7 +55,7 @@ export function ActionButton({
 
       {!compact && (
         <div className="flex items-center gap-3">
-          <div className="h-6 w-px bg-secondary" />
+          <div className="h-6 w-px bg-border" />
           <Sparkles className="h-4 w-4 text-muted-foreground group-hover:text-ui-active-text-green group-hover:animate-pulse transition-colors" />
         </div>
       )}

@@ -207,7 +207,7 @@ export function VizError({ error, message }: VizErrorProps) {
                     setTokenValue('');
                     setStoredPat(null);
                   }}
-                  className="rounded-lg border border-border bg-secondary px-3.5 py-2 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-all active:scale-[0.98]"
+                  className="rounded-lg border border-border bg-secondary px-3.5 py-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-[0.98]"
                 >
                   Clear
                 </button>

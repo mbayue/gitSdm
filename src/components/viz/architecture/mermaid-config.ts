@@ -147,3 +147,16 @@ export function configureMermaid(theme: "light" | "dark") {
 
   return mermaid;
 }
+
+// mermaid holds global config + render state: re-initializing on every
+// render effect risks interrupting an in-flight render from this or another
+// hook instance. Configure once per theme instead.
+let configuredTheme: "light" | "dark" | null = null;
+
+export function ensureMermaidConfigured(theme: "light" | "dark") {
+  if (configuredTheme !== theme) {
+    configureMermaid(theme);
+    configuredTheme = theme;
+  }
+  return mermaid;
+}

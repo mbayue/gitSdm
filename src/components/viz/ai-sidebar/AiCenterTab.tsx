@@ -89,7 +89,7 @@ function RiskCard({
       )}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="text-xs text-accent hover:text-accent font-medium pt-1 w-full text-left"
+        className="text-xs text-accent hover:text-accent/80 hover:underline font-medium pt-1 w-full text-left"
       >
         {expanded ? "Collapse full analysis" : "Expand full analysis"}
       </button>
@@ -186,7 +186,7 @@ export function AiCenterTab({ analysis }: AiCenterTabProps) {
                             </div>
                             <div className="mt-1">
                               <div className={cn("text-base font-bold font-mono", colors.text)}>{val}%</div>
-                              <div className="h-1 w-full bg-card rounded-full mt-1.5 overflow-hidden">
+                              <div className="h-1 w-full bg-muted rounded-full mt-1.5 overflow-hidden">
                                 <div className={cn("h-full rounded-full", colors.bg)} style={{ width: `${val}%` }} />
                               </div>
                             </div>
@@ -207,7 +207,7 @@ export function AiCenterTab({ analysis }: AiCenterTabProps) {
                             </div>
                             <div className="mt-1">
                               <div className={cn("text-base font-bold font-mono", colors.text)}>{val}%</div>
-                              <div className="h-1 w-full bg-card rounded-full mt-1.5 overflow-hidden">
+                              <div className="h-1 w-full bg-muted rounded-full mt-1.5 overflow-hidden">
                                 <div className={cn("h-full rounded-full", colors.bg)} style={{ width: `${val}%` }} />
                               </div>
                             </div>

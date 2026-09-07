@@ -15,6 +15,7 @@ interface UseForceCanvasStateProps {
   forceGraphRef: React.MutableRefObject<ForceGraphMethods<ForceGraphNode, ForceGraphLink> | undefined>;
   forceHostRef: React.MutableRefObject<HTMLDivElement | null>;
   forceInitialViewDoneRef: React.MutableRefObject<boolean>;
+  readOnly?: boolean;
 }
 
 export function useForceCanvasState({
@@ -22,6 +23,7 @@ export function useForceCanvasState({
   forceGraphRef,
   forceHostRef,
   forceInitialViewDoneRef,
+  readOnly,
 }: UseForceCanvasStateProps) {
   const {
     selectedNodeId,
@@ -71,8 +73,9 @@ export function useForceCanvasState({
       buildForceGraphData(graph.nodes, graph.edges, {
         nodeTypeFilters,
         fileTypeFilters,
+        readOnly,
       }),
-    [graph.nodes, graph.edges, nodeTypeFilters, fileTypeFilters]
+    [graph.nodes, graph.edges, nodeTypeFilters, fileTypeFilters, readOnly]
   );
 
   const forceNodeById = useMemo(

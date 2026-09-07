@@ -227,12 +227,10 @@
 }
 
 /* Workspace menus stay inside the available canvas width, including narrow panels. */
-.graph-toolbar > .relative { position: static; }
+.graph-toolbar > .relative { position: relative; }
 .graph-toolbar .graph-menu {
   top: 100%;
-  left: 8px;
-  right: auto;
-  max-width: calc(100% - 16px);
+  max-width: calc(100vw - 32px);
   max-height: min(560px, calc(100dvh - 240px));
 }
 .file-explorer-tree button:focus-visible {

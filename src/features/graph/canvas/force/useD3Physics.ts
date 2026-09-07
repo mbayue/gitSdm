@@ -16,8 +16,10 @@ interface D3PhysicsProps {
 
 export function useD3Physics({ forceGraphRef, nodes, links, layoutType, sizeMode }: D3PhysicsProps) {
   const nodeCount = nodes.length;
-  const previousLayout = useRef(layoutType);
-  const previousSizeMode = useRef(sizeMode);
+  const previousLayout = useRef<LayoutType | undefined>(undefined);
+  const previousSizeMode = useRef<SizeMode | undefined>(undefined);
+  const previousNodesRef = useRef(nodes);
+  const previousLinksRef = useRef(links);
   const fitAfterSimulation = useRef(false);
   const handleLayoutStop = useCallback(() => {
     if (!fitAfterSimulation.current) return;
@@ -30,12 +32,17 @@ export function useD3Physics({ forceGraphRef, nodes, links, layoutType, sizeMode
     if (!ref) return;
 
     const linkForce = ref.d3Force("link");
+    const isD3Tree = layoutType === 'd3-tree-horiz' || layoutType === 'd3-tree-vert';
     const layoutChanged = previousLayout.current !== layoutType || (layoutType !== 'tree' && previousSizeMode.current !== sizeMode);
+    const dataChanged = previousNodesRef.current !== nodes || previousLinksRef.current !== links;
     previousLayout.current = layoutType;
     previousSizeMode.current = sizeMode;
-    fitAfterSimulation.current = fitAfterSimulation.current || layoutChanged;
-
-    const isD3Tree = layoutType === 'd3-tree-horiz' || layoutType === 'd3-tree-vert';
+    previousNodesRef.current = nodes;
+    previousLinksRef.current = links;
+    // Trees render at fixed coords immediately, so arm the one-shot fit when
+    // the layout changes (including first mount) or the filtered data changes.
+    // Force layouts fit once settled via the engine-stop handler.
+    fitAfterSimulation.current = fitAfterSimulation.current || layoutChanged || (isD3Tree && dataChanged);
 
     if (isD3Tree) {
       const visibleNodeIds = new Set(nodes.map(n => n.id));
@@ -104,8 +111,8 @@ export function useD3Physics({ forceGraphRef, nodes, links, layoutType, sizeMode
             node.packedRadius = undefined;
           }
         }
-      } catch (err) {
-        useVizStore.getState().setToastMessage('Failed to arrange tree: ' + (err instanceof Error ? err.message : String(err)));
+      } catch {
+        useVizStore.getState().setToastMessage('Failed to arrange tree layout.');
       }
     } else {
       for (const node of nodes) {
@@ -139,7 +146,9 @@ export function useD3Physics({ forceGraphRef, nodes, links, layoutType, sizeMode
 
     ref.d3ReheatSimulation();
     // Fixed trees have their final coordinates already; force layouts fit once settled.
-    if (isD3Tree && layoutChanged) handleLayoutStop();
+    // Refit trees when the layout changes or when the filtered node/link set changes,
+    // otherwise updated fixed coords render without adjusting the viewport.
+    if (isD3Tree && (layoutChanged || dataChanged)) handleLayoutStop();
   }, [nodeCount, layoutType, sizeMode, forceGraphRef, nodes, links, handleLayoutStop]);
 
   useEffect(() => {

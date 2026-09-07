@@ -223,7 +223,7 @@ export const useVizStore = create<VizState>()(
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
     set({
       workspaceMode,
-      explorerOpen: !isMobile && workspaceMode !== 'focus',
+      explorerOpen: workspaceMode !== 'focus' && (!isMobile || workspaceMode === 'full'),
       aiSidebarOpen: workspaceMode !== 'focus' && (!isMobile || workspaceMode === 'analysis' || workspaceMode === 'learning'),
       inspectorOpen: false,
       ...(workspaceMode === 'analysis' ? { sidebarTab: 'analysis' as const } : {}),

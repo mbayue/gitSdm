@@ -24,12 +24,10 @@ export function TopNav({
   owner: fallbackOwner = "",
   repo: fallbackRepo = "",
 }: TopNavProps) {
-  const {
-    activeView,
-    setActiveView,
-    theme,
-    toggleTheme,
-  } = useVizStore();
+  const activeView = useVizStore((s) => s.activeView);
+  const setActiveView = useVizStore((s) => s.setActiveView);
+  const theme = useVizStore((s) => s.theme);
+  const toggleTheme = useVizStore((s) => s.toggleTheme);
   const navigate = useNavigate();
   const meta = propsMeta ?? analysis?.meta;
   const owner = meta ? meta.fullName.split("/")[0] : fallbackOwner;

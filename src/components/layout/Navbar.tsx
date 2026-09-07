@@ -1,11 +1,31 @@
 import { TooltipHint } from '@/components/ui/tooltip';
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowUpRight, GitBranch, Moon, Sun } from "lucide-react";
 import { useVizStore } from "@/stores/vizStore";
 
 export function Navbar() {
   const theme = useVizStore((state) => state.theme);
   const setTheme = useVizStore((state) => state.setTheme);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Smooth-scroll to a homepage section. Plain `href="/#id"` anchors cause a
+  // full route navigation (losing SPA state) and are a no-op on reclick;
+  // intercepting keeps the href fallback while scrolling smoothly instead.
+  const handleSectionClick = (id: string) => (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    const scrollNow = () => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    if (location.pathname !== "/") {
+      void navigate("/");
+      // Let the home page mount before scrolling to the section.
+      window.setTimeout(scrollNow, 150);
+      return;
+    }
+    window.history.replaceState(null, "", `/#${id}`);
+    scrollNow();
+  };
   return (
     <nav
       className="site-nav sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-xl"
@@ -28,13 +48,13 @@ export function Navbar() {
           </span>
         </Link>
         <div className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
-          <a href="/#features" className="hover:text-foreground">
+          <a href="/#features" onClick={handleSectionClick("features")} className="hover:text-foreground">
             Features
           </a>
-          <a href="/#examples" className="hover:text-foreground">
+          <a href="/#examples" onClick={handleSectionClick("examples")} className="hover:text-foreground">
             Repositories
           </a>
-          <a href="/#how-it-works" className="hover:text-foreground">
+          <a href="/#how-it-works" onClick={handleSectionClick("how-it-works")} className="hover:text-foreground">
             How it works
           </a>
         </div>

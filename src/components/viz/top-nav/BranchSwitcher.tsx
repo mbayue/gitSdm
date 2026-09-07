@@ -167,7 +167,7 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
           <span className="max-w-[56px] sm:max-w-[140px] truncate font-sans text-foreground">{activeBranch}</span>
           <ChevronDown className={cn('h-3 w-3 transition-transform duration-200 opacity-60', isOpen && 'rotate-180')} />
         </TooltipTrigger>
-        <TooltipContent side="bottom">{activeBranch}</TooltipContent>
+        <TooltipContent side="bottom">{!isOpen && activeBranch}</TooltipContent>
         </Tooltip>
       )}
 

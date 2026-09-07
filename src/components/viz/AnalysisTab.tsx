@@ -29,8 +29,10 @@ export function AnalysisTab({
 
   const selectedNode = selectedNodeId ? nodeById.get(selectedNodeId) : null;
 
-  const outgoing = analysis.graph.edges.filter((edge) => edge.source === selectedNode?.id && (selectedNode?.type !== 'file' || edge.type !== 'contains'));
-  const incoming = analysis.graph.edges.filter((edge) => edge.target === selectedNode?.id && (selectedNode?.type !== 'file' || edge.type !== 'contains'));
+  const rawOutgoing = analysis.graph.edges.filter((edge) => edge.source === selectedNode?.id && edge.type !== 'contains' && edge.source !== edge.target);
+  const rawIncoming = analysis.graph.edges.filter((edge) => edge.target === selectedNode?.id && edge.type !== 'contains' && edge.source !== edge.target);
+  const outgoing = rawOutgoing.filter((edge, index) => rawOutgoing.findIndex((e) => e.target === edge.target) === index);
+  const incoming = rawIncoming.filter((edge, index) => rawIncoming.findIndex((e) => e.source === edge.source) === index);
   const fileContext = selectedNode?.type === 'file' && selectedNode.data.path ? getFileContext(analysis.graph, selectedNode.data.path) : null;
 
   const focusRelatedNode = (node: GraphNode) => {
@@ -100,13 +102,13 @@ export function AnalysisTab({
               <div className="flex items-center justify-between border-b border-border pb-1.5 pt-1">
                 <span className="text-muted-foreground">Dependencies</span>
                 <span className="text-foreground font-mono">
-                  {fileContext?.dependencies.length ?? outgoing.length}
+                  {outgoing.length}
                 </span>
               </div>
               <div className="flex items-center justify-between border-border pb-1 pt-1">
                 <span className="text-muted-foreground">Used by</span>
                 <span className="text-foreground font-mono">
-                  {fileContext?.dependents.length ?? incoming.length}
+                  {incoming.length}
                 </span>
               </div>
             </div>

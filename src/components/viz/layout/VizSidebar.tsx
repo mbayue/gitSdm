@@ -80,6 +80,34 @@ export function VizSidebar({
 
   const label = isLeft ? "Open file explorer" : "Open repository insights";
 
+  const openButtonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const prevIsOpenRef = useRef(isOpen);
+
+  // Keep focus inside the workspace when panels toggle: move focus into the
+  // panel's collapse button on open, restore to the minibar opener on close.
+  useEffect(() => {
+    const prev = prevIsOpenRef.current;
+    prevIsOpenRef.current = isOpen;
+    if (prev === isOpen) return;
+    if (isOpen) {
+      const closeButton = panelRef.current?.querySelector<HTMLElement>(
+        '[aria-label="Collapse file explorer"], [aria-label="Collapse repository insights"]',
+      );
+      const fallback = closeButton
+        ?? panelRef.current?.querySelector<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        );
+      fallback?.focus();
+    } else {
+      const opener = openButtonRef.current;
+      // Minibar is desktop-only (hidden lg:flex); only restore when visible.
+      if (opener && window.matchMedia("(min-width: 1024px)").matches) {
+        opener.focus();
+      }
+    }
+  }, [isOpen]);
+
   return (
     <>
       {!isOpen && (
@@ -91,7 +119,7 @@ export function VizSidebar({
         )}
       >
         <TooltipHint content={label} side={isLeft ? "right" : "left"}>
-          <button type="button" aria-label={label} aria-expanded={false} onClick={onOpen}
+          <button ref={openButtonRef} type="button" aria-label={label} aria-expanded={false} onClick={onOpen}
             className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:border-accent hover:bg-secondary hover:text-foreground">
             {isLeft ? <PanelLeftOpen className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
           </button>
@@ -108,6 +136,7 @@ export function VizSidebar({
       />
 
       <div
+        ref={panelRef}
         style={{ width: isOpen ? width : 0 }}
         className={cn(
           "z-40 shrink-0 h-full transition-all flex flex-col",

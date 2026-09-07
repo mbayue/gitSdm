@@ -72,7 +72,7 @@ function TooltipHint({ content, children, side = "top", disabledTrigger = false 
     <Tooltip>
       <TooltipTrigger
         render={disabledTrigger ? <span tabIndex={0} className="flex min-w-0">{children}</span> : children}
-        disabled={!content}
+        disabled={content == null || content === false || content === ''}
       />
       <TooltipContent side={side}>{content}</TooltipContent>
     </Tooltip>

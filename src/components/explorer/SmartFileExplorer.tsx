@@ -205,7 +205,7 @@ function TreeRow({
   return (
     <button
       type="button"
-      aria-pressed={selected}
+      aria-current={selected ? true : undefined}
       onClick={() => onSelectFile?.(node.path)}
       className={cn(
         'flex w-full items-center gap-2 py-1.5 px-2 text-sm transition-all duration-150 select-none border-l-2 outline-none',
