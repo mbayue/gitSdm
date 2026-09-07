@@ -72,26 +72,14 @@ export function SettingsPopover({
   }
 
   const restoreOpenerFocus = useCallback(() => {
+    // Order matters: the true opener first, then the popover's own trigger,
+    // then a visible workspace control. Every candidate is visibility-checked,
+    // so a viewport crossing the lg breakpoint mid-session (desktop trigger
+    // hidden, mobile trigger shown, or vice versa) still lands on something
+    // visible instead of a hidden trigger or the document body.
     const trueOpener = openerRef?.current ?? null;
     if (isVisibleFocusable(trueOpener)) {
       trueOpener.focus();
-      return;
-    }
-    if (hideTrigger) {
-      // Mobile (no visible popover trigger): the menu item unmounts when the
-      // menu closes, so fall back to the visible mobile menu trigger rather
-      // than an invisible anchor.
-      const menuTrigger = document.querySelector<HTMLElement>(
-        'button[aria-label="Open menu"]',
-      );
-      if (menuTrigger && isVisibleFocusable(menuTrigger)) {
-        menuTrigger.focus();
-        return;
-      }
-      const previous = previousFocusRef.current;
-      if (isVisibleFocusable(previous)) {
-        previous.focus();
-      }
       return;
     }
     const trigger = triggerRef.current;
@@ -99,11 +87,21 @@ export function SettingsPopover({
       trigger.focus();
       return;
     }
+    // No visible popover trigger (hideTrigger mode, or the breakpoint moved
+    // under an open popover): fall back to the visible mobile menu trigger
+    // rather than an invisible anchor.
+    const menuTrigger = document.querySelector<HTMLElement>(
+      'button[aria-label="Open menu"]',
+    );
+    if (menuTrigger && isVisibleFocusable(menuTrigger)) {
+      menuTrigger.focus();
+      return;
+    }
     const previous = previousFocusRef.current;
     if (isVisibleFocusable(previous)) {
       previous.focus();
     }
-  }, [hideTrigger, openerRef]);
+  }, [openerRef]);
 
   const requestClose = useCallback(() => {
     setOpen(false);

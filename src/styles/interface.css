@@ -226,7 +226,9 @@
   border-color: var(--accent);
 }
 
-/* Workspace menus stay inside the available canvas width, including narrow panels. */
+/* Workspace menus stay inside the available canvas width, including narrow panels.
+   Primary enforcement is DropdownPanel's measured clamp against .graph-toolbar;
+   this max-width is only the small-viewport fallback. */
 .graph-toolbar > .relative { position: relative; }
 .graph-toolbar .graph-menu {
   top: 100%;

@@ -4,7 +4,7 @@ import type { RepoAnalysis } from '@/types';
 import { generateProgrammaticMermaid } from '../mermaid-generator';
 import { ensureMermaidConfigured } from '../mermaid-config';
 import { stripMermaidFences } from '../stripMermaidFences';
-import { shouldApplyRender } from './render-sequence';
+import { createRenderSequence, type RenderSequence } from './render-sequence';
 import { useVizStore } from '@/stores/vizStore';
 
 export function useArchitectureState(
@@ -22,7 +22,9 @@ export function useArchitectureState(
   // publish state or toast. A superseded render that rejects (e.g. its
   // config was replaced mid-flight) must not surface a misleading
   // "Failed to render diagram" toast.
-  const renderSeqRef = useRef(0);
+  const renderSeqRef = useRef<RenderSequence | null>(null);
+  if (!renderSeqRef.current) renderSeqRef.current = createRenderSequence();
+  const renderSequence = renderSeqRef.current;
 
   useEffect(() => {
     if (mode === 'ai') {
@@ -43,9 +45,9 @@ export function useArchitectureState(
 
     if (!code) return;
 
-    let active = true;
-    const seq = ++renderSeqRef.current;
-    const isLatest = () => shouldApplyRender(seq, renderSeqRef.current, active);
+    const attempt = renderSequence.start();
+    const seq = attempt.seq;
+    const isLatest = () => attempt.shouldApply();
     setRenderError(null);
     setSvg('');
     resetView();
@@ -81,9 +83,9 @@ export function useArchitectureState(
       });
 
     return () => {
-      active = false;
+      attempt.abandon();
     };
-  }, [mode, data, analysis, resetView, theme]);
+  }, [mode, data, analysis, resetView, theme, renderSequence]);
 
   return {
     generate,

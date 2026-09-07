@@ -134,12 +134,16 @@ export function NetworkCanvas({
   );
 
   const onForceBackgroundClick = useCallback(() => {
+    // Read-only canvases (homepage preview) must not mutate shared
+    // workspace state: clearing the selection here would wipe it globally.
+    if (readOnly) return;
     prevFocusRef.current = null;
     setSelectedNodeId(null);
     setHighlightedNodeIds(new Set());
     setHoveredForceNode(null);
     setFocusedFilePath(null);
   }, [
+    readOnly,
     setHighlightedNodeIds,
     setSelectedNodeId,
     setFocusedFilePath,
@@ -311,9 +315,13 @@ export function NetworkCanvas({
           onEngineStop={handleEngineStop}
           onEngineTick={handleEngineTick}
           onZoom={(transform) => {
+            // Read-only preview zoom is local to the canvas; persisting it
+            // would leak demo interaction state into the workspace.
+            if (readOnly) return;
             queueMicrotask(() => useVizStore.getState().setZoom(transform.k));
           }}
           onZoomEnd={() => {
+            if (readOnly) return;
             queueMicrotask(() => {
               if (showMinimap) setTick((t) => t + 1);
               const currentZoom = forceGraphRef.current?.zoom();

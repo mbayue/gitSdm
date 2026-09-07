@@ -5,12 +5,12 @@ import type { NodeType } from '@/types';
 import type { ReactNode } from 'react';
 import type { GraphScope, ContentFilter, ColorMode, SizeMode, LayoutType } from '@/stores/vizStore';
 import { LegendPanel } from './widgets/LegendPanel';
+import { DropdownPanel } from './widgets/DropdownPanel';
 
 const sectionHeaderClass = "mb-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-foreground font-mono";
 const sectionClass = "space-y-1.5 border-t border-border pt-3 first:border-t-0 first:pt-0";
 const focusClass = "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ui-focus/70 focus-visible:ring-offset-1 focus-visible:ring-offset-popover";
 const inactiveRowClass = "text-muted-foreground hover:bg-secondary hover:text-foreground";
-const dropdownPanelClass = "graph-menu absolute left-0 z-50 mt-2 rounded-md border border-border bg-popover p-3 shadow-2xl animate-in fade-in slide-in-from-top-1 duration-150 max-h-[calc(100vh-3rem)] overflow-y-auto";
 const toolbarButtonClass = (active: boolean) =>
   `flex h-9 px-2.5 items-center gap-1.5 rounded-md text-sm font-medium transition-all active:scale-[0.95] ${
     active
@@ -79,14 +79,6 @@ function CheckboxMark({ checked }: { checked: boolean }) {
     >
       {checked && <Check className="h-2.5 w-2.5" />}
     </span>
-  );
-}
-
-function DropdownPanel({ width, children }: { width: string; children: ReactNode }) {
-  return (
-    <div className={`${dropdownPanelClass} ${width}`}>
-      {children}
-    </div>
   );
 }
 

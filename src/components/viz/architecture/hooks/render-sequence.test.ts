@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { shouldApplyRender } from './render-sequence';
+import { createRenderSequence } from './render-sequence';
 
 interface Deferred<T> {
   promise: Promise<T>;
@@ -17,47 +17,59 @@ function deferred<T>(): Deferred<T> {
   return { promise, resolve, reject };
 }
 
-describe('shouldApplyRender sequence guard', () => {
-  test('latest active render applies', () => {
-    expect(shouldApplyRender(2, 2, true)).toBe(true);
+describe('createRenderSequence guard', () => {
+  test('latest live attempt applies', () => {
+    const seq = createRenderSequence();
+    const attempt = seq.start();
+    expect(attempt.shouldApply()).toBe(true);
   });
 
-  test('superseded render does not apply', () => {
-    expect(shouldApplyRender(1, 2, true)).toBe(false);
+  test('starting a new attempt supersedes the previous one', () => {
+    const seq = createRenderSequence();
+    const first = seq.start();
+    seq.start();
+    expect(first.shouldApply()).toBe(false);
   });
 
-  test('cleaned-up render does not apply even when latest', () => {
-    expect(shouldApplyRender(2, 2, false)).toBe(false);
+  test('abandoned attempt never applies, even when latest', () => {
+    const seq = createRenderSequence();
+    const attempt = seq.start();
+    attempt.abandon();
+    expect(attempt.shouldApply()).toBe(false);
+  });
+
+  test('sequence numbers are monotonic', () => {
+    const seq = createRenderSequence();
+    const a = seq.start();
+    const b = seq.start();
+    expect(b.seq).toBeGreaterThan(a.seq);
   });
 
   test('stale success is dropped while latest success applies', async () => {
-    // Mirrors useArchitectureState: each effect bumps a monotonic sequence;
-    // only the latest may publish SVG state.
-    let current = 0;
+    // Mirrors useArchitectureState: each effect starts an attempt on the
+    // shared sequence; only the latest may publish SVG state.
+    const seq = createRenderSequence();
     const applied: string[] = [];
 
-    const firstSeq = ++current;
-    const firstActive = true;
-    const first = deferred<string>();
+    const first = seq.start();
+    const firstGate = deferred<string>();
+    const second = seq.start();
+    const secondGate = deferred<string>();
 
-    const secondSeq = ++current;
-    const secondActive = true;
-    const second = deferred<string>();
-
-    const firstHandler = first.promise.then((svg) => {
-      if (shouldApplyRender(firstSeq, current, firstActive)) applied.push(svg);
+    const firstHandler = firstGate.promise.then((svg) => {
+      if (first.shouldApply()) applied.push(svg);
     });
-    const secondHandler = second.promise.then((svg) => {
-      if (shouldApplyRender(secondSeq, current, secondActive)) applied.push(svg);
+    const secondHandler = secondGate.promise.then((svg) => {
+      if (second.shouldApply()) applied.push(svg);
     });
 
     // Stale render resolves first: guard drops it.
-    first.resolve('<svg>stale</svg>');
+    firstGate.resolve('<svg>stale</svg>');
     await firstHandler;
     expect(applied).toEqual([]);
 
     // Latest render resolves: guard applies it.
-    second.resolve('<svg>latest</svg>');
+    secondGate.resolve('<svg>latest</svg>');
     await secondHandler;
     expect(applied).toEqual(['<svg>latest</svg>']);
   });
@@ -65,56 +77,66 @@ describe('shouldApplyRender sequence guard', () => {
   test('stale rejection is dropped while latest rejection surfaces', async () => {
     // Mirrors the .catch() branch: only the latest attempt may report an
     // error/toast; superseded rejections are swallowed after DOM cleanup.
-    let current = 0;
+    const seq = createRenderSequence();
     const reported: string[] = [];
 
-    const firstSeq = ++current;
-    const first = deferred<string>();
-    const secondSeq = ++current;
-    const second = deferred<string>();
+    const first = seq.start();
+    const firstGate = deferred<string>();
+    const second = seq.start();
+    const secondGate = deferred<string>();
 
-    const reportIfLatest = (seq: number, active: boolean) => (err: unknown) => {
-      if (shouldApplyRender(seq, current, active)) {
+    const reportIfLive = (shouldApply: () => boolean) => (err: unknown) => {
+      if (shouldApply()) {
         reported.push(err instanceof Error ? err.message : String(err));
       }
     };
 
-    const firstHandler = first.promise.then(
+    const firstHandler = firstGate.promise.then(
       () => {},
-      reportIfLatest(firstSeq, true),
+      reportIfLive(() => first.shouldApply()),
     );
-    const secondHandler = second.promise.then(
+    const secondHandler = secondGate.promise.then(
       () => {},
-      reportIfLatest(secondSeq, true),
+      reportIfLive(() => second.shouldApply()),
     );
 
     // Stale render rejects (e.g. its mermaid config was replaced mid-flight):
     // no misleading toast.
-    first.reject(new Error('stale layout failure'));
+    firstGate.reject(new Error('stale layout failure'));
     await firstHandler;
     expect(reported).toEqual([]);
 
     // Latest render rejects: error surfaces.
-    second.reject(new Error('latest layout failure'));
+    secondGate.reject(new Error('latest layout failure'));
     await secondHandler;
     expect(reported).toEqual(['latest layout failure']);
   });
 
-  test('effect cleanup suppresses a late success', async () => {
-    let current = 0;
-    let active = true;
-    const seq = ++current;
+  test('effect cleanup (abandon) suppresses a late success', async () => {
+    const seq = createRenderSequence();
+    const attempt = seq.start();
     const gate = deferred<string>();
     let applied: string | null = null;
 
     const handler = gate.promise.then((svg) => {
-      if (shouldApplyRender(seq, current, active)) applied = svg;
+      if (attempt.shouldApply()) applied = svg;
     });
 
     // Teardown runs before the render settles.
-    active = false;
+    attempt.abandon();
     gate.resolve('<svg>late</svg>');
     await handler;
     expect(applied).toBeNull();
+  });
+
+  test('abandoning a stale attempt does not affect the latest', async () => {
+    const seq = createRenderSequence();
+    const first = seq.start();
+    const second = seq.start();
+    // Out-of-order teardowns (React StrictMode-style): stale cleanup must
+    // not kill the live attempt.
+    first.abandon();
+    expect(second.shouldApply()).toBe(true);
+    expect(first.shouldApply()).toBe(false);
   });
 });

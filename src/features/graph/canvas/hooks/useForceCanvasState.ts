@@ -99,7 +99,8 @@ export function useForceCanvasState({
   }, [blastRadiusActive, selectedNodeId, forceNodeById, graph.edges, graph.nodes]);
 
   useEffect(() => {
-    if (!focusedFilePath) return;
+    // Read-only canvases never adopt workspace focus/selection state.
+    if (readOnly || !focusedFilePath) return;
 
     const focusedNodeIds = [
       `file:${focusedFilePath}`,
@@ -118,6 +119,7 @@ export function useForceCanvasState({
       setSelectedNodeId(focusedNode.id);
     }
   }, [
+    readOnly,
     focusedFilePath,
     forceGraphData.nodes,
     forceNodeById,
@@ -126,6 +128,9 @@ export function useForceCanvasState({
   ]);
 
   useEffect(() => {
+    // Read-only canvases must not rewrite shared highlight state from the
+    // demo graph; workspace selection/highlights pass through untouched.
+    if (readOnly) return;
     if (!selectedNodeId) {
       setHighlightedNodeIds(new Set());
       return;
@@ -138,6 +143,7 @@ export function useForceCanvasState({
       );
     }
   }, [
+    readOnly,
     blastRadiusActive,
     selectedNodeId,
     blastRadiusNodeIds,

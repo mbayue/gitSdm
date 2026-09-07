@@ -103,8 +103,32 @@ export function RepoInput({ initialUrl = "" }: RepoInputProps) {
       inputRef.current?.focus();
       return;
     }
-    const nav = result.nav;
+    commitNavigation(result.nav);
+  };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    openRepository(url);
+  };
+
+  const handlePreset = (repo: string) => {
+    // Preset clicks navigate immediately ("Open an example"), they don't
+    // just fill the input. The target comes from resolvePresetNavigation —
+    // the unit covered by the preset-click contract tests — so the tested
+    // function IS the click path, not a parallel implementation of it.
+    setError("");
+    const result = resolvePresetNavigation(repo);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    // Keep the input in sync for context.
+    setUrl(result.nav.pendingUrl);
+    commitNavigation(result.nav);
+  };
+
+  /** Side-effect half of opening a repo; all decisions live in the tested resolvers above. */
+  function commitNavigation(nav: RepoNavigation) {
     localStorage.setItem(LAST_REPO_KEY, nav.pendingUrl);
     setLoading(true);
 
@@ -116,21 +140,7 @@ export function RepoInput({ initialUrl = "" }: RepoInputProps) {
       setError("Failed to navigate");
       setLoading(false);
     }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    openRepository(url);
-  };
-
-  const handlePreset = (repo: string) => {
-    // Preset clicks navigate immediately ("Open an example"), they don't
-    // just fill the input. Keep the input in sync for context.
-    // Navigation target resolved via resolvePresetNavigation (unit-tested).
-    const presetUrl = getPresetUrl(repo);
-    setUrl(presetUrl);
-    openRepository(presetUrl);
-  };
+  }
 
   return (
     <div className="w-full max-w-2xl scroll-mt-20 px-0">
