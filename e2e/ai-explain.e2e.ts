@@ -1,28 +1,27 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('AI Explain (mock mode)', () => {
-  test('AI sidebar toggle button exists on repo page', async ({ page }) => {
+  test('AI tools tab is accessible in repository insights sidebar', async ({ page }) => {
     await page.goto('/mock/gitsdm', { timeout: 15000 });
 
-    // Wait for the header to render
-    await page.waitForSelector('header', { timeout: 20000 });
+    // Wait for the app shell to render
+    await page.waitForSelector('header, [class*="top-nav"], [class*="header"]', { timeout: 20000 });
 
-    // Look for the AI sidebar toggle button
-    const aiButton = page.locator('button[aria-label*="AI"i], button[title*="AI"i]');
-    await expect(aiButton.first()).toBeVisible();
+    // Look for the AI tools tab in the sidebar
+    const aiTab = page.getByRole('tab', { name: 'AI tools', exact: true });
+    await expect(aiTab).toBeVisible({ timeout: 10000 });
   });
 
-  test('AI sidebar renders when toggled', async ({ page }) => {
+  test('AI tools tab renders intelligence and action tools when clicked', async ({ page }) => {
     await page.goto('/mock/gitsdm', { timeout: 15000 });
 
-    await page.waitForSelector('header', { timeout: 20000 });
+    await page.waitForSelector('header, [class*="top-nav"], [class*="header"]', { timeout: 20000 });
 
-    // Try to find and click the AI sidebar toggle
-    const aiButton = page.locator('button[aria-label*="AI"i], button[title*="AI"i]');
-    await aiButton.first().click();
+    const aiTab = page.getByRole('tab', { name: 'AI tools', exact: true });
+    await aiTab.click();
 
-    // The AI sidebar should appear with content
-    const aiPanel = page.locator('text=/explain|AI|assistant/i');
-    await expect(aiPanel.first()).toBeVisible({ timeout: 5000 });
+    // The AI panel tab should become selected and render AI action tools
+    await expect(aiTab).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByText('Explain Selection').first()).toBeVisible({ timeout: 10000 });
   });
 });

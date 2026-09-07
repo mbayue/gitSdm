@@ -150,7 +150,7 @@ test('insights stay within their panel and file selection survives graph filters
   await page.getByRole('button', { name: 'App.tsx', exact: true }).click();
   const details = page.getByRole('tabpanel', { name: 'Details', exact: true });
   await expect(details.getByRole('heading', { name: 'App.tsx', exact: true })).toBeVisible();
-  await expect(page.getByText('The selected file is hidden by these filters.', { exact: false })).toBeVisible();
+  await expect(page.getByText('The selected node is hidden by these filters.', { exact: false })).toBeVisible();
   const panel = await page.getByRole('complementary').boundingBox();
   const content = await details.boundingBox();
   expect(panel).not.toBeNull();
@@ -158,7 +158,7 @@ test('insights stay within their panel and file selection survives graph filters
   expect(content!.x).toBeGreaterThanOrEqual(panel!.x);
   expect(content!.x + content!.width).toBeLessThanOrEqual(panel!.x + panel!.width);
   await page.getByRole('button', { name: 'Reset filters', exact: true }).click();
-  await expect(page.getByText('The selected file is hidden by these filters.', { exact: false })).toHaveCount(0);
+  await expect(page.getByText('The selected node is hidden by these filters.', { exact: false })).toHaveCount(0);
 });
 
 test('panel resizing preserves the graph and inspector context follows related files', async ({ page }) => {
