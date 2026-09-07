@@ -46,6 +46,8 @@ describe('createEmbeddingProvider', () => {
     delete process.env.GEMINI_API_KEY;
     delete process.env.OPENAI_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.EDGEONE_API_KEY;
+    delete process.env.MAKERS_MODELS_KEY;
     delete process.env.OPENAI_EMBEDDING_MODEL;
     delete process.env.GEMINI_EMBEDDING_MODEL;
     openAIError = null;

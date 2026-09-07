@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useMermaid } from '@/features/ai/useAiTasks';
 import type { RepoAnalysis } from '@/types';
 import { generateProgrammaticMermaid } from '../mermaid-generator';
-import mermaid from '../mermaid-config';
+import { configureMermaid } from '../mermaid-config';
 import { stripMermaidFences } from '../stripMermaidFences';
 import { useVizStore } from '@/stores/vizStore';
 
@@ -16,6 +16,7 @@ export function useArchitectureState(
   const [svg, setSvg] = useState<string>('');
   const [renderError, setRenderError] = useState<string | null>(null);
   const [mode, setMode] = useState<'code' | 'ai'>('code');
+  const theme = useVizStore((s) => s.theme);
 
   useEffect(() => {
     if (mode === 'ai') {
@@ -43,7 +44,7 @@ export function useArchitectureState(
 
     const id = `mermaid-view-svg-${Math.floor(Math.random() * 1000000)}`;
 
-    mermaid.render(id, code)
+    configureMermaid(theme).render(id, code)
       .then(({ svg: renderedSvg }) => {
         if (active) {
           let styled = renderedSvg;
@@ -72,7 +73,7 @@ export function useArchitectureState(
     return () => {
       active = false;
     };
-  }, [mode, data, analysis, resetView]);
+  }, [mode, data, analysis, resetView, theme]);
 
   return {
     generate,

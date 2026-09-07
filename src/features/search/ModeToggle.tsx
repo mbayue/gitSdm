@@ -12,7 +12,7 @@ export function ModeToggle() {
   ];
 
   return (
-    <div className="inline-flex rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] p-0.5" role="tablist">
+    <div className="inline-flex rounded-md border border-border bg-background p-0.5" role="tablist">
       {modes.map((m) => (
         <button
           key={m.value}
@@ -22,8 +22,8 @@ export function ModeToggle() {
           className={clsx(
             'flex cursor-pointer items-center gap-1.5 rounded-sm px-3 py-1 text-xs font-medium transition-all duration-200',
             mode === m.value
-              ? 'bg-[#161b22] text-[#e6edf3] shadow-sm'
-              : 'text-[#8b949e] hover:text-[#e6edf3]',
+              ? 'bg-card text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground',
           )}
         >
           {m.icon}

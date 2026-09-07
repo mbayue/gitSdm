@@ -1,3 +1,4 @@
+import { TooltipHint } from '@/components/ui/tooltip';
 import { useCallback, useMemo } from 'react';
 import { useVizStore } from '@/stores/vizStore';
 import type { RepoAnalysis } from '@/types';
@@ -83,43 +84,43 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
       {useVizStore.getState().compareBranch && graphDiff ? (
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] p-2.5 flex items-center justify-between group hover:border-[rgba(240,246,252,0.3)] transition-all">
+            <div className="rounded-md border border-border bg-background p-2.5 flex items-center justify-between group hover:border-ring/50 transition-all">
               <div className="flex items-center gap-2">
-                <Plus className="h-4 w-4 text-emerald-400" />
-                <span className="text-[10px] text-[#8b949e] uppercase font-semibold tracking-widest">Added</span>
+                <Plus className="h-4 w-4 text-success" />
+                <span className="text-xs text-muted-foreground uppercase font-semibold tracking-widest">Added</span>
               </div>
-              <span className="text-[13px] font-semibold text-[#e6edf3] font-mono">{graphDiff.added.size}</span>
+              <span className="text-[13px] font-semibold text-foreground font-mono">{graphDiff.added.size}</span>
             </div>
-            <div className="rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] p-2.5 flex items-center justify-between group hover:border-[rgba(240,246,252,0.3)] transition-all">
+            <div className="rounded-md border border-border bg-background p-2.5 flex items-center justify-between group hover:border-ring/50 transition-all">
               <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-amber-400" />
-                <span className="text-[10px] text-[#8b949e] uppercase font-semibold tracking-widest">Modified</span>
+                <Activity className="h-4 w-4 text-warning" />
+                <span className="text-xs text-muted-foreground uppercase font-semibold tracking-widest">Modified</span>
               </div>
-              <span className="text-[13px] font-semibold text-[#e6edf3] font-mono">{graphDiff.modified.size}</span>
+              <span className="text-[13px] font-semibold text-foreground font-mono">{graphDiff.modified.size}</span>
             </div>
-            <div className="rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] p-2.5 flex items-center justify-between group hover:border-[rgba(240,246,252,0.3)] transition-all">
+            <div className="rounded-md border border-border bg-background p-2.5 flex items-center justify-between group hover:border-ring/50 transition-all">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-rose-400" />
-                <span className="text-[10px] text-[#8b949e] uppercase font-semibold tracking-widest">Deleted</span>
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <span className="text-xs text-muted-foreground uppercase font-semibold tracking-widest">Deleted</span>
               </div>
-              <span className="text-[13px] font-semibold text-[#e6edf3] font-mono">{graphDiff.deleted.size}</span>
+              <span className="text-[13px] font-semibold text-foreground font-mono">{graphDiff.deleted.size}</span>
             </div>
-            <div className="rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] p-2.5 flex items-center justify-between group hover:border-[rgba(240,246,252,0.3)] transition-all">
+            <div className="rounded-md border border-border bg-background p-2.5 flex items-center justify-between group hover:border-ring/50 transition-all">
               <div className="flex items-center gap-2">
                 <GitBranch className="h-4 w-4 text-ui-active-text-green" />
-                <span className="text-[10px] text-[#8b949e] uppercase font-semibold tracking-widest">Total</span>
+                <span className="text-xs text-muted-foreground uppercase font-semibold tracking-widest">Total</span>
               </div>
-              <span className="text-[13px] font-semibold text-[#e6edf3] font-mono">{graphDiff.added.size + graphDiff.modified.size + graphDiff.deleted.size}</span>
+              <span className="text-[13px] font-semibold text-foreground font-mono">{graphDiff.added.size + graphDiff.modified.size + graphDiff.deleted.size}</span>
             </div>
           </div>
 
           <div className="space-y-4">
             {graphDiff.added.size > 0 && (
               <div>
-                <h4 className="flex items-center gap-2 text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-2">
+                <h4 className="flex items-center gap-2 text-xs font-bold text-emerald-500 uppercase tracking-widest mb-2">
                   <Plus className="w-3 h-3" /> Added Files
                 </h4>
-                <div className="rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] py-2 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin">
+                <div className="rounded-md border border-border bg-background py-2 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin">
                   {Array.from(graphDiff.added).map(id => {
                     const node = nodeById.get(id);
                     return (
@@ -129,7 +130,7 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                           focusOnNode(id, node?.data?.path || id);
                           useVizStore.getState().setInspectorOpen(false);
                         }}
-                        className="w-full text-left px-3 py-1.5 hover:bg-[rgba(240,246,252,0.1)] text-xs text-[#e6edf3] font-mono truncate transition-colors"
+                        className="w-full text-left px-3 py-1.5 hover:bg-secondary text-xs text-foreground font-mono truncate transition-colors"
                       >
                         {node?.data.path || id}
                       </button>
@@ -141,10 +142,10 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
             
             {graphDiff.modified.size > 0 && (
               <div>
-                <h4 className="flex items-center gap-2 text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-2">
+                <h4 className="flex items-center gap-2 text-xs font-bold text-amber-500 uppercase tracking-widest mb-2">
                   <Activity className="w-3 h-3" /> Modified Files
                 </h4>
-                <div className="rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] py-2 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin">
+                <div className="rounded-md border border-border bg-background py-2 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin">
                   {Array.from(graphDiff.modified).map(id => {
                     const node = nodeById.get(id);
                     return (
@@ -154,7 +155,7 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                           focusOnNode(id, node?.data?.path || id);
                           useVizStore.getState().setInspectorOpen(false);
                         }}
-                        className="w-full text-left px-3 py-1.5 hover:bg-[rgba(240,246,252,0.1)] text-xs text-[#e6edf3] font-mono truncate transition-colors"
+                        className="w-full text-left px-3 py-1.5 hover:bg-secondary text-xs text-foreground font-mono truncate transition-colors"
                       >
                         {node?.data.path || id}
                       </button>
@@ -166,10 +167,10 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
 
             {graphDiff.deleted.size > 0 && (
               <div>
-                <h4 className="flex items-center gap-2 text-[10px] font-bold text-rose-500 uppercase tracking-widest mb-2">
+                <h4 className="flex items-center gap-2 text-xs font-bold text-rose-500 uppercase tracking-widest mb-2">
                   <AlertTriangle className="w-3 h-3" /> Deleted Files
                 </h4>
-                <div className="rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] py-2 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin">
+                <div className="rounded-md border border-border bg-background py-2 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin">
                   {Array.from(graphDiff.deleted).map(id => {
                     const node = nodeById.get(id);
                     return (
@@ -179,7 +180,7 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                           focusOnNode(id, node?.data?.path || id);
                           useVizStore.getState().setInspectorOpen(false);
                         }}
-                        className="w-full text-left px-3 py-1.5 hover:bg-[rgba(240,246,252,0.1)] text-xs text-[#8b949e] font-mono truncate line-through transition-colors"
+                        className="w-full text-left px-3 py-1.5 hover:bg-secondary text-xs text-muted-foreground font-mono truncate line-through transition-colors"
                       >
                         {node?.data.path || id}
                       </button>
@@ -194,35 +195,35 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
         <div className="space-y-4">
           {/* Metadata Section */}
           <div className="space-y-3">
-            <h3 className="text-[13px] font-semibold text-[#e6edf3] leading-tight flex items-center gap-2">
+            <h3 className="text-[13px] font-semibold text-foreground leading-tight flex items-center gap-2">
               {analysis.meta.repo}
-              <span className="rounded-sm border border-[rgba(240,246,252,0.1)] bg-[rgba(240,246,252,0.02)] px-1.5 py-0.5 text-[9px] font-mono text-[#8b949e]">
+              <span className="rounded-sm border border-border bg-secondary px-1.5 py-0.5 text-xs font-mono text-muted-foreground">
                 {analysis.meta.owner}
               </span>
             </h3>
             {analysis.meta.description && (
-              <p className="text-[11px] text-[#8b949e] leading-snug line-clamp-2">
+              <p className="text-xs text-muted-foreground leading-snug line-clamp-2">
                 {analysis.meta.description}
               </p>
             )}
 
             <div className="flex flex-wrap gap-1.5 pt-1">
-              <div className="flex items-center gap-1 text-[10px] text-[#8b949e] font-mono border border-[rgba(240,246,252,0.1)] rounded-sm px-1.5 py-0.5">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground font-mono border border-border rounded-sm px-1.5 py-0.5">
                 <Code2 className="h-3 w-3" />
                 {analysis.meta.language || 'Unknown'}
               </div>
-              <div className="flex items-center gap-1 text-[10px] text-[#8b949e] font-mono border border-[rgba(240,246,252,0.1)] rounded-sm px-1.5 py-0.5">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground font-mono border border-border rounded-sm px-1.5 py-0.5">
                 <GitBranch className="h-3 w-3" />
                 {selectedBranch || analysis.meta.defaultBranch || 'main'}
               </div>
               {analysis.meta.license && (
-                <div className="flex items-center gap-1 text-[10px] text-[#8b949e] font-mono border border-[rgba(240,246,252,0.1)] rounded-sm px-1.5 py-0.5">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground font-mono border border-border rounded-sm px-1.5 py-0.5">
                   <ShieldAlert className="h-3 w-3" />
                   {analysis.meta.license}
                 </div>
               )}
               {analysis.workspacePackages && analysis.workspacePackages.length > 0 && (
-                <div className="flex items-center gap-1 text-[10px] text-[#ec4899] font-mono border border-[#ec4899]/20 bg-[#ec4899]/10 rounded-sm px-1.5 py-0.5">
+                <div className="flex items-center gap-1 text-xs text-[#ec4899] font-mono border border-[#ec4899]/20 bg-[#ec4899]/10 rounded-sm px-1.5 py-0.5">
                   <Package className="h-3 w-3" />
                   Monorepo
                 </div>
@@ -232,7 +233,7 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
             {analysis.meta.topics && analysis.meta.topics.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {analysis.meta.topics.slice(0, 4).map(topic => (
-                  <span key={topic} className="px-1.5 py-0.5 text-[#58a6ff] bg-[#58a6ff]/10 text-[9px] rounded-sm font-mono max-w-[120px] truncate">
+                  <span key={topic} className="px-1.5 py-0.5 text-accent bg-accent/10 text-xs rounded-sm font-mono max-w-[120px] truncate">
                     {topic}
                   </span>
                 ))}
@@ -240,7 +241,7 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
             )}
           </div>
 
-          <div className="h-px w-full bg-[rgba(240,246,252,0.1)]" />
+          <div className="h-px w-full bg-secondary" />
 
           {/* Stats Rows */}
 	          <div className="space-y-1.5">
@@ -252,16 +253,16 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
             ].map((stat, idx) => (
               <div key={idx} className="flex items-center justify-between group">
                 <div className="flex items-center gap-2">
-                  <stat.icon className="h-3.5 w-3.5 text-[#8b949e] group-hover:text-[#e6edf3] transition-colors" />
-                  <span className="text-[11px] text-[#8b949e] group-hover:text-[#e6edf3] transition-colors">{stat.label}</span>
+                  <stat.icon className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">{stat.label}</span>
                 </div>
-                <span className="text-[11px] font-mono text-[#e6edf3]">{stat.val}</span>
+                <span className="text-xs font-mono text-foreground">{stat.val}</span>
 	              </div>
 	            ))}
 	          </div>
 
           {isGraphCapped && (
-            <div className="flex items-start gap-2 rounded-md border border-amber-500/15 bg-amber-500/5 px-2 py-1.5 text-[10px] leading-snug text-amber-200/80">
+            <div className="flex items-start gap-2 rounded-md border border-amber-500/15 bg-amber-500/5 px-2 py-1.5 text-xs leading-snug text-amber-200/80">
               <Info className="mt-0.5 h-3 w-3 shrink-0 text-amber-300/80" />
               <span>
                 Graph view renders up to {GRAPH_FILE_NODE_CAP.toLocaleString()} files and {GRAPH_FOLDER_NODE_CAP.toLocaleString()} folders for responsiveness. Showing {fileCount.toLocaleString()} of {totalFiles.toLocaleString()} files.
@@ -269,7 +270,7 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
             </div>
           )}
           {analysis.treeTruncated && (
-            <div className="flex items-start gap-2 rounded-md border border-amber-500/15 bg-amber-500/5 px-2 py-1.5 text-[10px] leading-snug text-amber-200/80">
+            <div className="flex items-start gap-2 rounded-md border border-amber-500/15 bg-amber-500/5 px-2 py-1.5 text-xs leading-snug text-amber-200/80">
               <Info className="mt-0.5 h-3 w-3 shrink-0 text-amber-300/80" />
               <span>
                 Repository size exceeds API limits. The dependency graph uses a prioritized 5,000-file subset.
@@ -279,13 +280,13 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
 	
 	          {/* Useful Sections */}
           {(entryPoints.length > 0 || analysis.importantFiles.length > 0 || highCoupling.length > 0) && (
-            <div className="h-px w-full bg-[rgba(240,246,252,0.1)]" />
+            <div className="h-px w-full bg-secondary" />
           )}
 
           <div className="space-y-4">
             {entryPoints.length > 0 && (
               <div>
-                <h4 className="text-[10px] font-semibold text-[#8b949e] uppercase tracking-widest mb-1.5">Entry Points</h4>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">Entry Points</h4>
                 <div className="space-y-0.5">
                   {entryPoints.map(node => (
                     <button
@@ -293,7 +294,7 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                       onClick={() => {
                         focusOnNode(node.id, node.data?.path || node.id);
                       }}
-                      className="w-full text-left px-1.5 py-1 text-[10px] font-mono text-[#e6edf3] hover:bg-[rgba(240,246,252,0.05)] rounded-sm truncate transition-colors"
+                      className="w-full text-left px-1.5 py-1 text-xs font-mono text-foreground hover:bg-secondary rounded-sm truncate transition-colors"
                     >
                       {node.data.path || node.id}
                     </button>
@@ -304,7 +305,7 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
 
             {analysis.importantFiles.length > 0 && (
               <div>
-                <h4 className="text-[10px] font-semibold text-[#8b949e] uppercase tracking-widest mb-1.5">Suggested Reading</h4>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">Suggested Reading</h4>
                 <div className="space-y-0.5">
                   {analysis.importantFiles.slice(0, 5).map(file => (
                     <button
@@ -313,9 +314,9 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                         const node = nodeById.get(`file:${file}`) || nodeById.get(file);
                         if (node) focusOnNode(node.id, node.data?.path || file);
                       }}
-                      className="w-full flex items-center gap-1.5 text-left px-1.5 py-1 text-[10px] font-mono text-[#e6edf3] hover:bg-[rgba(240,246,252,0.05)] rounded-sm truncate transition-colors"
+                      className="w-full flex items-center gap-1.5 text-left px-1.5 py-1 text-xs font-mono text-foreground hover:bg-secondary rounded-sm truncate transition-colors"
                     >
-                      <span className="w-3.5 h-3.5 flex items-center justify-center shrink-0 text-[8px] bg-[rgba(240,246,252,0.1)] text-[#8b949e] rounded-sm">
+                      <span className="w-3.5 h-3.5 flex items-center justify-center shrink-0 text-xs bg-secondary text-muted-foreground rounded-sm">
                         {analysis.importantFiles.indexOf(file) + 1}
                       </span>
                       <span className="truncate">{file}</span>
@@ -327,15 +328,15 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
 
             {highCoupling.length > 0 && (
               <div>
-                <h4 className="text-[10px] font-semibold text-[#8b949e] uppercase tracking-widest mb-1.5">High Coupling</h4>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">High Coupling</h4>
                 <div className="space-y-0.5">
                   {highCoupling.map(node => (
-                    <div key={node.id} className="flex items-center justify-between group px-1.5 py-1 hover:bg-[rgba(240,246,252,0.05)] rounded-sm transition-colors cursor-pointer"
+                    <div key={node.id} className="flex items-center justify-between group px-1.5 py-1 hover:bg-secondary rounded-sm transition-colors cursor-pointer"
                          onClick={() => {
                            focusOnNode(node.id, node.data?.path || node.id);
                          }}>
-                      <span className="text-[10px] font-mono text-[#e6edf3] truncate">{node.data.path || node.id}</span>
-                      <span className="text-[9px] font-mono text-[#8b949e] bg-[rgba(240,246,252,0.05)] px-1 rounded-sm border border-[rgba(240,246,252,0.1)]">
+                      <span className="text-xs font-mono text-foreground truncate">{node.data.path || node.id}</span>
+                      <span className="text-xs font-mono text-muted-foreground bg-secondary px-1 rounded-sm border border-border">
                         {degrees[node.id]} edges
                       </span>
                     </div>
@@ -346,12 +347,12 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
 
             {maintenanceHotspots.length > 0 && (
               <div>
-                <h4 className="flex items-center gap-1.5 text-[10px] font-semibold text-[#8b949e] uppercase tracking-widest mb-1.5">
-                  <Flame className="h-3 w-3 text-rose-400" />
+                <h4 className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">
+                  <Flame className="h-3 w-3 text-destructive" />
                   Maintenance Hotspots
                 </h4>
-                <p className="text-[9px] text-[#8b949e] mb-1.5 leading-tight">
-                  Files ranked by combined churn + complexity. Switch to Churn or Complexity overlay in the filter menu to visualize.
+                <p className="text-xs text-muted-foreground mb-1.5 leading-tight">
+                  Files ranked by combined churn + complexity. Switch to Churn or Complexity overlay in the Display menu to visualize.
                 </p>
                 <div className="space-y-0.5">
                   {maintenanceHotspots.map(({ node }) => (
@@ -359,20 +360,18 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                          onClick={() => {
                            focusOnNode(node.id, node.data?.path || node.id);
                          }}
-                         className="w-full flex items-center justify-between px-1.5 py-1 hover:bg-[rgba(240,246,252,0.05)] rounded-sm transition-colors cursor-pointer text-left">
-                      <span className="text-[10px] font-mono text-[#e6edf3] truncate flex-1">{node.data.path || node.id}</span>
+                         className="w-full flex items-center justify-between px-1.5 py-1 hover:bg-secondary rounded-sm transition-colors cursor-pointer text-left">
+                      <span className="text-xs font-mono text-foreground truncate flex-1">{node.data.path || node.id}</span>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {node.data.churnScore != null && (
-                          <span className="text-[9px] font-mono text-orange-400 bg-orange-500/10 px-1 rounded-sm border border-orange-500/20"
-                                title={`Churn: ${node.data.churnScore}`}>
+                          <TooltipHint content={`Churn: ${node.data.churnScore}`}><span className="text-xs font-mono text-orange-400 bg-orange-500/10 px-1 rounded-sm border border-orange-500/20">
                             C{node.data.churnScore.toFixed(2)}
-                          </span>
+                          </span></TooltipHint>
                         )}
                         {node.data.complexityScore != null && (
-                          <span className="text-[9px] font-mono text-rose-400 bg-rose-500/10 px-1 rounded-sm border border-rose-500/20"
-                                title={`Complexity: ${node.data.complexityScore}`}>
+                          <TooltipHint content={`Complexity: ${node.data.complexityScore}`}><span className="text-xs font-mono text-destructive bg-rose-500/10 px-1 rounded-sm border border-rose-500/20">
                             X{node.data.complexityScore.toFixed(2)}
-                          </span>
+                          </span></TooltipHint>
                         )}
                       </div>
                     </button>
@@ -382,16 +381,16 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
             )}
           </div>
 
-          <div className="h-px w-full bg-[rgba(240,246,252,0.1)]" />
+          <div className="h-px w-full bg-secondary" />
 
           {/* Commit Density */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-[10px] font-semibold text-[#8b949e] uppercase tracking-widest">Commit Density</h4>
-              <Activity className="h-3 w-3 text-[#8b949e]" />
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Commit Density</h4>
+              <Activity className="h-3 w-3 text-muted-foreground" />
             </div>
             {analysis.timeline.length === 0 ? (
-              <div className="text-[10px] text-[#8b949e] italic py-2">
+              <div className="text-xs text-muted-foreground italic py-2">
                 No commit history available.
               </div>
             ) : (
@@ -404,15 +403,13 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                     const opacity = Math.max(0.2, ratio);
 
                     return (
-                      <div
-                        key={idx}
-                        className="group relative flex-1 rounded-t-[1px] transition-all bg-[#58a6ff] hover:bg-[#79c0ff]"
+                      <TooltipHint key={idx} content={`${week.count} commits on ${new Date(week.week).toLocaleDateString()}`}><div
+                        className="group relative flex-1 rounded-t-[1px] transition-all bg-accent hover:bg-accent/80"
                         style={{
                           height: `${heightPercentage}%`,
                           opacity: opacity
                         }}
-                        title={`${week.count} commits on ${new Date(week.week).toLocaleDateString()}`}
-                      />
+                      /></TooltipHint>
                     );
                   });
                 })()}

@@ -86,7 +86,7 @@ export function HighlightedCode({
           >
             <span
               className={`w-12 shrink-0 select-none pr-4 text-right tabular-nums ${
-                isActive ? 'text-zinc-100' : 'text-zinc-500'
+                isActive ? 'text-foreground' : 'text-muted-foreground'
               }`}
             >
               {lineNum}
@@ -104,7 +104,7 @@ export function HighlightedCode({
 
 export function CodePlaceholder({ message }: { message: string }): ReactNode {
   return (
-    <div className="flex h-full items-center justify-center p-6 text-center text-xs text-zinc-500">
+    <div className="flex h-full items-center justify-center p-6 text-center text-xs text-muted-foreground">
       {message}
     </div>
   );

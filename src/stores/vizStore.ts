@@ -219,7 +219,17 @@ export const useVizStore = create<VizState>()(
   setSelectedNodeId: (selectedNodeId: string | null) => set({ selectedNodeId }),
   setHighlightedNodeIds: (highlightedNodeIds: Set<string>) => set({ highlightedNodeIds }),
   setSidebarTab: (sidebarTab: SidebarTab) => set({ sidebarTab }),
-  setWorkspaceMode: (workspaceMode: WorkspaceMode) => set({ workspaceMode }),
+  setWorkspaceMode: (workspaceMode: WorkspaceMode) => {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+    set({
+      workspaceMode,
+      explorerOpen: !isMobile && workspaceMode !== 'focus',
+      aiSidebarOpen: workspaceMode !== 'focus' && (!isMobile || workspaceMode === 'analysis' || workspaceMode === 'learning'),
+      inspectorOpen: false,
+      ...(workspaceMode === 'analysis' ? { sidebarTab: 'analysis' as const } : {}),
+      ...(workspaceMode === 'learning' ? { sidebarTab: 'learning' as const } : {}),
+    });
+  },
   setExplorerOpen: (explorerOpen: boolean) => set({ explorerOpen }),
   setAiSidebarOpen: (aiSidebarOpen: boolean) => set({ aiSidebarOpen }),
   setInspectorOpen: (inspectorOpen: boolean) => set({ inspectorOpen }),

@@ -2,6 +2,7 @@ import type { RepoMeta, RepoAnalysis } from '@/types';
 import { formatStars } from '@/lib/utils';
 import { History, Star } from 'lucide-react';
 import { getTotalCommits } from './getRepoStats';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface HeaderStatsProps {
   analysis?: RepoAnalysis;
@@ -13,25 +14,31 @@ export function HeaderStats({ analysis, meta: propsMeta }: HeaderStatsProps) {
   const totalCommits = getTotalCommits(analysis);
 
   return (
-    <div className="hidden md:flex items-center gap-3 select-none shrink-0 text-[10px] text-zinc-500 font-medium">
+    <div className="hidden md:flex items-center gap-3 select-none shrink-0 text-xs text-muted-foreground font-medium">
       {totalCommits > 0 && (
-        <div className="flex items-center gap-1" title="Total commits">
+        <Tooltip>
+        <TooltipTrigger render={<span tabIndex={0} />} className="flex items-center gap-1">
           <History className="h-3 w-3 shrink-0" />
           <span>{totalCommits.toLocaleString()} total</span>
-        </div>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Total commits</TooltipContent>
+        </Tooltip>
       )}
 
       {meta && (
-        <a
+        <Tooltip>
+        <TooltipTrigger render={<a
           href={`https://github.com/${meta.fullName}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1 hover:text-[#e6edf3] transition-colors duration-200"
-          title="GitHub Stars"
+        />}
+          className="flex items-center gap-1 hover:text-foreground transition-colors duration-200"
         >
           <Star className="h-3 w-3 shrink-0" />
           <span>{formatStars(meta.stars)}</span>
-        </a>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">GitHub Stars</TooltipContent>
+        </Tooltip>
       )}
     </div>
   );

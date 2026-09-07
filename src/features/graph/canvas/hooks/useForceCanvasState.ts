@@ -39,6 +39,7 @@ export function useForceCanvasState({
     graphActionTrigger,
     setVisibleCounts,
     layoutType,
+    sizeMode,
   } = useVizStore();
 
   const [forceSize, setForceSize] = useState({ width: 1024, height: 720 });
@@ -147,9 +148,10 @@ export function useForceCanvasState({
 
     const updateSize = () => {
       const rect = host.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
       setForceSize({
-        width: Math.max(320, rect.width),
-        height: Math.max(320, rect.height),
+        width: rect.width,
+        height: rect.height,
       });
     };
     updateSize();
@@ -173,10 +175,12 @@ export function useForceCanvasState({
     };
   }, [forceHostRef]);
 
-  useD3Physics({
+  const { handleLayoutStop } = useD3Physics({
     forceGraphRef,
     nodes: forceGraphData.nodes,
+    links: forceGraphData.links,
     layoutType,
+    sizeMode,
   });
 
   const { prevFocusRef } = useForceSync({
@@ -208,5 +212,6 @@ export function useForceCanvasState({
     forceNodeById,
     blastRadiusActive,
     prevFocusRef,
+    handleLayoutStop,
   };
 }

@@ -1,47 +1,11 @@
 import { useEffect } from "react";
-import { useVizStore, WorkspaceMode, SidebarTab } from "@/stores/vizStore";
-
-const applyWorkspaceModeLayout = (
-  mode: WorkspaceMode,
-  setExplorerOpen: (open: boolean) => void,
-  setAiSidebarOpen: (open: boolean) => void,
-  setSidebarTab: (tab: SidebarTab) => void
-) => {
-  if (mode === 'focus') {
-    setExplorerOpen(true);
-    setAiSidebarOpen(false);
-  } else if (mode === 'analysis') {
-    setExplorerOpen(true);
-    setAiSidebarOpen(true);
-    setSidebarTab('analysis');
-  } else if (mode === 'learning') {
-    setExplorerOpen(true);
-    setAiSidebarOpen(true);
-    setSidebarTab('learning');
-  } else if (mode === 'full') {
-    setExplorerOpen(true);
-    setAiSidebarOpen(true);
-  }
-};
+import { useVizStore } from "@/stores/vizStore";
 
 export function useWorkspaceShortcuts() {
   const { 
-    workspaceMode, 
     setExplorerOpen, 
-    setAiSidebarOpen, 
-    setSidebarTab
+    setAiSidebarOpen
   } = useVizStore();
-
-  // Workspace mode effect
-  useEffect(() => {
-    if (window.innerWidth < 1024) {
-      setExplorerOpen(false);
-      setAiSidebarOpen(false);
-      return;
-    }
-
-    applyWorkspaceModeLayout(workspaceMode, setExplorerOpen, setAiSidebarOpen, setSidebarTab);
-  }, [workspaceMode, setExplorerOpen, setAiSidebarOpen, setSidebarTab]);
 
   // Responsive panel management
   useEffect(() => {
@@ -54,7 +18,7 @@ export function useWorkspaceShortcuts() {
         setAiSidebarOpen(false);
       } else if (!isMobile && !wasDesktop) {
         const state = useVizStore.getState();
-        applyWorkspaceModeLayout(state.workspaceMode, setExplorerOpen, setAiSidebarOpen, setSidebarTab);
+        state.setWorkspaceMode(state.workspaceMode);
       }
       wasDesktop = !isMobile;
     };
@@ -67,14 +31,17 @@ export function useWorkspaceShortcuts() {
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [setExplorerOpen, setAiSidebarOpen, setSidebarTab]);
+  }, [setExplorerOpen, setAiSidebarOpen]);
 
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
         document.activeElement?.tagName === "INPUT" ||
-        document.activeElement?.tagName === "TEXTAREA"
+        document.activeElement?.tagName === "TEXTAREA" ||
+        document.activeElement?.tagName === "SELECT" ||
+        (document.activeElement instanceof HTMLElement && document.activeElement.isContentEditable) ||
+        e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented
       ) {
         return;
       }
@@ -84,11 +51,22 @@ export function useWorkspaceShortcuts() {
       if (e.key === "[") {
         e.preventDefault();
         state.setExplorerOpen(!state.explorerOpen);
+        if (!state.explorerOpen && window.innerWidth < 1024) state.setAiSidebarOpen(false);
       } else if (e.key === "]") {
         e.preventDefault();
         state.setAiSidebarOpen(!state.aiSidebarOpen);
+        if (!state.aiSidebarOpen && window.innerWidth < 1024) state.setExplorerOpen(false);
       } else if (e.key === "Escape") {
         e.preventDefault();
+        if (state.activeDropdown) {
+          state.setActiveDropdown(null);
+          return;
+        }
+        if (window.innerWidth < 1024 && (state.explorerOpen || state.aiSidebarOpen)) {
+          state.setExplorerOpen(false);
+          state.setAiSidebarOpen(false);
+          return;
+        }
         state.setSelectedNodeId(null);
         state.setFocusedFilePath(null);
       }

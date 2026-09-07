@@ -125,13 +125,13 @@ export function useNodeFiltering({
       nodes = nodes.filter((n) => {
         if (n.type === 'repo') return true;
         const p = n.data.path ? n.data.path.toLowerCase() : "";
-        const isDocs = p.includes('docs/') || p.includes('doc/');
-        const isTests = p.includes('test/') || p.includes('tests/') || p.includes('spec/') || p.includes('__tests__');
+        const isDocs = n.data.fileClass === 'doc' || p.endsWith('.md') || p.includes('docs/') || p.includes('doc/');
+        const isTests = n.data.fileClass === 'test' || p.includes('test/') || p.includes('tests/') || p.includes('spec/') || p.includes('__tests__');
         const isGithub = p.includes('.github/');
         const isExamples = p.includes('example/') || p.includes('examples/');
         const isGenerated = p.includes('dist/') || p.includes('build/') || p.includes('out/') || n.data.isGenerated;
         const isLocales = p.includes('locales/') || p.includes('i18n/') || p.includes('translations/');
-        const isConfig = p.includes('config') || p.endsWith('.json') || p.endsWith('.yaml') || p.endsWith('.yml') || p.endsWith('.toml');
+        const isConfig = n.data.fileClass === 'config' || p.includes('config') || p.endsWith('.json') || p.endsWith('.yaml') || p.endsWith('.yml') || p.endsWith('.toml');
         
         if (isDocs && !contentFilters.has('docs')) return false;
         if (isTests && !contentFilters.has('tests')) return false;
@@ -140,6 +140,7 @@ export function useNodeFiltering({
         if (isGenerated && !contentFilters.has('generated')) return false;
         if (isLocales && !contentFilters.has('translations')) return false;
         if (isConfig && !contentFilters.has('config') && !isDocs && !isTests && !isGithub) return false;
+        if (n.type === 'file' && !isDocs && !isTests && !isGithub && !isExamples && !isGenerated && !isLocales && !isConfig && !contentFilters.has('source')) return false;
         
         return true;
       });

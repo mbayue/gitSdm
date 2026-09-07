@@ -6,11 +6,13 @@ import {
   GRAPH_NODE_PALETTES,
 } from '../../force/forceGraphConstants';
 import type { ColorMode, SizeMode } from '@/stores/vizStore';
+import { GRAPH_THEMES, type GraphTheme } from '../../force/graph-theme';
 
 interface NodePaintProps {
   node: ForceGraphNode;
   ctx: CanvasRenderingContext2D;
   globalScale: number;
+  nodeCount?: number;
   selectedNodeId: string | null;
   highlightedNodeIds: Set<string>;
   blastRadiusActive: boolean;
@@ -18,6 +20,7 @@ interface NodePaintProps {
   hoveredForceNode: ForceGraphNode | null;
   colorMode?: ColorMode;
   sizeMode?: SizeMode;
+  theme?: GraphTheme;
 }
 
 /** Map a 0-1 score to a color from the given 5-stop gradient */
@@ -84,6 +87,7 @@ export function drawForceNode({
   node,
   ctx,
   globalScale,
+  nodeCount = Infinity,
   selectedNodeId,
   highlightedNodeIds,
   blastRadiusActive,
@@ -91,7 +95,9 @@ export function drawForceNode({
   hoveredForceNode,
   colorMode = 'default',
   sizeMode = 'default',
+  theme = 'dark',
 }: NodePaintProps) {
+  const palette = GRAPH_THEMES[theme];
   const isSelected = node.id === selectedNodeId;
   const isNeighbor = highlightedNodeIds.has(node.id);
   const isDimmed = selectedNodeId && !isSelected && !isNeighbor;
@@ -135,6 +141,12 @@ export function drawForceNode({
   
   ctx.fill();
   ctx.shadowBlur = 0;
+  // Keep pale heatmap nodes visible against a light canvas.
+  if (theme === 'light') {
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 1 / globalScale;
+    ctx.stroke();
+  }
 
   if (colorMode === 'churn' && node.authorCount != null && node.authorCount >= 3) {
     if (globalScale >= 0.75) {
@@ -158,12 +170,12 @@ export function drawForceNode({
         ? GRAPH_NODE_PALETTES.blastSelection
         : isNeighbor
           ? 'rgba(8,145,178,0.95)'
-          : '#ffffff'
+          : palette.hover
       : isSelected
         ? GRAPH_NODE_PALETTES.standardSelection
         : isNeighbor
           ? 'rgba(139,92,246,0.4)'
-          : '#ffffff';
+          : palette.hover;
 
     drawRing(
       ctx,
@@ -180,13 +192,14 @@ export function drawForceNode({
   if (
     isSelected ||
     hoveredForceNode?.id === node.id ||
+    (nodeCount <= 100 && globalScale >= 0.4) ||
     globalScale > 1.15
   ) {
-    const fontSize = Math.max(10 / globalScale, 3.8);
+    const fontSize = Math.max(12 / globalScale, 3.8);
     ctx.font = `${fontSize}px Inter, ui-sans-serif, system-ui`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.fillStyle = "rgba(245,245,255,0.92)";
+    ctx.fillStyle = palette.label;
     ctx.fillText(node.label, x, y + radius + 3 / globalScale);
   }
 

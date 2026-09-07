@@ -130,7 +130,7 @@ interface BranchGroupProps {
 function BranchGroup({ label, items, compareBranch, compareRefType, mode, activeBranch, onSelect }: BranchGroupProps) {
   return (
     <div>
-      <div className="px-2 pb-1 text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider font-mono">{label}</div>
+      <div className="px-2 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider font-mono">{label}</div>
       {items.map((b) => (
         <BranchItem
           key={b.name}
@@ -164,17 +164,17 @@ function BranchItem({ branch, isCurrent, isCompared, mode, onSelect }: BranchIte
       className={cn(
         'flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left text-xs font-mono transition-colors cursor-pointer',
         isDisabled
-          ? 'opacity-30 cursor-not-allowed text-[#8b949e]'
+          ? 'opacity-30 cursor-not-allowed text-muted-foreground'
           : isCurrent && mode === 'switch'
-            ? 'bg-[#1c2128] text-[#e6edf3] font-medium'
+            ? 'bg-popover text-foreground font-medium'
             : isCompared && mode === 'compare'
-              ? 'bg-[#1c2128] text-[#58a6ff] font-medium'
-              : 'text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3]'
+              ? 'bg-popover text-accent font-medium'
+              : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
       )}
     >
       <span className="truncate pr-4">{branch.name}</span>
-      {mode === 'switch' && isCurrent && <Check className="h-3.5 w-3.5 text-[#e6edf3] shrink-0" />}
-      {mode === 'compare' && isCompared && <Check className="h-3.5 w-3.5 text-[#58a6ff] shrink-0" />}
+      {mode === 'switch' && isCurrent && <Check className="h-3.5 w-3.5 text-foreground shrink-0" />}
+      {mode === 'compare' && isCompared && <Check className="h-3.5 w-3.5 text-accent shrink-0" />}
     </button>
   );
 }

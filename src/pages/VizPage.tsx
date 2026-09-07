@@ -19,7 +19,7 @@ const ArchitectureView = lazy(() =>
 import { ContributorsView } from "@/components/contributors/ContributorsView";
 import { ExplorerPanel } from "@/components/explorer/ExplorerPanel";
 import { VizError } from "@/components/viz/VizError";
-import { Check } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import { StagedLoader } from "@/components/viz/StagedLoader";
 import { Card } from "@/components/ui/card";
 import type { GraphNode } from "@/types";
@@ -27,6 +27,7 @@ import { FullCommitHistoryView } from "@/components/timeline/CommitHistoryView";
 import { BottomStatusBar } from "@/components/viz/BottomStatusBar";
 import { CodeInspectorDock } from "@/components/explorer/CodeInspectorDock";
 import { VizSidebar } from "@/components/viz/layout/VizSidebar";
+import { fitWorkspacePanels } from "@/lib/workspace-panels";
 
 export function VizPage() {
   const { owner = "", repo = "" } = useParams();
@@ -57,7 +58,6 @@ export function VizPage() {
     setToastMessage,
     explorerOpen,
     aiSidebarOpen,
-    setSidebarTab,
     setAiSidebarOpen,
     setExplorerOpen,
     activeRepoKey,
@@ -76,6 +76,14 @@ export function VizPage() {
   // Resizable columns state
   const [leftWidth, setLeftWidth] = useState(240);
   const [rightWidth, setRightWidth] = useState(360);
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+  const minibarWidth = viewportWidth >= 1024 ? (Number(!explorerOpen) + Number(!aiSidebarOpen)) * 40 : 0;
+  const panelWidths = fitWorkspacePanels(viewportWidth - minibarWidth, explorerOpen ? leftWidth : 0, aiSidebarOpen ? rightWidth : 0);
+  useEffect(() => {
+    const update = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
   const [showMinimap, setShowMinimap] = useState(false);
 
   // Workspace layout and global shortcut integration
@@ -108,13 +116,15 @@ export function VizPage() {
 
   const handleSelectFile = useCallback(
     (path: string) => {
-      setFocusedFilePath(path);
+      const node = (combinedGraph || data?.graph)?.nodes.find((item) => item.type === 'file' && item.data.path === path);
+      useVizStore.setState({ focusedFilePath: path, selectedNodeId: node?.id ?? null, sidebarTab: 'analysis' });
       if (window.innerWidth >= 1024) {
-        setSidebarTab("analysis");
         setAiSidebarOpen(true);
+      } else {
+        setExplorerOpen(false);
       }
     },
-    [setFocusedFilePath, setSidebarTab, setAiSidebarOpen],
+    [combinedGraph, data, setAiSidebarOpen, setExplorerOpen],
   );
 
   // Reset state when navigating to a different repo
@@ -123,8 +133,12 @@ export function VizPage() {
     if (activeRepoKey !== key) {
       reset();
       setActiveRepoKey(key);
+      if (window.matchMedia("(max-width: 1023px)").matches) {
+        setExplorerOpen(false);
+        setAiSidebarOpen(false);
+      }
     }
-  }, [owner, repo, activeRepoKey, reset, setActiveRepoKey]);
+  }, [owner, repo, activeRepoKey, reset, setActiveRepoKey, setExplorerOpen, setAiSidebarOpen]);
 
   const nodeById = useMemo(() => {
     if (!data) return new Map();
@@ -139,7 +153,7 @@ export function VizPage() {
   useEffect(() => {
     if (selectedNode?.type === "file" && selectedNode.data.path) {
       setFocusedFilePath(selectedNode.data.path);
-    } else {
+    } else if (selectedNode) {
       setFocusedFilePath(null);
     }
   }, [selectedNode, setFocusedFilePath]);
@@ -153,7 +167,7 @@ export function VizPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background">
         <TopNav analysis={data} meta={data?.meta} owner={owner} repo={repo} />
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -165,11 +179,12 @@ export function VizPage() {
               <VizSidebar
                 side="left"
                 isOpen={explorerOpen}
-                width={leftWidth}
+                width={panelWidths.left || leftWidth}
                 onWidthChange={setLeftWidth}
                 minWidth={180}
-                maxWidth={450}
+                maxWidth={Math.max(180, Math.min(450, viewportWidth - 360 - panelWidths.right))}
                 onClose={() => setExplorerOpen(false)}
+                onOpen={() => setExplorerOpen(true)}
               >
                 <ExplorerPanel
                   analysis={data}
@@ -185,7 +200,11 @@ export function VizPage() {
                 className="relative min-h-0 min-w-0 flex-1 overflow-hidden bg-background flex flex-col"
               >
                 <div className="flex-1 min-h-0 relative">
-                  <Suspense fallback={null}>
+                  <Suspense fallback={
+                    <div role="status" className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin text-accent" /> Loading graph…
+                    </div>
+                  }>
                     <div
                       className={`h-full w-full relative ${activeView !== "graph" ? "hidden" : ""
                         }`}
@@ -196,8 +215,8 @@ export function VizPage() {
                         setShowMinimap={setShowMinimap}
                       />
                       {data.treeTruncated && (
-                        <div className="absolute left-3 top-2 z-10 rounded-lg bg-[#1c2128] px-2 py-1 text-[10px] text-[#8b949e] ring-1 ring-[rgba(240,246,252,0.1)]">
-                          Tree truncated
+                        <div className="pointer-events-none absolute left-3 bottom-16 z-10 rounded-md bg-card px-3 py-2 text-xs text-muted-foreground ring-1 ring-border">
+                          Partial repository tree: some files are unavailable.
                         </div>
                       )}
                     </div>
@@ -205,8 +224,8 @@ export function VizPage() {
 
                   {activeView === "architecture" && (
                     <Suspense fallback={
-                      <div className="flex h-full w-full items-center justify-center bg-background">
-                        <div className="h-8 w-8 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
+                      <div role="status" className="flex h-full w-full items-center justify-center gap-2 bg-background text-sm text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin text-accent" /> Loading architecture…
                       </div>
                     }>
                       <ArchitectureView
@@ -240,12 +259,14 @@ export function VizPage() {
                     setState={(s) => {
                       setCodeInspectorState(s);
                       if (s === 'closed') {
-                        setFocusedFilePath(null);
+                        useVizStore.setState({ focusedFilePath: null, selectedNodeId: null, highlightedNodeIds: new Set() });
                       } else {
                         setPreferredOpenState(s);
                       }
                     }}
                     filePath={focusedFilePath}
+                    graph={combinedGraph || data.graph}
+                    onSelectFile={handleSelectFile}
                     owner={owner}
                     repo={repo}
                   />
@@ -256,11 +277,12 @@ export function VizPage() {
               <VizSidebar
                 side="right"
                 isOpen={aiSidebarOpen}
-                width={rightWidth}
+                width={panelWidths.right || rightWidth}
                 onWidthChange={setRightWidth}
                 minWidth={300}
-                maxWidth={700}
+                maxWidth={Math.max(300, Math.min(700, viewportWidth - 360 - panelWidths.left))}
                 onClose={() => setAiSidebarOpen(false)}
+                onOpen={() => setAiSidebarOpen(true)}
               >
                 <AISidebar
                   analysis={data}
@@ -286,13 +308,10 @@ export function VizPage() {
               transition={{ duration: 0.2 }}
               className="fixed bottom-12 right-6 z-[9999]"
             >
-              <Card className="flex items-center gap-2.5 border-border bg-card/95 px-4 py-3 shadow-xl backdrop-blur-md">
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-green-500/20 text-green-400">
-                  <Check className="h-3 w-3" />
-                </div>
+              <Card role="status" className="flex items-center gap-2.5 border-border bg-card px-4 py-3 shadow-xl">
+                <Info className="h-4 w-4 shrink-0 text-accent" />
                 <div>
-                  <p className="text-xs font-semibold text-foreground">Copied!</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5 break-all max-w-[280px] font-mono leading-relaxed">
+                  <p className="text-sm text-foreground break-words max-w-[280px] leading-relaxed">
                     {toastMessage}
                   </p>
                 </div>

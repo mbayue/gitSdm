@@ -34,14 +34,14 @@ export function TagSelector({
       )}
       {!tagsLoading && !tagsError && filteredTags.length > 0 && (
         <div>
-          <div className="px-2 pb-1 text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider font-mono">Tags</div>
+          <div className="px-2 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider font-mono">Tags</div>
           {filteredTags.map((t) => (
             <RefItem
               key={t.name}
               name={t.name}
               isCompared={compareBranch === t.name && compareRefType === 'tag'}
               onSelect={() => onSelect(t.name)}
-              icon={<Tag className="h-3 w-3 text-[#8b949e] shrink-0" />}
+              icon={<Tag className="h-3 w-3 text-muted-foreground shrink-0" />}
             />
           ))}
         </div>
@@ -65,13 +65,13 @@ function RefItem({ name, isCompared, onSelect, icon }: RefItemProps) {
       className={cn(
         'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs font-mono transition-colors cursor-pointer',
         isCompared
-          ? 'bg-[#1c2128] text-[#58a6ff] font-medium'
-          : 'text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3]'
+          ? 'bg-popover text-accent font-medium'
+          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
       )}
     >
       {icon}
       <span className="truncate flex-1">{name}</span>
-      {isCompared && <Check className="h-3.5 w-3.5 text-[#58a6ff] shrink-0" />}
+      {isCompared && <Check className="h-3.5 w-3.5 text-accent shrink-0" />}
     </button>
   );
 }

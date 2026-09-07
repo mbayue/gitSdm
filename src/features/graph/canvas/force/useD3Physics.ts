@@ -1,26 +1,39 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { forceCollide, forceCenter, forceX, forceY } from 'd3-force';
 import { stratify, tree } from 'd3-hierarchy';
 import type { ForceGraphMethods } from 'react-force-graph-2d';
 import type { ForceGraphNode, ForceGraphLink } from '../../force/forceGraphConstants';
 import { getForceNodeRadius } from '../../force/forceGraphUtils';
-import type { LayoutType } from '@/stores/vizStore';
+import { useVizStore, type LayoutType, type SizeMode } from '@/stores/vizStore';
 
 interface D3PhysicsProps {
   forceGraphRef: React.MutableRefObject<ForceGraphMethods<ForceGraphNode, ForceGraphLink> | undefined>;
   nodes: ForceGraphNode[];
+  links: ForceGraphLink[];
   layoutType: LayoutType;
+  sizeMode: SizeMode;
 }
 
-export function useD3Physics({ forceGraphRef, nodes, layoutType }: D3PhysicsProps) {
+export function useD3Physics({ forceGraphRef, nodes, links, layoutType, sizeMode }: D3PhysicsProps) {
   const nodeCount = nodes.length;
+  const previousLayout = useRef(layoutType);
+  const previousSizeMode = useRef(sizeMode);
+  const fitAfterSimulation = useRef(false);
+  const handleLayoutStop = useCallback(() => {
+    if (!fitAfterSimulation.current) return;
+    fitAfterSimulation.current = false;
+    forceGraphRef.current?.zoomToFit(400, 60);
+  }, [forceGraphRef]);
 
   useEffect(() => {
     const ref = forceGraphRef.current;
     if (!ref) return;
 
     const linkForce = ref.d3Force("link");
-    const links = linkForce ? (linkForce.links() as ForceGraphLink[]) : [];
+    const layoutChanged = previousLayout.current !== layoutType || (layoutType !== 'tree' && previousSizeMode.current !== sizeMode);
+    previousLayout.current = layoutType;
+    previousSizeMode.current = sizeMode;
+    fitAfterSimulation.current = fitAfterSimulation.current || layoutChanged;
 
     const isD3Tree = layoutType === 'd3-tree-horiz' || layoutType === 'd3-tree-vert';
 
@@ -54,11 +67,11 @@ export function useD3Physics({ forceGraphRef, nodes, layoutType }: D3PhysicsProp
           .parentId(d => d.parentId)(stratifyData);
 
         const isVert = layoutType === 'd3-tree-vert';
-        const layout = tree<typeof stratifyData[0]>().nodeSize(isVert ? [35, 95] : [16, 95]);
+        const layout = tree<typeof stratifyData[0]>().nodeSize([sizeMode === 'complexity' ? 55 : 35, 110]);
         layout(rootHierarchy);
 
         // d3-tree places the virtual root at (0,0); real roots (depth 1) land at
-        // depth-coordinate ≥ nodeSize[1] (95), pushing the whole tree off-center.
+        // depth-coordinate ≥ nodeSize[1], pushing the whole tree off-center.
         // Re-center by subtracting the smallest depth coordinate.
         let minDepthCoord = Infinity;
         rootHierarchy.descendants().forEach(d => {
@@ -82,6 +95,8 @@ export function useD3Physics({ forceGraphRef, nodes, layoutType }: D3PhysicsProp
           if (pos) {
             node.fx = pos.x;
             node.fy = pos.y;
+            node.x = pos.x;
+            node.y = pos.y;
             node.packedRadius = undefined;
           } else {
             node.fx = undefined;
@@ -90,7 +105,7 @@ export function useD3Physics({ forceGraphRef, nodes, layoutType }: D3PhysicsProp
           }
         }
       } catch (err) {
-        console.error('Failed to compute D3 tree layout:', err);
+        useVizStore.getState().setToastMessage('Failed to arrange tree: ' + (err instanceof Error ? err.message : String(err)));
       }
     } else {
       for (const node of nodes) {
@@ -123,7 +138,9 @@ export function useD3Physics({ forceGraphRef, nodes, layoutType }: D3PhysicsProp
     }
 
     ref.d3ReheatSimulation();
-  }, [nodeCount, layoutType, forceGraphRef, nodes]);
+    // Fixed trees have their final coordinates already; force layouts fit once settled.
+    if (isD3Tree && layoutChanged) handleLayoutStop();
+  }, [nodeCount, layoutType, sizeMode, forceGraphRef, nodes, links, handleLayoutStop]);
 
   useEffect(() => {
     if (!forceGraphRef.current) return;
@@ -134,12 +151,14 @@ export function useD3Physics({ forceGraphRef, nodes, layoutType }: D3PhysicsProp
         "collide",
         forceCollide()
           .radius(
-            (node: unknown) => getForceNodeRadius(node as ForceGraphNode) + 5,
+            (node: unknown) => getForceNodeRadius(node as ForceGraphNode, sizeMode) + 5,
           )
           .strength(0.7),
       );
       g.d3ReheatSimulation();
     }, 0);
     return () => window.clearTimeout(timeout);
-  }, [nodes.length, forceGraphRef]);
+  }, [nodes.length, sizeMode, forceGraphRef]);
+
+  return { handleLayoutStop };
 }

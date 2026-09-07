@@ -13,6 +13,7 @@ import { CompareControls } from './CompareControls';
 import { BranchSelector } from './BranchSelector';
 import { TagSelector } from './TagSelector';
 import { CommitShaInput } from './CommitShaInput';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface BranchSwitcherProps {
   owner: string;
@@ -128,41 +129,46 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
     <div className="relative z-50 min-w-0 max-w-full shrink font-sans" ref={containerRef}>
       {/* Trigger: Compare Pill or Branch Button */}
       {compareBranch ? (
-        <div className="flex max-w-full min-w-0 items-center gap-0.5 sm:gap-1 rounded-md border border-[#58a6ff]/20 bg-[#58a6ff]/5 text-[#58a6ff] text-xs py-0.5 pl-1.5 sm:pl-2.5 pr-0.5 select-none transition-colors hover:border-[#58a6ff]/40">
+        <div className="flex max-w-full min-w-0 items-center gap-0.5 sm:gap-1 rounded-md border border-accent/20 bg-accent/5 text-accent text-xs py-0.5 pl-1.5 sm:pl-2.5 pr-0.5 select-none transition-colors hover:border-accent/40">
           <button
             type="button"
             onClick={() => { setMode('compare'); setCompareTab(compareRefType as CompareTab); setIsOpen(!isOpen); }}
-            className="flex min-w-0 items-center gap-0.5 sm:gap-1.5 cursor-pointer outline-none hover:text-[#79c0ff] transition-colors"
+            className="flex min-w-0 items-center gap-0.5 sm:gap-1.5 cursor-pointer outline-none hover:text-accent transition-colors"
           >
             <ArrowLeftRight className="h-3 w-3 shrink-0" />
             <span className="hidden lg:inline font-sans">Comparing:</span>
-            <span className="font-mono text-[#e6edf3] truncate max-w-[34px] sm:max-w-[80px] lg:max-w-[120px]">{activeBranch}</span>
-            <span className="text-[#58a6ff]/60 font-sans font-light">→</span>
+            <span className="font-mono text-foreground truncate max-w-[34px] sm:max-w-[80px] lg:max-w-[120px]">{activeBranch}</span>
+            <span className="text-accent/60 font-sans font-light">→</span>
             <CompareIcon className="h-3 w-3 shrink-0 opacity-70" />
-            <span className="font-mono text-[#e6edf3] truncate max-w-[34px] sm:max-w-[80px] lg:max-w-[120px]">{compareLabel}</span>
+            <span className="font-mono text-foreground truncate max-w-[34px] sm:max-w-[80px] lg:max-w-[120px]">{compareLabel}</span>
             <ChevronDown className="h-3 w-3 opacity-60" />
           </button>
-          <div className="hidden sm:block w-px h-3.5 bg-[#58a6ff]/30 mx-1 shrink-0" />
-          <button
+          <div className="hidden sm:block w-px h-3.5 bg-accent/30 mx-1 shrink-0" />
+          <Tooltip>
+          <TooltipTrigger
             type="button"
             onClick={() => setCompareBranch(null)}
-            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm hover:bg-[#58a6ff]/20 text-[#58a6ff]/70 hover:text-[#79c0ff] transition-colors cursor-pointer"
-            title="Exit Compare"
+            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm hover:bg-accent/20 text-accent/70 hover:text-accent transition-colors cursor-pointer"
+            aria-label="Exit Compare"
           >
             <X className="h-3.5 w-3.5" />
-          </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Exit Compare</TooltipContent>
+          </Tooltip>
         </div>
       ) : (
-        <button
+        <Tooltip>
+        <TooltipTrigger
           type="button"
-          title={activeBranch}
           onClick={() => { setMode('switch'); setIsOpen(!isOpen); }}
-          className="flex min-w-0 items-center gap-1.5 rounded-md px-2 sm:px-2.5 py-1 text-xs font-medium text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.1)] transition-colors select-none cursor-pointer"
+          className="flex min-w-0 items-center gap-1.5 rounded-md px-2 sm:px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors select-none cursor-pointer"
         >
-          <GitBranch className="h-3.5 w-3.5 text-[#8b949e]" />
-          <span className="max-w-[56px] sm:max-w-[140px] truncate font-sans text-[#e6edf3]">{activeBranch}</span>
+          <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="max-w-[56px] sm:max-w-[140px] truncate font-sans text-foreground">{activeBranch}</span>
           <ChevronDown className={cn('h-3 w-3 transition-transform duration-200 opacity-60', isOpen && 'rotate-180')} />
-        </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">{activeBranch}</TooltipContent>
+        </Tooltip>
       )}
 
       {/* Dropdown Panel */}
@@ -173,7 +179,7 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.97 }}
             transition={{ duration: 0.12, ease: 'easeOut' }}
-            className="fixed left-2 right-2 top-14 z-[100] max-h-[calc(100dvh-4rem)] rounded-md border border-[rgba(240,246,252,0.1)] bg-[#161b22] p-1.5 shadow-2xl sm:absolute sm:left-0 sm:right-auto sm:top-auto sm:mt-2 sm:w-[min(18rem,calc(100vw-1rem))]"
+            className="fixed left-2 right-2 top-14 z-[100] max-h-[calc(100dvh-4rem)] rounded-md border border-border bg-card p-1.5 shadow-2xl sm:absolute sm:left-0 sm:right-auto sm:top-auto sm:mt-2 sm:w-[min(18rem,calc(100vw-1rem))]"
           >
             <CompareControls
               mode={mode}
@@ -185,13 +191,13 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
             {/* Search input — shown for switch mode and branch/tag compare tabs */}
             {showSearch && (
               <div className="relative mb-2">
-                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#8b949e]" />
+                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder={mode === 'switch' ? 'Filter branches...' : compareTab === 'tag' ? 'Filter tags...' : 'Select branch to compare...'}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] py-1.5 pl-8 pr-3 text-xs text-[#e6edf3] placeholder-[#8b949e] focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff]/50 transition-colors font-sans"
+                  className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/50 transition-colors font-sans"
                   autoFocus
                 />
               </div>

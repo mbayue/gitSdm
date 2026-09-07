@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Search } from 'lucide-react';
 import { useSearchStore } from '@/features/search/searchStore';
 import { useVizStore } from '@/stores/vizStore';
 import { SearchBar } from '@/features/search/SearchBar';
@@ -103,26 +103,31 @@ export function SearchPage() {
   const showEmptyHero = !hasResults && !isLoading;
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[#0d1117] font-sans">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background font-sans">
       {/* Header */}
-      <header className="flex h-12 shrink-0 items-center gap-4 border-b border-[rgba(240,246,252,0.1)] bg-[#0d1117] px-4">
+      <header className="flex h-16 shrink-0 items-center gap-4 border-b border-border bg-background px-4">
         <button
           onClick={() => navigate(`/${owner}/${repo}`)}
-          className="flex cursor-pointer items-center gap-1.5 text-xs text-[#8b949e] transition-colors duration-200 hover:text-[#e6edf3]"
+          className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground transition-colors duration-200 hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Back
         </button>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-[#e6edf3]">Semantic Search</span>
-          <span className="rounded-md border border-[rgba(240,246,252,0.1)] bg-[#161b22] px-1.5 py-0.5 text-[10px] font-medium text-[#8b949e]">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold text-foreground">Semantic Search</span>
+          <span className="rounded-md border border-border bg-card px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
             {owner}/{repo}
           </span>
         </div>
       </header>
 
       {/* Content */}
-      <main className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col overflow-y-auto p-6">
+      <main className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col overflow-y-auto px-5 py-8 sm:px-8 sm:py-12">
+        <div className="mb-8 shrink-0">
+          <p className="eyebrow mb-4"><Search className="h-3.5 w-3.5 text-accent" /> Search & discover</p>
+          <h1 className="text-3xl font-medium tracking-tight sm:text-4xl">Find the idea behind the code.</h1>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">Search by meaning, ask a question, and follow the answer to its source.</p>
+        </div>
         {/* Indexing status banner */}
         <div className="mb-4 shrink-0">
           <IndexingStatusPanel onRetry={handleIndex} />
@@ -135,7 +140,7 @@ export function SearchPage() {
             {/* Onboarding text when empty */}
             {showEmptyHero && isSearchDisabled && (
               <div className="flex flex-col gap-1 mb-4">
-                <h2 className="text-sm font-semibold text-[#e6edf3]">
+                <h2 className="text-sm font-semibold text-foreground">
                   Build an index to search this repository by meaning.
                 </h2>
               </div>
@@ -144,7 +149,7 @@ export function SearchPage() {
             {/* Mode toggle + description */}
             <div className="flex items-center gap-3 max-sm:flex-col max-sm:items-start max-sm:gap-2">
               <ModeToggle />
-              <span className="text-[11px] text-[#8b949e] transition-colors duration-200">
+              <span className="text-[11px] text-muted-foreground transition-colors duration-200">
                 {mode === 'search'
                   ? 'Find code snippets by semantic similarity.'
                   : 'Ask a repository question with source citations.'}
@@ -164,7 +169,7 @@ export function SearchPage() {
           {showEmptyHero && isIndexed && (
             <div className="mt-8 space-y-6">
               <div>
-                <h3 className="text-[10px] font-semibold text-[#8b949e] mb-3 uppercase tracking-widest">Search Examples</h3>
+                <h3 className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Search Examples</h3>
                 <div className="flex flex-col sm:flex-row flex-wrap gap-2">
                   {[
                     "How are API errors handled?",
@@ -177,7 +182,7 @@ export function SearchPage() {
                         useSearchStore.getState().setQuery(example);
                         handleSubmit(example);
                       }}
-                      className="px-3 py-1.5 text-xs text-[#e6edf3] bg-[#161b22] border border-[rgba(240,246,252,0.1)] rounded-md hover:border-[rgba(240,246,252,0.3)] hover:bg-[rgba(240,246,252,0.05)] transition-all text-left"
+                      className="px-3 py-1.5 text-xs text-foreground bg-card border border-border rounded-md hover:border-ring/50 hover:bg-secondary transition-all text-left"
                     >
                       {example}
                     </button>
@@ -187,23 +192,23 @@ export function SearchPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <h3 className="text-[10px] font-semibold text-[#8b949e] mb-3 uppercase tracking-widest">Recent Queries</h3>
-                  <div className="text-[11px] text-[#8b949e] italic p-3 border border-[rgba(240,246,252,0.1)] rounded-md bg-[#0d1117] flex items-center justify-center h-[76px]">
+                  <h3 className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Recent Queries</h3>
+                  <div className="text-[11px] text-muted-foreground italic p-3 border border-border rounded-md bg-background flex items-center justify-center h-[76px]">
                     No recent queries yet.
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-[10px] font-semibold text-[#8b949e] mb-3 uppercase tracking-widest">Index Details</h3>
-                  <div className="text-[11px] text-[#e6edf3] p-3 border border-[rgba(240,246,252,0.1)] rounded-md bg-[#161b22] h-[76px] flex flex-col justify-center space-y-2">
+                  <h3 className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Index Details</h3>
+                  <div className="text-[11px] text-foreground p-3 border border-border rounded-md bg-card h-[76px] flex flex-col justify-center space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-[#8b949e]">Status</span>
+                      <span className="text-muted-foreground">Status</span>
                       <span className="flex items-center gap-1.5 text-ui-active-text-green font-medium">
                         <span className="h-1.5 w-1.5 rounded-full bg-ui-active-text-green shadow-[0_0_8px_rgba(230,237,243,0.4)]" />
                         Ready
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-[#8b949e]">Chunks Indexed</span>
+                      <span className="text-muted-foreground">Chunks Indexed</span>
                       <span className="font-mono text-xs">{indexingStatus.chunkCount}</span>
                     </div>
                   </div>
@@ -214,7 +219,7 @@ export function SearchPage() {
 
           {/* Error */}
           {error && (
-            <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-300">
+            <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
               {error}
             </div>
           )}
@@ -225,7 +230,7 @@ export function SearchPage() {
             mode === 'search' &&
             results.length === 0 &&
             searchMutation.isSuccess && (
-              <div className="py-8 text-sm text-[#8b949e] flex justify-center">
+              <div className="py-8 text-sm text-muted-foreground flex justify-center">
                 No matching code found. Try broader terms or switch to Ask mode.
               </div>
             )}

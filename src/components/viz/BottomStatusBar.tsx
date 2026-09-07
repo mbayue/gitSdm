@@ -1,3 +1,4 @@
+import { TooltipHint } from '@/components/ui/tooltip';
 import { GitBranch } from 'lucide-react';
 import { useVizStore } from '@/stores/vizStore';
 import type { RepoAnalysis } from '@/types';
@@ -29,65 +30,62 @@ export function BottomStatusBar({
   const zoomPct = activeView === 'graph' ? Math.round(zoom * 100) : 100;
 
   return (
-    <footer className="relative z-40 flex h-7 shrink-0 items-center justify-between border-t border-[rgba(240,246,252,0.1)] bg-[#0d1117] px-4 text-[10px] text-[#8b949e] select-none font-mono">
+    <footer className="workspace-status relative z-40 flex h-8 shrink-0 items-center justify-between border-t border-border bg-background px-4 text-xs text-muted-foreground select-none font-mono">
       {/* Left Group */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
         {/* Branch chip */}
-        <div className="flex items-center gap-1.5 text-[#8b949e]">
-          <GitBranch className="h-3 w-3 text-[#8b949e] shrink-0" />
-          <span className="font-medium text-[#e6edf3] font-mono">{branchName}</span>
+        <div className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
+          <GitBranch className="h-3 w-3 text-muted-foreground shrink-0" />
+          <TooltipHint content={branchName}><span className="max-w-24 truncate font-medium text-foreground font-mono sm:max-w-40">{branchName}</span></TooltipHint>
         </div>
 
-        <span className="text-[#30363d] font-light select-none">|</span>
+        <span className="text-border font-light select-none">|</span>
 
 
         {/* Selection Status */}
-        {selectedNodeId ? (
+        {selectedNodeId || focusedFilePath ? (
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-[9px] font-bold uppercase tracking-wider text-[#8b949e] shrink-0 font-sans hidden sm:inline">
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground shrink-0 font-sans hidden sm:inline">
               SELECTED
             </span>
-            <span className="truncate font-mono text-[#e6edf3] text-[10px] max-w-[180px] sm:max-w-[320px] md:max-w-[480px] lg:max-w-[720px]" title={focusedFilePath || selectedNodeId}>
+            <TooltipHint content={focusedFilePath || selectedNodeId || undefined}><span className="truncate font-mono text-foreground text-xs">
               {focusedFilePath || selectedNodeId}
-            </span>
+            </span></TooltipHint>
           </div>
         ) : (
-          <span className="text-[#8b949e] italic truncate font-sans text-[10px] hidden sm:inline">
-            No element selected
+          <span className="text-muted-foreground italic truncate font-sans text-xs hidden sm:inline">
+            {activeView === 'graph' ? 'Select a file or node to inspect' : activeView === 'architecture' ? 'Architecture' : activeView === 'contributors' ? 'Contributors' : 'Commit history'}
           </span>
         )}
       </div>
 
-      {/* Spacer */}
-      <div className="flex-1" />
-
       {/* Right Group */}
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="ml-3 flex items-center gap-3 shrink-0">
         {/* Graph Node/Edge Stats */}
-        {totalNodeCount > 0 && (
-          <div className="hidden sm:flex items-center gap-1.5 text-[#8b949e] text-[10px]">
+        {activeView === 'graph' && totalNodeCount > 0 && (
+          <div role="status" className="flex items-center gap-1.5 text-muted-foreground text-xs">
             <span>{visibleNodeCount} / {totalNodeCount} nodes</span>
-            <span className="text-[#30363d] font-light">·</span>
-            <span>{visibleEdgeCount} / {totalEdgeCount} edges</span>
+            <span className="hidden sm:inline text-border font-light">·</span>
+            <span className="hidden sm:inline">{visibleEdgeCount} / {totalEdgeCount} edges</span>
           </div>
         )}
 
         {activeView === 'graph' && (
           <>
-            <span className="hidden sm:inline text-[#30363d] font-light select-none">|</span>
+            <span className="hidden sm:inline text-border font-light select-none">|</span>
             
             {/* Minimap Status */}
-            <div className="text-[#8b949e] text-[10px]">
+            <div className="hidden md:block text-muted-foreground text-xs">
               <span>Minimap:</span>{' '}
-              <span className={cn('font-medium', showMinimap ? 'text-[#e6edf3]' : 'text-[#8b949e]')}>
+              <span className={cn('font-medium', showMinimap ? 'text-foreground' : 'text-muted-foreground')}>
                 {showMinimap ? 'On' : 'Off'}
               </span>
             </div>
 
-            <span className="text-[#30363d] font-light select-none">|</span>
+            <span className="hidden md:inline text-border font-light select-none">|</span>
 
             {/* Zoom Status */}
-            <div className="text-[#e6edf3] font-mono text-[10px] font-medium">
+            <div className="text-foreground font-mono text-xs font-medium">
               {zoomPct}%
             </div>
           </>

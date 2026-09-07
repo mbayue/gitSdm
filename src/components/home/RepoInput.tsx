@@ -1,106 +1,144 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { GitBranch } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { getVisibleRepoPresets } from '@/components/home/repoPresets';
-import { fetchAppConfig } from '@/lib/apiClient';
-import { parseRepoFromUrl, LAST_REPO_KEY } from '@/lib/utils';
+import { useState, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, GitBranch } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/Input";
+import { getVisibleRepoPresets } from "@/components/home/repoPresets";
+import { fetchAppConfig } from "@/lib/apiClient";
+import { parseRepoFromUrl, LAST_REPO_KEY } from "@/lib/utils";
 
 interface RepoInputProps {
   initialUrl?: string;
 }
 
-export { REPO_PRESETS as PRESETS } from '@/components/home/repoPresets';
+export { REPO_PRESETS as PRESETS } from "@/components/home/repoPresets";
 
-export function RepoInput({ initialUrl = '' }: RepoInputProps) {
+export function RepoInput({ initialUrl = "" }: RepoInputProps) {
   const [url, setUrl] = useState(initialUrl);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   const { data: config } = useQuery({
-    queryKey: ['appConfig'],
+    queryKey: ["appConfig"],
     queryFn: fetchAppConfig,
     staleTime: 1000 * 60 * 60,
   });
 
-  const showMockPresets = config?.aiProvider === 'mock';
+  const showMockPresets = config?.aiProvider === "mock";
 
   const presets = useMemo(
     () => getVisibleRepoPresets(showMockPresets),
     [showMockPresets],
   );
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    const parsed = parseRepoFromUrl(url);
+  const openRepository = (value: string) => {
+    setError("");
+    const parsed = parseRepoFromUrl(value.trim());
     if (!parsed) {
-      setError('Enter a valid GitHub URL or owner/repo (e.g. facebook/react)');
+      setError("Enter a valid GitHub URL or owner/repo (e.g. facebook/react)");
+      inputRef.current?.focus();
       return;
     }
 
-    localStorage.setItem(LAST_REPO_KEY, url);
+    localStorage.setItem(LAST_REPO_KEY, value.trim());
     setLoading(true);
 
     try {
       navigate(`/${parsed.owner}/${parsed.repo}`, {
-        state: { pendingUrl: url },
+        state: { pendingUrl: value.trim() },
       });
     } catch {
-      setError('Failed to navigate');
+      setError("Failed to navigate");
       setLoading(false);
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    openRepository(url);
+  };
+
   const handlePreset = (repo: string) => {
-    setUrl(`https://github.com/${repo}`);
-    setError('');
+    const presetUrl = `https://github.com/${repo}`;
+    setUrl(presetUrl);
+    openRepository(presetUrl);
   };
 
   return (
     <div className="w-full max-w-2xl scroll-mt-20 px-0">
       <div className="flex flex-col gap-3">
-        <form onSubmit={handleSubmit} className="flex gap-2 items-center w-full">
+        <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3">
+          <label
+            htmlFor="repository-url"
+            className="text-sm font-medium text-foreground"
+          >
+            GitHub repository
+          </label>
           <div className="relative flex-1">
-            <GitBranch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8b949e]" />
-            <input
+            <GitBranch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id="repository-url"
+              ref={inputRef}
+              aria-invalid={!!error}
+              aria-describedby={error ? "repository-error" : "repository-hint"}
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e) => {
+                setUrl(e.target.value);
+                if (error) setError("");
+              }}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               placeholder="github.com/owner/repo"
-              className="h-10 w-full rounded-md border border-[rgba(240,246,252,0.1)] bg-[#0d1117] pl-10 pr-4 text-sm text-[#e6edf3] placeholder-[#30363d] outline-none focus:border-[#1f6feb] transition-all"
+              className="h-12 border-border bg-background pl-10 pr-4 text-base text-foreground focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/20 md:text-base dark:bg-background"
               disabled={loading}
             />
           </div>
           <Button
             type="submit"
-            disabled={loading}
-            className="h-10 bg-[#238636] hover:bg-[#2ea043] text-white border-0 text-sm font-semibold px-6"
+            disabled={loading || !url.trim()}
+            className="h-12 justify-between rounded-lg border-0 bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-ui-primary-hover"
           >
             {loading ? (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              <span role="status" className="flex items-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Opening repository…
+              </span>
             ) : (
-              'Analyze'
+              <>
+                Analyze repository <ArrowRight className="h-4 w-4" />
+              </>
             )}
           </Button>
         </form>
 
+        <p id="repository-hint" className="text-xs leading-5 text-muted-foreground">
+          Accepts a GitHub URL or owner/repository.
+        </p>
+
         {error && (
-          <p className="px-1 text-xs text-[#f85149]">
+          <p
+            id="repository-error"
+            role="alert"
+            className="text-sm text-destructive"
+          >
             {error}
           </p>
         )}
 
         {/* Example chips */}
-        <div className="flex flex-wrap items-center gap-2 px-1">
-          <span className="text-[10px] font-bold text-[#8b949e] uppercase tracking-wider mr-1">Examples:</span>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="w-full text-sm text-muted-foreground">Open an example</span>
           {presets.slice(0, 3).map((item) => (
             <button
               key={item.repo}
               type="button"
               onClick={() => handlePreset(item.repo)}
-              className="px-2 py-0.5 rounded border border-[rgba(240,246,252,0.1)] bg-[#161b22] text-[11px] text-[#8b949e] hover:text-[#e6edf3] hover:border-[#8b949e] transition-all cursor-pointer"
+              disabled={loading}
+              className="min-h-10 cursor-pointer rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground transition-colors hover:border-accent hover:bg-secondary disabled:opacity-50"
             >
               {item.label}
             </button>

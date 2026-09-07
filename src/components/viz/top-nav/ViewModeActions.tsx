@@ -14,7 +14,7 @@ interface ViewModeActionsProps {
 export function ViewModeActions({ activeView, workspaceMode, onViewChange, onWorkspaceModeChange, onClose }: ViewModeActionsProps) {
   return (
     <>
-      <div className="px-2.5 py-1 text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider font-mono select-none">
+      <div className="px-2.5 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider font-mono select-none">
         View mode
       </div>
       {VIEW_TABS.map((item) => {
@@ -26,20 +26,20 @@ export function ViewModeActions({ activeView, workspaceMode, onViewChange, onWor
             onClick={() => { onViewChange(item.id); onClose(); }}
             className={cn(
               'flex w-full cursor-pointer items-center justify-between rounded-sm px-2.5 py-1.5 text-left text-xs transition-colors',
-              isSelected ? 'bg-[#1c2128] text-[#e6edf3] font-medium' : 'text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3]',
+              isSelected ? 'bg-popover text-foreground font-medium' : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
             )}
           >
             <div className="flex items-center gap-2">
-              <item.icon className={cn('h-3.5 w-3.5', isSelected ? 'text-[#e6edf3]' : 'text-[#8b949e]')} />
+              <item.icon className={cn('h-3.5 w-3.5', isSelected ? 'text-foreground' : 'text-muted-foreground')} />
               <span>{item.label}</span>
             </div>
-            {isSelected && <Check className="h-3.5 w-3.5 text-[#e6edf3]" />}
+            {isSelected && <Check className="h-3.5 w-3.5 text-foreground" />}
           </button>
         );
       })}
 
-      <div className="my-1.5 h-px bg-[rgba(240,246,252,0.1)]" />
-      <div className="px-2.5 py-1 text-[9px] font-semibold text-[#8b949e] uppercase tracking-wider font-mono select-none">
+      <div className="my-1.5 h-px bg-secondary" />
+      <div className="px-2.5 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider font-mono select-none">
         Workspace Layout
       </div>
       {WORKSPACE_MODES.map((item) => {
@@ -51,14 +51,14 @@ export function ViewModeActions({ activeView, workspaceMode, onViewChange, onWor
             onClick={() => { onWorkspaceModeChange(item.id); onClose(); }}
             className={cn(
               'flex w-full cursor-pointer items-center justify-between rounded-sm px-2.5 py-1.5 text-left text-xs transition-colors',
-              isSelected ? 'bg-[#1c2128] text-[#e6edf3] font-medium' : 'text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3]',
+              isSelected ? 'bg-popover text-foreground font-medium' : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
             )}
           >
             <div className="flex items-center gap-2">
-              <item.icon className={cn('h-3.5 w-3.5', isSelected ? 'text-[#e6edf3]' : 'text-[#8b949e]')} />
+              <item.icon className={cn('h-3.5 w-3.5', isSelected ? 'text-foreground' : 'text-muted-foreground')} />
               <span>{item.label}</span>
             </div>
-            {isSelected && <Check className="h-3.5 w-3.5 text-[#e6edf3]" />}
+            {isSelected && <Check className="h-3.5 w-3.5 text-foreground" />}
           </button>
         );
       })}

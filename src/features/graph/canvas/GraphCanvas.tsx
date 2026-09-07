@@ -12,6 +12,7 @@ import { NetworkCanvas } from "./ForceGraphCanvas";
 import { useGraphCanvasState } from "./hooks/useGraphCanvasState";
 import { ToolbarDropdowns } from "./ToolbarDropdowns";
 import { FloatingGraphControls } from "./widgets/FloatingGraphControls";
+import { GraphFilterSummary } from "./widgets/GraphFilterSummary";
 import { useGraphExport } from "../useGraphExport";
 import type { ForceGraphMethods } from "react-force-graph-2d";
 import type { ForceGraphNode, ForceGraphLink } from "../force/forceGraphConstants";
@@ -53,6 +54,8 @@ export function GraphCanvas({
     setSizeMode,
     layoutType,
     setLayoutType,
+    selectedNodeId,
+    resetFilters,
   } = useVizStore();
 
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -93,11 +96,19 @@ export function GraphCanvas({
   const isEmpty = filtered.nodes.length === 0;
 
   return (
-    <div className="graph-canvas-host h-full w-full relative">
+    <div className="graph-canvas-host flex h-full w-full flex-col relative">
       {!hideChrome && (
         <>
           {/* Attached Main Graph Action Toolbar */}
-          <div ref={toolbarRef} className="absolute top-0 left-0 z-30 flex h-10 items-center gap-1 border-r border-b border-[rgba(240,246,252,0.1)] bg-[#0d1117] px-3 rounded-br-md select-none font-sans">
+          <div ref={toolbarRef} role="group" aria-label="Graph controls"
+            onKeyDown={(event) => {
+              if (event.key !== 'Escape' || !activeDropdown) return;
+              event.preventDefault();
+              event.stopPropagation();
+              toolbarRef.current?.querySelector<HTMLButtonElement>('button[aria-expanded="true"]')?.focus();
+              setActiveDropdown(null);
+            }}
+            className="graph-toolbar relative z-30 flex shrink-0 flex-wrap items-center gap-1 border-b border-border bg-card px-2 py-1.5 select-none font-sans">
             <ToolbarDropdowns
               activeDropdown={activeDropdown}
               setActiveDropdown={setActiveDropdown}
@@ -111,6 +122,7 @@ export function GraphCanvas({
               blastRadiusActive={blastRadiusActive}
               setBlastRadiusActive={setBlastRadiusActive}
               handleExport={handleExport}
+              exportDisabled={isEmpty || isExporting}
               graphScope={graphScope}
               setGraphScope={setGraphScope}
               contentFilters={contentFilters}
@@ -121,41 +133,43 @@ export function GraphCanvas({
               setSizeMode={setSizeMode}
               layoutType={layoutType}
               setLayoutType={setLayoutType}
+              nodeColors={Object.fromEntries(graph.nodes.filter((node) => node.type !== 'file' && node.data.nodeColor).map((node) => [node.type, node.data.nodeColor]))}
             />
           </div>
+          <GraphFilterSummary
+            selectionHidden={!!selectedNodeId && graph.nodes.some((node) => node.id === selectedNodeId) && !filtered.nodes.some((node) => node.id === selectedNodeId)} />
 
-          {/* Floating Graph Controls */}
-          <FloatingGraphControls showMinimap={!!showMinimap} setShowMinimap={setShowMinimap || (() => {})} />
         </>
       )}
 
-      <>
+      <div className="relative min-h-0 flex-1">
+        {!hideChrome && <FloatingGraphControls showMinimap={!!showMinimap} setShowMinimap={setShowMinimap || (() => {})} />}
         {isLoading && (
-          <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-sm select-none">
+          <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-background backdrop-blur-sm select-none">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-ui-active-text-green border-t-transparent" />
-            <span className="mt-3 text-xs text-zinc-400 font-medium">
+            <span className="mt-3 text-xs text-muted-foreground font-medium">
               Laying out dependency graph...
             </span>
           </div>
         )}
         {isExporting && (
-          <div className="absolute inset-0 z-[200] flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-md select-none">
+          <div className="absolute inset-0 z-[200] flex flex-col items-center justify-center bg-background backdrop-blur-md select-none">
             <Loader2 className="h-8 w-8 animate-spin text-ui-active-text-green" />
-            <span className="mt-3 text-xs text-zinc-400 font-medium font-mono">
+            <span className="mt-3 text-xs text-muted-foreground font-medium font-mono">
               Generating high-res {exportFormat?.toUpperCase()}...
             </span>
           </div>
         )}
         {!isLoading && isEmpty && (
-          <div className="absolute inset-0 z-[5] flex flex-col items-center justify-center bg-[#0f0f1a]">
-            <div className="pointer-events-none rounded-xl border border-white/10 bg-[#1a1a2e]/80 px-6 py-5 text-center backdrop-blur-md select-none">
-              <div className="text-sm font-semibold text-zinc-300">
+          <div className="absolute inset-0 z-[5] flex flex-col items-center justify-center bg-background">
+            <div className="mx-4 rounded-xl border border-border bg-card px-6 py-5 text-center backdrop-blur-md select-none">
+              <div className="text-sm font-semibold text-foreground">
                 No nodes match current filters
               </div>
-              <div className="mt-1.5 text-[11px] text-zinc-500 font-mono">
-                Try re-enabling node type or diff status filters in the analysis
-                panel.
+              <div className="mt-1.5 max-w-xs text-sm text-muted-foreground">
+                Open Filter above to adjust node types, scope, or comparison status.
               </div>
+              <button type="button" onClick={resetFilters} className="mt-4 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-ui-primary-hover">Reset filters</button>
             </div>
           </div>
         )}
@@ -166,7 +180,7 @@ export function GraphCanvas({
           forceGraphRef={forceGraphRef}
           forceHostRef={forceHostRef}
         />
-      </>
+      </div>
     </div>
   );
 }

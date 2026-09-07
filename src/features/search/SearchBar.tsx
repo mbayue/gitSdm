@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { Search, Loader2, Clock } from 'lucide-react';
 import { useSearchStore } from './searchStore';
 import { clsx } from 'clsx';
+import { TooltipHint } from '@/components/ui/tooltip';
 
 interface SearchBarProps {
   onSubmit: (query: string) => void;
@@ -41,15 +42,17 @@ export function SearchBar({ onSubmit, disabled }: SearchBarProps) {
       </label>
 
       <form onSubmit={handleSubmit} className="relative">
+        <TooltipHint content={disabled ? 'Index the repository first to enable search' : undefined}>
         <div
+          tabIndex={disabled ? 0 : undefined}
           className={clsx(
-            'flex items-center rounded-md border bg-[#0d1117] transition-all duration-200',
+            'flex items-center rounded-md border bg-background transition-all duration-200',
             disabled
-              ? 'border-[rgba(240,246,252,0.1)] opacity-60'
-              : 'border-[rgba(240,246,252,0.1)] focus-within:border-[#58a6ff] focus-within:ring-1 focus-within:ring-[#58a6ff]',
+              ? 'border-border opacity-60'
+              : 'border-border focus-within:border-accent focus-within:ring-1 focus-within:ring-accent',
           )}
         >
-          <Search className="ml-3.5 h-4 w-4 shrink-0 text-[#8b949e]" />
+          <Search className="ml-3.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <input
             ref={inputRef}
             id="search-input"
@@ -61,9 +64,8 @@ export function SearchBar({ onSubmit, disabled }: SearchBarProps) {
             placeholder={useSearchStore.getState().mode === 'search' ? "Search code by meaning..." : "Ask how this repository works..."}
             maxLength={500}
             disabled={disabled || isLoading}
-            title={disabled ? 'Index the repository first to enable search' : undefined}
             className={clsx(
-              'w-full bg-transparent px-3 py-2 text-sm text-[#e6edf3] placeholder:text-[#8b949e] focus:outline-none',
+              'w-full bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none',
               disabled && 'cursor-not-allowed opacity-70',
             )}
           />
@@ -73,28 +75,29 @@ export function SearchBar({ onSubmit, disabled }: SearchBarProps) {
             disabled={disabled || isLoading || query.trim().length < 3}
             className={clsx(
               'mr-2 shrink-0 cursor-pointer rounded-md px-3 py-1 text-xs font-medium transition-all duration-200',
-              'bg-[#161b22] text-[#e6edf3] border border-[rgba(240,246,252,0.1)] hover:border-[rgba(240,246,252,0.3)] hover:bg-[rgba(240,246,252,0.05)]',
+              'bg-card text-foreground border border-border hover:border-ring/50 hover:bg-secondary',
               'disabled:cursor-not-allowed disabled:opacity-40',
             )}
           >
             {isLoading ? 'Searching…' : 'Go'}
           </button>
         </div>
+        </TooltipHint>
       </form>
 
       {/* Recent queries dropdown */}
       {showRecent && recentQueries.length > 0 && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-md border border-[rgba(240,246,252,0.1)] bg-[#161b22] py-1 shadow-xl">
-          <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-[#8b949e]">
+        <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-md border border-border bg-card py-1 shadow-xl">
+          <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
             Recent
           </div>
           {recentQueries.map((q) => (
             <button
               key={q}
               onClick={() => handleRecentClick(q)}
-              className="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left text-sm text-[#e6edf3] transition-colors duration-200 hover:bg-[#0d1117]"
+              className="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left text-sm text-foreground transition-colors duration-200 hover:bg-background"
             >
-              <Clock className="h-3 w-3 shrink-0 text-[#8b949e]" />
+              <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />
               <span className="truncate">{q}</span>
             </button>
           ))}

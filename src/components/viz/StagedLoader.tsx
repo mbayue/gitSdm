@@ -85,7 +85,7 @@ export function StagedLoader({ owner, repo }: StagedLoaderProps) {
   const StageIcon = currentStage.icon;
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-zinc-950 p-6">
+    <div className="flex flex-1 flex-col items-center justify-center bg-background p-6">
       {/* Ambient glow */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="h-80 w-80 rounded-full bg-ui-active/10 blur-[100px]" />
@@ -98,27 +98,27 @@ export function StagedLoader({ owner, repo }: StagedLoaderProps) {
         className="relative w-full max-w-[420px]"
       >
         {/* Glow border */}
-        <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-ui-active/20 via-transparent to-[#58a6ff]/20 blur-sm" />
+        <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-ui-active/20 via-transparent to-accent/20 blur-sm" />
 
-        <div className="relative rounded-2xl border border-white/[0.07] bg-zinc-900/70 p-7 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-xl">
+        <div className="relative rounded-2xl border border-border bg-card p-7 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-xl">
           {/* Header */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-bold tracking-widest text-ui-active-text-green uppercase">
+              <span className="text-xs font-bold tracking-widest text-ui-active-text-green uppercase">
                 Loading Repository
               </span>
-              <span className="text-[10px] font-mono text-zinc-500">{Math.floor(progress)}%</span>
+              <span className="text-xs font-mono text-muted-foreground">{Math.floor(progress)}%</span>
             </div>
 
-            <h3 className="text-base font-semibold text-white truncate">
+            <h3 className="text-base font-semibold text-foreground truncate">
               Analyzing{' '}
-              <span className="text-[#e6edf3] font-mono">{owner}/{repo}</span>
+              <span className="text-foreground font-mono">{owner}/{repo}</span>
             </h3>
 
             {/* Progress bar */}
-            <div className="mt-3 h-1 w-full rounded-full bg-white/5 overflow-hidden">
+            <div className="mt-3 h-1 w-full rounded-full bg-secondary overflow-hidden">
               <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-ui-active-text-green via-[#388bfd] to-[#58a6ff]"
+                className="h-full rounded-full bg-gradient-to-r from-ui-active-text-green via-accent to-accent"
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
                 transition={{ ease: 'easeOut' }}
@@ -140,8 +140,8 @@ export function StagedLoader({ owner, repo }: StagedLoaderProps) {
                 <StageIcon className="h-4 w-4 text-ui-active-text-green" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-white">{currentStage.label}</p>
-                <p className="text-[10px] text-zinc-500 mt-0.5 truncate">{currentStage.sublabel}</p>
+                <p className="text-xs font-semibold text-foreground">{currentStage.label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">{currentStage.sublabel}</p>
               </div>
               <Loader2 className="h-4 w-4 shrink-0 animate-spin text-ui-active-text-green ml-auto" />
             </motion.div>
@@ -160,21 +160,21 @@ export function StagedLoader({ owner, repo }: StagedLoaderProps) {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.07 }}
-                  className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors ${isActive ? 'bg-white/[0.03]' : ''
+                  className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors ${isActive ? 'bg-secondary' : ''
                     }`}
                 >
                   <div className="shrink-0">
                     {isDone ? (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                      <CheckCircle2 className="h-4 w-4 text-success" />
                     ) : isActive ? (
                       <div className="h-4 w-4 rounded-full border-2 border-ui-active-text-green/30 border-t-ui-active-text-green animate-spin" />
                     ) : (
-                      <Icon className="h-4 w-4 text-zinc-700" />
+                      <Icon className="h-4 w-4 text-muted-foreground" />
                     )}
                   </div>
-                  <span className={`text-xs font-medium transition-colors ${isDone ? 'text-zinc-600 line-through decoration-zinc-700'
-                      : isActive ? 'text-white'
-                        : 'text-zinc-700'
+                  <span className={`text-xs font-medium transition-colors ${isDone ? 'text-muted-foreground line-through decoration-muted-foreground'
+                      : isActive ? 'text-foreground'
+                        : 'text-muted-foreground'
                     }`}>
                     {stage.label}
                   </span>

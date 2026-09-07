@@ -83,7 +83,7 @@ export function useArchitectureExport(
     if (!svgEl) return;
     try {
       const dataUrl = await toPng(svgEl as unknown as HTMLElement, {
-        backgroundColor: '#09090b',
+        backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--background').trim(),
         quality: 0.95,
         pixelRatio: 2,
       });
