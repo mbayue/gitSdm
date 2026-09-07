@@ -43,6 +43,38 @@ export function resolveRepoNavigation(value: string): RepoNavigation | null {
   };
 }
 
+export type OpenRepositoryResult =
+  | { ok: true; nav: RepoNavigation }
+  | { ok: false; error: string };
+
+/**
+ * Pure decision logic for opening a repository from raw input.
+ * Returns the navigation target or the error message to display —
+ * no side effects, so both the submit flow and the preset-click flow
+ * (`handlePreset` → `openRepository`) are unit-testable.
+ */
+export function resolveOpenRepository(value: string): OpenRepositoryResult {
+  const nav = resolveRepoNavigation(value);
+  if (!nav) {
+    return {
+      ok: false,
+      error: 'Enter a valid GitHub URL or owner/repo (e.g. facebook/react)',
+    };
+  }
+  return { ok: true, nav };
+}
+
+/**
+ * Resolve a preset slug (e.g. `facebook/react`) to the navigation that a
+ * preset click performs. Preset clicks navigate immediately — they don't
+ * just fill the input — so this composes `getPresetUrl` with the same
+ * resolution `openRepository` uses, and is covered by interaction-contract
+ * tests in `RepoInput.test.ts`.
+ */
+export function resolvePresetNavigation(repo: string): OpenRepositoryResult {
+  return resolveOpenRepository(getPresetUrl(repo));
+}
+
 export function RepoInput({ initialUrl = "" }: RepoInputProps) {
   const [url, setUrl] = useState(initialUrl);
   const [error, setError] = useState("");
@@ -65,12 +97,13 @@ export function RepoInput({ initialUrl = "" }: RepoInputProps) {
 
   const openRepository = (value: string) => {
     setError("");
-    const nav = resolveRepoNavigation(value);
-    if (!nav) {
-      setError("Enter a valid GitHub URL or owner/repo (e.g. facebook/react)");
+    const result = resolveOpenRepository(value);
+    if (!result.ok) {
+      setError(result.error);
       inputRef.current?.focus();
       return;
     }
+    const nav = result.nav;
 
     localStorage.setItem(LAST_REPO_KEY, nav.pendingUrl);
     setLoading(true);
@@ -93,6 +126,7 @@ export function RepoInput({ initialUrl = "" }: RepoInputProps) {
   const handlePreset = (repo: string) => {
     // Preset clicks navigate immediately ("Open an example"), they don't
     // just fill the input. Keep the input in sync for context.
+    // Navigation target resolved via resolvePresetNavigation (unit-tested).
     const presetUrl = getPresetUrl(repo);
     setUrl(presetUrl);
     openRepository(presetUrl);

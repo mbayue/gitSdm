@@ -157,18 +157,35 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
           </Tooltip>
         </div>
       ) : (
-        <Tooltip>
-        <TooltipTrigger
-          type="button"
-          onClick={() => { setMode('switch'); setIsOpen(!isOpen); }}
-          className="flex min-w-0 items-center gap-1.5 rounded-md px-2 sm:px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors select-none cursor-pointer"
-        >
-          <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="max-w-[56px] sm:max-w-[140px] truncate font-sans text-foreground">{activeBranch}</span>
-          <ChevronDown className={cn('h-3 w-3 transition-transform duration-200 opacity-60', isOpen && 'rotate-180')} />
-        </TooltipTrigger>
-        <TooltipContent side="bottom">{!isOpen && activeBranch}</TooltipContent>
-        </Tooltip>
+        // The tooltip is only rendered while the dropdown is closed: when the
+        // panel is open the full branch name is already visible inside it, and
+        // a hover tooltip would overlap the panel's top (search/selector area).
+        isOpen ? (
+          <button
+            type="button"
+            onClick={() => { setMode('switch'); setIsOpen(!isOpen); }}
+            aria-expanded={isOpen}
+            className="flex min-w-0 items-center gap-1.5 rounded-md px-2 sm:px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors select-none cursor-pointer"
+          >
+            <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="max-w-[56px] sm:max-w-[140px] truncate font-sans text-foreground">{activeBranch}</span>
+            <ChevronDown className={cn('h-3 w-3 transition-transform duration-200 opacity-60', isOpen && 'rotate-180')} />
+          </button>
+        ) : (
+          <Tooltip>
+          <TooltipTrigger
+            type="button"
+            onClick={() => { setMode('switch'); setIsOpen(!isOpen); }}
+            aria-expanded={isOpen}
+            className="flex min-w-0 items-center gap-1.5 rounded-md px-2 sm:px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors select-none cursor-pointer"
+          >
+            <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="max-w-[56px] sm:max-w-[140px] truncate font-sans text-foreground">{activeBranch}</span>
+            <ChevronDown className={cn('h-3 w-3 transition-transform duration-200 opacity-60', isOpen && 'rotate-180')} />
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{activeBranch}</TooltipContent>
+          </Tooltip>
+        )
       )}
 
       {/* Dropdown Panel */}

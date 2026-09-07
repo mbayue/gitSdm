@@ -1,10 +1,12 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import {
   GitBranch,
   Move,
   Network,
 } from "lucide-react";
 import { demoGraph } from "@/features/graph/demoGraph";
+import { useVizStore } from "@/stores/vizStore";
+import type { NodeType } from "@/types";
 
 const GraphCanvas = lazy(() =>
   import("@/features/graph/canvas/GraphCanvas").then((module) => ({
@@ -12,7 +14,46 @@ const GraphCanvas = lazy(() =>
   })),
 );
 
+/**
+ * Presentation slices of the shared viz store that would otherwise leak a
+ * repo-workspace session (filters, scope, layout, overlays) into the
+ * homepage sample graph. While the preview is mounted these are pinned to
+ * neutral demo values and restored on unmount, so the sample always renders
+ * consistently no matter what the user toggled elsewhere.
+ */
+const DEMO_NODE_TYPES: NodeType[] = ["repo", "package", "folder", "file"];
+
 export function HomeGraphPreview() {
+  const visibleNodeCount = useVizStore((s) => s.visibleNodeCount);
+  const visibleEdgeCount = useVizStore((s) => s.visibleEdgeCount);
+
+  useEffect(() => {
+    const store = useVizStore.getState();
+    const snapshot = {
+      nodeTypeFilters: store.nodeTypeFilters,
+      fileTypeFilters: store.fileTypeFilters,
+      graphScope: store.graphScope,
+      contentFilters: store.contentFilters,
+      colorMode: store.colorMode,
+      sizeMode: store.sizeMode,
+      layoutType: store.layoutType,
+    };
+    // Neutral demo presentation: everything visible, default styling/layout.
+    store.setGraphScope("full");
+    useVizStore.setState({
+      nodeTypeFilters: new Set<NodeType>(DEMO_NODE_TYPES),
+      fileTypeFilters: new Set<string>(),
+      colorMode: "default",
+      sizeMode: "default",
+      layoutType: "tree",
+    });
+    // Reset rendered counts so the footer falls back to demo totals until
+    // the preview reports its own (it renders the full demo by construction).
+    store.setVisibleCounts(0, 0);
+    return () => {
+      useVizStore.setState(snapshot);
+    };
+  }, []);
   return (
     <div id="workspace-preview" className="preview-frame scroll-mt-24">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
@@ -46,8 +87,11 @@ export function HomeGraphPreview() {
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-3 font-mono text-xs text-muted-foreground">
         <span>
-          {demoGraph.nodes.length} nodes{" "}
-          <span className="mx-2 text-border">/</span> {demoGraph.edges.length}{" "}
+          {/* Rendered counts when the preview has reported them, demo totals
+              otherwise — the footer always agrees with what is drawn. */}
+          {visibleNodeCount || demoGraph.nodes.length} nodes{" "}
+          <span className="mx-2 text-border">/</span>{" "}
+          {visibleEdgeCount || demoGraph.edges.length}{" "}
           connections
         </span>
         <span className="flex items-center gap-2">
