@@ -44,7 +44,7 @@ function getErrorMeta(errStr: string, code?: string): {
       icon: Lock,
       title: 'Repository Inaccessible',
       tip: "This repository is private or doesn't exist. gitSdm works with public repositories only.",
-      color: 'text-amber-400',
+      color: 'text-warning',
       borderColor: 'border-amber-500/20',
     };
   }
@@ -62,7 +62,7 @@ function getErrorMeta(errStr: string, code?: string): {
       icon: Wifi,
       title: 'Connection Error',
       tip: 'Could not reach GitHub API. Check your connection and try again.',
-      color: 'text-rose-400',
+      color: 'text-destructive',
       borderColor: 'border-rose-500/20',
     };
   }
@@ -70,7 +70,7 @@ function getErrorMeta(errStr: string, code?: string): {
     icon: AlertCircle,
     title: 'Analysis Failed',
     tip: 'Something went wrong. Try a different repository or refresh the page.',
-    color: 'text-red-400',
+    color: 'text-destructive',
     borderColor: 'border-red-500/20',
   };
 }
@@ -108,7 +108,7 @@ export function VizError({ error, message }: VizErrorProps) {
     : meta.tip;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-950 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       {/* Background glow */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="h-96 w-96 rounded-full bg-red-500/5 blur-[100px]" />
@@ -118,31 +118,31 @@ export function VizError({ error, message }: VizErrorProps) {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className={`relative w-full max-w-md rounded-2xl border ${meta.borderColor} bg-zinc-900/60 p-8 shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop-blur-xl text-center`}
+        className={`relative w-full max-w-md rounded-2xl border ${meta.borderColor} bg-card p-8 shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop-blur-xl text-center`}
       >
-        <div className={`mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-800/80 border border-white/5`}>
+        <div className={`mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary border border-border`}>
           <Icon className={`h-8 w-8 ${meta.color}`} />
         </div>
 
-        <h2 className="text-xl font-bold text-white mb-2">{meta.title}</h2>
-        <p className="text-sm text-zinc-400 leading-relaxed mb-2">{tipText}</p>
+        <h2 className="text-xl font-bold text-foreground mb-2">{meta.title}</h2>
+        <p className="text-sm text-muted-foreground leading-relaxed mb-2">{tipText}</p>
 
         {/* Raw error in a subtle code block */}
-        <div className="mt-4 rounded-lg bg-zinc-800/60 border border-white/5 p-3 text-left">
-          <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 block mb-1">Error details</span>
-          <p className="text-xs text-zinc-500 font-mono leading-relaxed break-words">{errStr}</p>
+        <div className="mt-4 rounded-lg bg-secondary border border-border p-3 text-left">
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground block mb-1">Error details</span>
+          <p className="text-xs text-muted-foreground font-mono leading-relaxed break-words">{errStr}</p>
         </div>
 
         {isPrivateError && (
-          <div className="mt-6 rounded-xl border border-ui-active/35 bg-gradient-to-b from-ui-active/[0.05] to-zinc-950/40 p-5 text-left shadow-lg shadow-black/20">
+          <div className="mt-6 rounded-xl border border-ui-active/35 bg-gradient-to-b from-ui-active/[0.05] to-background/40 p-5 text-left shadow-lg shadow-black/20">
             <div className="flex items-center gap-2 mb-2">
               <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-ui-active/15 text-ui-active-text-green">
                 <GitBranch className="h-3.5 w-3.5" />
               </div>
-              <span className="text-xs font-semibold text-white">Access Private Repository</span>
+              <span className="text-xs font-semibold text-foreground">Access Private Repository</span>
             </div>
             
-            <p className="text-[11px] text-zinc-400 leading-relaxed mb-3">
+            <p className="text-xs text-muted-foreground leading-relaxed mb-3">
               Add a{' '}
               <a
                 href="https://github.com/settings/tokens/new?scopes=repo&description=gitSdm%20Token"
@@ -152,7 +152,7 @@ export function VizError({ error, message }: VizErrorProps) {
               >
                 GitHub Personal Access Token (PAT)
               </a>{' '}
-              with <code className="text-[10px] text-[#e6edf3] bg-ui-active/15 px-1 py-0.5 rounded font-mono">repo</code> scope.
+              with <code className="text-xs text-foreground bg-ui-active/15 px-1 py-0.5 rounded font-mono">repo</code> scope.
             </p>
 
             <div className="relative mb-3">
@@ -161,12 +161,12 @@ export function VizError({ error, message }: VizErrorProps) {
                 value={tokenValue}
                 onChange={(e) => setTokenValue(e.target.value)}
                 placeholder="github_pat_... or ghp_..."
-                className="w-full rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-3 pr-8 font-mono text-xs text-white placeholder-zinc-600 outline-none focus:border-ui-focus/50 focus:ring-1 focus:ring-ui-focus/30 transition-all"
+                className="w-full rounded-lg border border-border bg-card py-2 pl-3 pr-8 font-mono text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-ui-focus/50 focus:ring-1 focus:ring-ui-focus/30 transition-all"
               />
               <button
                 type="button"
                 onClick={() => setShowToken((s) => !s)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
                 {showToken ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
               </button>
@@ -186,15 +186,15 @@ export function VizError({ error, message }: VizErrorProps) {
                 }}
                 className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-all ${
                   tokenValue.trim()
-                    ? 'bg-[#238636] text-white hover:bg-[#2ea043] shadow-md shadow-[#238636]/20 active:scale-[0.98]'
-                    : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20 active:scale-[0.98]'
+                    : 'bg-secondary text-muted-foreground cursor-not-allowed'
                 }`}
                 disabled={!tokenValue.trim()}
               >
                 {saved ? (
                   <>
-                    <Check className="h-3.5 w-3.5 text-green-400 animate-pulse" />
-                    <span className="text-green-400">Token Saved!</span>
+                    <Check className="h-3.5 w-3.5 text-success animate-pulse" />
+                    <span className="text-success">Token Saved!</span>
                   </>
                 ) : (
                   'Save & Retry'
@@ -207,7 +207,7 @@ export function VizError({ error, message }: VizErrorProps) {
                     setTokenValue('');
                     setStoredPat(null);
                   }}
-                  className="rounded-lg border border-white/10 bg-zinc-800/80 px-3.5 py-2 text-xs text-zinc-400 hover:bg-zinc-700 hover:text-white transition-all active:scale-[0.98]"
+                  className="rounded-lg border border-border bg-secondary px-3.5 py-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-[0.98]"
                 >
                   Clear
                 </button>

@@ -1,40 +1,47 @@
-import mermaid from 'mermaid';
+import mermaid from "mermaid";
 
-// Initialize mermaid with custom dark theme variables and premium styling overrides
-mermaid.initialize({
-  startOnLoad: false,
-  theme: 'base',
-  securityLevel: 'strict',
-  htmlLabels: false,
-  flowchart: {
-    useMaxWidth: true,
+export function configureMermaid(theme: "light" | "dark") {
+  const dark = theme === "dark";
+  const background = dark ? "#1e1e1e" : "#ffffff";
+  const surface = dark ? "#252526" : "#f3f3f3";
+  const foreground = dark ? "#d4d4d4" : "#333333";
+  const muted = dark ? "#a6a6a6" : "#616161";
+  const border = dark ? "#3c3c3c" : "#d4d4d4";
+  const accent = dark ? "#3794ff" : "#006ab1";
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: "base",
+    securityLevel: "strict",
     htmlLabels: false,
-  },
-  themeVariables: {
-    background: '#09090b',
-    primaryColor: '#238636',
-    primaryTextColor: '#f4f4f5',
-    lineColor: '#3f3f46',
-    nodeBorder: '#3f3f46',
-    mainBkg: '#18181b',
-    actorBkg: '#18181b',
-    actorBorder: '#3f3f46',
-    actorTextColor: '#f4f4f5',
-    signalColor: '#a1a1aa',
-    signalLineColor: '#3f3f46',
-    labelBoxBkgColor: '#18181b',
-    labelBoxBorderColor: '#3f3f46',
-    labelTextColor: '#f4f4f5',
-    loopBkgColor: '#18181b',
-    loopBorderColor: '#3f3f46',
-    noteBkgColor: '#18181b',
-    noteBorderColor: '#3f3f46',
-    noteTextColor: '#f4f4f5',
-  },
-  themeCSS: `
+    flowchart: {
+      useMaxWidth: true,
+      htmlLabels: false,
+    },
+    themeVariables: {
+      background,
+      primaryColor: accent,
+      primaryTextColor: foreground,
+      lineColor: border,
+      nodeBorder: border,
+      mainBkg: surface,
+      actorBkg: surface,
+      actorBorder: border,
+      actorTextColor: foreground,
+      signalColor: muted,
+      signalLineColor: border,
+      labelBoxBkgColor: surface,
+      labelBoxBorderColor: border,
+      labelTextColor: foreground,
+      loopBkgColor: surface,
+      loopBorderColor: border,
+      noteBkgColor: surface,
+      noteBorderColor: border,
+      noteTextColor: foreground,
+    },
+    themeCSS: `
  	    .node rect, .node polygon, .node circle, .node path {
-      fill: #18181b;
-      stroke: #3f3f46;
+      fill: ${surface};
+      stroke: ${border};
       stroke-width: 1.5px;
       rx: 8px;
       ry: 8px;
@@ -42,40 +49,40 @@ mermaid.initialize({
     }
     
  	    .node:hover rect, .node:hover polygon, .node:hover circle, .node:hover path {
-      fill: #242427 !important;
-      stroke: #3fb950 !important;
-      filter: drop-shadow(0 0 8px rgba(63, 185, 80, 0.45));
+      fill: ${dark ? "#37373d" : "#e8e8e8"} !important;
+      stroke: ${accent} !important;
+      filter: drop-shadow(0 0 8px ${border});
       cursor: pointer;
     }
 
     .edgePath .path {
-      stroke: #52525b !important;
+      stroke: ${muted} !important;
       stroke-width: 1.5px !important;
       transition: all 0.2s ease-in-out;
     }
     .edgePath:hover .path {
-      stroke: #3fb950 !important;
+      stroke: ${accent} !important;
       stroke-width: 2px !important;
     }
     .edgePath .markerPath {
-      fill: #52525b !important;
+      fill: ${muted} !important;
       stroke: none !important;
       transition: all 0.2s ease-in-out;
     }
     .edgePath:hover .markerPath {
-      fill: #3fb950 !important;
+      fill: ${accent} !important;
     }
 
     .cluster rect {
-      fill: rgba(24, 24, 27, 0.2) !important;
-      stroke: rgba(63, 63, 70, 0.4) !important;
+      fill: ${background} !important;
+      stroke: ${border} !important;
       stroke-width: 1.5px !important;
       rx: 12px !important;
       ry: 12px !important;
     }
     .cluster-label, .cluster-label text, .cluster-label span, .cluster-label div, .cluster-label p, .cluster-label a, .cluster-label a:visited, .cluster-label a:hover {
-      fill: #e4e4e7 !important;
-      color: #e4e4e7 !important;
+      fill: ${foreground} !important;
+      color: ${foreground} !important;
       font-family: 'Outfit', 'Inter', system-ui, sans-serif !important;
       font-weight: 600 !important;
       font-size: 11px !important;
@@ -94,8 +101,8 @@ mermaid.initialize({
 
     .node text, .node .label, .node .label text, .node .label div, .node .label span, .node span, .node div, .node a, .node a:visited, .node a:hover,
     .nodeLabel, .nodeLabel tspan, .label, .label text, .label tspan {
-      color: #f4f4f5 !important;
-      fill: #f4f4f5 !important;
+      color: ${foreground} !important;
+      fill: ${foreground} !important;
       font-family: 'Inter', system-ui, sans-serif !important;
       font-size: 11px !important;
       font-weight: 500 !important;
@@ -107,35 +114,49 @@ mermaid.initialize({
     }
 
     .node.entry rect, .node.entry polygon {
-      fill: #052e16 !important;
+      fill: ${dark ? "#123524" : "#e2f3e8"} !important;
       stroke: #10b981 !important;
       stroke-width: 2px !important;
     }
     .node.router rect, .node.router polygon {
-      fill: #18181b !important;
-      stroke: #3f3f46 !important;
+      fill: ${surface} !important;
+      stroke: ${border} !important;
     }
     .node.service rect, .node.service polygon {
-      fill: #18181b !important;
-      stroke: #52525b !important;
+      fill: ${surface} !important;
+      stroke: ${muted} !important;
     }
     .node.util rect, .node.util polygon {
-      fill: #18181b !important;
-      stroke: #71717a !important;
+      fill: ${surface} !important;
+      stroke: ${muted} !important;
     }
     .node.db rect, .node.db polygon {
-      fill: #451a03 !important;
+      fill: ${dark ? "#452b13" : "#fff2dc"} !important;
       stroke: #d97706 !important;
     }
     .node.config rect, .node.config polygon {
-      fill: #18181b !important;
-      stroke: #a1a1aa !important;
+      fill: ${surface} !important;
+      stroke: ${muted} !important;
     }
     .node.test rect, .node.test polygon {
-      fill: #18181b !important;
-      stroke: #52525b !important;
+      fill: ${surface} !important;
+      stroke: ${muted} !important;
     }
   `,
-});
+  });
 
-export default mermaid;
+  return mermaid;
+}
+
+// mermaid holds global config + render state: re-initializing on every
+// render effect risks interrupting an in-flight render from this or another
+// hook instance. Configure once per theme instead.
+let configuredTheme: "light" | "dark" | null = null;
+
+export function ensureMermaidConfigured(theme: "light" | "dark") {
+  if (configuredTheme !== theme) {
+    configureMermaid(theme);
+    configuredTheme = theme;
+  }
+  return mermaid;
+}

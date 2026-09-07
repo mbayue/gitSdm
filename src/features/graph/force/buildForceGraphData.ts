@@ -5,6 +5,8 @@ import { COMMUNITY_COLORS, NODE_TYPE_COLORS } from './forceGraphConstants';
 interface BuildOptions {
   nodeTypeFilters: Set<NodeType>;
   fileTypeFilters: Set<string>;
+  /** When true (e.g. the homepage sample), bypass workspace filters. */
+  readOnly?: boolean;
 }
 
 export function buildForceGraphData(
@@ -12,13 +14,13 @@ export function buildForceGraphData(
   edges: GraphEdge[],
   options: BuildOptions,
 ): { nodes: ForceGraphNode[]; links: ForceGraphLink[] } {
-  const { nodeTypeFilters, fileTypeFilters } = options;
+  const { nodeTypeFilters, fileTypeFilters, readOnly } = options;
 
   const visibleNodeIds = new Set(
     nodes
-      .filter((node) => nodeTypeFilters.has(node.type))
+      .filter((node) => readOnly || nodeTypeFilters.has(node.type))
       .filter((node) => {
-        if (node.type !== 'file' || fileTypeFilters.size === 0) return true;
+        if (readOnly || node.type !== 'file' || fileTypeFilters.size === 0) return true;
         const type = node.data.extension || node.data.fileClass || node.type;
         const label = String(type).startsWith('.') ? String(type) : `.${String(type)}`;
         return fileTypeFilters.has(label);

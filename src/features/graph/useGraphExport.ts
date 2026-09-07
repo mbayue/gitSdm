@@ -7,6 +7,7 @@ import type {
   ForceGraphLink,
 } from "./force/forceGraphConstants";
 import { useVizStore } from "@/stores/vizStore";
+import { GRAPH_THEMES } from './force/graph-theme';
 
 type ExportFormat = "png" | "pdf";
 
@@ -109,49 +110,49 @@ export function useGraphExport(options: GraphExportOptions) {
     async (format: ExportFormat, opts: ForceGraphExportOptions) => {
       const host = opts.forceHostRef.current;
       const canvas = host?.querySelector("canvas");
-      if (!host || !canvas) return;
-
-      const origWidth = host.style.width;
-      const origHeight = host.style.height;
-
-      const rect = host.getBoundingClientRect();
-      host.style.width = `${rect.width * 2}px`;
-      host.style.height = `${rect.height * 2}px`;
+      if (!host || !canvas) throw new Error('The graph is not ready to export.');
 
       const fg = opts.forceGraphRef.current;
-      if (fg) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        fg.zoomToFit(650, 90);
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
+      const originalCenter = fg?.centerAt();
+      const originalZoom = fg?.zoom();
+      let dataUrl: string;
+      let width: number;
+      let height: number;
 
-      const exportCanvas = host.querySelector("canvas");
-      if (!exportCanvas) return;
-      const cw = exportCanvas.width;
-      const ch = exportCanvas.height;
-
-      const bgCanvas = document.createElement("canvas");
-      bgCanvas.width = cw;
-      bgCanvas.height = ch;
-      const bgCtx = bgCanvas.getContext("2d")!;
-      bgCtx.fillStyle = opts.backgroundColor ?? "#0f0f1a";
-      bgCtx.fillRect(0, 0, cw, ch);
-      bgCtx.drawImage(exportCanvas, 0, 0);
-
-      const dataUrl = bgCanvas.toDataURL("image/png");
-
-      host.style.width = origWidth;
-      host.style.height = origHeight;
-      if (fg) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        fg.zoomToFit(650, 90);
+      try {
+        // Capture at the canvas's native pixel density without resizing the workspace.
+        // Two frames let the camera and canvas paint settle before reading pixels.
+        fg?.zoomToFit(0, 60);
+        await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+        const exportCanvas = host.querySelector('canvas');
+        if (!exportCanvas) throw new Error('The graph is not ready to export.');
+        const bgCanvas = document.createElement('canvas');
+        bgCanvas.width = exportCanvas.width;
+        bgCanvas.height = exportCanvas.height;
+        const bgCtx = bgCanvas.getContext('2d');
+        if (!bgCtx) throw new Error('Unable to create an export image.');
+        bgCtx.fillStyle = opts.backgroundColor ?? GRAPH_THEMES[useVizStore.getState().theme].background;
+        bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+        bgCtx.drawImage(exportCanvas, 0, 0);
+        dataUrl = bgCanvas.toDataURL('image/png');
+        width = bgCanvas.width;
+        height = bgCanvas.height;
+      } finally {
+        if (fg && originalCenter && originalZoom !== undefined) {
+          fg.centerAt(originalCenter.x, originalCenter.y, 0);
+          fg.zoom(originalZoom, 0);
+        }
       }
 
       const filename = `${opts.owner}_${opts.repo}_${opts.filenameSuffix}`;
-      if (format === "png") {
+      if (format === 'png') {
         downloadDataUrl(dataUrl, `${filename}.png`);
       } else {
-        savePdf(dataUrl, `${filename}.pdf`, cw / 2, ch / 2);
+        // jsPDF page size is in CSS px; native canvas pixels are scaled by
+        // devicePixelRatio, so use layout dims to avoid oversized pages on HiDPI.
+        const cssWidth = host.clientWidth || canvas.clientWidth || width;
+        const cssHeight = host.clientHeight || canvas.clientHeight || height;
+        savePdf(dataUrl, `${filename}.pdf`, cssWidth, cssHeight);
       }
     },
     [],

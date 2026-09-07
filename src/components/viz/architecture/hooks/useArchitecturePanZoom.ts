@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export function useArchitecturePanZoom() {
   const [zoom, setZoom] = useState(1);
@@ -38,10 +38,10 @@ export function useArchitecturePanZoom() {
     });
   };
 
-  const resetView = () => {
+  const resetView = useCallback(() => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
-  };
+  }, []);
 
   return {
     zoom,

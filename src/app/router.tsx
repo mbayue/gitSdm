@@ -12,7 +12,7 @@ function RouterContent() {
 
   return (
     <ErrorBoundary key={location.pathname}>
-      <Suspense fallback={<div className="min-h-screen bg-[#050509]" />}>
+      <Suspense fallback={<div className="min-h-screen bg-background" />}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/:owner/:repo" element={<VizPage />} />

@@ -1,9 +1,9 @@
+import { TooltipHint } from '@/components/ui/tooltip';
 import { useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Brain, FileText, Sparkles, PanelRightClose, PanelRightOpen, Info, GraduationCap, Network
+  Brain, FileText, Sparkles, Info, GraduationCap, Network, PanelRightClose
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useVizStore, type SidebarTab } from '@/stores/vizStore';
 import type { RepoAnalysis } from '@/types';
 
@@ -16,13 +16,11 @@ import { DependencyHealthTab } from './DependencyHealthTab';
 // Subcomponents & Helpers
 import { computeBlastRadius } from '@/features/graph/force/blastRadius';
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-
 const tabs = [
   { id: 'overview' as SidebarTab, label: 'Overview', icon: Info },
-  { id: 'analysis' as SidebarTab, label: 'Detail', icon: FileText },
-  { id: 'dependencies' as SidebarTab, label: 'Dependencies', icon: Network },
-  { id: 'ai' as SidebarTab, label: 'Analysis', icon: Brain },
+  { id: 'analysis' as SidebarTab, label: 'Details', icon: FileText },
+  { id: 'dependencies' as SidebarTab, label: 'Health', icon: Network },
+  { id: 'ai' as SidebarTab, label: 'AI tools', icon: Brain },
   { id: 'learning' as SidebarTab, label: 'Learning', icon: GraduationCap },
 ];
 
@@ -37,67 +35,39 @@ interface AISidebarProps {
 }
 
 // 1. SidebarHeader Component
-interface SidebarHeaderProps {
-  onClose: () => void;
-}
-
-function SidebarHeader({ onClose }: SidebarHeaderProps) {
+function SidebarHeader() {
+  const setAiSidebarOpen = useVizStore((s) => s.setAiSidebarOpen);
   return (
-    <div className="flex items-center justify-between shrink-0 border-b border-[rgba(240,246,252,0.1)] bg-[#0d1117] px-4 py-3.5">
+    <div className="flex h-12 items-center justify-between gap-2 shrink-0 border-b border-border px-3">
       <div className="flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-[#8b949e]" />
-        <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#e6edf3] font-mono">
-          Contextual Analysis
+        <Sparkles className="h-4 w-4 text-muted-foreground" />
+        <h2 className="text-sm font-semibold text-foreground">
+          Repository insights
         </h2>
       </div>
-      <Tooltip>
-        <TooltipTrigger
-          type="button"
-          onClick={onClose}
-          className="rounded-lg p-1 text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3] transition-colors outline-none cursor-pointer"
-        >
+      <TooltipHint content="Collapse repository insights" side="bottom">
+        <button type="button" aria-label="Collapse repository insights"
+          onClick={() => setAiSidebarOpen(false)} className="icon-button header-action">
           <PanelRightClose className="h-4 w-4" />
-        </TooltipTrigger>
-        <TooltipContent side="left">Hide sidebar panel</TooltipContent>
-      </Tooltip>
+        </button>
+      </TooltipHint>
     </div>
   );
 }
 
-// 2. TabNavigation Component (Segmented tab bar)
-interface TabNavigationProps {
-  activeTab: SidebarTab;
-  setActiveTab: (tab: SidebarTab) => void;
-}
-
-function TabNavigation({ activeTab, setActiveTab }: TabNavigationProps) {
+function TabNavigation() {
   return (
-    <div className="flex items-center w-full justify-between gap-1 bg-[#0d1117] rounded-md border border-[rgba(240,246,252,0.1)] p-1">
-      {tabs.map((tab) => {
-        const Icon = tab.icon;
-        const isActive = activeTab === tab.id;
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "flex items-center justify-center h-8 rounded-sm text-xs font-semibold transition-all duration-200 outline-none select-none cursor-pointer border border-transparent",
-              isActive
-                ? "flex-1 px-3 bg-[#161b22] text-[#e6edf3] border-[rgba(240,246,252,0.1)]"
-                : "w-8 shrink-0 p-0 text-[#8b949e] hover:text-[#e6edf3] hover:bg-[rgba(240,246,252,0.05)]"
-            )}
-            title={tab.label}
-          >
-            <Icon className={cn("h-3.5 w-3.5 shrink-0 transition-colors", isActive ? "text-[#e6edf3]" : "text-[#8b949e]")} />
-            {isActive && <span className="ml-1.5 truncate text-[11px]">{tab.label}</span>}
-          </button>
-        );
-      })}
-    </div>
+    <TabsList aria-label="Repository insights" className="flex h-auto w-full min-w-0 flex-wrap gap-0.5 bg-transparent p-0 group-data-horizontal/tabs:h-auto">
+      {tabs.map((tab) => (
+        <TabsTrigger key={tab.id} value={tab.id}
+          className="h-9 min-w-[30%] flex-1 gap-1 rounded-md px-1.5 text-xs whitespace-nowrap data-active:bg-secondary data-active:text-accent dark:data-active:bg-secondary dark:data-active:text-accent [&_svg]:shrink-0">
+          <tab.icon className="size-3.5" />
+          <span className="truncate">{tab.label}</span>
+        </TabsTrigger>
+      ))}
+    </TabsList>
   );
 }
-
 
 export function AISidebar({
   analysis,
@@ -111,7 +81,6 @@ export function AISidebar({
     setSelectedNodeId,
     selectedBranch,
     aiSidebarOpen,
-    setAiSidebarOpen,
     blastRadiusActive,
   } = useVizStore();
 
@@ -124,62 +93,47 @@ export function AISidebar({
     ? nodeById.get(selectedNodeId) ?? null
     : null;
 
-
-
-
-
   const blastRadiusIds = useMemo(() => {
     if (!selectedNode) return new Set<string>();
     return computeBlastRadius(selectedNode.id, analysis.graph.edges, analysis.graph.nodes);
   }, [selectedNode, analysis]);
 
-  if (!aiSidebarOpen) {
-    return (
-      <div className="flex h-full w-10 shrink-0 flex-col items-center border-l border-[rgba(240,246,252,0.1)] bg-[#0d1117] py-2 select-none">
-        <Tooltip>
-          <TooltipTrigger
-            type="button"
-            onClick={() => setAiSidebarOpen(true)}
-            className="rounded p-1.5 text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3] transition-colors outline-none cursor-pointer"
-          >
-            <PanelRightOpen className="h-4 w-4" />
-          </TooltipTrigger>
-          <TooltipContent side="left">Show sidebar panel</TooltipContent>
-        </Tooltip>
-      </div>
-    );
-  }
+  if (!aiSidebarOpen) return null;
 
   return (
     <aside
       style={style}
-      className="flex h-full w-full shrink-0 flex-col border-l border-[rgba(240,246,252,0.1)] bg-[#161b22] relative select-none"
+      className="flex h-full w-full shrink-0 flex-col border-l border-border bg-card relative"
     >
-      {/* 1. Header with spark icon & collapse triggers */}
-      <SidebarHeader onClose={() => setAiSidebarOpen(false)} />
+      <Tabs value={sidebarTab} onValueChange={(value) => {
+        const tab = tabs.find((item) => item.id === value);
+        if (tab) setSidebarTab(tab.id);
+      }} className="h-full min-h-0 w-full min-w-0 flex-col gap-0">
+      {/* 1. Header with spark icon */}
+      <SidebarHeader />
 
       {/* 2. Navigation Tabs Container */}
-      <div className="bg-[#0d1117] shrink-0 border-b border-[rgba(240,246,252,0.1)] px-2">
-        <TabNavigation activeTab={sidebarTab} setActiveTab={setSidebarTab} />
+      <div className="shrink-0 border-b border-border p-2">
+        <TabNavigation />
       </div>
 
       {/* 3. Main content body - The ONLY scroll container in the sidebar */}
-      <div className="flex-1 overflow-y-auto p-4 text-sm scrollbar-thin">
-        <AnimatePresence mode="wait">
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 text-sm scrollbar-thin">
+
           {/* TAB 1: OVERVIEW */}
           {sidebarTab === 'overview' && (
-            <TabPanel key="overview">
+            <TabsContent value="overview" className="space-y-6 animate-in fade-in duration-150">
               <OverviewTab 
                 analysis={analysis}
                 selectedBranch={selectedBranch}
                 graphDiff={graphDiff}
               />
-            </TabPanel>
+            </TabsContent>
           )}
 
           {/* TAB 2: MAP */}
           {sidebarTab === 'analysis' && (
-            <TabPanel key="analysis">
+            <TabsContent value="analysis" className="space-y-6 animate-in fade-in duration-150">
               <AnalysisTab 
                 analysis={analysis}
                 selectedNodeId={selectedNodeId}
@@ -187,44 +141,30 @@ export function AISidebar({
                 blastRadiusActive={blastRadiusActive}
                 blastRadiusIds={blastRadiusIds}
               />
-            </TabPanel>
+            </TabsContent>
           )}
 
           {sidebarTab === 'dependencies' && (
-            <TabPanel key="dependencies">
+            <TabsContent value="dependencies" className="space-y-6 animate-in fade-in duration-150">
               <DependencyHealthTab analysis={analysis} />
-            </TabPanel>
+            </TabsContent>
           )}
 
           {sidebarTab === 'ai' && (
-            <TabPanel key="ai">
+            <TabsContent value="ai" className="space-y-6 animate-in fade-in duration-150">
               <AiCenterTab analysis={analysis} />
-            </TabPanel>
+            </TabsContent>
           )}
 
           {sidebarTab === 'learning' && (
-            <TabPanel key="learning">
+            <TabsContent value="learning" className="space-y-6 animate-in fade-in duration-150">
               <LearningPathTab analysis={analysis} />
-            </TabPanel>
+            </TabsContent>
           )}
-        </AnimatePresence>
+
       </div>
 
-      {/* 4. Main content flows directly to the end of the sidebar */}
+      </Tabs>
     </aside>
-  );
-}
-
-function TabPanel({ children }: { children: React.ReactNode }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -10, scale: 0.98 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
-      className="space-y-6"
-    >
-      {children}
-    </motion.div>
   );
 }

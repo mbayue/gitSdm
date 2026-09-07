@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { PanelLeftClose, PanelLeftOpen, FolderMinus, FolderPlus, Search, X } from 'lucide-react';
+import { FolderMinus, FolderPlus, PanelLeftClose, Search, X } from 'lucide-react';
 import { useVizStore } from '@/stores/vizStore';
 import type { RepoAnalysis } from '@/types';
 import { SmartFileExplorer } from './SmartFileExplorer';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Input } from '@/components/ui/Input';
 
 interface ExplorerPanelProps {
   analysis: RepoAnalysis;
@@ -12,43 +13,30 @@ interface ExplorerPanelProps {
 }
 
 export function ExplorerPanel({ analysis, selectedFilePath, onSelectFile }: ExplorerPanelProps) {
-  const { explorerOpen, setExplorerOpen } = useVizStore();
+  const explorerOpen = useVizStore((s) => s.explorerOpen);
+  const setExplorerOpen = useVizStore((s) => s.setExplorerOpen);
   const [searchQuery, setSearchQuery] = useState('');
   const [expansionTrigger, setExpansionTrigger] = useState<{ type: 'expand' | 'collapse'; time: number } | null>(null);
 
   const rootLabel = analysis.meta.fullName.split('/')[1] ?? analysis.meta.repo;
 
-  if (!explorerOpen) {
-    return (
-      <div className="hidden md:flex h-full w-10 shrink-0 flex-col items-center border-r border-[rgba(240,246,252,0.1)] bg-[#0d1117] py-2 select-none">
-        <Tooltip>
-          <TooltipTrigger
-            type="button"
-            onClick={() => setExplorerOpen(true)}
-            className="rounded p-1.5 text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3] transition-colors outline-none cursor-pointer"
-          >
-            <PanelLeftOpen className="h-4 w-4" />
-          </TooltipTrigger>
-          <TooltipContent side="right">Show Explorer</TooltipContent>
-        </Tooltip>
-      </div>
-    );
-  }
+  if (!explorerOpen) return null;
 
   return (
-    <div className="flex h-full w-full shrink-0 flex-col border-r border-[rgba(240,246,252,0.1)] bg-[#0d1117]">
-      <header className="flex h-10 shrink-0 items-center justify-between gap-1 border-b border-[rgba(240,246,252,0.1)] px-3 select-none">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-[#8b949e]">
-          Explorer
+    <div className="flex h-full w-full shrink-0 flex-col border-r border-border bg-card">
+      <header className="flex h-12 shrink-0 items-center justify-between gap-1 border-b border-border px-3 select-none">
+        <span className="text-sm font-semibold text-foreground">
+          Files
         </span>
         <div className="flex items-center gap-1">
           <Tooltip>
             <TooltipTrigger
               type="button"
+              aria-label="Expand all folders"
               onClick={() => setExpansionTrigger({ type: 'expand', time: Date.now() })}
-              className="rounded p-1 text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3] transition-colors outline-none cursor-pointer"
+              className="icon-button header-action"
             >
-              <FolderPlus className="h-3.5 w-3.5" />
+              <FolderPlus className="h-4 w-4" />
             </TooltipTrigger>
             <TooltipContent side="bottom">Expand All</TooltipContent>
           </Tooltip>
@@ -56,42 +44,42 @@ export function ExplorerPanel({ analysis, selectedFilePath, onSelectFile }: Expl
           <Tooltip>
             <TooltipTrigger
               type="button"
+              aria-label="Collapse all folders"
               onClick={() => setExpansionTrigger({ type: 'collapse', time: Date.now() })}
-              className="rounded p-1 text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3] transition-colors outline-none cursor-pointer"
+              className="icon-button header-action"
             >
-              <FolderMinus className="h-3.5 w-3.5" />
+              <FolderMinus className="h-4 w-4" />
             </TooltipTrigger>
             <TooltipContent side="bottom">Collapse All</TooltipContent>
           </Tooltip>
-
           <Tooltip>
-            <TooltipTrigger
-              type="button"
-              onClick={() => setExplorerOpen(false)}
-              className="rounded p-1 text-[#8b949e] hover:bg-[rgba(240,246,252,0.1)] hover:text-[#e6edf3] transition-colors outline-none cursor-pointer"
-            >
-              <PanelLeftClose className="h-3.5 w-3.5" />
+            <TooltipTrigger type="button" aria-label="Collapse file explorer"
+              onClick={() => setExplorerOpen(false)} className="icon-button header-action">
+              <PanelLeftClose className="h-4 w-4" />
             </TooltipTrigger>
-            <TooltipContent side="bottom">Hide Explorer</TooltipContent>
+            <TooltipContent side="bottom">Collapse file explorer</TooltipContent>
           </Tooltip>
         </div>
       </header>
 
       {/* Search Input */}
-      <div className="px-2 py-2 border-b border-[rgba(240,246,252,0.1)] bg-[#0d1117]">
+      <div className="p-3 border-b border-border">
         <div className="relative">
-          <Search className="absolute left-2 top-[7px] h-3.5 w-3.5 text-[#8b949e]" />
-          <input
+          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
             type="text"
+            aria-label="Filter files"
             placeholder="Filter files..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-md border border-[rgba(240,246,252,0.1)] bg-[#161b22] py-1 pl-7 pr-6 text-xs text-[#e6edf3] placeholder-[#8b949e] outline-none focus:border-[#58a6ff] transition-colors font-sans"
+            className="h-10 bg-background pl-9 pr-9 text-sm dark:bg-background"
           />
           {searchQuery && (
             <button
+              type="button"
+              aria-label="Clear file filter"
               onClick={() => setSearchQuery('')}
-              className="absolute right-1.5 top-1.5 rounded-sm p-0.5 text-[#8b949e] hover:text-[#e6edf3] transition-colors"
+              className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
             >
               <X className="h-3 w-3" />
             </button>

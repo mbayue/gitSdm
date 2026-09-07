@@ -3,13 +3,14 @@ import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d";
 import { Loader2 } from "lucide-react";
 import type { GraphEdge, GraphNode } from "@/types";
 import { useForceCanvasState } from "./hooks/useForceCanvasState";
-import { useVizStore } from "@/stores/vizStore";
+import { useVizStore, type ColorMode, type LayoutType, type SizeMode } from "@/stores/vizStore";
 
 import {
   type ForceGraphNode,
   type ForceGraphLink,
 } from "../force/forceGraphConstants";
 import { getForceLinkColor, getForceNodeRadius } from "../force/forceGraphUtils";
+import { GRAPH_THEMES } from '../force/graph-theme';
 
 // Subcomponents & Helpers
 import { drawForceNode, drawForcePointerArea } from "./force/forcePainter";
@@ -26,9 +27,13 @@ interface NetworkCanvasProps {
   showMinimap?: boolean;
   forceGraphRef?: React.MutableRefObject<ForceGraphMethods<ForceGraphNode, ForceGraphLink> | undefined>;
   forceHostRef?: React.MutableRefObject<HTMLDivElement | null>;
+  colorModeOverride?: ColorMode;
+  sizeModeOverride?: SizeMode;
+  layoutTypeOverride?: LayoutType;
+  onVisibleCounts?: (nodes: number, edges: number) => void;
 }
 
-const getArrowRelPos = (link: ForceGraphLink): number => {
+const getArrowRelPos = (link: ForceGraphLink, sizeMode?: SizeMode): number => {
   const source = link.source;
   const target = link.target;
   if (typeof source === 'string' || typeof target === 'string') return 0.96;
@@ -40,7 +45,6 @@ const getArrowRelPos = (link: ForceGraphLink): number => {
   const dy = ty - sy;
   const dist = Math.sqrt(dx * dx + dy * dy);
   if (dist === 0) return 0.96;
-  const sizeMode = useVizStore.getState().sizeMode;
   const targetRadius = getForceNodeRadius(target, sizeMode);
   const offset = targetRadius + 1.2;
   // Link shorter than the target's radius: 1 - offset/dist would go negative.
@@ -56,6 +60,10 @@ export function NetworkCanvas({
   showMinimap,
   forceGraphRef: externalForceGraphRef,
   forceHostRef: externalForceHostRef,
+  colorModeOverride,
+  sizeModeOverride,
+  layoutTypeOverride,
+  onVisibleCounts,
 }: NetworkCanvasProps) {
   const [tick, setTick] = useState(0);
   const theme = useVizStore((s) => s.theme);
@@ -70,9 +78,12 @@ export function NetworkCanvas({
   const forceInitialViewDoneRef = useRef(false);
   const lastMinimapTickRef = useRef(0);
 
-  const colorMode = useVizStore((s) => s.colorMode);
-  const sizeMode = useVizStore((s) => s.sizeMode);
-  const layoutType = useVizStore((s) => s.layoutType);
+  const storedColorMode = useVizStore((s) => s.colorMode);
+  const storedSizeMode = useVizStore((s) => s.sizeMode);
+  const storedLayoutType = useVizStore((s) => s.layoutType);
+  const colorMode = colorModeOverride ?? storedColorMode;
+  const sizeMode = sizeModeOverride ?? storedSizeMode;
+  const layoutType = layoutTypeOverride ?? storedLayoutType;
   const isD3TreeLayout = layoutType === 'd3-tree-horiz' || layoutType === 'd3-tree-vert';
 
   const {
@@ -91,11 +102,16 @@ export function NetworkCanvas({
     forceNodeById,
     blastRadiusActive,
     prevFocusRef,
+    handleLayoutStop,
   } = useForceCanvasState({
     graph,
     forceGraphRef,
     forceHostRef,
     forceInitialViewDoneRef,
+    readOnly,
+    sizeModeOverride,
+    layoutTypeOverride,
+    onVisibleCounts,
   });
 
   // --- Callbacks ---
@@ -103,27 +119,31 @@ export function NetworkCanvas({
   const focusForceNode = useCallback(
     (node: ForceGraphNode) => {
       prevFocusRef.current = node.id;
-      setSelectedNodeId(node.id);
-      if (node.nodeType === "file" && node.sourceFile) {
-        setFocusedFilePath(node.sourceFile);
-      } else {
-        setFocusedFilePath(null);
-      }
+      useVizStore.setState({
+        selectedNodeId: node.id,
+        focusedFilePath: node.nodeType === 'file' && node.sourceFile ? node.sourceFile : null,
+        sidebarTab: 'analysis',
+        ...(typeof window !== 'undefined' && window.innerWidth >= 1024 ? { aiSidebarOpen: true } : {}),
+      });
       if (typeof node.x === "number" && typeof node.y === "number") {
         forceGraphRef.current?.centerAt(node.x, node.y, 300);
         forceGraphRef.current?.zoom(3.2, 300);
       }
     },
-    [setFocusedFilePath, setSelectedNodeId, prevFocusRef, forceGraphRef],
+    [prevFocusRef, forceGraphRef],
   );
 
   const onForceBackgroundClick = useCallback(() => {
+    // Read-only canvases (homepage preview) must not mutate shared
+    // workspace state: clearing the selection here would wipe it globally.
+    if (readOnly) return;
     prevFocusRef.current = null;
     setSelectedNodeId(null);
     setHighlightedNodeIds(new Set());
     setHoveredForceNode(null);
     setFocusedFilePath(null);
   }, [
+    readOnly,
     setHighlightedNodeIds,
     setSelectedNodeId,
     setFocusedFilePath,
@@ -132,9 +152,10 @@ export function NetworkCanvas({
   ]);
 
   const handleEngineStop = useCallback(() => {
+    handleLayoutStop();
     if (showMinimap) setTick((t) => t + 1);
     forceInitialViewDoneRef.current = true;
-  }, [showMinimap]);
+  }, [showMinimap, handleLayoutStop]);
 
   const handleEngineTick = useCallback(() => {
     if (!showMinimap) return;
@@ -191,8 +212,9 @@ export function NetworkCanvas({
         blastRadiusActive,
         highlightedNodeIds,
         compareBranch,
+        theme,
       ),
-    [blastRadiusActive, compareBranch, highlightedNodeIds, selectedNodeId],
+    [blastRadiusActive, compareBranch, highlightedNodeIds, selectedNodeId, theme],
   );
 
   const drawNodePointerArea = useCallback(
@@ -208,6 +230,7 @@ export function NetworkCanvas({
         node,
         ctx,
         globalScale,
+        nodeCount: forceGraphData.nodes.length,
         selectedNodeId,
         highlightedNodeIds,
         blastRadiusActive,
@@ -215,6 +238,7 @@ export function NetworkCanvas({
         hoveredForceNode,
         colorMode,
         sizeMode,
+        theme,
       });
     },
     [
@@ -223,8 +247,10 @@ export function NetworkCanvas({
       compareBranch,
       highlightedNodeIds,
       hoveredForceNode,
+      forceGraphData.nodes.length,
       selectedNodeId,
       sizeMode,
+      theme,
     ],
   );
 
@@ -254,34 +280,20 @@ export function NetworkCanvas({
       ref={forceHostRef}
     >
       {isLoading && (
-        <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-sm select-none">
+        <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm select-none">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-ui-active-text-green border-t-transparent" />
-          <span className="mt-3 text-xs text-zinc-400 font-medium">
+          <span className="mt-3 text-xs text-muted-foreground font-medium">
             Laying out dependency graph...
           </span>
         </div>
       )}
 
       {isExporting && (
-        <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-md select-none">
+        <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-background backdrop-blur-md select-none">
           <Loader2 className="h-8 w-8 animate-spin text-ui-active-text-green" />
-          <span className="mt-3 text-xs text-zinc-400 font-medium font-mono">
+          <span className="mt-3 text-xs text-muted-foreground font-medium font-mono">
             Generating high-res {exportFormat?.toUpperCase()}...
           </span>
-        </div>
-      )}
-
-      {!isLoading && isEmpty && (
-        <div className="absolute inset-0 z-[5] flex flex-col items-center justify-center bg-[#0f0f1a]">
-          <div className="pointer-events-none rounded-xl border border-white/10 bg-[#1a1a2e]/80 px-6 py-5 text-center backdrop-blur-md select-none">
-            <div className="text-sm font-semibold text-zinc-300">
-              No nodes match current filters
-            </div>
-            <div className="mt-1.5 text-[11px] text-zinc-500 font-mono">
-              Try re-enabling node type or diff status filters in the analysis
-              panel.
-            </div>
-          </div>
         </div>
       )}
 
@@ -291,11 +303,11 @@ export function NetworkCanvas({
           width={forceSize.width}
           height={forceSize.height}
           graphData={forceGraphData}
-          backgroundColor="#0f0f1a"
+          backgroundColor={GRAPH_THEMES[theme].background}
           nodeRelSize={1}
           linkCurvature={0}
           linkDirectionalArrowLength={6}
-          linkDirectionalArrowRelPos={getArrowRelPos}
+          linkDirectionalArrowRelPos={(link) => getArrowRelPos(link, sizeMode)}
           linkDirectionalArrowColor={getLinkColor}
           cooldownTicks={120}
           d3AlphaDecay={0.028}
@@ -303,9 +315,13 @@ export function NetworkCanvas({
           onEngineStop={handleEngineStop}
           onEngineTick={handleEngineTick}
           onZoom={(transform) => {
+            // Read-only preview zoom is local to the canvas; persisting it
+            // would leak demo interaction state into the workspace.
+            if (readOnly) return;
             queueMicrotask(() => useVizStore.getState().setZoom(transform.k));
           }}
           onZoomEnd={() => {
+            if (readOnly) return;
             queueMicrotask(() => {
               if (showMinimap) setTick((t) => t + 1);
               const currentZoom = forceGraphRef.current?.zoom();
@@ -335,14 +351,8 @@ export function NetworkCanvas({
           style={{
             bottom: 68,
             right: 16,
-            background:
-              theme === "dark"
-                ? "rgba(9, 9, 11, 0.85)"
-                : "rgba(255, 255, 255, 0.85)",
-            border:
-              theme === "dark"
-                ? "1px solid rgba(255, 255, 255, 0.08)"
-                : "1px solid rgba(0, 0, 0, 0.08)",
+            background: "var(--popover)",
+            border: "1px solid var(--border)",
             borderRadius: "8px",
             overflow: "hidden",
           }}

@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import type { GraphNode, GraphEdge } from "@/types";
-import { useVizStore } from "@/stores/vizStore";
+import { useVizStore, type LayoutType, type SizeMode } from "@/stores/vizStore";
 import { buildForceGraphData } from "../../force/buildForceGraphData";
 import { computeBlastRadius } from "../../force/forceGraphUtils";
 import { useGraphExport } from "../../useGraphExport";
@@ -15,6 +15,10 @@ interface UseForceCanvasStateProps {
   forceGraphRef: React.MutableRefObject<ForceGraphMethods<ForceGraphNode, ForceGraphLink> | undefined>;
   forceHostRef: React.MutableRefObject<HTMLDivElement | null>;
   forceInitialViewDoneRef: React.MutableRefObject<boolean>;
+  readOnly?: boolean;
+  sizeModeOverride?: SizeMode;
+  layoutTypeOverride?: LayoutType;
+  onVisibleCounts?: (nodes: number, edges: number) => void;
 }
 
 export function useForceCanvasState({
@@ -22,6 +26,10 @@ export function useForceCanvasState({
   forceGraphRef,
   forceHostRef,
   forceInitialViewDoneRef,
+  readOnly,
+  sizeModeOverride,
+  layoutTypeOverride,
+  onVisibleCounts,
 }: UseForceCanvasStateProps) {
   const {
     selectedNodeId,
@@ -38,8 +46,12 @@ export function useForceCanvasState({
     resetFilters,
     graphActionTrigger,
     setVisibleCounts,
-    layoutType,
+    layoutType: storedLayoutType,
+    sizeMode: storedSizeMode,
   } = useVizStore();
+
+  const layoutType = layoutTypeOverride ?? storedLayoutType;
+  const sizeMode = sizeModeOverride ?? storedSizeMode;
 
   const [forceSize, setForceSize] = useState({ width: 1024, height: 720 });
   const [hoveredForceNode, setHoveredForceNode] = useState<ForceGraphNode | null>(null);
@@ -70,8 +82,9 @@ export function useForceCanvasState({
       buildForceGraphData(graph.nodes, graph.edges, {
         nodeTypeFilters,
         fileTypeFilters,
+        readOnly,
       }),
-    [graph.nodes, graph.edges, nodeTypeFilters, fileTypeFilters]
+    [graph.nodes, graph.edges, nodeTypeFilters, fileTypeFilters, readOnly]
   );
 
   const forceNodeById = useMemo(
@@ -86,7 +99,8 @@ export function useForceCanvasState({
   }, [blastRadiusActive, selectedNodeId, forceNodeById, graph.edges, graph.nodes]);
 
   useEffect(() => {
-    if (!focusedFilePath) return;
+    // Read-only canvases never adopt workspace focus/selection state.
+    if (readOnly || !focusedFilePath) return;
 
     const focusedNodeIds = [
       `file:${focusedFilePath}`,
@@ -105,6 +119,7 @@ export function useForceCanvasState({
       setSelectedNodeId(focusedNode.id);
     }
   }, [
+    readOnly,
     focusedFilePath,
     forceGraphData.nodes,
     forceNodeById,
@@ -113,6 +128,9 @@ export function useForceCanvasState({
   ]);
 
   useEffect(() => {
+    // Read-only canvases must not rewrite shared highlight state from the
+    // demo graph; workspace selection/highlights pass through untouched.
+    if (readOnly) return;
     if (!selectedNodeId) {
       setHighlightedNodeIds(new Set());
       return;
@@ -125,6 +143,7 @@ export function useForceCanvasState({
       );
     }
   }, [
+    readOnly,
     blastRadiusActive,
     selectedNodeId,
     blastRadiusNodeIds,
@@ -133,8 +152,12 @@ export function useForceCanvasState({
   ]);
 
   useEffect(() => {
-    setVisibleCounts(forceGraphData.nodes.length, forceGraphData.links.length);
-  }, [forceGraphData.nodes.length, forceGraphData.links.length, setVisibleCounts]);
+    if (onVisibleCounts) {
+      onVisibleCounts(forceGraphData.nodes.length, forceGraphData.links.length);
+    } else {
+      setVisibleCounts(forceGraphData.nodes.length, forceGraphData.links.length);
+    }
+  }, [forceGraphData.nodes.length, forceGraphData.links.length, setVisibleCounts, onVisibleCounts]);
 
   useEffect(() => {
     forceInitialViewDoneRef.current = false;
@@ -147,9 +170,10 @@ export function useForceCanvasState({
 
     const updateSize = () => {
       const rect = host.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
       setForceSize({
-        width: Math.max(320, rect.width),
-        height: Math.max(320, rect.height),
+        width: rect.width,
+        height: rect.height,
       });
     };
     updateSize();
@@ -173,10 +197,12 @@ export function useForceCanvasState({
     };
   }, [forceHostRef]);
 
-  useD3Physics({
+  const { handleLayoutStop } = useD3Physics({
     forceGraphRef,
     nodes: forceGraphData.nodes,
+    links: forceGraphData.links,
     layoutType,
+    sizeMode,
   });
 
   const { prevFocusRef } = useForceSync({
@@ -208,5 +234,6 @@ export function useForceCanvasState({
     forceNodeById,
     blastRadiusActive,
     prevFocusRef,
+    handleLayoutStop,
   };
 }

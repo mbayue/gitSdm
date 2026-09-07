@@ -27,20 +27,20 @@ export function AIErrorCard({ error, message, onRetry, title = "AI Request Faile
         <AlertTriangle className="h-4.5 w-4.5 text-red-500/80 shrink-0 mt-0.5" />
         <div className="flex-1 space-y-1.5 min-w-0">
           <div className="flex items-center gap-2">
-            <h5 className="font-semibold text-white text-xs">{title}</h5>
+            <h5 className="font-semibold text-foreground text-xs">{title}</h5>
             {errorCode && (
-              <span className="text-[9px] font-mono font-semibold bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded border border-red-500/10 uppercase tracking-wide">
+              <span className="text-xs font-mono font-semibold bg-red-500/10 text-destructive px-1.5 py-0.5 rounded border border-red-500/10 uppercase tracking-wide">
                 {errorCode}
               </span>
             )}
           </div>
-          <p className="text-[11px] leading-relaxed text-zinc-400 break-words font-mono bg-zinc-950/20 p-2 rounded-lg border border-red-500/5">
+          <p className="text-xs leading-relaxed text-muted-foreground break-words font-mono bg-background p-2 rounded-lg border border-red-500/5">
             {displayMessage}
           </p>
           {onRetry && (
             <button
               onClick={onRetry}
-              className="mt-2 flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-[10px] font-semibold text-red-400 hover:bg-red-500/20 transition-all"
+              className="mt-2 flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-destructive hover:bg-red-500/20 transition-all"
             >
               <RefreshCw className="h-3 w-3" />
               Retry Request

@@ -89,20 +89,21 @@ export function SmartFileExplorer({
   }, [expansionTrigger]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto py-2 text-xs select-none">
+    <div className="file-explorer-tree flex min-h-0 flex-1 flex-col overflow-y-auto py-2 text-sm select-none">
       <button
         type="button"
+        aria-expanded={rootOpen}
         onClick={() => setRootOpen(!rootOpen)}
-        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-zinc-300 hover:bg-white/[0.03] hover:text-white transition-colors duration-150 outline-none"
+        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-foreground hover:bg-secondary hover:text-foreground transition-colors duration-150 outline-none"
       >
         <ChevronRight
-          className={cn('h-3.5 w-3.5 shrink-0 text-zinc-500 transition-transform duration-150', rootOpen && 'rotate-90')}
+          className={cn('h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-150', rootOpen && 'rotate-90')}
         />
         <FolderIcon open={rootOpen} />
-        <span className="truncate font-semibold text-zinc-200">{rootLabel}</span>
+        <span className="truncate font-semibold text-foreground">{rootLabel}</span>
       </button>
       {rootOpen && (
-        <div className="ml-3.5 border-l border-white/[0.04] pl-0.5">
+        <div className="ml-3.5 border-l border-border pl-0.5">
           {filteredTree.map((node) => (
             <TreeRow
               key={node.path}
@@ -115,7 +116,7 @@ export function SmartFileExplorer({
             />
           ))}
           {filteredTree.length === 0 && (
-            <div className="px-3 py-6 text-center text-xs text-zinc-500 font-medium">
+            <div className="px-3 py-6 text-center text-xs text-muted-foreground font-medium">
               No files match filter.
             </div>
           )}
@@ -169,18 +170,19 @@ function TreeRow({
       <div className="relative">
         <button
           type="button"
+          aria-expanded={open}
           onClick={() => setOpen(!open)}
-          className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200 transition-colors duration-150 outline-none"
+          className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors duration-150 outline-none"
           style={{ paddingLeft: 8 + depth * 12 }}
         >
           <ChevronRight
-            className={cn('h-3.5 w-3.5 shrink-0 text-zinc-600 transition-transform duration-150', open && 'rotate-90')}
+            className={cn('h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-150', open && 'rotate-90')}
           />
           <FolderIcon open={open} />
           <span className="truncate font-medium">{node.name}</span>
         </button>
         {open && node.children && (
-          <div className="ml-3.5 border-l border-white/[0.04] pl-0.5">
+          <div className="ml-3.5 border-l border-border pl-0.5">
             {node.children.map((child) => (
               <TreeRow
                 key={child.path}
@@ -203,12 +205,13 @@ function TreeRow({
   return (
     <button
       type="button"
+      aria-current={selected ? true : undefined}
       onClick={() => onSelectFile?.(node.path)}
       className={cn(
-        'flex w-full items-center gap-2 py-1.5 px-2 text-xs transition-all duration-150 select-none border-l-2 outline-none',
+        'flex w-full items-center gap-2 py-1.5 px-2 text-sm transition-all duration-150 select-none border-l-2 outline-none',
         selected
           ? 'bg-ui-active/15 border-ui-active/35 text-ui-active-text-green font-semibold'
-          : 'border-transparent text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-200',
+          : 'border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground',
       )}
       style={{ paddingLeft: 22 + depth * 12 }}
     >

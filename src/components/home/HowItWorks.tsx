@@ -1,35 +1,47 @@
-
-const pipeline = [
-  { step: '01', title: 'GitHub URL', description: 'Paste any public repository URL.' },
-  { step: '02', title: 'Fetch tree', description: 'Retrieve file structure and metadata.' },
-  { step: '03', title: 'Parse manifests', description: 'Identify dependencies and workspaces.' },
-  { step: '04', title: 'Resolve imports', description: 'Trace connections across all files.' },
-  { step: '05', title: 'Build graph', description: 'Generate interactive dependency map.' },
-  { step: '06', title: 'Explore', description: 'Inspect architecture and notes.' },
+const steps = [
+  {
+    title: "Bring a repository",
+    description:
+      "Paste a GitHub URL or choose an example. Start with a public repository, or add a token for private access.",
+  },
+  {
+    title: "Connect the dots",
+    description:
+      "gitSdm reads the file tree, parses dependencies, and builds a map of the relationships in your code.",
+  },
+  {
+    title: "Find your way in",
+    description:
+      "Explore the graph, inspect a file, or ask a question. Follow the connections wherever they take you.",
+  },
 ];
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="mx-auto max-w-7xl scroll-mt-20 px-4 sm:px-6 py-12 sm:py-20 border-b border-[rgba(240,246,252,0.1)]">
-      <div className="mb-12">
-        <h2 className="text-xl font-bold text-[#e6edf3] mb-2">Analysis pipeline</h2>
-        <p className="text-sm text-[#8b949e]">From URL to full understanding in seconds.</p>
+    <section
+      id="how-it-works"
+      className="home-container home-section scroll-mt-20 border-t border-border"
+    >
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow mb-3">A shorter path to context</p>
+          <h2>One URL. A whole new view.</h2>
+        </div>
       </div>
-
-      <div className="relative grid gap-8 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-6">
-        <div className="hidden lg:block absolute top-2.5 left-6 right-6 h-[1px] bg-[rgba(240,246,252,0.1)] z-0" />
-        {pipeline.map((item) => (
-          <div key={item.step} className="relative z-10">
-            {/* Step number */}
-            <div className="inline-flex items-center justify-center h-5 px-1.5 rounded bg-[#0d1117] text-[10px] font-bold text-[#e6edf3] border border-[rgba(240,246,252,0.2)] mb-4 tracking-widest relative">
-              {item.step}
+      <div className="grid gap-8 md:grid-cols-3">
+        {steps.map((step, index) => (
+          <article key={step.title}>
+            <div className="mb-6 flex items-center gap-4">
+              <span className="font-mono text-sm text-accent">
+                0{index + 1}
+              </span>
+              <span className="h-px flex-1 bg-border" />
             </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-sm font-bold text-[#e6edf3]">{item.title}</h3>
-              <p className="text-xs text-[#8b949e] leading-relaxed pr-2">{item.description}</p>
-            </div>
-          </div>
+            <h3 className="mb-3 text-lg font-medium">{step.title}</h3>
+            <p className="text-base leading-7 text-muted-foreground">
+              {step.description}
+            </p>
+          </article>
         ))}
       </div>
     </section>

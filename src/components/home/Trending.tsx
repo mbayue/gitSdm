@@ -1,94 +1,93 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { Star } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { fetchTrending } from '@/lib/apiClient';
-import { formatStars } from '@/lib/utils';
+import { TooltipHint } from '@/components/ui/tooltip';
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowUpRight, GitBranch, Star } from "lucide-react";
+import { fetchTrending } from "@/lib/apiClient";
+import { formatStars } from "@/lib/utils";
 
-interface TrendingProps {
-  onSelect: (url: string) => void;
-}
-
-export function Trending({ onSelect }: TrendingProps) {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['trending'],
+export function Trending() {
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["trending"],
     queryFn: fetchTrending,
   });
-  const navigate = useNavigate();
-  const [navigating, setNavigating] = useState<string | null>(null);
-
   return (
-    <section id="examples" className="mx-auto max-w-7xl scroll-mt-20 px-4 sm:px-6 py-12 sm:py-20">
-      <div className="mb-12">
-        <h2 className="text-xl font-bold text-[#e6edf3] mb-2">Example repositories</h2>
-        <p className="text-sm text-[#8b949e]">Select a project to explore its architecture.</p>
+    <section
+      id="examples"
+      className="home-container home-section scroll-mt-20 border-t border-border"
+    >
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow mb-3">Explore open source</p>
+          <h2>Choose your next codebase.</h2>
+        </div>
+        <a
+          href="https://github.com/trending"
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        >
+          Trending on GitHub <ArrowUpRight className="h-4 w-4" />
+        </a>
       </div>
-
       {isLoading && (
-        <div className="border border-[rgba(240,246,252,0.1)] rounded-lg divide-y divide-[rgba(240,246,252,0.1)]">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-14 bg-[#161b22]/50 animate-pulse" />
+        <div
+          role="status"
+          className="grid gap-4 md:grid-cols-3"
+          aria-label="Loading repositories"
+        >
+          {[0, 1, 2].map((item) => (
+            <div
+              key={item}
+              aria-hidden="true"
+              className="h-48 animate-pulse rounded-xl border border-border bg-card"
+            />
           ))}
         </div>
       )}
-
       {error && (
-        <div className="p-4 rounded border border-[#f85149]/20 bg-[#f85149]/5 text-center text-xs text-[#f85149]">
-          Could not load trending repositories.
+        <div role="alert" className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
+          Could not load trending repositories.{" "}
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="ml-2 text-accent underline underline-offset-4"
+          >
+            Try again
+          </button>
         </div>
       )}
-
-      <div className="border border-[rgba(240,246,252,0.1)] rounded-lg overflow-hidden divide-y divide-[rgba(240,246,252,0.1)]">
-        {data?.slice(0, 5).map((repo) => (
-          <div
+      <div className="grid gap-4 md:grid-cols-3">
+        {data?.slice(0, 6).map((repo) => (
+          <Link
             key={repo.fullName}
-            className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 p-4 bg-[#161b22] hover:bg-[#1c2128] transition-colors cursor-pointer"
-            onClick={async () => {
-              setNavigating(repo.fullName);
-              await new Promise((r) => setTimeout(r, 220));
-              onSelect?.(repo.url);
-              navigate(`/${repo.owner}/${repo.repo}`);
-            }}
+            to={`/${repo.owner}/${repo.repo}`}
+            className="repo-card group"
           >
-            <div className="flex flex-col gap-1.5 min-w-0 flex-1">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h3 className="text-sm font-bold text-[#e6edf3] font-mono truncate">
-                  {repo.fullName}
-                </h3>
-                {repo.language && (
-                  <span className="text-[10px] text-[#8b949e] border border-[rgba(240,246,252,0.1)] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider shrink-0">
-                    {repo.language}
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-[#8b949e] line-clamp-2 sm:line-clamp-1 pr-2">
-                {repo.description ?? 'No description available'}
-              </p>
+            <div className="mb-6 flex items-center justify-between">
+              <GitBranch className="h-5 w-5 text-muted-foreground" />
+              <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-accent" />
             </div>
-
-            <div className="flex items-center justify-between sm:justify-end gap-6 shrink-0 mt-2 sm:mt-0">
-              <div className="flex items-center gap-1.5 text-xs text-[#8b949e] font-mono">
+            <TooltipHint content={repo.fullName}><h3
+              className="truncate text-base font-medium"
+            >
+              {repo.fullName}
+            </h3></TooltipHint>
+            <p className="mt-2 line-clamp-2 min-h-12 text-sm leading-6 text-muted-foreground">
+              {repo.description ||
+                "Explore the files and dependencies behind this project."}
+            </p>
+            <div className="mt-6 flex items-center justify-between text-xs text-muted-foreground">
+              <span className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                {repo.language || "Repository"}
+              </span>
+              <span className="flex items-center gap-1.5">
                 <Star className="h-3.5 w-3.5" />
-                <span>{formatStars(repo.stars)}</span>
-              </div>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 border-[rgba(240,246,252,0.1)] bg-[#0d1117] text-[#e6edf3] hover:bg-[#1c2128] text-[10px] font-bold uppercase tracking-wider px-4 sm:px-3 w-auto"
-              >
-                {navigating === repo.fullName ? 'Analyzing...' : 'Analyze'}
-              </Button>
+                {formatStars(repo.stars)}
+              </span>
             </div>
-          </div>
+          </Link>
         ))}
-      </div>
-
-      <div className="mt-8 flex justify-center w-full">
-	        <a href="https://github.com/trending" target="_blank" rel="noopener noreferrer" className="text-xs text-[#8b949e] hover:text-[#e6edf3] transition-colors underline decoration-[rgba(240,246,252,0.2)] underline-offset-4 px-4 py-2 text-center whitespace-normal">
-          View more examples on GitHub
-        </a>
       </div>
     </section>
   );

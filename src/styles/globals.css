@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./interface.css";
 
 @custom-variant dark (&:where(html:not(.light) *));
 
@@ -19,6 +20,8 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
@@ -40,7 +43,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, monospace;
   
   /* UI Colors */
@@ -72,90 +75,99 @@
 
 /* === shadcn CSS variables (dark default, light override) === */
 
+/* VS Code Dark+ inspired surfaces; graph categories remain independent. */
 :root {
-  --background: #0d1117;
-  --foreground: #e6edf3;
-  --card: #161b22;
-  --card-foreground: #e6edf3;
-  --popover: #1c2128;
-  --popover-foreground: #e6edf3;
-  --primary: #e6edf3;
-  --primary-foreground: #0d1117;
-  --secondary: #161b22;
-  --secondary-foreground: #e6edf3;
-  --muted: #161b22;
-  --muted-foreground: #8b949e;
-  --accent: #1f6feb;
+  --background: #1e1e1e;
+  --foreground: #d4d4d4;
+  --card: #252526;
+  --card-foreground: var(--foreground);
+  --popover: #252526;
+  --popover-foreground: var(--foreground);
+  --primary: #0e639c;
+  --primary-foreground: #ffffff;
+  --secondary: #37373d;
+  --secondary-foreground: var(--foreground);
+  --muted: #2d2d30;
+  --muted-foreground: #a6a6a6;
+  --accent: #3794ff;
   --accent-foreground: #ffffff;
-  --destructive: #f85149;
+  --destructive: #f48771;
+  --success: #4ec9b0;
+  --warning: #d7ba7d;
   --destructive-foreground: #ffffff;
-  --border: rgba(240,246,252,0.1);
-  --input: rgba(240,246,252,0.1);
-  --ring: #1f6feb;
-  --radius: 6px;
+  --border: #3c3c3c;
+  --input: #3c3c3c;
+  --ring: #007acc;
+  --radius: 8px;
+  --surface-highlight: transparent;
+  --surface-shadow: rgba(0, 0, 0, 0.08);
+  --scrollbar-thumb: #424242;
+  --scrollbar-hover: #686868;
+  --canvas-bg: #1e1e1e;
+  --white-rgb: 212, 212, 212;
+  --black-rgb: 30, 30, 30;
+  --accent-from: var(--primary);
+  --accent-to: var(--accent);
 
-  /* App custom variables */
-  --bg-base: #0d1117;
+  --bg-base: var(--background);
   --bg-glow-violet: transparent;
   --bg-glow-cyan: transparent;
-  --glass-bg: #161b22;
-  --glass-border: rgba(240,246,252,0.1);
-  --ui-primary: #e6edf3;
-  --ui-primary-hover: #ffffff;
-  --ui-focus: #1f6feb;
-  --ui-active: #e6edf3;
-  --ui-active-text: #e6edf3;
-  --ui-active-text-green: #e6edf3;
-  --ui-bg: #0d1117;
-  --ui-surface: #161b22;
-  --ui-elevated: #1c2128;
-  --ui-border: rgba(240,246,252,0.1);
-  --ui-text: #e6edf3;
-  --ui-muted: #8b949e;
-  
-  /* Semantic Graph Colors (Do not touch these in components, they are strictly for graphs) */
+  --glass-bg: var(--card);
+  --glass-border: var(--border);
+  --ui-primary: var(--primary);
+  --ui-primary-hover: #1177bb;
+  --ui-focus: var(--ring);
+  --ui-active: var(--foreground);
+  --ui-active-text: var(--foreground);
+  --ui-active-text-green: var(--foreground);
+  --ui-bg: var(--background);
+  --ui-surface: var(--card);
+  --ui-elevated: var(--popover);
+  --ui-border: var(--border);
+  --ui-text: var(--foreground);
+  --ui-muted: var(--muted-foreground);
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--secondary);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+
+  /* Graph categories retain their established meaning. */
   --graph-node-repo: #c4b5fd;
   --graph-node-repo-border: #8b5cf6;
   --graph-node-repo-bg: rgba(139, 92, 246, 0.1);
 }
 
 .light {
-  --background: #f6f8fa;
-  --foreground: #24292f;
-  --card: #ffffff;
-  --card-foreground: #24292f;
-  --popover: #f6f8fa;
-  --popover-foreground: #24292f;
-  --primary: #24292f;
+  --canvas-bg: #ffffff;
+  --background: #ffffff;
+  --foreground: #333333;
+  --card: #f3f3f3;
+  --popover: #ffffff;
+  --primary: #007acc;
   --primary-foreground: #ffffff;
-  --secondary: #f6f8fa;
-  --secondary-foreground: #24292f;
-  --muted: #f6f8fa;
-  --muted-foreground: #57606a;
-  --accent: #0969da;
+  --secondary: #e8e8e8;
+  --muted: #f3f3f3;
+  --muted-foreground: #616161;
+  --accent: #006ab1;
   --accent-foreground: #ffffff;
-  --destructive: #cf222e;
+  --destructive: #e51400;
+  --success: #147d49;
+  --warning: #9a6700;
   --destructive-foreground: #ffffff;
-  --border: #d0d7de;
-  --input: #d0d7de;
-  --ring: #0969da;
-
-  /* App custom variables - light */
-  --bg-base: #f6f8fa;
-  --glass-bg: #ffffff;
-  --glass-border: #d0d7de;
-  --ui-primary: #24292f;
-  --ui-primary-hover: #000000;
-  --ui-focus: #0969da;
-  --ui-active: #24292f;
-  --ui-active-text: #24292f;
-  --ui-active-text-green: #24292f;
-  --ui-bg: #f6f8fa;
-  --ui-surface: #ffffff;
-  --ui-elevated: #ffffff;
-  --ui-border: #d0d7de;
-  --ui-text: #24292f;
-  --ui-muted: #57606a;
+  --border: #d4d4d4;
+  --input: #cecece;
+  --ring: #0090f1;
+  --surface-highlight: transparent;
+  --surface-shadow: rgba(0, 0, 0, 0.06);
+  --scrollbar-thumb: #c1c1c1;
+  --scrollbar-hover: #929292;
+  --ui-primary-hover: #0062a3;
+  --white-rgb: 51, 51, 51;
+  --black-rgb: 51, 51, 51;
 }
 
 /* === Base layer === */
@@ -245,7 +257,7 @@ div[id^="dmermaid-view-svg-"] {
   overflow: hidden;
 }
 
-.light body { color: rgba(var(--white-rgb), 0.95); }
+.light body { color: var(--foreground); }
 .light .logo-bg {
   box-shadow: 0 2px 8px rgba(16, 24, 40, 0.06);
   border: 1px solid rgba(var(--white-rgb), 0.06);
@@ -302,7 +314,7 @@ div[id^="dmermaid-view-svg-"] {
 
 .hero-badge svg { color: currentColor; stroke-width: 2px; }
 .feature-icon svg { color: currentColor; stroke: currentColor; fill: none; }
-.light .feature-icon svg { color: currentColor; stroke: black; fill: none; }
+.light .feature-icon svg { color: currentColor; stroke: currentColor; fill: none; }
 
 .glow-btn {
   transition: box-shadow 200ms ease, transform 120ms ease, filter 200ms ease;
@@ -312,9 +324,7 @@ div[id^="dmermaid-view-svg-"] {
 }
 .light .glow-btn { box-shadow: 0 8px 24px rgba(99, 102, 241, 0.12), 0 2px 6px rgba(7, 89, 133, 0.06); }
 .light .glow-btn:hover { box-shadow: 0 10px 30px rgba(99, 102, 241, 0.16), 0 4px 10px rgba(7, 89, 133, 0.08); }
-.glow-btn svg { color: rgba(var(--white-rgb), 1); }
-.light .glow-btn svg { color: rgba(var(--black-rgb), 1); }
-.light .glow-btn { color: rgba(var(--black-rgb), 1); }
+.glow-btn svg { color: currentColor; }
 .light .gradient-text { font-weight: 700; -webkit-text-stroke: 0.2px rgba(var(--white-rgb), 0.02); }
 
 .logo-icon { color: rgba(var(--white-rgb), 1); }
@@ -339,7 +349,7 @@ svg { fill: none; }
 }
 
 /* Graph canvas styles */
-.graph-canvas-host .react-flow { background: #0f0f1a !important; color: rgba(var(--white-rgb), 0.9); }
+.graph-canvas-host .react-flow { background: var(--background) !important; color: var(--foreground); }
 .graph-canvas-host .react-flow__renderer,
 .graph-canvas-host .react-flow__pane,
 .graph-canvas-host .react-flow__viewport { background: transparent !important; }
@@ -371,7 +381,7 @@ svg { fill: none; }
 /* Scrollbar */
 html {
   scrollbar-gutter: auto;
-  scrollbar-color: #30363d #0d1117;
+  scrollbar-color: var(--scrollbar-thumb) var(--background);
   scrollbar-width: auto;
 }
 
@@ -380,17 +390,17 @@ html {
   height: 14px;
 }
 ::-webkit-scrollbar-track {
-  background: #0d1117;
-  border-left: 1px solid rgba(240,246,252,0.1);
+  background: var(--background);
+  border-left: 1px solid var(--border);
 }
 ::-webkit-scrollbar-thumb {
-  background: #30363d;
+  background: var(--scrollbar-thumb);
   background-clip: padding-box;
   border: 3px solid transparent;
   border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #6e7681;
+  background: var(--scrollbar-hover);
   background-clip: padding-box;
   border: 3px solid transparent;
 }
@@ -399,7 +409,7 @@ html {
 .code-inspector-font { font-family: 'Cascadia Code', 'Consolas', 'Geist Mono', ui-monospace, monospace; }
 .code-inspector-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
 .code-inspector-scroll::-webkit-scrollbar-thumb { background: rgba(var(--white-rgb), 0.2); border-radius: 0; }
-.code-inspector-scroll .hljs { background: transparent; color: #d4d4d4; padding: 0; }
+.hljs { background: transparent; color: var(--foreground); padding: 0; }
 
 /* Syntax highlighting (dark) */
 .hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-name { color: #c586c0; }
@@ -424,6 +434,7 @@ html {
 .light .hljs-variable, .light .hljs-template-variable, .light .hljs-attr { color: #e36209; }
 .light .hljs-params, .light .hljs-attribute { color: #24292e; }
 .light .hljs-punctuation { color: #24292e; }
+.light .hljs-meta, .light .hljs-regexp { color: #811f3f; }
 
 /* Blast Radius */
 .graph-canvas-host .react-flow__node.epicenter-pulse>div { border-color: #22d3ee !important; box-shadow: 0 0 20px rgba(34,211,238,0.55) !important; animation: epicenter-ripple 2s infinite ease-in-out; }

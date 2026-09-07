@@ -1,7 +1,9 @@
+import { TooltipHint } from '@/components/ui/tooltip';
 import { useState, useMemo } from 'react';
 import { GitCommit, ExternalLink, Search, Copy, Check, Calendar, User } from 'lucide-react';
 import type { TimelineWeek } from '@/types';
 import { copyToClipboard } from '@/lib/clipboard';
+import { Input } from '@/components/ui/Input';
 import { useVizStore } from '@/stores/vizStore';
 
 interface FullCommitHistoryViewProps {
@@ -62,50 +64,54 @@ export function FullCommitHistoryView({ timeline, owner, repo, branch, isLoading
   };
 
   return (
-    <div className="flex h-full w-full flex-col bg-zinc-950 p-6">
+    <div className="workspace-view-content flex h-full w-full flex-col bg-background p-4 lg:p-5">
       {/* Header */}
-      <div className="mb-6 flex flex-col justify-between gap-4 border-b border-white/5 pb-5 sm:flex-row sm:items-center">
+      <div className="workspace-view-header">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-white flex items-center gap-2">
-            <GitCommit className="h-5 w-5 text-ui-active-text-green animate-pulse" />
-            Commit History
+          <h2 className="text-xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <GitCommit className="h-5 w-5 text-ui-active-text-green" />
+            Commit history
           </h2>
-          <p className="mt-1 text-xs text-zinc-400">
-            Chronological log of recent changes in{' '}
-            <span className="font-mono text-zinc-300">{owner}/{repo}</span>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Recent changes in{' '}
+            <span className="font-mono text-foreground">{owner}/{repo}</span>
             {branch && (
-              <span className="ml-1.5 inline-flex items-center rounded bg-ui-active/15 border border-ui-active/35 px-1.5 py-0.5 font-mono text-[10px] text-ui-active-text-green">
+              <span className="ml-1.5 inline-flex items-center rounded bg-ui-active/15 border border-ui-active/35 px-1.5 py-0.5 font-mono text-xs text-ui-active-text-green">
                 {branch}
               </span>
             )}
           </p>
         </div>
 
-        <div className="relative w-full max-w-xs shrink-0">
-          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-500" />
-          <input
+        <div className="relative w-full max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
             type="text"
-            placeholder="Search commits, authors, shas..."
+            aria-label="Search commits"
+            placeholder="Search message, author, or SHA…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-white/5 bg-zinc-900/50 py-2 pl-9 pr-4 text-xs text-zinc-200 placeholder-zinc-500 focus:border-ui-active/50 focus:bg-zinc-900 focus:outline-none transition-all"
+            className="h-10 bg-card pl-9 pr-4 text-sm dark:bg-card"
           />
         </div>
       </div>
 
+      <p role="status" className="mb-3 text-xs text-muted-foreground">
+        {filteredCommits.length} of {commits.length} recent commits
+      </p>
       {/* Loading skeleton while branch data is fetching */}
       {isLoading ? (
         <div className="flex-1 overflow-hidden">
-          <div className="relative pl-6 border-l border-zinc-800/60 ml-3 space-y-6">
+          <div className="relative pl-6 border-l border-border ml-3 space-y-3">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="relative">
-                <span className="absolute -left-[31px] top-1.5 h-4 w-4 rounded-full bg-zinc-800 animate-pulse" />
-                <div className="rounded-xl border border-white/[0.03] bg-zinc-900/10 p-4">
+                <span className="absolute -left-[31px] top-1.5 h-4 w-4 rounded-full bg-secondary animate-pulse" />
+                <div className="rounded-xl border border-border bg-card p-4">
                   <div className="flex gap-3">
-                    <div className="h-9 w-9 shrink-0 rounded-full bg-zinc-800 animate-pulse" />
+                    <div className="h-9 w-9 shrink-0 rounded-full bg-secondary animate-pulse" />
                     <div className="flex-1 space-y-2 pt-1">
-                      <div className="h-3.5 w-3/4 rounded bg-zinc-800 animate-pulse" />
-                      <div className="h-3 w-1/2 rounded bg-zinc-800 animate-pulse" />
+                      <div className="h-3.5 w-3/4 rounded bg-secondary animate-pulse" />
+                      <div className="h-3 w-1/2 rounded bg-secondary animate-pulse" />
                     </div>
                   </div>
                 </div>
@@ -114,28 +120,28 @@ export function FullCommitHistoryView({ timeline, owner, repo, branch, isLoading
           </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
+        <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
           {filteredCommits.length === 0 ? (
-            <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-white/[0.03] bg-white/[0.01] p-8 text-center">
-              <GitCommit className="h-8 w-8 text-zinc-600 mb-2 opacity-60" />
-              <p className="text-sm text-zinc-400 font-medium">No matching commits found</p>
-              <p className="text-xs text-zinc-500 mt-1">Try broadening your search query</p>
+            <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-border bg-card p-8 text-center">
+              <GitCommit className="h-8 w-8 text-muted-foreground mb-2 opacity-60" />
+              <p className="text-sm text-muted-foreground font-medium">{search ? 'No matching commits' : 'No recent commits'}</p>
+              <p className="text-xs text-muted-foreground mt-1">{search ? 'Try a different message, author, or SHA.' : 'Commit activity will appear here when available.'}</p>
             </div>
           ) : (
-            <div className="relative pl-6 border-l border-zinc-800/60 ml-3 space-y-6">
+            <div className="relative pl-6 border-l border-border ml-3 space-y-3">
               {filteredCommits.map((commit) => {
                 const commitUrl = `https://github.com/${owner}/${repo}/commit/${commit.sha}`;
                 const isCopied = copiedSha === commit.sha;
 
                 return (
                   <div key={commit.sha} className="relative group">
-                    <span className="absolute -left-[31px] top-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full border-2 border-zinc-950 bg-zinc-900 text-zinc-500 group-hover:border-ui-active/40 group-hover:bg-ui-active/10 transition-all duration-200 shadow-md">
-                      <span className="h-1.5 w-1.5 rounded-full bg-zinc-700 group-hover:bg-ui-active-text-green transition-colors" />
+                    <span className="absolute -left-[31px] top-1.5 flex h-4.5 w-4.5 items-center justify-center rounded-full border-2 border-background bg-card text-muted-foreground group-hover:border-ui-active/40 group-hover:bg-ui-active/10 transition-all duration-200 shadow-md">
+                      <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground group-hover:bg-ui-active-text-green transition-colors" />
                     </span>
 
-                    <div className="rounded-xl border border-white/[0.03] bg-zinc-900/10 p-4 transition-all duration-200 hover:border-white/[0.08] hover:bg-white/[0.01] hover:shadow-[0_4px_20px_rgba(0,0,0,0.25)]">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex gap-3 min-w-0">
+                    <div className="rounded-lg border border-border bg-card p-4 transition-colors hover:border-ring/50">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="flex flex-1 basis-64 gap-3 min-w-0">
                           {commit.authorLogin ? (
                             <a
                               href={`https://github.com/${commit.authorLogin}`}
@@ -147,11 +153,11 @@ export function FullCommitHistoryView({ timeline, owner, repo, branch, isLoading
                                 <img
                                   src={commit.authorAvatar}
                                   alt={commit.authorLogin || 'Avatar'}
-                                  className="h-9 w-9 shrink-0 rounded-full border border-white/10 shadow-sm hover:border-ui-active-text-green hover:ring-2 hover:ring-ui-active/20 transition-all duration-200"
+                                  className="h-9 w-9 shrink-0 rounded-full border border-border shadow-sm hover:border-ui-active-text-green hover:ring-2 hover:ring-ui-active/20 transition-all duration-200"
                                   onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                                 />
                               ) : (
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-zinc-900 text-zinc-400 shadow-sm hover:border-ui-active/50 hover:text-ui-active-text-green transition-all">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm hover:border-ui-active/50 hover:text-ui-active-text-green transition-all">
                                   <User className="h-4 w-4" />
                                 </div>
                               )}
@@ -161,40 +167,40 @@ export function FullCommitHistoryView({ timeline, owner, repo, branch, isLoading
                               <img
                                 src={commit.authorAvatar}
                                 alt={commit.authorName || 'Avatar'}
-                                className="h-9 w-9 shrink-0 rounded-full border border-white/10 shadow-sm"
+                                className="h-9 w-9 shrink-0 rounded-full border border-border shadow-sm"
                                 onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                               />
                             ) : (
-                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-zinc-900 text-zinc-400 shadow-sm">
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm">
                                 <User className="h-4 w-4" />
                               </div>
                             )
                           )}
 
                           <div className="min-w-0">
-                            <h4 className="text-sm font-semibold text-zinc-150 leading-snug group-hover:text-white transition-colors duration-150 break-words">
+                            <h4 className="text-sm font-semibold text-foreground leading-snug group-hover:text-foreground transition-colors duration-150 break-words">
                               {commit.message}
                             </h4>
-                            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-400">
+                            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                               {commit.authorLogin ? (
                                 <a
                                   href={`https://github.com/${commit.authorLogin}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="font-semibold text-zinc-300 hover:text-ui-active-text-green transition-colors"
+                                  className="font-semibold text-foreground hover:text-ui-active-text-green transition-colors"
                                 >
                                   {commit.authorLogin}
                                 </a>
                               ) : (
-                                <span className="font-semibold text-zinc-350">
+                                <span className="font-semibold text-foreground">
                                   {commit.authorName || 'Unknown'}
                                 </span>
                               )}
                               {commit.authorLogin && commit.authorName && (
-                                <span className="text-[10px] text-zinc-500">({commit.authorName})</span>
+                                <span className="text-xs text-muted-foreground">({commit.authorName})</span>
                               )}
-                              <span className="text-zinc-600">•</span>
-                              <span className="flex items-center gap-1 text-[11px] text-zinc-500">
+                              <span className="text-muted-foreground">•</span>
+                              <span className="flex items-center gap-1 text-xs text-muted-foreground">
                                 <Calendar className="h-3 w-3" />
                                 {formatDate(commit.date)}
                               </span>
@@ -203,28 +209,28 @@ export function FullCommitHistoryView({ timeline, owner, repo, branch, isLoading
                         </div>
 
                         <div className="flex shrink-0 items-center gap-1.5">
-                          <button
+                          <TooltipHint content="Copy full SHA"><button
                             type="button"
                             onClick={() => handleCopySha(commit.sha)}
-                            title="Copy Full SHA"
-                            className="flex items-center justify-center h-7 w-7 rounded-md border border-white/[0.06] bg-zinc-900/60 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-all duration-150"
+                            aria-label={`Copy commit ${commit.sha.slice(0, 7)} SHA`}
+                            className="flex items-center justify-center h-8 w-8 rounded-md border border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-150"
                           >
                             {isCopied ? (
-                              <Check className="h-3.5 w-3.5 text-green-400" />
+                              <Check className="h-3.5 w-3.5 text-success" />
                             ) : (
                               <Copy className="h-3.5 w-3.5" />
                             )}
-                          </button>
+                          </button></TooltipHint>
 
-                          <a
+                          <TooltipHint content={`Open commit ${commit.sha} on GitHub`}><a
                             href={commitUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 rounded-md border border-white/[0.06] bg-zinc-900/60 px-2.5 py-1 text-xs font-mono text-zinc-400 hover:border-ui-active/35 hover:bg-ui-active/20 hover:text-ui-active-text-green transition-all duration-150"
+                            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-xs font-mono text-muted-foreground hover:border-ui-active/35 hover:bg-ui-active/20 hover:text-ui-active-text-green transition-all duration-150"
                           >
-                            {commit.sha}
-                            <ExternalLink className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
-                          </a>
+                            {commit.sha.slice(0, 7)}
+                            <ExternalLink className="h-3.5 w-3.5 opacity-60 transition-opacity duration-150" />
+                          </a></TooltipHint>
                         </div>
                       </div>
                     </div>
