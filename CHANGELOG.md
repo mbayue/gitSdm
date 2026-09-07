@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Comprehensive homepage and repository workspace refresh across 110 files.
 - Sandboxed homepage sample graph from global state mutations.
 - Enhanced accessibility across UI components (`role="status"`, `role="alert"`, `aria-current`, and focus management).
 - Upgraded project metadata, documentation, and versioning to 3.0.0.
