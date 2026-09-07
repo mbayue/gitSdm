@@ -36,6 +36,10 @@ export function HeaderActionMenu({ owner, repo, analysis, meta: propsMeta }: Hea
   const [activeSubPanel, setActiveSubPanel] = useState<'main' | 'branch-switch' | 'branch-compare'>('main');
   const menuRef = useRef<HTMLDivElement>(null);
   const setToastMessage = useVizStore((s) => s.setToastMessage);
+  // True opener for the mobile settings popover: stored manually (not as an
+  // attached ref) so it survives the menu item unmounting when the menu
+  // closes before the dialog opens.
+  const settingsOpenerRef = useRef<HTMLElement | null>(null);
 
   const {
     activeView,
@@ -127,7 +131,7 @@ export function HeaderActionMenu({ owner, repo, analysis, meta: propsMeta }: Hea
 
       <div className="hidden lg:block"><SettingsPopover triggerClassName="icon-button header-action relative" /></div>
       <div className="lg:hidden">
-        <SettingsPopover open={isSettingsOpen} onOpenChange={setIsSettingsOpen} hideTrigger />
+        <SettingsPopover open={isSettingsOpen} onOpenChange={setIsSettingsOpen} hideTrigger openerRef={settingsOpenerRef} />
       </div>
 
       <div className="relative lg:hidden" ref={menuRef}>
@@ -191,7 +195,7 @@ export function HeaderActionMenu({ owner, repo, analysis, meta: propsMeta }: Hea
                 />
 
                 <div className="my-1.5 h-px bg-secondary" />
-                <button type="button" onClick={() => { closeMenu(); setIsSettingsOpen(true); }}
+                <button type="button" onClick={(e) => { settingsOpenerRef.current = e.currentTarget; closeMenu(); setIsSettingsOpen(true); }}
                   className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-foreground hover:bg-secondary transition-colors lg:hidden">
                   <Settings className="h-3.5 w-3.5 text-muted-foreground" />
                   <span>Settings</span>

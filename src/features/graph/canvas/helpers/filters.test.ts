@@ -15,11 +15,11 @@ const graph: GraphData = {
   edges: [{ id: 'edge', source: 'root', target: 'app', type: 'contains' }],
 };
 
-function filter(content: string[], readOnly = false) {
+function filter(content: string[], readOnly = false, graphScope = 'full') {
   let result: Pick<GraphData, 'nodes' | 'edges'> = graph;
   function Probe() {
     result = useNodeFiltering({ graph, readOnly, searchQuery: '', nodeTypeFilters: new Set(['repo', 'file']),
-      diffStatusFilters: new Set(), fileTypeFilters: new Set(), activeFocusLayer: 'all', contentFilters: new Set(content), graphScope: 'full' });
+      diffStatusFilters: new Set(), fileTypeFilters: new Set(), activeFocusLayer: 'all', contentFilters: new Set(content), graphScope });
     return null;
   }
   renderToStaticMarkup(createElement(Probe));
@@ -36,4 +36,9 @@ test('disabling source removes its nodes and dangling edges', () => {
 });
 test('the homepage sample ignores workspace content filters', () => {
   expect(filter([], true)).toBe(graph);
+});
+test('the Source toggle is honored in the important scope', () => {
+  expect(filter(['source', 'config'], false, 'important').nodes.map((node) => node.id)).toEqual(['root', 'app']);
+  expect(filter(['config'], false, 'important').nodes.map((node) => node.id)).toEqual(['root']);
+  expect(filter(['config'], false, 'important').edges).toEqual([]);
 });

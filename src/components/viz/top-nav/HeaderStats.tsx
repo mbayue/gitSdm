@@ -17,7 +17,7 @@ export function HeaderStats({ analysis, meta: propsMeta }: HeaderStatsProps) {
     <div className="hidden md:flex items-center gap-3 select-none shrink-0 text-xs text-muted-foreground font-medium">
       {totalCommits > 0 && (
         <Tooltip>
-        <TooltipTrigger render={<span tabIndex={0} role="status" aria-label={`Total commits: ${totalCommits}`} />} className="flex items-center gap-1">
+        <TooltipTrigger render={<span tabIndex={0} role="status" aria-label={`Total commits: ${totalCommits.toLocaleString()}`} />} className="flex items-center gap-1">
           <History className="h-3 w-3 shrink-0" />
           <span>{totalCommits.toLocaleString()} total</span>
         </TooltipTrigger>

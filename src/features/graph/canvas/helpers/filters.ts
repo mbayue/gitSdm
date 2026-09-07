@@ -141,8 +141,7 @@ export function useNodeFiltering({
         if (isLocales && !contentFilters.has('translations')) return false;
         if (isConfig && !contentFilters.has('config') && !isDocs && !isTests && !isGithub) return false;
         if (n.type === 'file' && !isDocs && !isTests && !isGithub && !isExamples && !isGenerated && !isLocales && !isConfig && !contentFilters.has('source')) {
-          const keepForImportantScope = graphScope === 'important' && (n.data.fileClass === 'entry' || n.data.fileClass === 'source');
-          if (!keepForImportantScope) return false;
+          return false;
         }
         
         return true;

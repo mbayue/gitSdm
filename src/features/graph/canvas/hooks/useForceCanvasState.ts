@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import type { GraphNode, GraphEdge } from "@/types";
-import { useVizStore } from "@/stores/vizStore";
+import { useVizStore, type LayoutType, type SizeMode } from "@/stores/vizStore";
 import { buildForceGraphData } from "../../force/buildForceGraphData";
 import { computeBlastRadius } from "../../force/forceGraphUtils";
 import { useGraphExport } from "../../useGraphExport";
@@ -16,6 +16,9 @@ interface UseForceCanvasStateProps {
   forceHostRef: React.MutableRefObject<HTMLDivElement | null>;
   forceInitialViewDoneRef: React.MutableRefObject<boolean>;
   readOnly?: boolean;
+  sizeModeOverride?: SizeMode;
+  layoutTypeOverride?: LayoutType;
+  onVisibleCounts?: (nodes: number, edges: number) => void;
 }
 
 export function useForceCanvasState({
@@ -24,6 +27,9 @@ export function useForceCanvasState({
   forceHostRef,
   forceInitialViewDoneRef,
   readOnly,
+  sizeModeOverride,
+  layoutTypeOverride,
+  onVisibleCounts,
 }: UseForceCanvasStateProps) {
   const {
     selectedNodeId,
@@ -40,9 +46,12 @@ export function useForceCanvasState({
     resetFilters,
     graphActionTrigger,
     setVisibleCounts,
-    layoutType,
-    sizeMode,
+    layoutType: storedLayoutType,
+    sizeMode: storedSizeMode,
   } = useVizStore();
+
+  const layoutType = layoutTypeOverride ?? storedLayoutType;
+  const sizeMode = sizeModeOverride ?? storedSizeMode;
 
   const [forceSize, setForceSize] = useState({ width: 1024, height: 720 });
   const [hoveredForceNode, setHoveredForceNode] = useState<ForceGraphNode | null>(null);
@@ -137,8 +146,12 @@ export function useForceCanvasState({
   ]);
 
   useEffect(() => {
-    setVisibleCounts(forceGraphData.nodes.length, forceGraphData.links.length);
-  }, [forceGraphData.nodes.length, forceGraphData.links.length, setVisibleCounts]);
+    if (onVisibleCounts) {
+      onVisibleCounts(forceGraphData.nodes.length, forceGraphData.links.length);
+    } else {
+      setVisibleCounts(forceGraphData.nodes.length, forceGraphData.links.length);
+    }
+  }, [forceGraphData.nodes.length, forceGraphData.links.length, setVisibleCounts, onVisibleCounts]);
 
   useEffect(() => {
     forceInitialViewDoneRef.current = false;

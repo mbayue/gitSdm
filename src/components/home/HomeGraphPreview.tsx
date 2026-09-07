@@ -1,12 +1,18 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useCallback, useState } from "react";
 import {
   GitBranch,
   Move,
   Network,
 } from "lucide-react";
 import { demoGraph } from "@/features/graph/demoGraph";
-import { useVizStore } from "@/stores/vizStore";
-import type { NodeType } from "@/types";
+
+/**
+ * Homepage sample graph. The preview never writes to the shared viz store:
+ * filtering is already bypassed by `readOnly`, presentation is pinned via
+ * explicit canvas overrides, and rendered counts are reported through a
+ * local callback — so mounting, unmounting, or refreshing the homepage
+ * cannot leak demo values into the user's persisted workspace settings.
+ */
 
 const GraphCanvas = lazy(() =>
   import("@/features/graph/canvas/GraphCanvas").then((module) => ({
@@ -14,46 +20,15 @@ const GraphCanvas = lazy(() =>
   })),
 );
 
-/**
- * Presentation slices of the shared viz store that would otherwise leak a
- * repo-workspace session (filters, scope, layout, overlays) into the
- * homepage sample graph. While the preview is mounted these are pinned to
- * neutral demo values and restored on unmount, so the sample always renders
- * consistently no matter what the user toggled elsewhere.
- */
-const DEMO_NODE_TYPES: NodeType[] = ["repo", "package", "folder", "file"];
-
 export function HomeGraphPreview() {
-  const visibleNodeCount = useVizStore((s) => s.visibleNodeCount);
-  const visibleEdgeCount = useVizStore((s) => s.visibleEdgeCount);
+  const [previewNodeCount, setPreviewNodeCount] = useState(0);
+  const [previewEdgeCount, setPreviewEdgeCount] = useState(0);
 
-  useEffect(() => {
-    const store = useVizStore.getState();
-    const snapshot = {
-      nodeTypeFilters: store.nodeTypeFilters,
-      fileTypeFilters: store.fileTypeFilters,
-      graphScope: store.graphScope,
-      contentFilters: store.contentFilters,
-      colorMode: store.colorMode,
-      sizeMode: store.sizeMode,
-      layoutType: store.layoutType,
-    };
-    // Neutral demo presentation: everything visible, default styling/layout.
-    store.setGraphScope("full");
-    useVizStore.setState({
-      nodeTypeFilters: new Set<NodeType>(DEMO_NODE_TYPES),
-      fileTypeFilters: new Set<string>(),
-      colorMode: "default",
-      sizeMode: "default",
-      layoutType: "tree",
-    });
-    // Reset rendered counts so the footer falls back to demo totals until
-    // the preview reports its own (it renders the full demo by construction).
-    store.setVisibleCounts(0, 0);
-    return () => {
-      useVizStore.setState(snapshot);
-    };
+  const handleVisibleCounts = useCallback((nodes: number, edges: number) => {
+    setPreviewNodeCount(nodes);
+    setPreviewEdgeCount(edges);
   }, []);
+
   return (
     <div id="workspace-preview" className="preview-frame scroll-mt-24">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
@@ -78,7 +53,15 @@ export function HomeGraphPreview() {
               </div>
             }
           >
-            <GraphCanvas graph={demoGraph} readOnly hideChrome />
+            <GraphCanvas
+              graph={demoGraph}
+              readOnly
+              hideChrome
+              colorModeOverride="default"
+              sizeModeOverride="default"
+              layoutTypeOverride="tree"
+              onVisibleCounts={handleVisibleCounts}
+            />
           </Suspense>
           <div className="pointer-events-none absolute bottom-4 left-4 right-4 flex w-fit max-w-[calc(100%-2rem)] items-center gap-2 rounded-md border border-border bg-card/95 px-3 py-2 text-xs text-muted-foreground">
             <Move className="h-3 w-3" /> Drag to explore · Scroll to zoom
@@ -89,9 +72,9 @@ export function HomeGraphPreview() {
         <span>
           {/* Rendered counts when the preview has reported them, demo totals
               otherwise — the footer always agrees with what is drawn. */}
-          {visibleNodeCount || demoGraph.nodes.length} nodes{" "}
+          {previewNodeCount || demoGraph.nodes.length} nodes{" "}
           <span className="mx-2 text-border">/</span>{" "}
-          {visibleEdgeCount || demoGraph.edges.length}{" "}
+          {previewEdgeCount || demoGraph.edges.length}{" "}
           connections
         </span>
         <span className="flex items-center gap-2">

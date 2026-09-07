@@ -104,7 +104,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      CI_MOCK_GITHUB: "true"   # optional: instruct the server to use fixtures in CI
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2

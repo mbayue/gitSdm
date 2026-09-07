@@ -100,10 +100,23 @@ export function VizSidebar({
         );
       fallback?.focus();
     } else {
-      const opener = openButtonRef.current;
-      // Minibar is desktop-only (hidden lg:flex); only restore when visible.
-      if (opener && window.matchMedia("(min-width: 1024px)").matches) {
-        opener.focus();
+      const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+      if (isDesktop) {
+        // Minibar is desktop-only (hidden lg:flex); only restore when visible.
+        const opener = openButtonRef.current;
+        if (opener && opener.getClientRects().length > 0) {
+          opener.focus();
+        }
+      } else {
+        // Mobile: minibar is hidden, so restore to the visible mobile menu
+        // trigger (or another visible workspace control) instead of leaving
+        // focus on the unmounted collapse button.
+        const mobileMenuTrigger = document.querySelector<HTMLElement>(
+          'button[aria-label="Open menu"]',
+        );
+        if (mobileMenuTrigger && mobileMenuTrigger.getClientRects().length > 0) {
+          mobileMenuTrigger.focus();
+        }
       }
     }
   }, [isOpen]);

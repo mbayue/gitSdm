@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { useParams } from "react-router-dom";
 
 import type { GraphData } from "@/types";
-import { useVizStore } from "@/stores/vizStore";
+import { useVizStore, type ColorMode, type LayoutType, type SizeMode } from "@/stores/vizStore";
 import { NetworkCanvas } from "./ForceGraphCanvas";
 
 import { useGraphCanvasState } from "./hooks/useGraphCanvasState";
@@ -23,6 +23,10 @@ interface GraphCanvasProps {
   showMinimap?: boolean;
   setShowMinimap?: (show: boolean) => void;
   hideChrome?: boolean;
+  colorModeOverride?: ColorMode;
+  sizeModeOverride?: SizeMode;
+  layoutTypeOverride?: LayoutType;
+  onVisibleCounts?: (nodes: number, edges: number) => void;
 }
 
 export function GraphCanvas({
@@ -31,6 +35,10 @@ export function GraphCanvas({
   showMinimap,
   setShowMinimap,
   hideChrome,
+  colorModeOverride,
+  sizeModeOverride,
+  layoutTypeOverride,
+  onVisibleCounts,
 }: GraphCanvasProps) {
   const {
     toggleNodeTypeFilter,
@@ -48,11 +56,11 @@ export function GraphCanvas({
     setGraphScope,
     contentFilters,
     toggleContentFilter,
-    colorMode,
+    colorMode: storedColorMode,
     setColorMode,
-    sizeMode,
+    sizeMode: storedSizeMode,
     setSizeMode,
-    layoutType,
+    layoutType: storedLayoutType,
     setLayoutType,
     selectedNodeId,
     resetFilters,
@@ -74,6 +82,10 @@ export function GraphCanvas({
   }, [setActiveDropdown]);
 
 
+
+  const colorMode = colorModeOverride ?? storedColorMode;
+  const sizeMode = sizeModeOverride ?? storedSizeMode;
+  const layoutType = layoutTypeOverride ?? storedLayoutType;
 
   // --- Filtering & Helper states ---
   const {
@@ -173,12 +185,16 @@ export function GraphCanvas({
             </div>
           </div>
         )}
-        <NetworkCanvas 
-          graph={filtered} 
-          readOnly={readOnly} 
+        <NetworkCanvas
+          graph={filtered}
+          readOnly={readOnly}
           showMinimap={showMinimap}
           forceGraphRef={forceGraphRef}
           forceHostRef={forceHostRef}
+          colorModeOverride={colorModeOverride}
+          sizeModeOverride={sizeModeOverride}
+          layoutTypeOverride={layoutTypeOverride}
+          onVisibleCounts={onVisibleCounts}
         />
       </div>
     </div>

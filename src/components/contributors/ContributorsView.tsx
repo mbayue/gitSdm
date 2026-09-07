@@ -15,11 +15,23 @@ const statValueClass = "text-2xl leading-8 font-bold text-foreground mt-0.5 trun
 
 /**
  * Fixed chart height for the commit activity timeline.
- * Responsive-height contract: the wrapper's `min-h-[280px]` must match this
- * value so the recharts `ResponsiveContainer` always has a sized parent
- * (it renders nothing when the parent height is 0). Width stays fluid.
+ * Responsive-height contract: the wrapper's min-height (see
+ * {@link getContributorTimelineWrapperStyle}) must match this value so the
+ * recharts `ResponsiveContainer` always has a sized parent (it renders
+ * nothing when the parent height is 0). Width stays fluid.
  */
 export const CONTRIBUTOR_TIMELINE_HEIGHT = 280;
+
+/**
+ * Wrapper style for the commit activity timeline. Derived from
+ * {@link CONTRIBUTOR_TIMELINE_HEIGHT} (inline style — Tailwind cannot
+ * interpolate a TS constant into an arbitrary-value class, so a hardcoded class would
+ * silently drift from the chart height). Changing the constant changes
+ * rendering.
+ */
+export function getContributorTimelineWrapperStyle(): { minHeight: number } {
+  return { minHeight: CONTRIBUTOR_TIMELINE_HEIGHT };
+}
 
 export function ContributorsView({ analysis, owner, repo }: ContributorsViewProps) {
   const { contributors, timeline } = analysis;
@@ -209,7 +221,7 @@ export function ContributorsView({ analysis, owner, repo }: ContributorsViewProp
             <Calendar className="h-4 w-4 text-ui-active-text-green" />
             Commit Activity Timeline
           </h3>
-          <div className="flex-1 min-h-[280px] flex items-center justify-center bg-card rounded-lg p-2">
+          <div className="flex-1 flex items-center justify-center bg-card rounded-lg p-2" style={getContributorTimelineWrapperStyle()}>
             <RepoTimeline timeline={timeline} height={CONTRIBUTOR_TIMELINE_HEIGHT} />
           </div>
         </div>

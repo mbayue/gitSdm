@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('AI Explain (mock mode)', () => {
   test('AI sidebar toggle button exists on repo page', async ({ page }) => {
-    await page.goto('/mbayue/gitSdm', { timeout: 15000 });
+    await page.goto('/mock/gitsdm', { timeout: 15000 });
 
     // Wait for the header to render
     await page.waitForSelector('header', { timeout: 20000 });
@@ -13,7 +13,7 @@ test.describe('AI Explain (mock mode)', () => {
   });
 
   test('AI sidebar renders when toggled', async ({ page }) => {
-    await page.goto('/mbayue/gitSdm', { timeout: 15000 });
+    await page.goto('/mock/gitsdm', { timeout: 15000 });
 
     await page.waitForSelector('header', { timeout: 20000 });
 

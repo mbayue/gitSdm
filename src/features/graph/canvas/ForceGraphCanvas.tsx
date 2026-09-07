@@ -3,7 +3,7 @@ import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d";
 import { Loader2 } from "lucide-react";
 import type { GraphEdge, GraphNode } from "@/types";
 import { useForceCanvasState } from "./hooks/useForceCanvasState";
-import { useVizStore } from "@/stores/vizStore";
+import { useVizStore, type ColorMode, type LayoutType, type SizeMode } from "@/stores/vizStore";
 
 import {
   type ForceGraphNode,
@@ -27,9 +27,13 @@ interface NetworkCanvasProps {
   showMinimap?: boolean;
   forceGraphRef?: React.MutableRefObject<ForceGraphMethods<ForceGraphNode, ForceGraphLink> | undefined>;
   forceHostRef?: React.MutableRefObject<HTMLDivElement | null>;
+  colorModeOverride?: ColorMode;
+  sizeModeOverride?: SizeMode;
+  layoutTypeOverride?: LayoutType;
+  onVisibleCounts?: (nodes: number, edges: number) => void;
 }
 
-const getArrowRelPos = (link: ForceGraphLink): number => {
+const getArrowRelPos = (link: ForceGraphLink, sizeMode?: SizeMode): number => {
   const source = link.source;
   const target = link.target;
   if (typeof source === 'string' || typeof target === 'string') return 0.96;
@@ -41,7 +45,6 @@ const getArrowRelPos = (link: ForceGraphLink): number => {
   const dy = ty - sy;
   const dist = Math.sqrt(dx * dx + dy * dy);
   if (dist === 0) return 0.96;
-  const sizeMode = useVizStore.getState().sizeMode;
   const targetRadius = getForceNodeRadius(target, sizeMode);
   const offset = targetRadius + 1.2;
   // Link shorter than the target's radius: 1 - offset/dist would go negative.
@@ -57,6 +60,10 @@ export function NetworkCanvas({
   showMinimap,
   forceGraphRef: externalForceGraphRef,
   forceHostRef: externalForceHostRef,
+  colorModeOverride,
+  sizeModeOverride,
+  layoutTypeOverride,
+  onVisibleCounts,
 }: NetworkCanvasProps) {
   const [tick, setTick] = useState(0);
   const theme = useVizStore((s) => s.theme);
@@ -71,9 +78,12 @@ export function NetworkCanvas({
   const forceInitialViewDoneRef = useRef(false);
   const lastMinimapTickRef = useRef(0);
 
-  const colorMode = useVizStore((s) => s.colorMode);
-  const sizeMode = useVizStore((s) => s.sizeMode);
-  const layoutType = useVizStore((s) => s.layoutType);
+  const storedColorMode = useVizStore((s) => s.colorMode);
+  const storedSizeMode = useVizStore((s) => s.sizeMode);
+  const storedLayoutType = useVizStore((s) => s.layoutType);
+  const colorMode = colorModeOverride ?? storedColorMode;
+  const sizeMode = sizeModeOverride ?? storedSizeMode;
+  const layoutType = layoutTypeOverride ?? storedLayoutType;
   const isD3TreeLayout = layoutType === 'd3-tree-horiz' || layoutType === 'd3-tree-vert';
 
   const {
@@ -99,6 +109,9 @@ export function NetworkCanvas({
     forceHostRef,
     forceInitialViewDoneRef,
     readOnly,
+    sizeModeOverride,
+    layoutTypeOverride,
+    onVisibleCounts,
   });
 
   // --- Callbacks ---
@@ -290,7 +303,7 @@ export function NetworkCanvas({
           nodeRelSize={1}
           linkCurvature={0}
           linkDirectionalArrowLength={6}
-          linkDirectionalArrowRelPos={getArrowRelPos}
+          linkDirectionalArrowRelPos={(link) => getArrowRelPos(link, sizeMode)}
           linkDirectionalArrowColor={getLinkColor}
           cooldownTicks={120}
           d3AlphaDecay={0.028}

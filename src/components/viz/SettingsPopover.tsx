@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
+import { useState, useRef, useEffect, useCallback, type ReactNode, type RefObject } from 'react';
 import { Settings, X, Check, Eye, EyeOff, KeyRound, GitBranch } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
@@ -32,6 +32,9 @@ interface SettingsPopoverProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
+  /** True opener element (e.g. the mobile Settings menu item). Takes
+   *  precedence over the popover's own trigger refs on focus restore. */
+  openerRef?: RefObject<HTMLElement | null>;
 }
 
 export function SettingsPopover({
@@ -40,6 +43,7 @@ export function SettingsPopover({
   open: controlledOpen,
   onOpenChange,
   hideTrigger = false,
+  openerRef,
 }: SettingsPopoverProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const open = controlledOpen ?? uncontrolledOpen;
@@ -52,23 +56,54 @@ export function SettingsPopover({
   }, [controlledOpen, onOpenChange, open]);
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  // Stable focus anchor across every close path (X button, outside click,
-  // Escape). Captured on open so handlers that run after unmounts still
-  // restore to a connected element; triggerRef covers the desktop opener and
-  // previousFocus covers the mobile (hideTrigger) opener.
+  // True opener across every close path (X button, outside click, Escape).
+  // openerRef tracks the actual element that opened the popover (the mobile
+  // Settings menu item when hideTrigger); previousFocusRef is a snapshot of
+  // the focused element at open time. The popover's own hidden trigger is
+  // never a restore target.
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
+  function isVisibleFocusable(el: HTMLElement | null): el is HTMLElement {
+    if (!el || !document.contains(el)) return false;
+    if (el.classList.contains('sr-only')) return false;
+    if ((el as HTMLButtonElement).disabled) return false;
+    if (el.tabIndex < 0 && el.getAttribute('tabindex') === '-1') return false;
+    return el.getClientRects().length > 0;
+  }
+
   const restoreOpenerFocus = useCallback(() => {
+    const trueOpener = openerRef?.current ?? null;
+    if (isVisibleFocusable(trueOpener)) {
+      trueOpener.focus();
+      return;
+    }
+    if (hideTrigger) {
+      // Mobile (no visible popover trigger): the menu item unmounts when the
+      // menu closes, so fall back to the visible mobile menu trigger rather
+      // than an invisible anchor.
+      const menuTrigger = document.querySelector<HTMLElement>(
+        'button[aria-label="Open menu"]',
+      );
+      if (menuTrigger && isVisibleFocusable(menuTrigger)) {
+        menuTrigger.focus();
+        return;
+      }
+      const previous = previousFocusRef.current;
+      if (isVisibleFocusable(previous)) {
+        previous.focus();
+      }
+      return;
+    }
     const trigger = triggerRef.current;
-    if (trigger && document.contains(trigger)) {
+    if (isVisibleFocusable(trigger)) {
       trigger.focus();
       return;
     }
     const previous = previousFocusRef.current;
-    if (previous && document.contains(previous)) {
+    if (isVisibleFocusable(previous)) {
       previous.focus();
     }
-  }, []);
+  }, [hideTrigger, openerRef]);
 
   const requestClose = useCallback(() => {
     setOpen(false);
@@ -144,18 +179,7 @@ export function SettingsPopover({
 
   return (
     <div className="relative" ref={popoverRef}>
-      {hideTrigger ? (
-        // Stable hidden opener anchor so focus restore has a connected
-        // target on mobile, where the visible Settings menu item unmounts
-        // when the menu closes before the dialog opens.
-        <button
-          ref={triggerRef}
-          type="button"
-          tabIndex={-1}
-          aria-label="Settings and credentials"
-          className="sr-only"
-        />
-      ) : (
+      {hideTrigger ? null : (
         <Tooltip>
           <TooltipTrigger
             ref={triggerRef}

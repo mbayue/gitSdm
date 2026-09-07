@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Repository page', () => {
   test('navigating to a repo URL shows the viz workspace', async ({ page }) => {
     // Navigate to a known public repo page
-    await page.goto('/mbayue/gitSdm', { timeout: 15000 });
+    await page.goto('/mock/gitsdm', { timeout: 15000 });
 
     // The page should load — either the workspace UI or an error/loading state
     // Wait for the app shell to render

@@ -310,7 +310,7 @@ export function LegendPanel({
       </button>
 
       {legendOpen && (
-        <div className="graph-menu absolute right-0 mt-2 w-64 rounded-md border border-border bg-popover p-3 shadow-2xl animate-in fade-in slide-in-from-top-1 duration-150 max-h-[calc(100vh-3rem)] overflow-y-auto">
+        <div className="graph-menu absolute left-0 sm:left-auto sm:right-0 z-50 mt-2 w-64 rounded-md border border-border bg-popover p-3 shadow-2xl animate-in fade-in slide-in-from-top-1 duration-150 max-h-[calc(100vh-3rem)] overflow-y-auto">
           <LegendContent
             compareBranch={compareBranch}
             colorMode={colorMode}

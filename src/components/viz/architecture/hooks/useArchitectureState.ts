@@ -4,6 +4,7 @@ import type { RepoAnalysis } from '@/types';
 import { generateProgrammaticMermaid } from '../mermaid-generator';
 import { ensureMermaidConfigured } from '../mermaid-config';
 import { stripMermaidFences } from '../stripMermaidFences';
+import { shouldApplyRender } from './render-sequence';
 import { useVizStore } from '@/stores/vizStore';
 
 export function useArchitectureState(
@@ -44,7 +45,7 @@ export function useArchitectureState(
 
     let active = true;
     const seq = ++renderSeqRef.current;
-    const isLatest = () => active && seq === renderSeqRef.current;
+    const isLatest = () => shouldApplyRender(seq, renderSeqRef.current, active);
     setRenderError(null);
     setSvg('');
     resetView();

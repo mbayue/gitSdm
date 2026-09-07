@@ -10,7 +10,7 @@ const sectionHeaderClass = "mb-1.5 text-xs font-semibold uppercase tracking-[0.1
 const sectionClass = "space-y-1.5 border-t border-border pt-3 first:border-t-0 first:pt-0";
 const focusClass = "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ui-focus/70 focus-visible:ring-offset-1 focus-visible:ring-offset-popover";
 const inactiveRowClass = "text-muted-foreground hover:bg-secondary hover:text-foreground";
-const dropdownPanelClass = "graph-menu absolute left-0 mt-2 rounded-md border border-border bg-popover p-3 shadow-2xl animate-in fade-in slide-in-from-top-1 duration-150 max-h-[calc(100vh-3rem)] overflow-y-auto";
+const dropdownPanelClass = "graph-menu absolute left-0 z-50 mt-2 rounded-md border border-border bg-popover p-3 shadow-2xl animate-in fade-in slide-in-from-top-1 duration-150 max-h-[calc(100vh-3rem)] overflow-y-auto";
 const toolbarButtonClass = (active: boolean) =>
   `flex h-9 px-2.5 items-center gap-1.5 rounded-md text-sm font-medium transition-all active:scale-[0.95] ${
     active
@@ -486,24 +486,22 @@ export function ToolbarDropdowns({
           <DropdownPanel width="w-48">
             <button
               type="button"
-              disabled={exportDisabled}
               onClick={() => {
                 handleExport("png");
                 setActiveDropdown(null);
               }}
-              className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-foreground hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-foreground hover:bg-secondary transition-colors"
             >
               <Download className="h-3.5 w-3.5 text-muted-foreground" />
               <span>PNG Image</span>
             </button>
             <button
               type="button"
-              disabled={exportDisabled}
               onClick={() => {
                 handleExport("pdf");
                 setActiveDropdown(null);
               }}
-              className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-foreground hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-xs text-foreground hover:bg-secondary transition-colors"
             >
               <Download className="h-3.5 w-3.5 text-muted-foreground" />
               <span>PDF Document</span>

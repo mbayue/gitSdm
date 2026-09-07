@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Branch switching', () => {
   test('BranchSwitcher button is visible on repo page', async ({ page }) => {
-    await page.goto('/mbayue/gitSdm', { timeout: 15000 });
+    await page.goto('/mock/gitsdm', { timeout: 15000 });
 
     // Wait for the header to render
     await page.waitForSelector('header', { timeout: 20000 });
@@ -14,7 +14,7 @@ test.describe('Branch switching', () => {
   });
 
   test('branch dropdown opens on click', async ({ page }) => {
-    await page.goto('/mbayue/gitSdm', { timeout: 15000 });
+    await page.goto('/mock/gitsdm', { timeout: 15000 });
 
     // Wait for the header
     await page.waitForSelector('header', { timeout: 20000 });
