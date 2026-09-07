@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 
 const html = readFileSync(new URL('../../../index.html', import.meta.url), 'utf8');
-const bootstrap = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+const bootstrap = html.match(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/i)?.[1];
 if (!bootstrap) throw new Error('Theme bootstrap script missing');
 
 function boot(storage: Record<string, string>) {
