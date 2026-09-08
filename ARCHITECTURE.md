@@ -1,6 +1,6 @@
 # Architecture
 
-`gitSdm` is a graph-first repository analysis application. It visualizes file dependencies, architecture diagrams, module hierarchies, commit history, and AI-driven codebase insights in a single-page app with an embedded Express backend and Vercel serverless functions.
+`gitSdm` is an interactive repository dependency visualization tool. It maps file dependencies, architecture diagrams, module hierarchies, commit history, and codebase insights in a single-page app with an embedded Express backend and Vercel serverless functions.
 
 ---
 

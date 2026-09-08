@@ -17,7 +17,16 @@ export default defineConfig({
   }),
   ],
   build: {
-    chunkSizeWarningLimit: 3000,
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('/mermaid/') || id.includes('\\mermaid\\') || id.endsWith('/mermaid') || id.endsWith('\\mermaid')) {
+            return 'mermaid';
+          }
+        },
+      },
+    },
   },
   resolve: {
     alias: {

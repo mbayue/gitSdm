@@ -1,11 +1,12 @@
 <!-- markdownlint-disable MD033 -->
-<h1 align="center">gitSdm (Git Software Dependency Map v3.0.0)</h1>
+<h1 align="center">gitSdm — Git Software Dependency Map</h1>
 
 <p align="center">
-  <strong>Graph-first repository analysis for exploring files, dependencies, modules, architecture diagrams, and AI-powered codebase intelligence.</strong>
+  <strong>Interactive dependency maps for exploring files, modules, architecture diagrams, and codebase intelligence.</strong>
 </p>
 
 <p align="center">
+  <a href="https://gsdm.site"><img src="https://img.shields.io/badge/Live-gsdm.site-blueviolet?style=for-the-badge" alt="Live Demo" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License" /></a>
   <a href="https://github.com/mbayue/gitSdm/pulls"><img src="https://img.shields.io/badge/PRs-Welcome-brightgreen?style=for-the-badge" alt="PRs Welcome" /></a>
   <a href="https://github.com/mbayue/gitSdm/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/mbayue/gitSdm/ci.yml?branch=master&style=for-the-badge&logo=github&label=CI" alt="CI" /></a>

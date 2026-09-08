@@ -2,7 +2,6 @@ import { getOctokit } from './github/client';
 import type { RequestContext } from './utils/context';
 import { fetchTrending } from './services/trending';
 import { logApi, logError } from './utils/logger';
-import { clearAllCaches } from './cache/lru';
 import { getPublicAppConfig } from './config/app-config';
 import { toErrorPayload } from './utils/errors';
 import type { TrendingRepo } from '../src/types';
@@ -44,12 +43,6 @@ export async function handleApiRequest(
 
     if (pathname === '/api/config' && method === 'GET') {
       return addSecurityHeaders(Response.json(getPublicAppConfig(), { status: 200 }));
-    }
-
-    if (pathname === '/api/cache/clear' && method === 'POST') {
-      clearAllCaches();
-      logApi('/api/cache/clear', { durationMs: Date.now() - start });
-      return addSecurityHeaders(Response.json({ cleared: true }, { status: 200 }));
     }
 
     // ── Repository Routes ───────────────────────────────────────────

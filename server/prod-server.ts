@@ -38,11 +38,17 @@ Bun.serve({
     const filePath = safeJoin(distDir, decodedPath);
     const file = Bun.file(filePath);
     if (await file.exists()) {
-      return addSecurityHeaders(new Response(file));
+      const res = new Response(file);
+      if (pathname.startsWith('/assets/')) {
+        res.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+      return addSecurityHeaders(res);
     }
 
     // SPA fallback
-    return addSecurityHeaders(new Response(Bun.file(indexFile)));
+    const fallbackRes = new Response(Bun.file(indexFile));
+    fallbackRes.headers.set('Cache-Control', 'no-cache');
+    return addSecurityHeaders(fallbackRes);
   },
 });
 
