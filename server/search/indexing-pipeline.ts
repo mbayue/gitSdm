@@ -1,233 +1,158 @@
-import type { IndexingOptions, IndexingStatus, IndexingPipeline, RequestContext, IndexedChunk } from './types';
+import type { IndexingStatus, IndexingPipeline, IndexedChunk } from './types';
 import { SUPPORTED_EXTENSIONS, extToLanguage } from './constants';
 import { createEmbeddingProvider } from './embedding-provider';
 import { createChunker } from './chunker';
-import { getVectorStore } from './vector-store';
-import { fetchFlatTree, fetchFileContents, fetchRepoInfo } from '../github/fetch-tree';
-import { invalidateSearchCache } from '../cache/lru';
+import { getVectorStore, chunkBytes } from './vector-store';
+import { fetchFlatTree, fetchFileContents } from '../github/fetch-tree';
 import { AppError } from '../utils/errors';
 import { logError } from '../utils/logger';
+import { searchIndexKey } from './index-identity';
+import { SEARCH_LIMITS } from './limits';
 
-function repoKey(owner: string, repo: string): string {
-  return `${owner}/${repo}`;
-}
-
-/** Tracks per-repo indexing status. */
-const statusMap = new Map<string, IndexingStatus>();
-const activeIndexing = new Set<string>(); // prevents concurrent indexing
-
-export function createIndexingPipeline(): IndexingPipeline {
+const defaults = { fetchFlatTree, fetchFileContents, createEmbeddingProvider, createChunker, getVectorStore };
+export function createIndexingPipeline(deps = defaults, limits = SEARCH_LIMITS, now = Date.now): IndexingPipeline {
+  const statuses = new Map<string, { value: IndexingStatus; expires: number }>();
+  const active = new Map<string, { cancelled: boolean }>();
+  const save = (key: string, value: IndexingStatus) => {
+    for (const [id, entry] of statuses) if (entry.expires <= now() && !active.has(id)) statuses.delete(id);
+    statuses.delete(key);
+    while (statuses.size >= limits.statuses) {
+      const oldest = [...statuses.keys()].find((id) => !active.has(id));
+      if (!oldest) break;
+      statuses.delete(oldest);
+    }
+    statuses.set(key, { value, expires: now() + limits.ttlMs });
+  };
   return {
-    async startIndexing(options: IndexingOptions, ctx: RequestContext): Promise<void> {
-      const key = repoKey(options.owner, options.repo);
-
-      // Prevent concurrent indexing
-      if (activeIndexing.has(key)) {
-        throw new AppError(409, 'Indexing already in progress for this repository.', 'INDEXING_IN_PROGRESS');
-      }
-
-      activeIndexing.add(key);
-      statusMap.set(key, { state: 'indexing', progress: 0, filesProcessed: 0, totalFiles: 0 });
-
+    async startIndexing(options, ctx) {
+      const { owner, repo, commitSha } = options;
+      const key = searchIndexKey(owner, repo, commitSha, ctx);
+      if (active.has(key)) throw new AppError(409, 'Indexing is already in progress.', 'INDEXING_IN_PROGRESS');
+      if (active.size >= limits.concurrentJobs)
+        throw new AppError(429, 'Search indexing is busy. Please retry later.', 'INDEXING_BUSY', true);
+      const job = { cancelled: false };
+      active.set(key, job);
+      const check = () => {
+        if (job.cancelled) throw new AppError(409, 'Indexing was cancelled.', 'INDEXING_CANCELLED');
+      };
+      save(key, { state: 'indexing', progress: 0, filesProcessed: 0, totalFiles: 0 });
       try {
-        await runIndexing(options, ctx, key);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        statusMap.set(key, { state: 'failed', error: msg, failedFiles: 0 });
-        logError('/api/search/index', err, { repo: key });
+        const store = deps.getVectorStore();
+        if (store.hasIndex(key)) {
+          save(key, { state: 'complete', chunkCount: store.getChunkCount(key), timestamp: now() });
+          return;
+        }
+        const tree = await deps.fetchFlatTree(owner, repo, commitSha, ctx);
+        check();
+        const files = tree.items.filter((item) => SUPPORTED_EXTENSIONS.has(extension(item.path)));
+        if (tree.truncated || files.length > limits.files || files.some((file) => (file.size ?? 0) > limits.fileBytes))
+          throw new AppError(413, 'Repository exceeds search indexing file limits.', 'INDEX_TOO_LARGE');
+        const provider = await deps.createEmbeddingProvider();
+        const chunker = deps.createChunker();
+        const indexed: IndexedChunk[] = [];
+        let bytes = 0;
+        let processed = 0;
+        // Fetch one bounded file at a time; never accumulate the repository's source text.
+        for (const file of files) {
+          check();
+          const contents = await deps.fetchFileContents(owner, repo, [file.path], commitSha, ctx, limits.fileBytes);
+          check();
+          const content = contents[file.path];
+          if (content === undefined)
+            throw new AppError(502, 'A repository file could not be read.', 'INDEXING_FAILED', true);
+          if (Buffer.byteLength(content, 'utf8') > limits.fileBytes)
+            throw new AppError(413, 'A file exceeds the search indexing size limit.', 'INDEX_TOO_LARGE');
+          const chunks = chunker.chunkFile(content, file.path, extToLanguage(extension(file.path)), {
+            maxChunks: limits.chunks - indexed.length,
+            maxBytes: limits.indexBytes - bytes,
+            bytesPerChunk: provider.dimensions * 4 + 4 * (key.length + file.path.length) + 1024,
+          });
+          if (indexed.length + chunks.length > limits.chunks)
+            throw new AppError(413, 'Repository exceeds the search chunk limit.', 'INDEX_TOO_LARGE');
+          // Reserve conservatively before paying for embeddings or retaining their vectors.
+          const estimated = chunks.reduce(
+            (sum, chunk) =>
+              sum + provider.dimensions * 4 + 2 * (chunk.content.length + key.length * 2 + file.path.length * 2) + 1024,
+            0,
+          );
+          if (bytes + estimated > limits.indexBytes)
+            throw new AppError(413, 'Repository exceeds the search index memory limit.', 'INDEX_TOO_LARGE');
+          for (let offset = 0; offset < chunks.length; offset += 32) {
+            check();
+            const batch = chunks.slice(offset, offset + 32);
+            const embeddings = await provider.embedBatch(batch.map((chunk) => chunk.content));
+            check();
+            if (embeddings.length !== batch.length)
+              throw new AppError(502, 'Embedding provider returned an incomplete batch.', 'INDEXING_FAILED', true);
+            for (let i = 0; i < batch.length; i++) {
+              const chunk = batch[i];
+              const vector = embeddings[i].vector;
+              if (vector.length !== provider.dimensions || !vector.every(Number.isFinite))
+                throw new AppError(502, 'Embedding provider returned an invalid vector.', 'INDEXING_FAILED', true);
+              const entry: IndexedChunk = {
+                id: key + ':' + file.path + ':' + chunk.chunkIndex,
+                vector,
+                metadata: {
+                  filePath: file.path,
+                  startLine: chunk.startLine,
+                  endLine: chunk.endLine,
+                  chunkIndex: chunk.chunkIndex,
+                  language: chunk.language,
+                  content: chunk.content.slice(0, 2000),
+                  repoKey: key,
+                  commitSha,
+                },
+              };
+              bytes += chunkBytes(entry);
+              if (bytes > limits.indexBytes)
+                throw new AppError(413, 'Search index memory limit exceeded.', 'INDEX_TOO_LARGE');
+              indexed.push(entry);
+            }
+          }
+          processed++;
+          save(key, {
+            state: 'indexing',
+            progress: Math.round((processed / files.length) * 100),
+            filesProcessed: processed,
+            totalFiles: files.length,
+          });
+        }
+        check();
+        store.replaceIndex(key, indexed);
+        save(key, { state: 'complete', chunkCount: indexed.length, timestamp: now() });
+      } catch (error) {
+        const failure =
+          error instanceof AppError
+            ? error
+            : new AppError(502, 'Repository indexing failed. Please retry.', 'INDEXING_FAILED', true);
+        save(key, { state: 'failed', error: failure.message, failedFiles: 0 });
+        logError('/api/search/index', error, { repo: owner + '/' + repo });
+        throw failure;
       } finally {
-        activeIndexing.delete(key);
+        active.delete(key);
       }
     },
-
-    getStatus(key: string): IndexingStatus {
-      return statusMap.get(key) ?? { state: 'idle' };
+    getStatus(key) {
+      const entry = statuses.get(key);
+      if (entry && (active.has(key) || entry.expires > now())) {
+        if (entry.value.state !== 'complete' || deps.getVectorStore().hasIndex(key)) return entry.value;
+      }
+      statuses.delete(key);
+      if (deps.getVectorStore().hasIndex(key))
+        return { state: 'complete', chunkCount: deps.getVectorStore().getChunkCount(key), timestamp: now() };
+      return { state: 'idle' };
     },
-
-    cancelIndexing(key: string): void {
-      activeIndexing.delete(key);
-      statusMap.set(key, { state: 'idle' });
+    cancelIndexing(key) {
+      const job = active.get(key);
+      if (job) job.cancelled = true; // Keep the slot until the awaited operation settles.
     },
   };
 }
-
-async function runIndexing(options: IndexingOptions, ctx: RequestContext, key: string): Promise<void> {
-  const { owner, repo, commitSha, previousSha } = options;
-  const vectorStore = getVectorStore();
-
-  // Idempotent: if same SHA already indexed, skip
-  if (vectorStore.hasIndex(key) && !previousSha) {
-    // Check if existing index matches this SHA – we can't easily verify, so re-index only if not present
-    const existingCount = vectorStore.getChunkCount(key);
-    if (existingCount > 0) {
-      statusMap.set(key, { state: 'complete', chunkCount: existingCount, timestamp: Date.now() });
-      return;
-    }
-  }
-
-  // 1. Fetch the file tree first so we can report totalFiles early
-  const info = await fetchRepoInfo(owner, repo, options.branch, ctx);
-  const targetSha = commitSha || info.sha;
-  const { items } = await fetchFlatTree(owner, repo, targetSha, ctx);
-
-  // 2. Filter to supported extensions
-  const sourceFiles = items.filter((item) => {
-    const ext = getExtension(item.path);
-    return SUPPORTED_EXTENSIONS.has(ext);
-  });
-
-  const totalFiles = sourceFiles.length;
-  statusMap.set(key, { state: 'indexing', progress: 0, filesProcessed: 0, totalFiles });
-
-  // 3. Create embedding provider (may fail on proxy issues)
-  const provider = await createEmbeddingProvider();
-  const chunker = createChunker();
-
-  // 4. Determine files to process (incremental: only changed files)
-  let filesToProcess = sourceFiles;
-
-  if (previousSha && vectorStore.hasIndex(key)) {
-    const { items: prevItems } = await fetchFlatTree(owner, repo, previousSha, ctx);
-    const prevFiles = new Set(
-      prevItems.filter((i) => SUPPORTED_EXTENSIONS.has(getExtension(i.path))).map((i) => i.path),
-    );
-    const currFiles = new Set(sourceFiles.map((i) => i.path));
-
-    // Files in current but not prev, or SHA changed → treat as modified
-    // Files in prev but not current → delete
-    const filesToDelete = [...prevFiles].filter((f) => !currFiles.has(f));
-    const prevItemsMap = new Map(prevItems.map((p) => [p.path, p]));
-    const modifiedOrAdded = sourceFiles.filter((item) => {
-      const prevItem = prevItemsMap.get(item.path);
-      return !prevItem || prevItem.sha !== item.sha; // SHA changed or new file
-    });
-    filesToProcess = modifiedOrAdded;
-
-    // Remove deleted files from store
-    for (const filePath of filesToDelete) {
-      vectorStore.removeByFile(key, filePath);
-    }
-  } else {
-    // Full re-index: clear existing
-    vectorStore.removeByRepo(key);
-  }
-
-  const BATCH_SIZE = 5;
-  let filesProcessed = 0;
-  let failedChunks = 0;
-  let totalChunks = 0;
-  const allIndexedChunks: IndexedChunk[] = [];
-
-  const batches: (typeof filesToProcess)[] = [];
-  for (let i = 0; i < filesToProcess.length; i += BATCH_SIZE) {
-    batches.push(filesToProcess.slice(i, i + BATCH_SIZE));
-  }
-
-  for (const batch of batches) {
-    const paths = batch.map((b) => b.path);
-
-    let contents: Record<string, string>;
-    try {
-      contents = await fetchFileContents(owner, repo, paths, targetSha, ctx);
-    } catch {
-      failedChunks += batch.length;
-      filesProcessed += batch.length;
-      continue;
-    }
-
-    for (const item of batch) {
-      const content = contents[item.path];
-      if (!content) {
-        failedChunks++;
-        filesProcessed++;
-        continue;
-      }
-
-      const ext = getExtension(item.path);
-      const language = extToLanguage(ext);
-      const chunks = chunker.chunkFile(content, item.path, language);
-
-      if (chunks.length === 0) {
-        filesProcessed++;
-        continue;
-      }
-
-      totalChunks += chunks.length;
-
-      try {
-        const chunkContents = new Array(chunks.length);
-        for (let j = 0; j < chunks.length; j++) {
-          chunkContents[j] = chunks[j].content;
-        }
-        const embeddings = await provider.embedBatch(chunkContents);
-
-        for (let j = 0; j < chunks.length; j++) {
-          const chunk = chunks[j];
-          const embedding = embeddings[j];
-          allIndexedChunks.push({
-            id: `${key}:${item.path}:${chunk.chunkIndex}`,
-            vector: embedding.vector,
-            metadata: {
-              filePath: item.path,
-              startLine: chunk.startLine,
-              endLine: chunk.endLine,
-              chunkIndex: chunk.chunkIndex,
-              language: chunk.language,
-              content: chunk.content.slice(0, 2000),
-              repoKey: key,
-              commitSha: targetSha,
-            },
-          });
-        }
-      } catch (err) {
-        failedChunks++;
-        logError('indexing:embed', err, { file: item.path });
-      }
-
-      filesProcessed++;
-    }
-
-    const progress = totalFiles > 0 ? Math.round((filesProcessed / totalFiles) * 100) : 100;
-    statusMap.set(key, { state: 'indexing', progress, filesProcessed, totalFiles });
-  }
-
-  // 6. Check failure threshold
-  const totalAttempted = totalChunks + failedChunks;
-  if (totalAttempted > 0 && failedChunks / totalAttempted > 0.1) {
-    statusMap.set(key, {
-      state: 'failed',
-      error: `Indexing aborted: ${failedChunks} of ${totalAttempted} chunks failed (>10% threshold)`,
-      failedFiles: failedChunks,
-    });
-    return;
-  }
-
-  // 7. Store all chunks
-  vectorStore.addChunks(allIndexedChunks);
-
-  // 8. Invalidate search cache for this repo (SHA changed)
-  invalidateSearchCache(owner, repo);
-
-  statusMap.set(key, {
-    state: 'complete',
-    chunkCount: vectorStore.getChunkCount(key),
-    timestamp: Date.now(),
-  });
-}
-
-function getExtension(path: string): string {
+function extension(path: string): string {
   const dot = path.lastIndexOf('.');
-  if (dot < 0) return '';
-  return path.slice(dot).toLowerCase();
+  return dot < 0 ? '' : path.slice(dot).toLowerCase();
 }
-
-// ── Singleton ──────────────────────────────────────────────────────────
-
 let globalPipeline: IndexingPipeline | null = null;
-
 export function getIndexingPipeline(): IndexingPipeline {
-  if (!globalPipeline) {
-    globalPipeline = createIndexingPipeline();
-  }
-  return globalPipeline;
+  return (globalPipeline ??= createIndexingPipeline());
 }

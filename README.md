@@ -21,6 +21,8 @@
 - 🌡️ **Code Churn & Complexity Overlays** — Heatmap modes visualizing 90-day commit frequency, author ownership risk, and cyclomatic/line complexity.
 - 🧠 **AI Codebase Intelligence** — Multi-provider AI orchestration for architecture overviews, dependency health audits, refactoring risk analysis, and interactive learning paths.
 - 🔍 **Semantic Search & QA Engine** — Vector-embedded code chunking with natural language codebase question-answering.
+
+Search indexes are process-local and scoped to GitHub credentials, commit SHA, and embedding configuration. Use a persistent backend for search; indexes are not shared between serverless instances and are lost on restart. Per process, indexing allows two active jobs with no waiting queue. Each repository is limited to 2,000 supported files, 256 KiB per file, 4,000 chunks, and 32 MiB of estimated index data. Published indexes have a 128 MiB total budget, a 16-index cap, and a 30-minute lifetime, with least-recently-used eviction. Active builds retain at most 32 MiB each in addition to published indexes. Oversized or incomplete builds fail without replacing a published snapshot.
 - 📐 **Architecture Diagrams** — Automated Mermaid diagram generation with interactive zoom/pan and PNG/PDF/SVG export.
 - 🔀 **Branch, Tag & Commit Comparison** — Visual diffing of dependencies and module trees across Git branches, tags, and specific commit SHAs.
 - 👥 **Contributor Analytics & Timeline** — Commit history activity charts, timeline weeks, and author metrics.

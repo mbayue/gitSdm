@@ -4,6 +4,7 @@ import type { SearchResultCard, QAAnswer, IndexingStatus } from '@/types';
 export type SearchMode = 'search' | 'ask';
 
 interface SearchState {
+  revision: number;
   mode: SearchMode;
   query: string;
   results: SearchResultCard[];
@@ -12,8 +13,6 @@ interface SearchState {
   error: string | null;
   recentQueries: string[];
   indexingStatus: IndexingStatus;
-  askCache: Map<string, QAAnswer>;
-  searchCache: Map<string, SearchResultCard[]>;
 
   setMode: (mode: SearchMode) => void;
   setQuery: (query: string) => void;
@@ -47,6 +46,7 @@ function saveRecentQueries(queries: string[]): void {
 }
 
 export const useSearchStore = create<SearchState>((set, get) => ({
+  revision: 0,
   mode: 'search',
   query: '',
   results: [],
@@ -55,8 +55,6 @@ export const useSearchStore = create<SearchState>((set, get) => ({
   error: null,
   recentQueries: loadRecentQueries(),
   indexingStatus: { state: 'idle' },
-  askCache: new Map(),
-  searchCache: new Map(),
 
   setMode: (mode) => set({ mode }),
   setQuery: (query) => set({ query }),
@@ -77,6 +75,7 @@ export const useSearchStore = create<SearchState>((set, get) => ({
 
   reset: () =>
     set({
+      revision: get().revision + 1,
       mode: 'search',
       query: '',
       results: [],
@@ -84,6 +83,5 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       isLoading: false,
       error: null,
       indexingStatus: { state: 'idle' },
-      // Preserve caches across repo switches — they're keyed by owner/repo
     }),
 }));

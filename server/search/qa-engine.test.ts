@@ -1,3 +1,4 @@
+import { searchIndexKey } from './index-identity';
 import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { createQAEngine, getQAEngine } from './qa-engine';
 import { clearAllCaches } from '../cache/lru';
@@ -14,7 +15,7 @@ mock.module('./embedding-provider', () => ({
   }),
 }));
 
-const repoKey = 'owner/repo';
+const repoKey = () => searchIndexKey('owner', 'repo', 'sha');
 
 function indexedChunk(id: string, scoreVector: Float32Array): IndexedChunk {
   return {
@@ -27,7 +28,7 @@ function indexedChunk(id: string, scoreVector: Float32Array): IndexedChunk {
       chunkIndex: 0,
       language: 'typescript',
       content: `export const ${id} = true;`,
-      repoKey,
+      repoKey: repoKey(),
       commitSha: 'sha',
     },
   };
@@ -36,7 +37,7 @@ function indexedChunk(id: string, scoreVector: Float32Array): IndexedChunk {
 describe('createQAEngine', () => {
   beforeEach(() => {
     clearAllCaches();
-    getVectorStore().removeByRepo(repoKey);
+    getVectorStore().removeByRepo(repoKey());
     process.env.AI_PROVIDER = 'mock';
   });
 
@@ -47,16 +48,9 @@ describe('createQAEngine', () => {
   const qa = createQAEngine();
 
   it('returns not-available answer when no index exists', async () => {
-    const response = await qa.ask({
-      question: 'Where is the auth middleware?',
-      owner: 'nobody',
-      repo: 'ghost',
-      commitSha: 'abc',
-    });
-
-    expect(response.answer).toContain('could not find');
-    expect(response.citations).toEqual([]);
-    expect(typeof response.cached).toBe('boolean');
+    await expect(
+      qa.ask({ question: 'Where is the auth middleware?', owner: 'nobody', repo: 'ghost', commitSha: 'abc' }),
+    ).rejects.toMatchObject({ status: 404 });
   });
 
   it('returns empty citations when scores are below threshold', async () => {

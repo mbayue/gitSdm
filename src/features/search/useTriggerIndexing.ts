@@ -6,15 +6,8 @@ export function useTriggerIndexing() {
   const { setIndexingStatus } = useSearchStore();
 
   return useMutation({
-    mutationFn: ({
-      owner,
-      repo,
-      branch,
-    }: {
-      owner: string;
-      repo: string;
-      branch?: string;
-    }) => triggerIndexing(owner, repo, branch),
+    mutationFn: ({ owner, repo, branch }: { owner: string; repo: string; branch?: string }) =>
+      triggerIndexing(owner, repo, branch),
     onMutate: () => {
       setIndexingStatus({
         state: 'indexing',
@@ -22,8 +15,13 @@ export function useTriggerIndexing() {
         filesProcessed: 0,
         totalFiles: 0,
       });
+      return { revision: useSearchStore.getState().revision };
     },
-    onError: (error) => {
+    onSuccess: (status, _variables, context) => {
+      if (context?.revision === useSearchStore.getState().revision) setIndexingStatus(status);
+    },
+    onError: (error, _variables, context) => {
+      if (context?.revision !== useSearchStore.getState().revision) return;
       setIndexingStatus({
         state: 'failed',
         error: error instanceof Error ? error.message : 'Failed to start indexing',

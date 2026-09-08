@@ -15,24 +15,17 @@ export function createQAEngine(): QAEngine {
       const { question, owner, repo, commitSha, apiKey } = options;
 
       // Retrieve top 5 chunks via semantic search
-      let searchResponse;
-      try {
-        searchResponse = await searchEngine.search({
-          query: question,
-          owner,
-          repo,
-          commitSha,
-          topK: QA_TOP_K,
-          minScore: DEFAULT_MIN_SCORE,
-        });
-      } catch {
-        // If search fails (no index, etc.) return not-available
-        return { answer: NOT_AVAILABLE_MESSAGE, citations: [], cached: false };
-      }
+      const searchResponse = await searchEngine.search({
+        query: question,
+        owner,
+        repo,
+        commitSha,
+        gitHubToken: options.gitHubToken,
+        topK: QA_TOP_K,
+        minScore: DEFAULT_MIN_SCORE,
+      });
 
-      const relevantResults = searchResponse.results.filter(
-        (r) => r.score >= DEFAULT_MIN_SCORE,
-      );
+      const relevantResults = searchResponse.results.filter((r) => r.score >= DEFAULT_MIN_SCORE);
 
       if (relevantResults.length < 1) {
         return { answer: NOT_AVAILABLE_MESSAGE, citations: [], cached: searchResponse.cached };

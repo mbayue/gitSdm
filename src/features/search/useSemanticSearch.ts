@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { semanticSearch } from '@/lib/apiClient';
+import { ApiError, semanticSearch } from '@/lib/apiClient';
 import { useSearchStore } from './searchStore';
 import type { SearchResultCard } from '@/types';
 
@@ -7,22 +7,15 @@ export function useSemanticSearch() {
   const { setResults, setIsLoading, setError, addRecentQuery } = useSearchStore();
 
   return useMutation({
-    mutationFn: ({
-      query,
-      owner,
-      repo,
-      branch,
-    }: {
-      query: string;
-      owner: string;
-      repo: string;
-      branch?: string;
-    }) => semanticSearch(query, owner, repo, branch),
+    mutationFn: ({ query, owner, repo, branch }: { query: string; owner: string; repo: string; branch?: string }) =>
+      semanticSearch(query, owner, repo, branch),
     onMutate: () => {
       setIsLoading(true);
       setError(null);
+      return { revision: useSearchStore.getState().revision };
     },
-    onSuccess: (data, vars) => {
+    onSuccess: (data, _variables, context) => {
+      if (context?.revision !== useSearchStore.getState().revision) return;
       const cards: SearchResultCard[] = data.results.map((r) => ({
         filePath: r.chunk.filePath,
         startLine: r.chunk.startLine,
@@ -34,15 +27,13 @@ export function useSemanticSearch() {
       setResults(cards);
       addRecentQuery(data.query);
       setIsLoading(false);
-      // Cache results for this query
-      const cacheKey = `${vars.owner}/${vars.repo}:${vars.query}`;
-      const store = useSearchStore.getState();
-      const newCache = new Map(store.searchCache);
-      newCache.set(cacheKey, cards);
-      useSearchStore.setState({ searchCache: newCache });
     },
-    onError: (err: Error) => {
+    onError: (err: Error, _variables, context) => {
+      if (context?.revision !== useSearchStore.getState().revision) return;
       setError(err.message);
+      if (err instanceof ApiError && err.code === 'INDEX_NOT_FOUND') {
+        useSearchStore.getState().setIndexingStatus({ state: 'idle' });
+      }
       setIsLoading(false);
     },
   });

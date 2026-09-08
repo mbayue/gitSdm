@@ -1,26 +1,26 @@
 import type { Chunk, Chunker } from './types';
+import { AppError } from '../utils/errors';
 import { MAX_CHUNK_TOKENS, AST_SUPPORTED_LANGUAGES } from './constants';
 
 const MAX_CHUNK_CHARS = MAX_CHUNK_TOKENS * 4; // ~4 chars per token
 
 export function createChunker(): Chunker {
   return {
-    chunkFile(content: string, filePath: string, language: string): Chunk[] {
+    chunkFile(content, filePath, language, budget): Chunk[] {
       if (!content || content.trim().length === 0) return [];
-
-      const useAst = AST_SUPPORTED_LANGUAGES.has(language);
-      const rawChunks = useAst
-        ? astAwareChunk(content, language)
-        : slidingWindowChunk(content);
-
-      return rawChunks.map((c, i) => ({
-        content: c.content,
-        startLine: c.startLine,
-        endLine: c.endLine,
-        chunkIndex: i,
-        language,
-        filePath,
-      }));
+      const chunks: Chunk[] = [];
+      let bytes = 0;
+      const emit = (chunk: RawChunk) => {
+        const nextBytes = bytes + chunk.content.length * 2 + (budget?.bytesPerChunk ?? 512);
+        if (budget && (chunks.length >= budget.maxChunks || nextBytes > budget.maxBytes)) {
+          throw new AppError(413, 'Repository exceeds the search chunk or memory limit.', 'INDEX_TOO_LARGE');
+        }
+        bytes = nextBytes;
+        chunks.push({ ...chunk, chunkIndex: chunks.length, language, filePath });
+      };
+      if (AST_SUPPORTED_LANGUAGES.has(language)) astAwareChunk(content, language, emit);
+      else slidingWindowChunk(content, emit);
+      return chunks;
     },
   };
 }
@@ -33,9 +33,8 @@ interface RawChunk {
   endLine: number;
 }
 
-function slidingWindowChunk(content: string): RawChunk[] {
+function slidingWindowChunk(content: string, emit: (chunk: RawChunk) => void): void {
   const lines = content.split('\n');
-  const chunks: RawChunk[] = [];
   let current = '';
   let startLine = 1;
 
@@ -50,7 +49,7 @@ function slidingWindowChunk(content: string): RawChunk[] {
         const before = current.slice(0, breakAt);
         const after = current.slice(breakAt + 1);
         const beforeLines = before.split('\n');
-        chunks.push({
+        emit({
           content: before,
           startLine: startLine,
           endLine: startLine + beforeLines.length - 1,
@@ -60,7 +59,7 @@ function slidingWindowChunk(content: string): RawChunk[] {
       } else {
         // Hard split
         const currentLines = current.split('\n');
-        chunks.push({
+        emit({
           content: current,
           startLine: startLine,
           endLine: startLine + currentLines.length - 1,
@@ -75,14 +74,12 @@ function slidingWindowChunk(content: string): RawChunk[] {
 
   if (current.length > 0) {
     const currentLines = current.split('\n');
-    chunks.push({
+    emit({
       content: current,
       startLine,
       endLine: startLine + currentLines.length - 1,
     });
   }
-
-  return chunks.length > 0 ? chunks : [{ content, startLine: 1, endLine: lines.length }];
 }
 
 function findLastBlankLineBreak(text: string): number {
@@ -106,15 +103,15 @@ function findLastBlankLineBreak(text: string): number {
  * Lightweight regex-based chunking that splits at function/class boundaries
  * for TypeScript, JavaScript, and Python files.
  */
-function astAwareChunk(content: string, language: string): RawChunk[] {
+function astAwareChunk(content: string, language: string, emit: (chunk: RawChunk) => void): void {
   const lines = content.split('\n');
   const boundaries = findBoundaries(lines, language);
 
   if (boundaries.length === 0) {
-    return slidingWindowChunk(content);
+    slidingWindowChunk(content, emit);
+    return;
   }
 
-  const chunks: RawChunk[] = [];
   let prevEnd = 0;
 
   for (const boundary of boundaries) {
@@ -122,21 +119,21 @@ function astAwareChunk(content: string, language: string): RawChunk[] {
     if (boundary.startLine > prevEnd) {
       const before = lines.slice(prevEnd, boundary.startLine).join('\n');
       if (before.trim().length > 0) {
-        addSizedChunks(chunks, before, prevEnd + 1);
+        addSizedChunks(emit, before, prevEnd + 1);
       }
     }
 
     // Add the boundary block (function/class)
     const block = lines.slice(boundary.startLine, boundary.endLine + 1).join('\n');
     if (block.length <= MAX_CHUNK_CHARS) {
-      chunks.push({
+      emit({
         content: block,
         startLine: boundary.startLine + 1,
         endLine: boundary.endLine + 1,
       });
     } else {
       // Sub-split large blocks
-      addSizedChunks(chunks, block, boundary.startLine + 1);
+      addSizedChunks(emit, block, boundary.startLine + 1);
     }
 
     prevEnd = boundary.endLine + 1;
@@ -146,11 +143,9 @@ function astAwareChunk(content: string, language: string): RawChunk[] {
   if (prevEnd < lines.length) {
     const remaining = lines.slice(prevEnd).join('\n');
     if (remaining.trim().length > 0) {
-      addSizedChunks(chunks, remaining, prevEnd + 1);
+      addSizedChunks(emit, remaining, prevEnd + 1);
     }
   }
-
-  return chunks.length > 0 ? chunks : slidingWindowChunk(content);
 }
 
 interface Boundary {
@@ -168,6 +163,7 @@ function findBoundaries(lines: string[], language: string): Boundary[] {
       if (pattern.test(trimmed)) {
         const end = findBlockEnd(lines, i, language);
         boundaries.push({ startLine: i, endLine: end });
+        i = end; // Nested blocks are already included in the outer block.
         break;
       }
     }
@@ -187,10 +183,7 @@ const JS_PATTERNS: RegExp[] = [
   /^(export\s+)?abstract\s+class\s+/,
 ];
 
-const PY_PATTERNS: RegExp[] = [
-  /^(async\s+)?def\s+/,
-  /^class\s+/,
-];
+const PY_PATTERNS: RegExp[] = [/^(async\s+)?def\s+/, /^class\s+/];
 
 const PATTERN_MAP: Record<string, RegExp[]> = {
   typescript: JS_PATTERNS,
@@ -248,7 +241,7 @@ function findPythonBlockEnd(lines: string[], startLine: number): number {
   return end;
 }
 
-function addSizedChunks(chunks: RawChunk[], content: string, baseLine: number): void {
+function addSizedChunks(emit: (chunk: RawChunk) => void, content: string, baseLine: number): void {
   const lines = content.split('\n');
   let current = '';
   let startLine = baseLine;
@@ -259,7 +252,7 @@ function addSizedChunks(chunks: RawChunk[], content: string, baseLine: number): 
 
     if (test.length > MAX_CHUNK_CHARS && current.length > 0) {
       const currentLines = current.split('\n');
-      chunks.push({
+      emit({
         content: current,
         startLine,
         endLine: startLine + currentLines.length - 1,
@@ -273,7 +266,7 @@ function addSizedChunks(chunks: RawChunk[], content: string, baseLine: number): 
 
   if (current.length > 0) {
     const currentLines = current.split('\n');
-    chunks.push({
+    emit({
       content: current,
       startLine,
       endLine: startLine + currentLines.length - 1,

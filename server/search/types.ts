@@ -40,15 +40,11 @@ export interface SearchResult {
 }
 
 export interface VectorStore {
+  replaceIndex(repoKey: string, chunks: IndexedChunk[]): void;
   addChunks(chunks: IndexedChunk[]): void;
   removeByRepo(repoKey: string): void;
   removeByFile(repoKey: string, filePath: string): void;
-  search(
-    queryVector: Float32Array,
-    repoKey: string,
-    topK: number,
-    minScore: number,
-  ): SearchResult[];
+  search(queryVector: Float32Array, repoKey: string, topK: number, minScore: number): SearchResult[];
   getChunkCount(repoKey: string): number;
   hasIndex(repoKey: string): boolean;
 }
@@ -83,6 +79,7 @@ export interface IndexingPipeline {
 // ── Search Engine ──────────────────────────────────────────────────────
 
 export interface SearchOptions {
+  gitHubToken?: string;
   query: string;
   owner: string;
   repo: string;
@@ -104,6 +101,7 @@ export interface SearchEngine {
 // ── QA Engine ──────────────────────────────────────────────────────────
 
 export interface QAOptions {
+  gitHubToken?: string;
   question: string;
   owner: string;
   repo: string;
@@ -139,7 +137,16 @@ export interface Chunk {
 }
 
 export interface Chunker {
-  chunkFile(content: string, filePath: string, language: string): Chunk[];
+  chunkFile(
+    content: string,
+    filePath: string,
+    language: string,
+    budget?: {
+      maxChunks: number;
+      maxBytes: number;
+      bytesPerChunk: number;
+    },
+  ): Chunk[];
 }
 
 export type { RequestContext };

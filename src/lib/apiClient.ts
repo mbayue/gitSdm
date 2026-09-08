@@ -258,14 +258,14 @@ export async function semanticAsk(question: string, owner: string, repo: string,
   });
 }
 
-export async function triggerIndexing(owner: string, repo: string, branch?: string): Promise<{ status: string }> {
-  return request<{ status: string }>('/api/search/index', {
+export async function triggerIndexing(owner: string, repo: string, branch?: string): Promise<IndexingStatus> {
+  return request<IndexingStatus>('/api/search/index', {
     method: 'POST',
     body: JSON.stringify({ owner, repo, branch }),
   });
 }
 
-export async function fetchIndexingStatus(owner: string, repo: string): Promise<IndexingStatus> {
-  const params = new URLSearchParams({ owner, repo });
+export async function fetchIndexingStatus(owner: string, repo: string, branch?: string): Promise<IndexingStatus> {
+  const params = new URLSearchParams({ owner, repo, ...(branch ? { branch } : {}) });
   return request<IndexingStatus>(`/api/search/status?${params}`);
 }

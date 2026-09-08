@@ -1,11 +1,12 @@
 import type { RequestContext } from '../utils/context';
 import { AppError } from '../utils/errors';
-import { searchBodySchema, askBodySchema, indexBodySchema } from './schemas';
+import { searchBodySchema, askBodySchema, indexBodySchema, repoQuerySchema } from './schemas';
 import { fetchRepoInfo } from '../github/fetch-tree';
 import { getSearchEngine } from '../search/search-engine';
 import { getQAEngine } from '../search/qa-engine';
 import { getIndexingPipeline } from '../search/indexing-pipeline';
 import { logApi } from '../utils/logger';
+import { searchIndexKey } from '../search/index-identity';
 
 export async function handleSearchRoutes(
   pathname: string,
@@ -28,6 +29,7 @@ export async function handleSearchRoutes(
       owner: parsed.data.owner,
       repo: parsed.data.repo,
       commitSha: info.sha,
+      gitHubToken: ctx.gitHubToken,
     });
     logApi('/api/search', { durationMs: Date.now() - start, results: result.results.length });
     return Response.json(result, { status: 200 });
@@ -47,6 +49,7 @@ export async function handleSearchRoutes(
       repo: parsed.data.repo,
       commitSha: info.sha,
       apiKey: userKey,
+      gitHubToken: ctx.gitHubToken,
     });
     logApi('/api/search/ask', { durationMs: Date.now() - start, citations: result.citations.length });
     return Response.json(result, { status: 200 });
@@ -62,12 +65,15 @@ export async function handleSearchRoutes(
     const pipeline = getIndexingPipeline();
 
     try {
-      await pipeline.startIndexing({
-        owner: parsed.data.owner,
-        repo: parsed.data.repo,
-        branch: parsed.data.branch,
-        commitSha: info.sha,
-      }, ctx);
+      await pipeline.startIndexing(
+        {
+          owner: parsed.data.owner,
+          repo: parsed.data.repo,
+          branch: parsed.data.branch,
+          commitSha: info.sha,
+        },
+        ctx,
+      );
     } catch (err) {
       if (err instanceof AppError && err.status === 409) {
         return Response.json({ status: 'rejected', error: 'Indexing already in progress' }, { status: 409 });
@@ -76,17 +82,20 @@ export async function handleSearchRoutes(
     }
 
     logApi('/api/search/index', { durationMs: Date.now() - start, repo: `${parsed.data.owner}/${parsed.data.repo}` });
-    return Response.json({ status: 'started' }, { status: 200 });
+    return Response.json(pipeline.getStatus(searchIndexKey(parsed.data.owner, parsed.data.repo, info.sha, ctx)), {
+      status: 200,
+    });
   }
 
   if (pathname === '/api/search/status') {
-    const owner = query.owner;
-    const repo = query.repo;
-    if (!owner || !repo) {
+    const parsed = repoQuerySchema.safeParse(query);
+    if (!parsed.success) {
       throw new AppError(400, 'owner and repo query params required', 'INVALID_PARAMS');
     }
+    const { owner, repo, branch } = parsed.data;
     const pipeline = getIndexingPipeline();
-    const status = pipeline.getStatus(`${owner}/${repo}`);
+    const info = await fetchRepoInfo(owner, repo, branch, ctx);
+    const status = pipeline.getStatus(searchIndexKey(owner, repo, info.sha, ctx));
     return Response.json(status, { status: 200 });
   }
 

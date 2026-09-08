@@ -1,6 +1,8 @@
 import type { EmbeddingProvider, EmbeddingResult } from './types';
 import { EMBEDDING_DIMENSIONS } from './constants';
 import { AppError } from '../utils/errors';
+import { hashToken } from '../cache/lru';
+import { embeddingIdentity } from './index-identity';
 
 // ── Factory ────────────────────────────────────────────────────────────
 
@@ -9,7 +11,16 @@ let cachedProviderKey: string | null = null;
 
 export async function createEmbeddingProvider(): Promise<EmbeddingProvider> {
   const envProvider = (process.env.AI_PROVIDER ?? 'mock').toLowerCase();
-  const cacheKey = `${envProvider}:${process.env.GEMINI_API_KEY ? 'g' : ''}${process.env.OPENAI_API_KEY ? 'o' : ''}${process.env.EDGEONE_API_KEY || process.env.MAKERS_MODELS_KEY ? 'e' : ''}`;
+  const cacheKey =
+    embeddingIdentity() +
+    hashToken(
+      JSON.stringify([
+        process.env.OPENAI_API_KEY,
+        process.env.GEMINI_API_KEY,
+        process.env.EDGEONE_API_KEY,
+        process.env.MAKERS_MODELS_KEY,
+      ]),
+    );
 
   if (cachedProvider && cachedProviderKey === cacheKey) {
     return cachedProvider;
@@ -150,7 +161,10 @@ function createEdgeOneEmbeddingProvider(): EmbeddingProvider {
     providerName: 'edgeone',
     apiKey,
     baseURL: process.env.EDGEONE_API_BASE ?? 'https://ai-gateway.edgeone.link/v1',
-    model: process.env.EDGEONE_EMBEDDING_MODEL ?? process.env.OPENAI_EMBEDDING_MODEL ?? 'openrouter/openai/text-embedding-3-large',
+    model:
+      process.env.EDGEONE_EMBEDDING_MODEL ??
+      process.env.OPENAI_EMBEDDING_MODEL ??
+      'openrouter/openai/text-embedding-3-large',
   });
 }
 
@@ -161,6 +175,7 @@ async function openAIEmbed(apiKey: string, model: string, text: string, baseURL?
   const response = await withRetry(() =>
     client.embeddings.create({
       model,
+      dimensions: EMBEDDING_DIMENSIONS,
       input: text,
     }),
   );
@@ -168,7 +183,12 @@ async function openAIEmbed(apiKey: string, model: string, text: string, baseURL?
   return normalizeVector(new Float32Array(response.data[0].embedding));
 }
 
-async function openAIEmbedBatch(apiKey: string, model: string, texts: string[], baseURL?: string): Promise<Float32Array[]> {
+async function openAIEmbedBatch(
+  apiKey: string,
+  model: string,
+  texts: string[],
+  baseURL?: string,
+): Promise<Float32Array[]> {
   if (texts.length === 0) return [];
   const { default: OpenAI } = await import('openai');
   const client = new OpenAI({ apiKey, baseURL: baseURL ?? process.env.OPENAI_API_BASE });
@@ -180,6 +200,7 @@ async function openAIEmbedBatch(apiKey: string, model: string, texts: string[], 
     const response = await withRetry(() =>
       client.embeddings.create({
         model,
+        dimensions: EMBEDDING_DIMENSIONS,
         input: batch,
       }),
     );

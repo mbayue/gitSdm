@@ -16,52 +16,24 @@ import { useIndexingStatus } from '@/features/search/useIndexingStatus';
 export function SearchPage() {
   const { owner = '', repo = '' } = useParams();
   const navigate = useNavigate();
-  const { mode, error, isLoading, results, answer, indexingStatus, askCache, searchCache } = useSearchStore();
+  const { mode, error, isLoading, results, answer, indexingStatus } = useSearchStore();
   const searchMutation = useSemanticSearch();
   const askMutation = useSemanticAsk();
   const indexMutation = useTriggerIndexing();
-  useIndexingStatus(owner, repo);
+  const branch = useVizStore((state) => state.selectedBranch) ?? undefined;
+  useIndexingStatus(owner, repo, true, branch);
 
-  // Reset search state when navigating to a different repo's search page
-  const prevRepoRef = useRef(`${owner}/${repo}`);
+  // Clear previous results on entry and when the repository snapshot changes.
   useEffect(() => {
-    const key = `${owner}/${repo}`;
-    if (key !== prevRepoRef.current) {
-      prevRepoRef.current = key;
-      useSearchStore.getState().reset();
-    }
-  }, [owner, repo]);
+    useSearchStore.getState().reset();
+  }, [owner, repo, branch]);
 
   const handleSubmit = useCallback(
     (query: string) => {
-      const cacheKey = `${owner}/${repo}:${query}`;
-
-      if (mode === 'search') {
-        // Return cached search results if same query
-        const cached = searchCache.get(cacheKey);
-        if (cached) {
-          const { setResults, setIsLoading, setError } = useSearchStore.getState();
-          setResults(cached);
-          setIsLoading(false);
-          setError(null);
-          return;
-        }
-        searchMutation.mutate({ query, owner, repo });
-      } else {
-        // Return cached answer if same question
-        const cached = askCache.get(cacheKey);
-        if (cached) {
-          const { setAnswer, setIsLoading, setError, addRecentQuery } = useSearchStore.getState();
-          setAnswer(cached);
-          setIsLoading(false);
-          setError(null);
-          addRecentQuery(query);
-          return;
-        }
-        askMutation.mutate({ question: query, owner, repo });
-      }
+      if (mode === 'search') searchMutation.mutate({ query, owner, repo, branch });
+      else askMutation.mutate({ question: query, owner, repo, branch });
     },
-    [mode, owner, repo, searchMutation, askMutation, askCache, searchCache],
+    [mode, owner, repo, branch, searchMutation, askMutation],
   );
 
   const prevModeRef = useRef(mode);
@@ -76,22 +48,22 @@ export function SearchPage() {
   }, [mode, handleSubmit]);
 
   const handleIndex = useCallback(() => {
-    indexMutation.mutate({ owner, repo });
-  }, [owner, repo, indexMutation]);
+    indexMutation.mutate({ owner, repo, branch });
+  }, [owner, repo, branch, indexMutation]);
 
   const handleSelectFile = useCallback(
     (filePath: string, _startLine: number, action: 'open' | 'inspect' = 'open') => {
       const { setFocusedFilePath, setInspectorOpen, setSelectedNodeId } = useVizStore.getState();
-      
+
       setSelectedNodeId(null);
       setFocusedFilePath(filePath);
-      
+
       if (action === 'open') {
         setInspectorOpen(true);
       } else {
         setInspectorOpen(false);
       }
-      
+
       navigate(`/${owner}/${repo}`);
     },
     [navigate, owner, repo],
@@ -124,9 +96,13 @@ export function SearchPage() {
       {/* Content */}
       <main className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col overflow-y-auto px-5 py-8 sm:px-8 sm:py-12">
         <div className="mb-8 shrink-0">
-          <p className="eyebrow mb-4"><Search className="h-3.5 w-3.5 text-accent" /> Search & discover</p>
+          <p className="eyebrow mb-4">
+            <Search className="h-3.5 w-3.5 text-accent" /> Search & discover
+          </p>
           <h1 className="text-3xl font-medium tracking-tight sm:text-4xl">Find the idea behind the code.</h1>
-          <p className="mt-3 text-sm leading-6 text-muted-foreground">Search by meaning, ask a question, and follow the answer to its source.</p>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            Search by meaning, ask a question, and follow the answer to its source.
+          </p>
         </div>
         {/* Indexing status banner */}
         <div className="mb-4 shrink-0">
@@ -158,10 +134,7 @@ export function SearchPage() {
 
             {/* Search bar */}
             <div className="w-full">
-              <SearchBar
-                onSubmit={handleSubmit}
-                disabled={isSearchDisabled}
-              />
+              <SearchBar onSubmit={handleSubmit} disabled={isSearchDisabled} />
             </div>
           </div>
 
@@ -169,12 +142,14 @@ export function SearchPage() {
           {showEmptyHero && isIndexed && (
             <div className="mt-8 space-y-6">
               <div>
-                <h3 className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Search Examples</h3>
+                <h3 className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">
+                  Search Examples
+                </h3>
                 <div className="flex flex-col sm:flex-row flex-wrap gap-2">
                   {[
-                    "How are API errors handled?",
-                    "Where is GitHub data fetched?",
-                    "How is the dependency graph generated?"
+                    'How are API errors handled?',
+                    'Where is GitHub data fetched?',
+                    'How is the dependency graph generated?',
                   ].map((example) => (
                     <button
                       key={example}
@@ -192,13 +167,17 @@ export function SearchPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <h3 className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Recent Queries</h3>
+                  <h3 className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">
+                    Recent Queries
+                  </h3>
                   <div className="text-[11px] text-muted-foreground italic p-3 border border-border rounded-md bg-background flex items-center justify-center h-[76px]">
                     No recent queries yet.
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">Index Details</h3>
+                  <h3 className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">
+                    Index Details
+                  </h3>
                   <div className="text-[11px] text-foreground p-3 border border-border rounded-md bg-card h-[76px] flex flex-col justify-center space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Status</span>
@@ -219,21 +198,20 @@ export function SearchPage() {
 
           {/* Error */}
           {error && (
-            <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            <div
+              role="alert"
+              className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+            >
               {error}
             </div>
           )}
 
           {/* No results message */}
-          {!isLoading &&
-            !error &&
-            mode === 'search' &&
-            results.length === 0 &&
-            searchMutation.isSuccess && (
-              <div className="py-8 text-sm text-muted-foreground flex justify-center">
-                No matching code found. Try broader terms or switch to Ask mode.
-              </div>
-            )}
+          {!isLoading && !error && mode === 'search' && results.length === 0 && searchMutation.isSuccess && (
+            <div className="py-8 text-sm text-muted-foreground flex justify-center">
+              No matching code found. Try broader terms or switch to Ask mode.
+            </div>
+          )}
 
           {/* Results */}
           {mode === 'search' && <SearchResults onSelectFile={handleSelectFile} />}
