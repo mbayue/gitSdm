@@ -23,18 +23,27 @@ test('learning Explain responds to Enter and synchronizes the inspected file', a
   await expect(page.getByRole('region', { name: 'File inspector' })).toContainText('src/App.tsx');
 });
 
-test('workspace modes hide both sidebars in focus and open learning on mobile', async ({ page }) => {
+test('workspace modes show only the selected sidebar', async ({ page }) => {
   await page.setViewportSize({ width: 1256, height: 912 });
   await page.goto('/mock/todo-app');
   await page.getByRole('button', { name: 'Full Workspace', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Focus Mode Minimizes sidebars to focus purely on the canvas', exact: true }).click();
+  await page.getByRole('menuitem', { name: /Explorer Only/ }).click();
+  await expect(page.getByRole('button', { name: 'Collapse file explorer', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open repository insights', exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Explorer Only', exact: true }).click();
+  await page.getByRole('menuitem', { name: /Insights Only/ }).click();
+  await expect(page.getByRole('button', { name: 'Open file explorer', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Collapse repository insights', exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Insights Only', exact: true }).click();
+  await page.getByRole('menuitem', { name: /Focus Mode/ }).click();
   await expect(page.getByRole('button', { name: 'Open file explorer', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Open repository insights', exact: true })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole('button', { name: 'Open menu', exact: true }).click();
-  await page.getByRole('button', { name: 'Learning Mode', exact: true }).click();
-  await expect(page.getByRole('tab', { name: 'Learning', exact: true })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Learning', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('button', { name: 'Insights Only', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Collapse repository insights', exact: true })).toBeVisible();
 });
 
 test('layout changes fit the graph after focusing a file', async ({ page }) => {

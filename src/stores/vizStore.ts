@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import type { NodeType } from "@/types";
 
 export type SidebarTab = "overview" | "analysis" | "dependencies" | "ai" | "learning";
-export type WorkspaceMode = "focus" | "analysis" | "learning" | "full";
+export type WorkspaceMode = "full" | "explorer" | "insights" | "focus";
 export type GraphScope = "important" | "source" | "grouped" | "full";
 export type ContentFilter = "source" | "config" | "docs" | "tests" | "github" | "examples" | "generated" | "translations";
 export type CompareRefType = "branch" | "tag" | "commit";
@@ -221,13 +221,13 @@ export const useVizStore = create<VizState>()(
   setSidebarTab: (sidebarTab: SidebarTab) => set({ sidebarTab }),
   setWorkspaceMode: (workspaceMode: WorkspaceMode) => {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+    const showExplorer = workspaceMode === 'full' || workspaceMode === 'explorer';
+    const showAiSidebar = workspaceMode === 'full' || workspaceMode === 'insights';
     set({
       workspaceMode,
-      explorerOpen: workspaceMode !== 'focus' && (!isMobile || workspaceMode === 'full'),
-      aiSidebarOpen: workspaceMode !== 'focus' && (!isMobile || workspaceMode === 'analysis' || workspaceMode === 'learning'),
+      explorerOpen: showExplorer && (!isMobile || workspaceMode === 'explorer'),
+      aiSidebarOpen: showAiSidebar && (!isMobile || workspaceMode === 'insights'),
       inspectorOpen: false,
-      ...(workspaceMode === 'analysis' ? { sidebarTab: 'analysis' as const } : {}),
-      ...(workspaceMode === 'learning' ? { sidebarTab: 'learning' as const } : {}),
     });
   },
   setExplorerOpen: (explorerOpen: boolean) => set({ explorerOpen }),
@@ -333,9 +333,14 @@ export const useVizStore = create<VizState>()(
     }),
     merge: (persistedState: unknown, currentState: VizState): VizState => {
       const p = persistedState as Partial<Omit<VizState, 'contentFilters'> & { contentFilters: ContentFilter[] }>;
+      const validModes: WorkspaceMode[] = ['full', 'explorer', 'insights', 'focus'];
+      const workspaceMode = p?.workspaceMode && validModes.includes(p.workspaceMode as WorkspaceMode)
+        ? (p.workspaceMode as WorkspaceMode)
+        : 'full';
       return {
         ...currentState,
         ...p,
+        workspaceMode,
         contentFilters: p?.contentFilters
           ? new Set(p.contentFilters)
           : currentState.contentFilters,
