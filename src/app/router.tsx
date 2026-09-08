@@ -6,6 +6,7 @@ const HomePage = lazy(() => import('@/pages/HomePage').then((module) => ({ defau
 const VizPage = lazy(() => import('@/pages/VizPage').then((module) => ({ default: module.VizPage })));
 const SearchPage = lazy(() => import('@/pages/SearchPage').then((module) => ({ default: module.SearchPage })));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
+const PrivacyPage = lazy(() => import('@/pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })));
 
 function RouterContent() {
   const location = useLocation();
@@ -15,6 +16,7 @@ function RouterContent() {
       <Suspense fallback={<div className="min-h-screen bg-background" />}>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/:owner/:repo" element={<VizPage />} />
           <Route path="/:owner/:repo/search" element={<SearchPage />} />
           <Route path="*" element={<NotFoundPage />} />

@@ -357,7 +357,8 @@ export function SettingsPopover({
 
           {/* Footer note */}
           <div className="border-t border-border pt-2 text-center text-xs text-muted-foreground">
-            Keys are stored locally in your browser. Do not use shared devices.
+            <p>Saved keys are stored in this browser and sent to the gitSdm backend for relevant requests. AI and search features may send repository content, including private code, to configured AI and embedding providers.</p>
+            <p className="mt-2">Do not save keys on shared devices. <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-accent underline underline-offset-2">Privacy policy (opens in a new tab)</a></p>
           </div>
         </div>
       )}

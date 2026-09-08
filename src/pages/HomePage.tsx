@@ -8,7 +8,7 @@ import { CapabilityGroups } from "@/components/home/CapabilityGroups";
 import { LAST_REPO_KEY } from "@/lib/utils";
 
 export function HomePage() {
-  const [repoUrl] = useState(() => localStorage.getItem(LAST_REPO_KEY) ?? "");
+  const [repoUrl] = useState(() => typeof localStorage === 'undefined' ? '' : localStorage.getItem(LAST_REPO_KEY) ?? "");
 
   useEffect(() => {
     const sectionId = window.location.hash.slice(1);
@@ -43,6 +43,9 @@ export function HomePage() {
             <span className="text-xs text-muted-foreground">© 2026</span>
           </div>
           <div className="flex items-center gap-6">
+            <a href="/privacy" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+              Privacy
+            </a>
             <a
               href="https://github.com/mbayue/gitSdm"
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"

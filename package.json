@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "bunx --bun vite",
-    "build": "bunx --bun vite build",
+    "build": "bunx --bun vite build && bun scripts/prerender.tsx",
     "build:server": "bunx --bun vite build --ssr server/prod-server.ts --outDir dist-server",
     "build:docker": "bun run build && bun run build:server",
     "start": "bun dist-server/prod-server.js",

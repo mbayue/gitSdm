@@ -3,9 +3,9 @@ import { handleApiRequest } from './api-router';
 import { resetOctokit } from './github/client';
 import { addSecurityHeaders } from './utils/http';
 import { logInfo } from './utils/logger';
+import { isRepositoryPage } from './utils/page-route';
 
 const distDir = path.resolve(import.meta.dir, '../dist');
-const indexFile = path.join(distDir, 'index.html');
 const port = Number(process.env.PORT ?? 3000);
 const host = process.env.HOST ?? '0.0.0.0';
 
@@ -35,7 +35,9 @@ Bun.serve({
       return new Response('Bad Request', { status: 400 });
     }
 
-    const filePath = safeJoin(distDir, decodedPath);
+    const pageFile = decodedPath === '/' ? '/index.html' : decodedPath === '/privacy' || decodedPath === '/privacy/' ? '/privacy.html' : decodedPath;
+    const filePath = safeJoin(distDir, pageFile);
+    if (!filePath) return addSecurityHeaders(new Response('Not found', { status: 404 }));
     const file = Bun.file(filePath);
     if (await file.exists()) {
       const res = new Response(file);
@@ -45,8 +47,8 @@ Bun.serve({
       return addSecurityHeaders(res);
     }
 
-    // SPA fallback
-    const fallbackRes = new Response(Bun.file(indexFile));
+    const validRoute = isRepositoryPage(decodedPath);
+    const fallbackRes = new Response(Bun.file(path.join(distDir, validRoute ? 'app.html' : '404.html')), { status: validRoute ? 200 : 404 });
     fallbackRes.headers.set('Cache-Control', 'no-cache');
     return addSecurityHeaders(fallbackRes);
   },
@@ -56,7 +58,7 @@ const hasToken = Boolean(process.env.GITHUB_TOKEN?.trim());
 logInfo(`[gitSdm] listening on http://${host}:${port}`);
 logInfo(`[gitSdm] GitHub API: ${hasToken ? 'authenticated' : 'unauthenticated'}`);
 
-function safeJoin(root: string, pathname: string): string {
+function safeJoin(root: string, pathname: string): string | null {
   const normalized = pathname.replace(/^[/\\]+/, '');
   const resolved = path.resolve(root, normalized);
 
@@ -68,5 +70,5 @@ function safeJoin(root: string, pathname: string): string {
     return resolved;
   }
 
-  return indexFile;
+  return null;
 }
