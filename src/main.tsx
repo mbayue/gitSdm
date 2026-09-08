@@ -4,10 +4,29 @@ import { Providers } from '@/app/providers';
 import { AppRouter } from '@/app/router';
 import '@/styles/globals.css';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <Providers>
-      <AppRouter />
-    </Providers>
-  </StrictMode>,
-);
+async function start() {
+  const initialPath = window.location.pathname;
+  const initialPage =
+    initialPath === '/'
+      ? (await import('@/pages/HomePage')).HomePage
+      : /^\/privacy\/?$/.test(initialPath)
+        ? (await import('@/pages/PrivacyPage')).PrivacyPage
+        : /^\/[^/]+\/[^/]+\/search\/?$/.test(initialPath)
+          ? (await import('@/pages/SearchPage')).SearchPage
+          : /^\/[^/]+\/[^/]+\/?$/.test(initialPath)
+            ? (await import('@/pages/VizPage')).VizPage
+            : (await import('@/pages/NotFoundPage')).NotFoundPage;
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <Providers>
+        <AppRouter initialPage={initialPage} initialPath={initialPath} />
+      </Providers>
+    </StrictMode>,
+  );
+}
+void start().catch(() => {
+  const message = document.createElement('p');
+  message.setAttribute('role', 'alert');
+  message.textContent = 'Interactive features could not load. Please refresh to try again.';
+  document.body.appendChild(message);
+});

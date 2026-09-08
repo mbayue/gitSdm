@@ -11,12 +11,13 @@ import {
 } from '../github/fetch-tree';
 import { parseGitHubUrl } from '../github/parse-url';
 import { buildGraph } from '../graph/graph-builder';
-import { analyzeDependencies, analyzeManifestDependencies, analyzeWorkspacePackages } from '../parser/dependency-analyzer';
+import {
+  analyzeDependencies,
+  analyzeManifestDependencies,
+  analyzeWorkspacePackages,
+} from '../parser/dependency-analyzer';
 import { annotateTree, findImportantFiles } from '../parser/file-classifier';
 import { analyzeAllFileComplexity } from '../parser/complexity-analyzer';
-import { fetchRepoChurn } from './churn-service';
-import { buildDependencyHealthReport } from './dependency-health';
-import { fetchNpmDependencyMetadataBatch } from './npm-registry';
 import type { RepoAnalysis } from '../../src/types';
 import type { RequestContext } from '../utils/context';
 
@@ -24,10 +25,7 @@ export async function analyzeRepository(
   input: string | { owner: string; repo: string; branch?: string },
   tokenOrCtx?: string | RequestContext,
 ): Promise<RepoAnalysis> {
-  const parsed =
-    typeof input === 'string'
-      ? parseGitHubUrl(input)
-      : input;
+  const parsed = typeof input === 'string' ? parseGitHubUrl(input) : input;
 
   if (!parsed) {
     throw new Error('Invalid GitHub repository URL');
@@ -51,18 +49,15 @@ export async function analyzeRepository(
   const tree = annotateTree(buildTreeFromPaths(items));
   const manifestPaths = findManifestPaths(items);
   const importantFiles = findImportantFiles(items.map((i) => i.path));
-  
+
   // Extract up to 20 important code files to parse internal imports
   const sourceExtensions = ['.ts', '.tsx', '.js', '.jsx', '.py', '.go'];
-  const importantSourceFiles = importantFiles.filter((path) =>
-    sourceExtensions.some((ext) => path.endsWith(ext))
-  );
+  const importantSourceFiles = importantFiles.filter((path) => sourceExtensions.some((ext) => path.endsWith(ext)));
 
-  // All source files from the tree — used for churn (API endpoint: listCommits)
-  // and to expand content fetching for complexity coverage
+  // Expand content fetching for complexity coverage.
   const allSourceFilePaths = items
-    .filter(i => i.type === 'blob' && sourceExtensions.some(ext => i.path.endsWith(ext)))
-    .map(i => i.path);
+    .filter((i) => i.type === 'blob' && sourceExtensions.some((ext) => i.path.endsWith(ext)))
+    .map((i) => i.path);
 
   const pathsToFetch = Array.from(new Set([...manifestPaths, ...importantSourceFiles]));
 
@@ -77,34 +72,17 @@ export async function analyzeRepository(
   // Compute complexity from file content (synchronous, no API calls)
   const complexityData = analyzeAllFileComplexity(fileContents);
 
-  // For churn: use all source file paths from the tree (not just important ones)
-  // so the overlay covers all rendered graph file nodes. Cap at 200 to
-  // avoid excessive API calls on large repos.
-  const churnFetchPaths = allSourceFilePaths.length > 0
-    ? allSourceFilePaths.slice(0, 200)
-    : pathsToFetch;
-
-  // Fetch churn (async API calls) and npm metadata in parallel
-  const [npmDependencyMetadata, churnData] = await Promise.all([
-    fetchNpmDependencyMetadataBatch(
-      dependencies.filter((dependency) => dependency.ecosystem === 'npm'),
-    ),
-    fetchRepoChurn(owner, repo, churnFetchPaths, branch, tokenOrCtx),
-  ]);
-
-	const graph = await buildGraph({
-		owner,
-		repo,
-		tree,
-		dependencies,
-		contributors,
-		fileContents,
-		workspacePackages,
-		scopedDependencies,
-		churnData,
-		complexityData,
-	});
-	const dependencyHealth = buildDependencyHealthReport(dependencies, scopedDependencies, npmDependencyMetadata);
+  const graph = await buildGraph({
+    owner,
+    repo,
+    tree,
+    dependencies,
+    contributors,
+    fileContents,
+    workspacePackages,
+    scopedDependencies,
+    complexityData,
+  });
 
   const analysis: RepoAnalysis = {
     meta: {
@@ -127,15 +105,16 @@ export async function analyzeRepository(
     treeTruncated: truncated,
     dependencies,
     workspacePackages,
+    scopedDependencies,
     graph,
     contributors,
     timeline,
     importantFiles,
     totalFiles,
     totalCommits,
-    dependencyHealth,
   };
 
   cache.set(cacheKey, analysis);
+  cache.set(analyzeCacheKey(owner, repo, info.sha, info.sha), analysis);
   return analysis;
 }

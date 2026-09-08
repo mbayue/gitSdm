@@ -1,122 +1,131 @@
+import { createHash } from 'node:crypto';
 import { cache, churnCacheKey } from '../cache/lru';
 import { getOctokit } from '../github/client';
 import { isMockRepo, fetchMockChurn } from '../github/mock-data';
 import type { RequestContext } from '../utils/context';
+import type { ChurnResponse, ChurnContinuation, FileChurnData } from '../../src/types/churn';
+export type { FileChurnData } from '../../src/types/churn';
 
-export interface FileChurnData {
-  commitCount: number;
-  authorCount: number;
-  lastModified: string;
-  churnScore: number;
-}
+type Failure = ChurnResponse['failures'][string];
+type Stored = {
+  files: Record<string, FileChurnData>;
+  failures: Record<string, Failure>;
+};
+const inFlight = new Map<string, Promise<void>>();
 
-/**
- * Fetch per-file churn data: commit count, distinct authors, last-modified date.
- * For each file path, calls listCommits with the path filter (last N days).
- * Processes paths in concurrent batches.
- *
- * Note on commitCount precision:
- * When the response is paginated (Link header contains a rel="last" page),
- * commitCount is approximated as `lastPage * 100`. This overestimates when
- * the last page has fewer than 100 commits. For example, 101 commits → 200,
- * 201 commits → 300. The error is non-uniform across files and compounds
- * in the churnScore normalization step. This is an intentional trade-off
- * to avoid O(repos) extra API calls. If precise counts are needed, callers
- * should paginate fully.
- */
+/** Credential-scoped cached results plus explicit continuation work across server instances. */
 export async function fetchRepoChurn(
   owner: string,
   repo: string,
-  paths: string[],
+  inputPaths: string[],
   branch?: string,
   tokenOrCtx?: string | RequestContext,
   days = 90,
-): Promise<Record<string, FileChurnData>> {
-  if (isMockRepo(owner)) {
-    return fetchMockChurn(paths);
-  }
-
-  const cacheKey = churnCacheKey(owner, repo, branch, days);
-  const cached = cache.get<Record<string, FileChurnData>>(cacheKey);
-  if (cached) return cached;
-
-  const octokit = (tokenOrCtx && typeof tokenOrCtx === 'object' && 'octokit' in tokenOrCtx)
-    ? tokenOrCtx.octokit
-    : getOctokit(tokenOrCtx as string | undefined);
-
+  continuation: ChurnContinuation = {},
+): Promise<ChurnResponse> {
+  const paths = [...new Set(inputPaths)].slice(0, 200);
+  if (isMockRepo(owner))
+    return {
+      files: await fetchMockChurn(paths),
+      checked: paths.length,
+      total: paths.length,
+      complete: true,
+      remaining: [],
+      failures: {},
+    };
+  const token = typeof tokenOrCtx === 'string' ? tokenOrCtx : tokenOrCtx?.gitHubToken;
+  const scope = createHash('sha256')
+    .update(token || process.env.GITHUB_TOKEN || 'anonymous')
+    .digest('hex');
   const since = new Date();
-  since.setDate(since.getDate() - days);
-
-  const result: Record<string, FileChurnData> = {};
-  const CONCURRENCY = 7;
-
-  for (let i = 0; i < paths.length; i += CONCURRENCY) {
-    const chunk = paths.slice(i, i + CONCURRENCY);
-    const entries = await Promise.all(
-      chunk.map(async (path) => {
+  since.setUTCHours(0, 0, 0, 0);
+  since.setUTCDate(since.getUTCDate() - days);
+  const key = `${churnCacheKey(owner, repo, branch, days)}:incremental:${since.toISOString()}:${scope}`;
+  const state = cache.get<Stored>(key) ?? { files: {}, failures: {} };
+  cache.set(key, state);
+  const completed = new Set((continuation.completed ?? []).filter((path) => paths.includes(path)));
+  const order = [...new Set([...(continuation.pending ?? []).filter((path) => paths.includes(path)), ...paths])];
+  const pending = order
+    .filter(
+      (path) =>
+        (!continuation.pending || continuation.pending.includes(path)) &&
+        !completed.has(path) &&
+        !state.files[path] &&
+        !(state.failures[path]?.retryAt > Date.now()),
+    )
+    .slice(0, 7);
+  const octokit = tokenOrCtx && typeof tokenOrCtx === 'object' ? tokenOrCtx.octokit : getOctokit(tokenOrCtx);
+  await Promise.all(
+    pending.map((path) => {
+      const flightKey = `${key}:${path}`;
+      const existing = inFlight.get(flightKey);
+      if (existing) return existing;
+      const task = (async () => {
         try {
           const { data, headers } = await octokit.repos.listCommits({
             owner,
             repo,
-            sha: branch || undefined,
+            sha: branch,
             path,
             since: since.toISOString(),
             per_page: 100,
+            request: { signal: AbortSignal.timeout(5000) },
           });
-
-          if (!data || data.length === 0) return null;
-
-          // Count from Link header if paginated, else data length
-          const link = headers?.link ?? '';
-          const lastPage = /[?&]page=(\d+)>;\s*rel="last"/.exec(link)?.[1];
-          const commitCount = lastPage ? Number(lastPage) * 100 : data.length;
-
-          // Distinct authors
-          const authors = new Set<string>();
-          for (const c of data) {
-            if (c.commit?.author?.name) authors.add(c.commit.author.name);
-            if (c.author?.login) authors.add(c.author.login);
-          }
-
-          const lastCommit = data[0];
-          const lastModified =
-            lastCommit?.commit?.author?.date ??
-            lastCommit?.commit?.committer?.date ??
-            new Date().toISOString();
-
-          return { path, commitCount, authorCount: authors.size, lastModified };
-        } catch (err) {
-          const status = err && typeof err === 'object' && 'status' in err ? (err as { status: number }).status : undefined;
-          if (status !== 403 && status !== 429) {
-            console.error(`[churn-service] Failed to fetch churn for ${path}:`, err instanceof Error ? err.message : String(err));
-          }
-          return null;
+          const lastPage = /[?&]page=(\d+)>;\s*rel="last"/.exec(headers.link ?? '')?.[1];
+          const authors = new Set(data.map((c) => c.author?.login ?? c.commit.author?.name).filter(Boolean));
+          state.files[path] = {
+            commitCount: lastPage ? Number(lastPage) * 100 : data.length,
+            authorCount: authors.size,
+            lastModified: data[0]?.commit.author?.date ?? data[0]?.commit.committer?.date ?? undefined,
+            churnScore: 0,
+          };
+          delete state.failures[path];
+        } catch (error) {
+          const err = error as {
+            status?: number;
+            response?: { headers?: Record<string, string> };
+          };
+          const headers = err.response?.headers ?? {};
+          const limited =
+            err.status === 429 ||
+            (err.status === 403 && (headers['x-ratelimit-remaining'] === '0' || !!headers['retry-after']));
+          const issue = limited
+            ? 'rate-limit'
+            : err.status === 401 || err.status === 403 || err.status === 404
+              ? 'access'
+              : 'timeout-or-network';
+          const seconds = Number(headers['retry-after']);
+          const reset = Number(headers['x-ratelimit-reset']) * 1000;
+          const retryAt = limited
+            ? Math.max(
+                Date.now() + 60_000,
+                Number.isFinite(seconds) ? Date.now() + seconds * 1000 : 0,
+                Number.isFinite(reset) ? reset : 0,
+              )
+            : Date.now() + 10_000;
+          state.failures[path] = { issue, retryAt };
         }
-      }),
-    );
-
-    for (const entry of entries) {
-      if (!entry) continue;
-      result[entry.path] = {
-        commitCount: entry.commitCount,
-        authorCount: entry.authorCount,
-        lastModified: entry.lastModified,
-        churnScore: 0, // normalized later
-      };
-    }
-
-    // Warn if an entire batch failed — possible auth/rate-limit issue
-    if (chunk.length > 0 && entries.every((e) => e === null)) {
-      console.error(`[churn-service] All ${chunk.length} paths in batch failed for ${owner}/${repo} — possible auth/rate-limit issue`);
-    }
-  }
-
-  // Normalize churnScore: find max commit count
-  const maxCommits = Math.max(1, ...Object.values(result).map((d) => d.commitCount));
-  for (const data of Object.values(result)) {
-    data.churnScore = +(data.commitCount / maxCommits).toFixed(4);
-  }
-
-  cache.set(cacheKey, result);
-  return result;
+      })().finally(() => inFlight.delete(flightKey));
+      inFlight.set(flightKey, task);
+      return task;
+    }),
+  );
+  const entries = paths.flatMap((path) => (state.files[path] ? [[path, state.files[path]] as const] : []));
+  entries.forEach(([path]) => completed.add(path));
+  const remaining = order.filter((path) => !completed.has(path));
+  const failures = Object.fromEntries(
+    remaining.flatMap((path) => (state.failures[path] ? [[path, state.failures[path]]] : [])),
+  );
+  const stopped = Object.values(failures).sort((a, b) => b.retryAt - a.retryAt)[0];
+  const max = Math.max(1, ...entries.map(([, file]) => file.commitCount));
+  return {
+    files: Object.fromEntries(entries.map(([path, file]) => [path, { ...file, churnScore: file.commitCount / max }])),
+    checked: completed.size,
+    total: paths.length,
+    complete: remaining.length === 0,
+    remaining,
+    failures,
+    issue: stopped?.issue,
+    retryAt: stopped?.retryAt,
+  };
 }

@@ -4,23 +4,38 @@ import { Providers } from '../src/app/providers';
 import { HomePage } from '../src/pages/HomePage';
 import { PrivacyPage } from '../src/pages/PrivacyPage';
 import { NotFoundPage } from '../src/pages/NotFoundPage';
+import { pageMetadata } from '../src/lib/page-metadata';
 
 const shell = await Bun.file('dist/index.html').text();
 if (!shell.includes('<div id="root"></div>')) throw new Error('Prerender root marker missing');
-// Repository routes use a blank shell, never the homepage's SEO or content.
 await Bun.write('dist/app.html', shell.replace(/<link rel="canonical"[^>]*>/, ''));
 for (const [route, file, page] of [
   ['/', 'dist/index.html', <HomePage />],
   ['/privacy', 'dist/privacy.html', <PrivacyPage />],
+  ['/not-found', 'dist/404.html', <NotFoundPage />],
 ] as const) {
-  const content = renderToStaticMarkup(<StaticRouter location={route}><Providers>{page}</Providers></StaticRouter>);
-  const html = shell.replace('<div id="root"></div>', `<div id="root">${content}</div>`);
-  await Bun.write(file, route === '/' ? html : html
-    .replaceAll('"https://gsdm.site/"', '"https://gsdm.site/privacy"')
-    .replace('<title>gitSdmᵝ — Git Software Dependency Map</title>', '<title>Privacy policy — gitSdm</title>'));
+  const meta = pageMetadata(route);
+  const content = renderToStaticMarkup(
+    <StaticRouter location={route}>
+      <Providers>{page}</Providers>
+    </StaticRouter>,
+  );
+  let html = shell
+    .replace('<div id="root"></div>', `<div id="root">${content}</div>`)
+    .replace(/<title>[^<]*<\/title>/, `<title>${meta.title}</title>`)
+    .replace(/<link rel="canonical"[^>]*>/, meta.canonical ? `<link rel="canonical" href="${meta.canonical}" />` : '')
+    .replace('</head>', `<meta name="robots" content="${meta.robots}" /></head>`);
+  for (const [attribute, name, value] of [
+    ['name', 'description', meta.description],
+    ['property', 'og:title', meta.title],
+    ['property', 'og:description', meta.description],
+    ['property', 'og:url', `https://gsdm.site${route}`],
+    ['name', 'twitter:title', meta.title],
+    ['name', 'twitter:description', meta.description],
+  ])
+    html = html.replace(
+      new RegExp(`<meta ${attribute}="${name}"[^>]*>`),
+      `<meta ${attribute}="${name}" content="${value}" />`,
+    );
+  await Bun.write(file, html);
 }
-const notFound = renderToStaticMarkup(<StaticRouter location="/not-found"><Providers><NotFoundPage /></Providers></StaticRouter>);
-await Bun.write('dist/404.html', shell
-  .replace('<div id="root"></div>', `<div id="root">${notFound}</div>`)
-  .replace('<title>gitSdmᵝ — Git Software Dependency Map</title>', '<title>Page not found — gitSdm</title>')
-  .replace(/<link rel="canonical"[^>]*>/, '<meta name="robots" content="noindex" />'));

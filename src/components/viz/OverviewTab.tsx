@@ -2,9 +2,20 @@ import { TooltipHint } from '@/components/ui/tooltip';
 import { useCallback, useMemo } from 'react';
 import { useVizStore } from '@/stores/vizStore';
 import type { RepoAnalysis } from '@/types';
+import { useRepoChurn } from '@/hooks/useRepoChurn';
 import {
-  Plus, Activity, AlertTriangle, GitBranch,
-  FileCode, Folder, Package, Users, Code2, ShieldAlert, Info, Flame
+  Plus,
+  Activity,
+  AlertTriangle,
+  GitBranch,
+  FileCode,
+  Folder,
+  Package,
+  Users,
+  Code2,
+  ShieldAlert,
+  Info,
+  Flame,
 } from 'lucide-react';
 
 const GRAPH_FILE_NODE_CAP = 1200;
@@ -21,6 +32,8 @@ interface OverviewTabProps {
 }
 
 export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTabProps) {
+  const churn = useRepoChurn(analysis.meta.owner, analysis.meta.repo, analysis.meta.sha, true);
+  const hasChurn = analysis.graph.nodes.some((node) => node.data.churnScore != null);
   // Direct graph centering helper — works for both file and folder nodes
   const focusOnNode = useCallback((nodeId: string, filePath?: string | null) => {
     useVizStore.getState().setSelectedNodeId(nodeId);
@@ -40,40 +53,50 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
     nodeById,
     maintenanceHotspots,
   } = useMemo(() => {
-    const fileCount = analysis.graph.nodes.filter(n => n.type === 'file').length;
-    const folderCount = analysis.graph.nodes.filter(n => n.type === 'folder').length;
+    const fileCount = analysis.graph.nodes.filter((n) => n.type === 'file').length;
+    const folderCount = analysis.graph.nodes.filter((n) => n.type === 'folder').length;
     const depCount = analysis.dependencies.length;
     const contributorCount = analysis.contributors.length;
 
     // Calculate High Coupling
     const degrees: Record<string, number> = {};
-    analysis.graph.edges.forEach(e => {
+    analysis.graph.edges.forEach((e) => {
       degrees[e.source] = (degrees[e.source] || 0) + 1;
       degrees[e.target] = (degrees[e.target] || 0) + 1;
     });
     const highCoupling = analysis.graph.nodes
-      .filter(n => n.type === 'file' || n.type === 'folder')
+      .filter((n) => n.type === 'file' || n.type === 'folder')
       .sort((a, b) => (degrees[b.id] || 0) - (degrees[a.id] || 0))
       .slice(0, 5);
 
-    const entryPoints = analysis.graph.nodes
-      .filter(n => n.data.fileClass === 'entry')
+    const entryPoints = analysis.graph.nodes.filter((n) => n.data.fileClass === 'entry').slice(0, 5);
+
+    const nodeById = new Map(analysis.graph.nodes.map((n) => [n.id, n]));
+
+    // Compute Maintenance Hotspots: files with churnScore or complexityScore,
+    // ranked by combined score
+    const maintenanceHotspots = analysis.graph.nodes
+      .filter((n) => n.type === 'file' && (n.data.churnScore != null || n.data.complexityScore != null))
+      .map((n) => ({
+        node: n,
+        combinedScore:
+          ((n.data.churnScore ?? 0) + (n.data.complexityScore ?? 0)) /
+          (Number(n.data.churnScore != null) + Number(n.data.complexityScore != null)),
+      }))
+      .sort((a, b) => b.combinedScore - a.combinedScore)
       .slice(0, 5);
 
-  const nodeById = new Map(analysis.graph.nodes.map(n => [n.id, n]));
-
-  // Compute Maintenance Hotspots: files with churnScore or complexityScore,
-  // ranked by combined score
-  const maintenanceHotspots = analysis.graph.nodes
-    .filter(n => n.type === 'file' && (n.data.churnScore != null || n.data.complexityScore != null))
-    .map(n => ({
-      node: n,
-      combinedScore: (n.data.churnScore ?? 0) * 0.5 + (n.data.complexityScore ?? 0) * 0.5,
-    }))
-    .sort((a, b) => b.combinedScore - a.combinedScore)
-    .slice(0, 5);
-
-  return { fileCount, folderCount, depCount, contributorCount, highCoupling, entryPoints, degrees, nodeById, maintenanceHotspots };
+    return {
+      fileCount,
+      folderCount,
+      depCount,
+      contributorCount,
+      highCoupling,
+      entryPoints,
+      degrees,
+      nodeById,
+      maintenanceHotspots,
+    };
   }, [analysis]);
 
   const totalFiles = analysis.totalFiles ?? fileCount;
@@ -110,7 +133,9 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                 <GitBranch className="h-4 w-4 text-ui-active-text-green" />
                 <span className="text-xs text-muted-foreground uppercase font-semibold tracking-widest">Total</span>
               </div>
-              <span className="text-[13px] font-semibold text-foreground font-mono">{graphDiff.added.size + graphDiff.modified.size + graphDiff.deleted.size}</span>
+              <span className="text-[13px] font-semibold text-foreground font-mono">
+                {graphDiff.added.size + graphDiff.modified.size + graphDiff.deleted.size}
+              </span>
             </div>
           </div>
 
@@ -121,11 +146,11 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                   <Plus className="w-3 h-3" /> Added Files
                 </h4>
                 <div className="rounded-md border border-border bg-background py-2 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin">
-                  {Array.from(graphDiff.added).map(id => {
+                  {Array.from(graphDiff.added).map((id) => {
                     const node = nodeById.get(id);
                     return (
-                      <button 
-                        key={id} 
+                      <button
+                        key={id}
                         onClick={() => {
                           focusOnNode(id, node?.data?.path || id);
                           useVizStore.getState().setInspectorOpen(false);
@@ -139,18 +164,18 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                 </div>
               </div>
             )}
-            
+
             {graphDiff.modified.size > 0 && (
               <div>
                 <h4 className="flex items-center gap-2 text-xs font-bold text-amber-500 uppercase tracking-widest mb-2">
                   <Activity className="w-3 h-3" /> Modified Files
                 </h4>
                 <div className="rounded-md border border-border bg-background py-2 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin">
-                  {Array.from(graphDiff.modified).map(id => {
+                  {Array.from(graphDiff.modified).map((id) => {
                     const node = nodeById.get(id);
                     return (
-                      <button 
-                        key={id} 
+                      <button
+                        key={id}
                         onClick={() => {
                           focusOnNode(id, node?.data?.path || id);
                           useVizStore.getState().setInspectorOpen(false);
@@ -171,11 +196,11 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                   <AlertTriangle className="w-3 h-3" /> Deleted Files
                 </h4>
                 <div className="rounded-md border border-border bg-background py-2 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin">
-                  {Array.from(graphDiff.deleted).map(id => {
+                  {Array.from(graphDiff.deleted).map((id) => {
                     const node = nodeById.get(id);
                     return (
                       <button
-                        key={id} 
+                        key={id}
                         onClick={() => {
                           focusOnNode(id, node?.data?.path || id);
                           useVizStore.getState().setInspectorOpen(false);
@@ -202,9 +227,7 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
               </span>
             </h3>
             {analysis.meta.description && (
-              <p className="text-xs text-muted-foreground leading-snug line-clamp-2">
-                {analysis.meta.description}
-              </p>
+              <p className="text-xs text-muted-foreground leading-snug line-clamp-2">{analysis.meta.description}</p>
             )}
 
             <div className="flex flex-wrap gap-1.5 pt-1">
@@ -232,8 +255,11 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
 
             {analysis.meta.topics && analysis.meta.topics.length > 0 && (
               <div className="flex flex-wrap gap-1">
-                {analysis.meta.topics.slice(0, 4).map(topic => (
-                  <span key={topic} className="px-1.5 py-0.5 text-accent bg-accent/10 text-xs rounded-sm font-mono max-w-[120px] truncate">
+                {analysis.meta.topics.slice(0, 4).map((topic) => (
+                  <span
+                    key={topic}
+                    className="px-1.5 py-0.5 text-accent bg-accent/10 text-xs rounded-sm font-mono max-w-[120px] truncate"
+                  >
                     {topic}
                   </span>
                 ))}
@@ -244,9 +270,9 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
           <div className="h-px w-full bg-secondary" />
 
           {/* Stats Rows */}
-	          <div className="space-y-1.5">
-	            {[
-	              { label: 'Files', val: fileCount, icon: FileCode },
+          <div className="space-y-1.5">
+            {[
+              { label: 'Files', val: fileCount, icon: FileCode },
               { label: 'Folders', val: folderCount, icon: Folder },
               { label: 'Dependencies', val: depCount, icon: Package },
               { label: 'Contributors', val: contributorCount, icon: Users },
@@ -254,18 +280,22 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
               <div key={idx} className="flex items-center justify-between group">
                 <div className="flex items-center gap-2">
                   <stat.icon className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
-                  <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">{stat.label}</span>
+                  <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                    {stat.label}
+                  </span>
                 </div>
                 <span className="text-xs font-mono text-foreground">{stat.val}</span>
-	              </div>
-	            ))}
-	          </div>
+              </div>
+            ))}
+          </div>
 
           {isGraphCapped && (
             <div className="flex items-start gap-2 rounded-md border border-amber-500/15 bg-amber-500/5 px-2 py-1.5 text-xs leading-snug text-amber-200/80">
               <Info className="mt-0.5 h-3 w-3 shrink-0 text-amber-300/80" />
               <span>
-                Graph view renders up to {GRAPH_FILE_NODE_CAP.toLocaleString()} files and {GRAPH_FOLDER_NODE_CAP.toLocaleString()} folders for responsiveness. Showing {fileCount.toLocaleString()} of {totalFiles.toLocaleString()} files.
+                Graph view renders up to {GRAPH_FILE_NODE_CAP.toLocaleString()} files and{' '}
+                {GRAPH_FOLDER_NODE_CAP.toLocaleString()} folders for responsiveness. Showing{' '}
+                {fileCount.toLocaleString()} of {totalFiles.toLocaleString()} files.
               </span>
             </div>
           )}
@@ -277,8 +307,8 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
               </span>
             </div>
           )}
-	
-	          {/* Useful Sections */}
+
+          {/* Useful Sections */}
           {(entryPoints.length > 0 || analysis.importantFiles.length > 0 || highCoupling.length > 0) && (
             <div className="h-px w-full bg-secondary" />
           )}
@@ -286,9 +316,11 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
           <div className="space-y-4">
             {entryPoints.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">Entry Points</h4>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">
+                  Entry Points
+                </h4>
                 <div className="space-y-0.5">
-                  {entryPoints.map(node => (
+                  {entryPoints.map((node) => (
                     <button
                       key={node.id}
                       onClick={() => {
@@ -305,9 +337,11 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
 
             {analysis.importantFiles.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">Suggested Reading</h4>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">
+                  Suggested Reading
+                </h4>
                 <div className="space-y-0.5">
-                  {analysis.importantFiles.slice(0, 5).map(file => (
+                  {analysis.importantFiles.slice(0, 5).map((file) => (
                     <button
                       key={file}
                       onClick={() => {
@@ -328,13 +362,18 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
 
             {highCoupling.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">High Coupling</h4>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1.5">
+                  High Coupling
+                </h4>
                 <div className="space-y-0.5">
-                  {highCoupling.map(node => (
-                    <div key={node.id} className="flex items-center justify-between group px-1.5 py-1 hover:bg-secondary rounded-sm transition-colors cursor-pointer"
-                         onClick={() => {
-                           focusOnNode(node.id, node.data?.path || node.id);
-                         }}>
+                  {highCoupling.map((node) => (
+                    <div
+                      key={node.id}
+                      className="flex items-center justify-between group px-1.5 py-1 hover:bg-secondary rounded-sm transition-colors cursor-pointer"
+                      onClick={() => {
+                        focusOnNode(node.id, node.data?.path || node.id);
+                      }}
+                    >
                       <span className="text-xs font-mono text-foreground truncate">{node.data.path || node.id}</span>
                       <span className="text-xs font-mono text-muted-foreground bg-secondary px-1 rounded-sm border border-border">
                         {degrees[node.id]} edges
@@ -352,26 +391,60 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
                   Maintenance Hotspots
                 </h4>
                 <p className="text-xs text-muted-foreground mb-1.5 leading-tight">
-                  Files ranked by combined churn + complexity. Switch to Churn or Complexity overlay in the Display menu to visualize.
+                  {hasChurn
+                    ? 'Files ranked by available churn and complexity scores. Churn coverage is limited to up to 200 source files.'
+                    : churn.isFetching
+                      ? 'Ranked by complexity while churn history loads.'
+                      : churn.isError || churn.data?.issue
+                        ? 'Ranked by complexity. Churn history is unavailable.'
+                        : 'Ranked by complexity. No recent churn data was found for the sampled files.'}{' '}
+                  Switch to Churn or Complexity in the Display menu to visualize.
                 </p>
+                {churn.data && (
+                  <p className="mb-2 text-xs text-muted-foreground" role="status">
+                    Churn: {churn.data.checked} of {churn.data.total} sampled files checked.{' '}
+                    {!churn.data.complete && !churn.data.issue && 'Loading remaining files…'}{' '}
+                    {churn.data.issue &&
+                      `Paused: ${churn.data.issue === 'rate-limit' ? 'GitHub rate limit' : churn.data.issue === 'access' ? 'GitHub access denied' : 'request timed out or network unavailable'}.`}{' '}
+                    {churn.data.retryAt && `Retry after ${new Date(churn.data.retryAt).toLocaleTimeString()}.`}
+                  </p>
+                )}
+                {(churn.isError || churn.data?.issue) && (
+                  <button
+                    type="button"
+                    className="mb-2 text-xs text-accent underline"
+                    onClick={() => void churn.refetch()}
+                  >
+                    Retry remaining files
+                  </button>
+                )}
                 <div className="space-y-0.5">
                   {maintenanceHotspots.map(({ node }) => (
-                    <button key={node.id} type="button"
-                         onClick={() => {
-                           focusOnNode(node.id, node.data?.path || node.id);
-                         }}
-                         className="w-full flex items-center justify-between px-1.5 py-1 hover:bg-secondary rounded-sm transition-colors cursor-pointer text-left">
-                      <span className="text-xs font-mono text-foreground truncate flex-1">{node.data.path || node.id}</span>
+                    <button
+                      key={node.id}
+                      type="button"
+                      onClick={() => {
+                        focusOnNode(node.id, node.data?.path || node.id);
+                      }}
+                      className="w-full flex items-center justify-between px-1.5 py-1 hover:bg-secondary rounded-sm transition-colors cursor-pointer text-left"
+                    >
+                      <span className="text-xs font-mono text-foreground truncate flex-1">
+                        {node.data.path || node.id}
+                      </span>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {node.data.churnScore != null && (
-                          <TooltipHint content={`Churn: ${node.data.churnScore}`}><span className="text-xs font-mono text-orange-400 bg-orange-500/10 px-1 rounded-sm border border-orange-500/20">
-                            C{node.data.churnScore.toFixed(2)}
-                          </span></TooltipHint>
+                          <TooltipHint content={`Churn: ${node.data.churnScore}`}>
+                            <span className="text-xs font-mono text-orange-400 bg-orange-500/10 px-1 rounded-sm border border-orange-500/20">
+                              C{node.data.churnScore.toFixed(2)}
+                            </span>
+                          </TooltipHint>
                         )}
                         {node.data.complexityScore != null && (
-                          <TooltipHint content={`Complexity: ${node.data.complexityScore}`}><span className="text-xs font-mono text-destructive bg-rose-500/10 px-1 rounded-sm border border-rose-500/20">
-                            X{node.data.complexityScore.toFixed(2)}
-                          </span></TooltipHint>
+                          <TooltipHint content={`Complexity: ${node.data.complexityScore}`}>
+                            <span className="text-xs font-mono text-destructive bg-rose-500/10 px-1 rounded-sm border border-rose-500/20">
+                              X{node.data.complexityScore.toFixed(2)}
+                            </span>
+                          </TooltipHint>
                         )}
                       </div>
                     </button>
@@ -390,26 +463,29 @@ export function OverviewTab({ analysis, selectedBranch, graphDiff }: OverviewTab
               <Activity className="h-3 w-3 text-muted-foreground" />
             </div>
             {analysis.timeline.length === 0 ? (
-              <div className="text-xs text-muted-foreground italic py-2">
-                No commit history available.
-              </div>
+              <div className="text-xs text-muted-foreground italic py-2">No commit history available.</div>
             ) : (
               <div className="flex items-end gap-0.5 h-8">
                 {(() => {
-                  const maxCount = Math.max(1, Math.max(...analysis.timeline.map(w => w.count)));
+                  const maxCount = Math.max(1, Math.max(...analysis.timeline.map((w) => w.count)));
                   return analysis.timeline.slice(-24).map((week, idx) => {
                     const ratio = week.count / maxCount;
                     const heightPercentage = Math.max(10, ratio * 100);
                     const opacity = Math.max(0.2, ratio);
 
                     return (
-                      <TooltipHint key={idx} content={`${week.count} commits on ${new Date(week.week).toLocaleDateString()}`}><div
-                        className="group relative flex-1 rounded-t-[1px] transition-all bg-accent hover:bg-accent/80"
-                        style={{
-                          height: `${heightPercentage}%`,
-                          opacity: opacity
-                        }}
-                      /></TooltipHint>
+                      <TooltipHint
+                        key={idx}
+                        content={`${week.count} commits on ${new Date(week.week).toLocaleDateString()}`}
+                      >
+                        <div
+                          className="group relative flex-1 rounded-t-[1px] transition-all bg-accent hover:bg-accent/80"
+                          style={{
+                            height: `${heightPercentage}%`,
+                            opacity: opacity,
+                          }}
+                        />
+                      </TooltipHint>
                     );
                   });
                 })()}

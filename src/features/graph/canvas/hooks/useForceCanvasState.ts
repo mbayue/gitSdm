@@ -1,14 +1,15 @@
-import { useMemo, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import type { GraphNode, GraphEdge } from "@/types";
-import { useVizStore, type LayoutType, type SizeMode } from "@/stores/vizStore";
-import { buildForceGraphData } from "../../force/buildForceGraphData";
-import { computeBlastRadius } from "../../force/forceGraphUtils";
-import { useGraphExport } from "../../useGraphExport";
-import { useD3Physics } from "../force/useD3Physics";
-import { useForceSync } from "../force/useForceSync";
-import type { ForceGraphNode, ForceGraphLink } from "../../force/forceGraphConstants";
-import type { ForceGraphMethods } from "react-force-graph-2d";
+import { useMemo, useEffect, useState, useRef } from 'react';
+import { reconcileGraph } from '../../force/reconcileGraph';
+import { useParams } from 'react-router-dom';
+import type { GraphNode, GraphEdge } from '@/types';
+import { useVizStore, type LayoutType, type SizeMode } from '@/stores/vizStore';
+import { buildForceGraphData } from '../../force/buildForceGraphData';
+import { computeBlastRadius } from '../../force/forceGraphUtils';
+import { useGraphExport } from '../../useGraphExport';
+import { useD3Physics } from '../force/useD3Physics';
+import { useForceSync } from '../force/useForceSync';
+import type { ForceGraphNode, ForceGraphLink } from '../../force/forceGraphConstants';
+import type { ForceGraphMethods } from 'react-force-graph-2d';
 
 interface UseForceCanvasStateProps {
   graph: { nodes: GraphNode[]; edges: GraphEdge[] };
@@ -55,15 +56,15 @@ export function useForceCanvasState({
 
   const [forceSize, setForceSize] = useState({ width: 1024, height: 720 });
   const [hoveredForceNode, setHoveredForceNode] = useState<ForceGraphNode | null>(null);
-  const { owner = "", repo = "" } = useParams();
+  const { owner = '', repo = '' } = useParams();
 
   const { isExporting, exportFormat, handleExport } = useGraphExport({
-    mode: "force",
+    mode: 'force',
     forceGraphRef,
     forceHostRef,
     owner,
     repo,
-    filenameSuffix: "force_graph",
+    filenameSuffix: 'force_graph',
   });
 
   const connectedNodeIdsByNodeId = useMemo(() => {
@@ -77,20 +78,21 @@ export function useForceCanvasState({
     return lookup;
   }, [graph.edges]);
 
+  const previousGraph = useRef<ReturnType<typeof buildForceGraphData> | undefined>(undefined);
   const forceGraphData = useMemo(
     () =>
-      buildForceGraphData(graph.nodes, graph.edges, {
-        nodeTypeFilters,
-        fileTypeFilters,
-        readOnly,
-      }),
-    [graph.nodes, graph.edges, nodeTypeFilters, fileTypeFilters, readOnly]
+      (previousGraph.current = reconcileGraph(
+        previousGraph.current,
+        buildForceGraphData(graph.nodes, graph.edges, {
+          nodeTypeFilters,
+          fileTypeFilters,
+          readOnly,
+        }),
+      )),
+    [graph.nodes, graph.edges, nodeTypeFilters, fileTypeFilters, readOnly],
   );
 
-  const forceNodeById = useMemo(
-    () => new Map(forceGraphData.nodes.map((n) => [n.id, n])),
-    [forceGraphData.nodes]
-  );
+  const forceNodeById = useMemo(() => new Map(forceGraphData.nodes.map((n) => [n.id, n])), [forceGraphData.nodes]);
 
   const blastRadiusNodeIds = useMemo(() => {
     if (!blastRadiusActive || !selectedNodeId) return new Set<string>();
@@ -102,30 +104,15 @@ export function useForceCanvasState({
     // Read-only canvases never adopt workspace focus/selection state.
     if (readOnly || !focusedFilePath) return;
 
-    const focusedNodeIds = [
-      `file:${focusedFilePath}`,
-      `folder:${focusedFilePath}`,
-      focusedFilePath,
-    ];
+    const focusedNodeIds = [`file:${focusedFilePath}`, `folder:${focusedFilePath}`, focusedFilePath];
     const focusedNode =
       focusedNodeIds.map((id) => forceNodeById.get(id)).find(Boolean) ??
-      forceGraphData.nodes.find(
-        (node) =>
-          node.sourceFile === focusedFilePath ||
-          focusedNodeIds.includes(node.id),
-      );
+      forceGraphData.nodes.find((node) => node.sourceFile === focusedFilePath || focusedNodeIds.includes(node.id));
 
     if (focusedNode && selectedNodeId !== focusedNode.id) {
       setSelectedNodeId(focusedNode.id);
     }
-  }, [
-    readOnly,
-    focusedFilePath,
-    forceGraphData.nodes,
-    forceNodeById,
-    selectedNodeId,
-    setSelectedNodeId,
-  ]);
+  }, [readOnly, focusedFilePath, forceGraphData.nodes, forceNodeById, selectedNodeId, setSelectedNodeId]);
 
   useEffect(() => {
     // Read-only canvases must not rewrite shared highlight state from the
@@ -138,9 +125,7 @@ export function useForceCanvasState({
     if (blastRadiusActive) {
       setHighlightedNodeIds(blastRadiusNodeIds);
     } else {
-      setHighlightedNodeIds(
-        new Set(connectedNodeIdsByNodeId.get(selectedNodeId) ?? [selectedNodeId])
-      );
+      setHighlightedNodeIds(new Set(connectedNodeIdsByNodeId.get(selectedNodeId) ?? [selectedNodeId]));
     }
   }, [
     readOnly,

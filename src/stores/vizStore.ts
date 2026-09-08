@@ -1,16 +1,18 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import type { NodeType } from "@/types";
+import { create } from 'zustand';
+import { modeFromPanels, panelsForMode } from '@/lib/workspace-mode';
+import { persist } from 'zustand/middleware';
+import type { NodeType } from '@/types';
 
-export type SidebarTab = "overview" | "analysis" | "dependencies" | "ai" | "learning";
-export type WorkspaceMode = "full" | "explorer" | "insights" | "focus";
-export type GraphScope = "important" | "source" | "grouped" | "full";
-export type ContentFilter = "source" | "config" | "docs" | "tests" | "github" | "examples" | "generated" | "translations";
-export type CompareRefType = "branch" | "tag" | "commit";
-export type ColorMode = "default" | "churn" | "complexity";
-export type SizeMode = "default" | "complexity";
+export type SidebarTab = 'overview' | 'analysis' | 'dependencies' | 'ai' | 'learning';
+export type WorkspaceMode = 'full' | 'explorer' | 'insights' | 'focus';
+export type GraphScope = 'important' | 'source' | 'grouped' | 'full';
+export type ContentFilter =
+  'source' | 'config' | 'docs' | 'tests' | 'github' | 'examples' | 'generated' | 'translations';
+export type CompareRefType = 'branch' | 'tag' | 'commit';
+export type ColorMode = 'default' | 'churn' | 'complexity';
+export type SizeMode = 'default' | 'complexity';
 
-export type LayoutType = "tree" | "d3-tree-horiz" | "d3-tree-vert";
+export type LayoutType = 'tree' | 'd3-tree-horiz' | 'd3-tree-vert';
 
 interface VizState {
   searchQuery: string;
@@ -25,20 +27,20 @@ interface VizState {
   inspectorOpen: boolean;
   focusedFilePath: string | null;
   toastMessage: string | null;
-  theme: "dark" | "light";
+  theme: 'dark' | 'light';
   selectedBranch: string | null;
   compareBranch: string | null;
   compareRefType: CompareRefType;
   availableBranches: string[];
-  activeView: "graph" | "architecture" | "contributors" | "commits";
+  activeView: 'graph' | 'architecture' | 'contributors' | 'commits';
   zoom: number;
   visibleNodeCount: number;
   visibleEdgeCount: number;
   activeRepoKey: string | null;
 
   // Interactive upgrades
-  activeFocusLayer: "all" | "api" | "ui" | "core" | "config";
-  diffStatusFilters: Set<"added" | "modified" | "deleted">;
+  activeFocusLayer: 'all' | 'api' | 'ui' | 'core' | 'config';
+  diffStatusFilters: Set<'added' | 'modified' | 'deleted'>;
   blastRadiusActive: boolean;
 
   // Churn / Complexity overlay
@@ -60,9 +62,9 @@ interface VizState {
   };
 
   // Shared UI synchronization states
-  activeDropdown: "filter" | "display" | "layout" | "export" | "legend" | null;
+  activeDropdown: 'filter' | 'display' | 'layout' | 'export' | 'legend' | null;
   graphActionTrigger: {
-    action: "zoomIn" | "zoomOut" | "fitView" | "reset" | "focusGraph";
+    action: 'zoomIn' | 'zoomOut' | 'fitView' | 'reset' | 'focusGraph';
     timestamp: number;
   } | null;
 
@@ -70,7 +72,7 @@ interface VizState {
   toggleContentFilter: (filter: ContentFilter) => void;
   setContentFilters: (filters: Set<ContentFilter>) => void;
 
-  toggleDiffStatusFilter: (status: "added" | "modified" | "deleted") => void;
+  toggleDiffStatusFilter: (status: 'added' | 'modified' | 'deleted') => void;
   setSelectedBranch: (branch: string | null) => void;
   setCompareBranch: (branch: string | null) => void;
   setCompareRefType: (type: CompareRefType) => void;
@@ -87,47 +89,41 @@ interface VizState {
   setAiSidebarOpen: (open: boolean) => void;
   setInspectorOpen: (open: boolean) => void;
   setFocusedFilePath: (path: string | null) => void;
-  setTheme: (theme: "dark" | "light") => void;
+  setTheme: (theme: 'dark' | 'light') => void;
   toggleTheme: () => void;
   setZoom: (zoom: number) => void;
   setVisibleCounts: (nodes: number, edges: number) => void;
 
-  setActiveFocusLayer: (
-    layer: "all" | "api" | "ui" | "core" | "config",
-  ) => void;
-  setActiveView: (
-    view: "graph" | "architecture" | "contributors" | "commits",
-  ) => void;
+  setActiveFocusLayer: (layer: 'all' | 'api' | 'ui' | 'core' | 'config') => void;
+  setActiveView: (view: 'graph' | 'architecture' | 'contributors' | 'commits') => void;
   setBlastRadiusActive: (active: boolean) => void;
   setColorMode: (mode: ColorMode) => void;
   setSizeMode: (mode: SizeMode) => void;
   setLayoutType: (layout: LayoutType) => void;
   setGraphSidebarOpen: (open: boolean) => void;
-  toggleGraphSidebarSection: (
-    key: keyof VizState["graphSidebarSections"],
-  ) => void;
+  toggleGraphSidebarSection: (key: keyof VizState['graphSidebarSections']) => void;
   resetFilters: () => void;
 
-  setActiveDropdown: (dropdown: "filter" | "display" | "layout" | "export" | "legend" | null) => void;
-  triggerGraphAction: (action: "zoomIn" | "zoomOut" | "fitView" | "reset" | "focusGraph") => void;
+  setActiveDropdown: (dropdown: 'filter' | 'display' | 'layout' | 'export' | 'legend' | null) => void;
+  triggerGraphAction: (action: 'zoomIn' | 'zoomOut' | 'fitView' | 'reset' | 'focusGraph') => void;
 
   setActiveRepoKey: (key: string | null) => void;
   reset: () => void;
 }
 
-const defaultFilters = new Set<NodeType>(["repo", "package", "folder", "file"]);
-const defaultContentFilters = new Set<ContentFilter>(["source", "config"]);
+const defaultFilters = new Set<NodeType>(['repo', 'package', 'folder', 'file']);
+const defaultContentFilters = new Set<ContentFilter>(['source', 'config']);
 
 export const useVizStore = create<VizState>()(
   persist(
     (set) => ({
-      searchQuery: "",
+      searchQuery: '',
       nodeTypeFilters: new Set(defaultFilters),
       fileTypeFilters: new Set(),
       selectedNodeId: null,
       highlightedNodeIds: new Set(),
-      sidebarTab: "overview",
-      workspaceMode: "full",
+      sidebarTab: 'overview',
+      workspaceMode: 'full',
       explorerOpen: true,
       aiSidebarOpen: true,
       inspectorOpen: false,
@@ -136,215 +132,227 @@ export const useVizStore = create<VizState>()(
       visibleNodeCount: 0,
       visibleEdgeCount: 0,
       toastMessage: null,
-      theme: "dark",
+      theme: 'dark',
       selectedBranch: null,
       compareBranch: null,
-      compareRefType: "branch" as CompareRefType,
+      compareRefType: 'branch' as CompareRefType,
       availableBranches: [],
-      activeView: "graph",
+      activeView: 'graph',
       activeRepoKey: null,
 
-  activeFocusLayer: "all",
-  diffStatusFilters: new Set(),
-  blastRadiusActive: false,
-  colorMode: "default" as ColorMode,
-  sizeMode: "default" as SizeMode,
-  layoutType: "tree" as LayoutType,
-
-  graphScope: "source",
-  contentFilters: new Set(defaultContentFilters),
-
-  graphSidebarOpen: true,
-  graphSidebarSections: {
-    nodeInfo: true,
-    tools: false,
-    nodeTypes: true,
-    fileTypes: false,
-    compare: true,
-  },
-
-  activeDropdown: null,
-  graphActionTrigger: null,
-
-  setGraphScope: (graphScope: GraphScope) => set((s: VizState) => {
-    let newContentFilters = new Set(s.contentFilters);
-    if (graphScope === 'full') {
-      newContentFilters = new Set(["source", "config", "docs", "tests", "github", "examples", "generated", "translations"]);
-    } else if (graphScope === 'source' || graphScope === 'important' || graphScope === 'grouped') {
-      newContentFilters = new Set(["source", "config"]);
-    }
-    return { graphScope, contentFilters: newContentFilters };
-  }),
-  toggleContentFilter: (filter: ContentFilter) =>
-    set((s: VizState) => {
-      const next = new Set(s.contentFilters);
-      if (next.has(filter)) next.delete(filter);
-      else next.add(filter);
-      return { contentFilters: next };
-    }),
-  setContentFilters: (contentFilters: Set<ContentFilter>) => set({ contentFilters }),
-
-  toggleDiffStatusFilter: (status: "added" | "modified" | "deleted") =>
-    set((s: VizState) => {
-      const next = new Set(s.diffStatusFilters);
-      if (next.has(status)) next.delete(status);
-      else next.add(status);
-      return { diffStatusFilters: next };
-    }),
-  setSelectedBranch: (selectedBranch: string | null) => set({ selectedBranch }),
-  setCompareBranch: (compareBranch: string | null) =>
-    set((s: VizState) => ({
-      compareBranch,
-      compareRefType: "branch",
-      diffStatusFilters: compareBranch ? s.diffStatusFilters : new Set(),
-    })),
-  setCompareRefType: (compareRefType: CompareRefType) => set({ compareRefType }),
-  setAvailableBranches: (availableBranches: string[]) => set({ availableBranches }),
-  setToastMessage: (toastMessage: string | null) => set({ toastMessage }),
-  setSearchQuery: (searchQuery: string) => set({ searchQuery }),
-  toggleNodeTypeFilter: (type: NodeType) =>
-    set((s: VizState) => {
-      const next = new Set(s.nodeTypeFilters);
-      if (next.has(type)) next.delete(type);
-      else next.add(type);
-      return { nodeTypeFilters: next };
-    }),
-  toggleFileTypeFilter: (type: string) =>
-    set((s: VizState) => {
-      const next = new Set(s.fileTypeFilters);
-      if (next.has(type)) next.delete(type);
-      else next.add(type);
-      return { fileTypeFilters: next };
-    }),
-  setSelectedNodeId: (selectedNodeId: string | null) => set({ selectedNodeId }),
-  setHighlightedNodeIds: (highlightedNodeIds: Set<string>) => set({ highlightedNodeIds }),
-  setSidebarTab: (sidebarTab: SidebarTab) => set({ sidebarTab }),
-  setWorkspaceMode: (workspaceMode: WorkspaceMode) => {
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
-    const showExplorer = workspaceMode === 'full' || workspaceMode === 'explorer';
-    const showAiSidebar = workspaceMode === 'full' || workspaceMode === 'insights';
-    set({
-      workspaceMode,
-      explorerOpen: showExplorer && (!isMobile || workspaceMode === 'explorer'),
-      aiSidebarOpen: showAiSidebar && (!isMobile || workspaceMode === 'insights'),
-      inspectorOpen: false,
-    });
-  },
-  setExplorerOpen: (explorerOpen: boolean) => set({ explorerOpen }),
-  setAiSidebarOpen: (aiSidebarOpen: boolean) => set({ aiSidebarOpen }),
-  setInspectorOpen: (inspectorOpen: boolean) => set({ inspectorOpen }),
-  setFocusedFilePath: (focusedFilePath: string | null) => set({ focusedFilePath }),
-  setZoom: (zoom: number) => set({ zoom }),
-  setVisibleCounts: (visibleNodeCount: number, visibleEdgeCount: number) => set({ visibleNodeCount, visibleEdgeCount }),
-  setTheme: (theme: "dark" | "light") => {
-    if (typeof window !== "undefined") localStorage.setItem("theme", theme);
-    set({ theme });
-  },
-  toggleTheme: () =>
-    set((s: VizState) => {
-      const nextTheme = s.theme === "dark" ? "light" : "dark";
-      if (typeof window !== "undefined")
-         localStorage.setItem("theme", nextTheme);
-      return { theme: nextTheme };
-    }),
-
-  setActiveFocusLayer: (activeFocusLayer: "all" | "api" | "ui" | "core" | "config") => set({ activeFocusLayer }),
-  setActiveView: (activeView: "graph" | "architecture" | "contributors" | "commits") => set({ activeView }),
-  setBlastRadiusActive: (blastRadiusActive: boolean) => set({ blastRadiusActive }),
-  setColorMode: (colorMode: ColorMode) => set({ colorMode }),
-  setSizeMode: (sizeMode: SizeMode) => set({ sizeMode }),
-  setLayoutType: (layoutType: LayoutType) => set({ layoutType }),
-  setGraphSidebarOpen: (graphSidebarOpen: boolean) => set({ graphSidebarOpen }),
-  toggleGraphSidebarSection: (key: keyof VizState["graphSidebarSections"]) =>
-    set((s: VizState) => ({
-      graphSidebarSections: {
-        ...s.graphSidebarSections,
-        [key]: !s.graphSidebarSections[key],
-      },
-    })),
-
-  resetFilters: () =>
-    set({
-      nodeTypeFilters: new Set(defaultFilters),
-      fileTypeFilters: new Set(),
+      activeFocusLayer: 'all',
       diffStatusFilters: new Set(),
-      activeFocusLayer: "all",
-      searchQuery: "",
-      graphScope: "source",
-      contentFilters: new Set(defaultContentFilters),
-      colorMode: "default" as ColorMode,
-      sizeMode: "default" as SizeMode,
-    }),
-
-  setActiveDropdown: (activeDropdown: "filter" | "display" | "layout" | "export" | "legend" | null) => set({ activeDropdown }),
-  triggerGraphAction: (action: "zoomIn" | "zoomOut" | "fitView" | "reset" | "focusGraph") => set({ graphActionTrigger: { action, timestamp: Date.now() } }),
-
-  setActiveRepoKey: (activeRepoKey: string | null) => set({ activeRepoKey }),
-
-  reset: () =>
-    set({
-      searchQuery: "",
-      nodeTypeFilters: new Set(defaultFilters),
-      fileTypeFilters: new Set(),
-      selectedNodeId: null,
-      highlightedNodeIds: new Set(),
-      sidebarTab: "overview",
-      workspaceMode: "full",
-      explorerOpen: true,
-      aiSidebarOpen: true,
-      inspectorOpen: false,
-      focusedFilePath: null,
-      zoom: 1.0,
-      visibleNodeCount: 0,
-      visibleEdgeCount: 0,
-      toastMessage: null,
-      selectedBranch: null,
-      compareBranch: null,
-      compareRefType: "branch" as CompareRefType,
-      availableBranches: [],
-      activeFocusLayer: "all",
-      diffStatusFilters: new Set(),
-      activeView: "graph",
       blastRadiusActive: false,
-      colorMode: "default" as ColorMode,
-      sizeMode: "default" as SizeMode,
-      layoutType: "tree" as LayoutType,
-      graphScope: "source",
+      colorMode: 'default' as ColorMode,
+      sizeMode: 'default' as SizeMode,
+      layoutType: 'tree' as LayoutType,
+
+      graphScope: 'source',
       contentFilters: new Set(defaultContentFilters),
+
+      graphSidebarOpen: true,
+      graphSidebarSections: {
+        nodeInfo: true,
+        tools: false,
+        nodeTypes: true,
+        fileTypes: false,
+        compare: true,
+      },
+
       activeDropdown: null,
       graphActionTrigger: null,
+
+      setGraphScope: (graphScope: GraphScope) =>
+        set((s: VizState) => {
+          let newContentFilters = new Set(s.contentFilters);
+          if (graphScope === 'full') {
+            newContentFilters = new Set([
+              'source',
+              'config',
+              'docs',
+              'tests',
+              'github',
+              'examples',
+              'generated',
+              'translations',
+            ]);
+          } else if (graphScope === 'source' || graphScope === 'important' || graphScope === 'grouped') {
+            newContentFilters = new Set(['source', 'config']);
+          }
+          return { graphScope, contentFilters: newContentFilters };
+        }),
+      toggleContentFilter: (filter: ContentFilter) =>
+        set((s: VizState) => {
+          const next = new Set(s.contentFilters);
+          if (next.has(filter)) next.delete(filter);
+          else next.add(filter);
+          return { contentFilters: next };
+        }),
+      setContentFilters: (contentFilters: Set<ContentFilter>) => set({ contentFilters }),
+
+      toggleDiffStatusFilter: (status: 'added' | 'modified' | 'deleted') =>
+        set((s: VizState) => {
+          const next = new Set(s.diffStatusFilters);
+          if (next.has(status)) next.delete(status);
+          else next.add(status);
+          return { diffStatusFilters: next };
+        }),
+      setSelectedBranch: (selectedBranch: string | null) => set({ selectedBranch }),
+      setCompareBranch: (compareBranch: string | null) =>
+        set((s: VizState) => ({
+          compareBranch,
+          compareRefType: 'branch',
+          diffStatusFilters: compareBranch ? s.diffStatusFilters : new Set(),
+        })),
+      setCompareRefType: (compareRefType: CompareRefType) => set({ compareRefType }),
+      setAvailableBranches: (availableBranches: string[]) => set({ availableBranches }),
+      setToastMessage: (toastMessage: string | null) => set({ toastMessage }),
+      setSearchQuery: (searchQuery: string) => set({ searchQuery }),
+      toggleNodeTypeFilter: (type: NodeType) =>
+        set((s: VizState) => {
+          const next = new Set(s.nodeTypeFilters);
+          if (next.has(type)) next.delete(type);
+          else next.add(type);
+          return { nodeTypeFilters: next };
+        }),
+      toggleFileTypeFilter: (type: string) =>
+        set((s: VizState) => {
+          const next = new Set(s.fileTypeFilters);
+          if (next.has(type)) next.delete(type);
+          else next.add(type);
+          return { fileTypeFilters: next };
+        }),
+      setSelectedNodeId: (selectedNodeId: string | null) => set({ selectedNodeId }),
+      setHighlightedNodeIds: (highlightedNodeIds: Set<string>) => set({ highlightedNodeIds }),
+      setSidebarTab: (sidebarTab: SidebarTab) => set({ sidebarTab }),
+      setWorkspaceMode: (workspaceMode: WorkspaceMode) => {
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+        set({
+          workspaceMode,
+          ...panelsForMode(workspaceMode, isMobile),
+          inspectorOpen: false,
+        });
+      },
+      setExplorerOpen: (explorerOpen: boolean) => set({ explorerOpen }),
+      setAiSidebarOpen: (aiSidebarOpen: boolean) => set({ aiSidebarOpen }),
+      setInspectorOpen: (inspectorOpen: boolean) => set({ inspectorOpen }),
+      setFocusedFilePath: (focusedFilePath: string | null) => set({ focusedFilePath }),
+      setZoom: (zoom: number) => set({ zoom }),
+      setVisibleCounts: (visibleNodeCount: number, visibleEdgeCount: number) =>
+        set({ visibleNodeCount, visibleEdgeCount }),
+      setTheme: (theme: 'dark' | 'light') => {
+        if (typeof window !== 'undefined') localStorage.setItem('theme', theme);
+        set({ theme });
+      },
+      toggleTheme: () =>
+        set((s: VizState) => {
+          const nextTheme = s.theme === 'dark' ? 'light' : 'dark';
+          if (typeof window !== 'undefined') localStorage.setItem('theme', nextTheme);
+          return { theme: nextTheme };
+        }),
+
+      setActiveFocusLayer: (activeFocusLayer: 'all' | 'api' | 'ui' | 'core' | 'config') => set({ activeFocusLayer }),
+      setActiveView: (activeView: 'graph' | 'architecture' | 'contributors' | 'commits') => set({ activeView }),
+      setBlastRadiusActive: (blastRadiusActive: boolean) => set({ blastRadiusActive }),
+      setColorMode: (colorMode: ColorMode) => set({ colorMode }),
+      setSizeMode: (sizeMode: SizeMode) => set({ sizeMode }),
+      setLayoutType: (layoutType: LayoutType) => set({ layoutType }),
+      setGraphSidebarOpen: (graphSidebarOpen: boolean) => set({ graphSidebarOpen }),
+      toggleGraphSidebarSection: (key: keyof VizState['graphSidebarSections']) =>
+        set((s: VizState) => ({
+          graphSidebarSections: {
+            ...s.graphSidebarSections,
+            [key]: !s.graphSidebarSections[key],
+          },
+        })),
+
+      resetFilters: () =>
+        set({
+          nodeTypeFilters: new Set(defaultFilters),
+          fileTypeFilters: new Set(),
+          diffStatusFilters: new Set(),
+          activeFocusLayer: 'all',
+          searchQuery: '',
+          graphScope: 'source',
+          contentFilters: new Set(defaultContentFilters),
+          colorMode: 'default' as ColorMode,
+          sizeMode: 'default' as SizeMode,
+        }),
+
+      setActiveDropdown: (activeDropdown: 'filter' | 'display' | 'layout' | 'export' | 'legend' | null) =>
+        set({ activeDropdown }),
+      triggerGraphAction: (action: 'zoomIn' | 'zoomOut' | 'fitView' | 'reset' | 'focusGraph') =>
+        set({ graphActionTrigger: { action, timestamp: Date.now() } }),
+
+      setActiveRepoKey: (activeRepoKey: string | null) => set({ activeRepoKey }),
+
+      reset: () =>
+        set({
+          searchQuery: '',
+          nodeTypeFilters: new Set(defaultFilters),
+          fileTypeFilters: new Set(),
+          selectedNodeId: null,
+          highlightedNodeIds: new Set(),
+          sidebarTab: 'overview',
+          workspaceMode: 'full',
+          explorerOpen: true,
+          aiSidebarOpen: true,
+          inspectorOpen: false,
+          focusedFilePath: null,
+          zoom: 1.0,
+          visibleNodeCount: 0,
+          visibleEdgeCount: 0,
+          toastMessage: null,
+          selectedBranch: null,
+          compareBranch: null,
+          compareRefType: 'branch' as CompareRefType,
+          availableBranches: [],
+          activeFocusLayer: 'all',
+          diffStatusFilters: new Set(),
+          activeView: 'graph',
+          blastRadiusActive: false,
+          colorMode: 'default' as ColorMode,
+          sizeMode: 'default' as SizeMode,
+          layoutType: 'tree' as LayoutType,
+          graphScope: 'source',
+          contentFilters: new Set(defaultContentFilters),
+          activeDropdown: null,
+          graphActionTrigger: null,
+        }),
     }),
-  }),
-  {
-    name: 'gitsdm-viz-storage',
-    partialize: (state) => ({
-      workspaceMode: state.workspaceMode,
-      explorerOpen: state.explorerOpen,
-      aiSidebarOpen: state.aiSidebarOpen,
-      inspectorOpen: state.inspectorOpen,
-      sidebarTab: state.sidebarTab,
-      theme: state.theme,
-      activeView: state.activeView,
-      graphSidebarOpen: state.graphSidebarOpen,
-      activeDropdown: state.activeDropdown,
-      graphScope: state.graphScope,
-      layoutType: state.layoutType,
-      contentFilters: Array.from(state.contentFilters),
-    }),
-    merge: (persistedState: unknown, currentState: VizState): VizState => {
-      const p = persistedState as Partial<Omit<VizState, 'contentFilters'> & { contentFilters: ContentFilter[] }>;
-      const validModes: WorkspaceMode[] = ['full', 'explorer', 'insights', 'focus'];
-      const workspaceMode = p?.workspaceMode && validModes.includes(p.workspaceMode as WorkspaceMode)
-        ? (p.workspaceMode as WorkspaceMode)
-        : 'full';
-      return {
-        ...currentState,
-        ...p,
-        workspaceMode,
-        contentFilters: p?.contentFilters
-          ? new Set(p.contentFilters)
-          : currentState.contentFilters,
-      } as VizState;
+    {
+      name: 'gitsdm-viz-storage',
+      partialize: (state) => ({
+        workspaceMode: state.workspaceMode,
+        explorerOpen: state.explorerOpen,
+        aiSidebarOpen: state.aiSidebarOpen,
+        inspectorOpen: state.inspectorOpen,
+        sidebarTab: state.sidebarTab,
+        theme: state.theme,
+        activeView: state.activeView,
+        graphSidebarOpen: state.graphSidebarOpen,
+        activeDropdown: state.activeDropdown,
+        graphScope: state.graphScope,
+        layoutType: state.layoutType,
+        contentFilters: Array.from(state.contentFilters),
+      }),
+      merge: (persistedState: unknown, currentState: VizState): VizState => {
+        const p = persistedState as Partial<Omit<VizState, 'contentFilters'> & { contentFilters: ContentFilter[] }>;
+        const validModes: WorkspaceMode[] = ['full', 'explorer', 'insights', 'focus'];
+        const workspaceMode =
+          p?.workspaceMode && validModes.includes(p.workspaceMode as WorkspaceMode)
+            ? (p.workspaceMode as WorkspaceMode)
+            : modeFromPanels(
+                p?.explorerOpen ?? currentState.explorerOpen,
+                p?.aiSidebarOpen ?? currentState.aiSidebarOpen,
+              );
+        return {
+          ...currentState,
+          ...p,
+          workspaceMode,
+          contentFilters: p?.contentFilters ? new Set(p.contentFilters) : currentState.contentFilters,
+        } as VizState;
+      },
     },
-  }
-));
+  ),
+);

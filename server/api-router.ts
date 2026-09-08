@@ -11,10 +11,11 @@ import { handleAiRoutes } from './router/ai-routes';
 import { handleRepoRoutes } from './router/repo-routes';
 import { handleSearchRoutes } from './router/search-routes';
 import { addSecurityHeaders } from './utils/http';
+import { createAdmissionLimit, limitRequestBody } from './utils/request-limits';
 
-export async function handleApiRequest(
-  req: Request,
-): Promise<Response | null> {
+const admitRequest = createAdmissionLimit();
+
+export async function handleApiRequest(req: Request): Promise<Response | null> {
   const start = Date.now();
   const method = req.method;
   const url = new URL(req.url);
@@ -31,13 +32,34 @@ export async function handleApiRequest(
 
   const ctx: RequestContext = {
     octokit: getOctokit(gitHubToken),
+    gitHubToken,
   };
 
+  const expensive =
+    pathname.startsWith('/api/ai/') || pathname.startsWith('/api/search/') || pathname.startsWith('/api/repo/');
+  const release = expensive ? admitRequest() : undefined;
+  if (release === null) {
+    return addSecurityHeaders(
+      Response.json(
+        {
+          error: 'Server is busy. Please try again shortly.',
+          code: 'RATE_LIMIT_EXCEEDED',
+          status: 429,
+          retryable: true,
+        },
+        { status: 429, headers: { 'Retry-After': '60' } },
+      ),
+    );
+  }
   try {
+    req = await limitRequestBody(req);
     // ── Global System Utilities ─────────────────────────────────────
     if (pathname === '/api/trending' && method === 'GET') {
       const repos: TrendingRepo[] = await fetchTrending();
-      logApi('/api/trending', { durationMs: Date.now() - start, count: repos.length });
+      logApi('/api/trending', {
+        durationMs: Date.now() - start,
+        count: repos.length,
+      });
       return addSecurityHeaders(Response.json({ repos }, { status: 200 }));
     }
 
@@ -62,5 +84,7 @@ export async function handleApiRequest(
     const payload = toErrorPayload(error);
     logError(pathname, error, { durationMs: Date.now() - start });
     return addSecurityHeaders(Response.json(payload, { status: payload.status }));
+  } finally {
+    release?.();
   }
 }
