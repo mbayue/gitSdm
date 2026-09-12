@@ -34,7 +34,8 @@ export async function analyzeRepository(
   const { owner, repo } = parsed;
   const branch = typeof parsed === 'object' && 'branch' in parsed ? (parsed as { branch?: string }).branch : undefined;
   const info = await fetchRepoInfo(owner, repo, branch, tokenOrCtx);
-  const cacheKey = analyzeCacheKey(owner, repo, info.sha, branch);
+  const token = typeof tokenOrCtx === 'string' ? tokenOrCtx : tokenOrCtx?.gitHubToken;
+  const cacheKey = analyzeCacheKey(owner, repo, info.sha, branch, token);
 
   const cached = cache.get<RepoAnalysis>(cacheKey);
   if (cached) return cached;
@@ -115,6 +116,6 @@ export async function analyzeRepository(
   };
 
   cache.set(cacheKey, analysis);
-  cache.set(analyzeCacheKey(owner, repo, info.sha, info.sha), analysis);
+  cache.set(analyzeCacheKey(owner, repo, info.sha, info.sha, token), analysis);
   return analysis;
 }

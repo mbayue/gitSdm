@@ -28,6 +28,10 @@ Embedding operations start at least `EMBEDDING_REQUEST_INTERVAL_MS` apart (defau
 
 Provider calls use separate AI and embedding queues, each allowing two active calls and eight waiting calls. Waiting expires after 10 seconds; active calls have a 30-second abort deadline. Operations that ignore cancellation retain their slot until they settle. GitHub requests time out after 15 seconds. AI prompts are capped at 64,000 characters with at most 4,096 output tokens. Mock providers do not spend the hosted-provider budget.
 
+Repository analysis caches are scoped to the effective GitHub credential, including entries addressed by commit SHA. Repository access is checked before returning cached analysis. Raw credentials are never included in cache keys.
+
+Set `TOKEN_CACHE_HASH_SECRET` to a securely generated random secret in shared mode, including when Redis configuration enables shared mode automatically. Use the same secret across instances. Local mode uses a random per-process secret when the setting is blank; restarting changes cache identities. Rotating a configured secret also changes those identities.
+
 Usage controls combine per-IP counters with deployment-wide budgets. Each IP gets 120 expensive API requests per minute by default, including requests using user-provided credentials. Users on the same network may share this allowance. Configure these environment variables on the backend:
 
 | Variable                                              | Default   | Meaning                                                                                                                                                                                     |

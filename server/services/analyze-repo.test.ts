@@ -54,6 +54,7 @@ const excludedWorkspaceFileContents = {
 };
 
 let activeFileContents: Record<string, string> = workspaceFileContents;
+let denyAccess = false;
 const buildGraphMock = mock((input: GraphBuildInput) => ({
   nodes:
     input.workspacePackages?.map((pkg) => ({
@@ -119,7 +120,10 @@ const fetchMock = mock(async (input: RequestInfo | URL) => {
 describe('services/analyze-repo', () => {
   beforeEach(() => {
     mock.module('../github/fetch-tree', () => ({
-      fetchRepoInfo: async () => mockRepoInfo,
+      fetchRepoInfo: async () => {
+        if (denyAccess) throw new Error('Repository access denied');
+        return mockRepoInfo;
+      },
       fetchFlatTree: async () => ({
         items: Object.keys(activeFileContents).map((path) => ({
           path,
@@ -153,6 +157,7 @@ describe('services/analyze-repo', () => {
 
     clearAllCaches();
     activeFileContents = workspaceFileContents;
+    denyAccess = false;
     buildGraphMock.mockClear();
     fetchMock.mockClear();
     globalThis.fetch = fetchMock as typeof fetch;
@@ -165,6 +170,19 @@ describe('services/analyze-repo', () => {
 
   it('throws error for invalid repo url', () => {
     expect(analyzeRepository('invalid-url')).rejects.toThrow('Invalid GitHub repository URL');
+  });
+
+  it('isolates analysis and SHA aliases by credentials and rechecks access on cache hits', async () => {
+    const input = { owner: 'test-owner', repo: 'test-repo', branch: 'main' };
+    const first = { ...mockCtx, gitHubToken: 'first-credential' };
+    const second = { ...mockCtx, gitHubToken: 'second-credential' };
+    const original = await analyzeRepository(input, first);
+    expect(await analyzeRepository({ ...input, branch: 'test-sha' }, first)).toBe(original);
+    expect(buildGraphMock).toHaveBeenCalledTimes(1);
+    await analyzeRepository({ ...input, branch: 'test-sha' }, second);
+    expect(buildGraphMock).toHaveBeenCalledTimes(2);
+    denyAccess = true;
+    await expect(analyzeRepository(input, first)).rejects.toThrow('Repository access denied');
   });
 
   it('runs the full repository analysis pipeline and caches the result', async () => {

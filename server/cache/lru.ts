@@ -1,5 +1,6 @@
 import { LRUCache } from 'lru-cache';
 import crypto from 'crypto';
+import { cacheHashSecret } from './hash-secret';
 
 export interface CacheStore {
   get<T>(key: string): T | undefined;
@@ -85,10 +86,9 @@ export function invalidateSearchCache(owner: string, repo: string): void {
   }
 }
 
-export function analyzeCacheKey(owner: string, repo: string, sha: string, branch?: string): string {
-  return branch
-    ? `analyze:${owner}/${repo}@${sha}:${branch}`
-    : `analyze:${owner}/${repo}@${sha}`;
+export function analyzeCacheKey(owner: string, repo: string, sha: string, branch?: string, token?: string): string {
+  const scope = hashToken(token || process.env.GITHUB_TOKEN?.trim() || 'anonymous');
+  return `analyze:${owner}/${repo}@${sha}:${scope}:${JSON.stringify(branch ?? null)}`;
 }
 
 export function aiCacheKey(
@@ -105,22 +105,15 @@ export function aiCacheKey(
 }
 
 export function churnCacheKey(owner: string, repo: string, branch?: string, days = 90): string {
-  return branch
-    ? `churn:${owner}/${repo}@${branch}:${days}d`
-    : `churn:${owner}/${repo}@default:${days}d`;
+  return branch ? `churn:${owner}/${repo}@${branch}:${days}d` : `churn:${owner}/${repo}@default:${days}d`;
 }
 
 export function hashContext(input: string): string {
   return crypto.createHash('sha256').update(input).digest('hex');
 }
 
-const TOKEN_CACHE_HASH_SECRET = process.env.TOKEN_CACHE_HASH_SECRET ?? 'token-cache-v1';
-
 // This is cache-key derivation, not password storage.
-// HMAC avoids exposing raw tokens without blocking request handling.
+// HMAC keeps raw tokens out of cache identities.
 export function hashToken(token: string): string {
-  return crypto
-    .createHmac('sha256', TOKEN_CACHE_HASH_SECRET)
-    .update(token)
-    .digest('hex');
+  return crypto.createHmac('sha256', cacheHashSecret()).update(token).digest('hex');
 }
