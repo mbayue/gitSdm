@@ -1,6 +1,7 @@
 import { motion, HTMLMotionProps } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { useMotionPreference } from '@/hooks/useMotionPreference';
 
 interface GlowButtonProps extends HTMLMotionProps<"button"> {
   children: ReactNode;
@@ -16,10 +17,9 @@ export function GlowButton({
   disabled,
   ...props
 }: GlowButtonProps) {
+  const reducedMotion = useMotionPreference();
   return (
     <motion.button
-      whileHover={{ scale: disabled || loading ? 1 : 1.02 }}
-      whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
       className={cn(
         'relative inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all',
         variant === 'primary' &&
@@ -30,6 +30,10 @@ export function GlowButton({
       )}
       disabled={disabled || loading}
       {...props}
+      animate={reducedMotion ? { scale: 1 } : props.animate}
+      whileHover={reducedMotion ? { scale: 1 } : (props.whileHover ?? { scale: disabled || loading ? 1 : 1.02 })}
+      whileTap={reducedMotion ? { scale: 1 } : (props.whileTap ?? { scale: disabled || loading ? 1 : 0.98 })}
+      transition={reducedMotion ? { duration: 0 } : props.transition}
     >
       {loading && (
         <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />

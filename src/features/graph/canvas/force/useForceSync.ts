@@ -1,3 +1,4 @@
+import { motionDuration } from '@/lib/motion-preference';
 import { useEffect, useRef } from 'react';
 import type { ForceGraphMethods } from 'react-force-graph-2d';
 import type { ForceGraphNode, ForceGraphLink } from '../../force/forceGraphConstants';
@@ -54,8 +55,8 @@ export function useForceSync({
 
       if (node && typeof node.x === "number" && typeof node.y === "number") {
         forceInitialViewDoneRef.current = true;
-        ref.centerAt(node.x, node.y, 300);
-        ref.zoom(3.2, 300);
+        ref.centerAt(node.x, node.y, motionDuration(300));
+        ref.zoom(3.2, motionDuration(300));
         prevFocusRef.current = targetId;
         return;
       }
@@ -86,15 +87,15 @@ export function useForceSync({
 
     if (action === 'zoomIn') {
       const currentZoom = ref.zoom();
-      if (typeof currentZoom === 'number') ref.zoom(currentZoom * 1.3, 300);
+      if (typeof currentZoom === 'number') ref.zoom(currentZoom * 1.3, motionDuration(300));
     } else if (action === 'zoomOut') {
       const currentZoom = ref.zoom();
-      if (typeof currentZoom === 'number') ref.zoom(currentZoom * 0.7, 300);
+      if (typeof currentZoom === 'number') ref.zoom(currentZoom * 0.7, motionDuration(300));
     } else if (action === 'fitView') {
-      ref.zoomToFit(400, 60);
+      ref.zoomToFit(motionDuration(400), 60);
     } else if (action === 'reset') {
-      ref.centerAt(0, 0, 400);
-      ref.zoom(1.5, 400);
+      ref.centerAt(0, 0, motionDuration(400));
+      ref.zoom(1.5, motionDuration(400));
       prevFocusRef.current = null;
     } else if (action === 'focusGraph') {
       const activeId =
@@ -111,11 +112,11 @@ export function useForceSync({
         : nodes.find((n) => n.nodeType === 'repo');
 
       if (targetNode && typeof targetNode.x === "number" && typeof targetNode.y === "number") {
-        ref.centerAt(targetNode.x, targetNode.y, 400);
-        ref.zoom(activeId ? 3.2 : 1.5, 400);
+        ref.centerAt(targetNode.x, targetNode.y, motionDuration(400));
+        ref.zoom(activeId ? 3.2 : 1.5, motionDuration(400));
       } else {
-        ref.centerAt(0, 0, 400);
-        ref.zoom(1.5, 400);
+        ref.centerAt(0, 0, motionDuration(400));
+        ref.zoom(1.5, motionDuration(400));
       }
     }
   }, [

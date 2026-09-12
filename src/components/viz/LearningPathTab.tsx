@@ -1,3 +1,4 @@
+import { useMotionPreference } from '@/hooks/useMotionPreference';
 import { useState, useMemo } from 'react';
 import { useLearningPath } from '@/features/ai/useAiTasks';
 import { useVizStore } from '@/stores/vizStore';
@@ -12,6 +13,7 @@ import { AIErrorCard } from './AIErrorCard';
 // Decoupled subcomponents
 
 export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
+  const reducedMotion = useMotionPreference();
   const { owner, repo } = analysis.meta;
   const selectedBranch = useVizStore((s) => s.selectedBranch);
   const activeFocusLayer = useVizStore((s) => s.activeFocusLayer);
@@ -170,7 +172,7 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
                 key={item.path}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
+                transition={reducedMotion ? { duration: 0, delay: 0 } : { delay: idx * 0.05 }}
                 role="group"
                 aria-label={`Learning step ${idx + 1}: ${item.path}`}
               className={`group flex gap-3 items-start rounded-md border p-3 transition-all duration-200 ${

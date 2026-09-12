@@ -1,3 +1,4 @@
+import { prefersReducedMotion } from '@/lib/motion-preference';
 import { TooltipHint } from '@/components/ui/tooltip';
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowUpRight, GitBranch, Moon, Sun } from "lucide-react";
@@ -15,7 +16,7 @@ export function Navbar() {
   const handleSectionClick = (id: string) => (event: React.MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
     const scrollNow = () => {
-      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById(id)?.scrollIntoView({ behavior: prefersReducedMotion() ? "instant" : "smooth", block: "start" });
     };
     if (location.pathname !== "/") {
       void navigate("/");

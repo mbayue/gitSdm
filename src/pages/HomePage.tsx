@@ -1,3 +1,4 @@
+import { prefersReducedMotion } from '@/lib/motion-preference';
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { HeroSection } from "@/components/home/HeroSection";
@@ -16,7 +17,7 @@ export function HomePage() {
 
     const timer = window.setTimeout(() => {
       document.getElementById(sectionId)?.scrollIntoView({
-        behavior: "smooth",
+        behavior: prefersReducedMotion() ? "instant" : "smooth",
         block: "start",
       });
     }, 80);

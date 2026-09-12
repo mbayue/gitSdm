@@ -1,3 +1,4 @@
+import { motionDuration } from '@/lib/motion-preference';
 import { useCallback, useEffect, useRef } from 'react';
 import { forceCollide, forceCenter, forceX, forceY } from 'd3-force';
 import { stratify, tree } from 'd3-hierarchy';
@@ -24,7 +25,7 @@ export function useD3Physics({ forceGraphRef, nodes, links, layoutType, sizeMode
   const handleLayoutStop = useCallback(() => {
     if (!fitAfterSimulation.current) return;
     fitAfterSimulation.current = false;
-    forceGraphRef.current?.zoomToFit(400, 60);
+    forceGraphRef.current?.zoomToFit(motionDuration(400), 60);
   }, [forceGraphRef]);
 
   useEffect(() => {

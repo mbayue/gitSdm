@@ -1,3 +1,4 @@
+import { useMotionPreference } from '@/hooks/useMotionPreference';
 import { useEffect, useMemo, useCallback, useState, lazy, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,6 +36,7 @@ import { fitWorkspacePanels } from '@/lib/workspace-panels';
 import { ChurnStatus } from '@/components/viz/ChurnStatus';
 
 export function VizPage() {
+  const reducedMotion = useMotionPreference();
   const { owner = '', repo = '' } = useParams();
   const { selectedBranch, compareBranch } = useVizStore();
 
@@ -192,7 +194,7 @@ export function VizPage() {
             </VizSidebar>
 
             {/* Center Workspace */}
-            <motion.section
+            <motion.section transition={reducedMotion ? { duration: 0 } : undefined}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="relative min-h-0 min-w-0 flex-1 overflow-hidden bg-background flex flex-col"
@@ -302,7 +304,7 @@ export function VizPage() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
+            transition={reducedMotion ? { duration: 0, delay: 0 } : { duration: 0.2 }}
             className="fixed bottom-12 right-6 z-[9999]"
           >
             <Card role="status" className="flex items-center gap-2.5 border-border bg-card px-4 py-3 shadow-xl">
