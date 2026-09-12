@@ -17,25 +17,25 @@ test('index identity isolates credentials, snapshots and embedding models withou
   expect(key).toBe(searchIndexKey('org', 'repo', 'sha', { gitHubToken: 'private-token' }));
   expect(key).not.toBe(searchIndexKey('org', 'repo', 'sha2', { gitHubToken: 'private-token' }));
   expect(key).not.toBe(searchIndexKey('org', 'repo', 'sha', { gitHubToken: 'other' }));
-  const original = process.env.OPENAI_EMBEDDING_MODEL;
+  const original = process.env.EMBEDDING_MODEL;
   try {
-    process.env.OPENAI_EMBEDDING_MODEL = 'different-model';
+    process.env.EMBEDDING_MODEL = 'different-model';
     expect(key).not.toBe(searchIndexKey('org', 'repo', 'sha', { gitHubToken: 'private-token' }));
   } finally {
-    if (original === undefined) delete process.env.OPENAI_EMBEDDING_MODEL;
-    else process.env.OPENAI_EMBEDDING_MODEL = original;
+    if (original === undefined) delete process.env.EMBEDDING_MODEL;
+    else process.env.EMBEDDING_MODEL = original;
   }
 });
 
 test('Featherless model changes invalidate existing search indexes', () => {
-  const previous = process.env.OPENAI_EMBEDDING_MODEL;
+  const previous = process.env.EMBEDDING_MODEL;
   try {
-    process.env.OPENAI_EMBEDDING_MODEL = 'Qwen/Qwen3-Embedding-8B';
+    process.env.EMBEDDING_MODEL = 'Qwen/Qwen3-Embedding-8B';
     const key = searchIndexKey('org', 'repo', 'sha');
-    process.env.OPENAI_EMBEDDING_MODEL = 'different-model';
+    process.env.EMBEDDING_MODEL = 'different-model';
     expect(searchIndexKey('org', 'repo', 'sha')).not.toBe(key);
   } finally {
-    if (previous === undefined) delete process.env.OPENAI_EMBEDDING_MODEL;
-    else process.env.OPENAI_EMBEDDING_MODEL = previous;
+    if (previous === undefined) delete process.env.EMBEDDING_MODEL;
+    else process.env.EMBEDDING_MODEL = previous;
   }
 });

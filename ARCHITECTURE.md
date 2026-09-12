@@ -67,7 +67,6 @@
   - Google Gemini (`gemini-2.5-flash`)
   - OpenAI (`gpt-4o-mini`)
   - Anthropic (`claude-3-5-haiku-latest`)
-  - EdgeOne Makers (`@makers/deepseek-v4-flash`)
   - Offline Mock Provider (fixtures for testing and development without API keys)
 - **AI Tasks (`server/ai/tasks/`):** Dedicated pipelines for architectural summaries, Mermaid flowchart generation, onboarding tours, refactoring risk detection, and dependency health audits.
 

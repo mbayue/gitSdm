@@ -19,7 +19,7 @@ export function PrivacyPage() {
           <h2 className="text-xl font-semibold">What your browser saves</h2>
           <p>
             Your browser saves GitHub tokens and AI API keys in localStorage on this device. It also remembers your
-            workspace preferences and the last repository you opened. These stay saved after you close the browser. Use
+            workspace preferences, saved chat provider/model/base URL settings, and the last repository you opened. These stay saved after you close the browser. Use
             Clear in Settings to remove saved keys, or clear this site's browser data to remove all local settings.
             Avoid saving keys on a shared device.
           </p>
@@ -39,7 +39,7 @@ export function PrivacyPage() {
             the search to an AI provider to answer your question.
           </p>
           <p>
-            The provider may be Google Gemini, OpenAI, Anthropic, EdgeOne, or another compatible service. Each provider
+            The provider may be Google Gemini, OpenAI, Anthropic, or another compatible service. Each provider
             has its own rules for privacy and data retention. If you have not added your own API key, the installation
             may use a key supplied by its operator. Only submit code you have permission to share with those services.
           </p>

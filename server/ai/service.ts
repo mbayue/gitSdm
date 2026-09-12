@@ -1,43 +1,7 @@
+import { chatIdentity } from './chat-config';
 import { getAIProvider } from './provider';
-import { aiCacheKey, cache, hashToken } from '../cache/lru';
+import { aiCacheKey, cache } from '../cache/lru';
 import { logApi } from '../utils/logger';
-
-function getAiCacheDiscriminator(apiKey?: string): string {
-  const envProvider = process.env.AI_PROVIDER?.trim().toLowerCase();
-  const provider = apiKey?.trim()
-    ? apiKey.trim().startsWith('sk-ant-')
-      ? 'anthropic'
-      : apiKey.trim().startsWith('sk-')
-        ? envProvider === 'edgeone'
-          ? 'edgeone'
-          : 'openai'
-        : 'gemini'
-    : envProvider && envProvider.length > 0
-      ? envProvider
-      : process.env.EDGEONE_API_KEY?.trim() || process.env.MAKERS_MODELS_KEY?.trim()
-        ? 'edgeone'
-        : process.env.GEMINI_API_KEY?.trim()
-          ? 'gemini'
-          : process.env.OPENAI_API_KEY?.trim()
-            ? 'openai'
-            : process.env.ANTHROPIC_API_KEY?.trim()
-              ? 'anthropic'
-              : 'mock';
-
-  const model =
-    provider === 'edgeone'
-      ? (process.env.EDGEONE_MODEL ?? '@makers/deepseek-v4-flash')
-      : provider === 'gemini'
-        ? (process.env.GEMINI_MODEL ?? 'gemini-2.5-flash')
-        : provider === 'openai'
-          ? (process.env.OPENAI_MODEL ?? 'gpt-4o-mini')
-          : provider === 'anthropic'
-            ? (process.env.ANTHROPIC_MODEL ?? 'claude-3-5-haiku-latest')
-            : 'mock';
-
-  const keyScope = apiKey?.trim() ? `user-key:${hashToken(apiKey)}` : 'env-key';
-  return `${provider}:${model}:${keyScope}`;
-}
 
 function safeParseJSON<T>(raw: string): T {
   let cleaned = raw.trim();
@@ -105,7 +69,7 @@ export async function executeAiTask<T extends NonNullable<unknown>>(
     params.repo,
     params.sha,
     params.paramHash ?? 'v1',
-    getAiCacheDiscriminator(params.apiKey),
+    chatIdentity(params.apiKey),
   );
   if (cache.has(key)) {
     return { data: cache.get<T>(key)!, cached: true };

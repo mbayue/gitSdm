@@ -6,7 +6,7 @@ test('settings closes with Escape and restores its accessible trigger', async ({
   const trigger = page.getByRole('button', { name: 'Settings and credentials', exact: true });
   await trigger.click();
   const dialog = page.getByRole('dialog', { name: 'Settings and credentials' });
-  const key = dialog.getByLabel('Google AI key', { exact: true });
+  const key = dialog.getByLabel('AI API key', { exact: true });
   await expect(key).toBeFocused();
   await key.press('Escape');
   await expect(dialog).toHaveCount(0);
@@ -184,3 +184,19 @@ test('panel resizing preserves the graph and inspector context follows related f
   await expect(inspector).toContainText('src/context/TodoContext.tsx');
   await expect(page.getByRole('tabpanel', { name: 'Details' }).getByRole('heading', { name: 'TodoContext.tsx', exact: true })).toBeVisible();
 });
+
+ test('health audit stops after an API error and retries only on request', async ({ page }) => {
+  let calls = 0;
+  await page.route('**/api/ai/**', route => {
+    if (route.request().url().includes('/health')) calls++;
+    return route.fulfill({ status: 500, json: { error: 'Internal Server Error' } });
+  });
+  await page.goto('/mock/todo-app');
+  await page.getByRole('tab', { name: 'AI tools', exact: true }).click();
+  await page.getByRole('button', { name: /Health Audit/ }).click();
+  await expect(page.getByText('AI request failed. Check your settings and try again.', { exact: true })).toBeVisible();
+  await page.waitForTimeout(1000);
+  expect(calls).toBe(1);
+  await page.getByRole('button', { name: 'Retry Request', exact: true }).click();
+  await expect.poll(() => calls).toBe(2);
+ });

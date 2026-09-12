@@ -3,6 +3,8 @@ import { createEmbeddingProvider } from './embedding-provider';
 
 const realSetTimeout = globalThis.setTimeout;
 const originalEmbeddingProvider = process.env.EMBEDDING_PROVIDER;
+const dedicatedNames = ['EMBEDDING_API_KEY', 'EMBEDDING_API_BASE', 'EMBEDDING_MODEL'] as const;
+const dedicatedValues = dedicatedNames.map(name => process.env[name]);
 const originalEmbeddingInterval = process.env.EMBEDDING_REQUEST_INTERVAL_MS;
 
 let openAIError: Error | null = null;
@@ -11,9 +13,26 @@ let geminiRequests = 0;
 let openAIConfig: { apiKey: string; baseURL?: string } | undefined;
 
 describe('createEmbeddingProvider', () => {
+  it('uses the normalized base URL for single and batch embeddings', async () => {
+    const originalBase = process.env.OPENAI_API_BASE;
+    try {
+      process.env.AI_PROVIDER = 'openai';
+      process.env.OPENAI_API_KEY = 'test-key';
+      process.env.OPENAI_API_BASE = '   ';
+      const provider = await createEmbeddingProvider();
+      await provider.embed('one');
+      expect(openAIConfig?.baseURL).toBeUndefined();
+      await provider.embedBatch(['two']);
+      expect(openAIConfig?.baseURL).toBeUndefined();
+    } finally {
+      if (originalBase === undefined) delete process.env.OPENAI_API_BASE;
+      else process.env.OPENAI_API_BASE = originalBase;
+    }
+  });
   beforeEach(() => {
     process.env.EMBEDDING_REQUEST_INTERVAL_MS = '0';
     delete process.env.EMBEDDING_PROVIDER;
+    dedicatedNames.forEach(name => { delete process.env[name]; });
     mock.module('openai', () => {
       class OpenAI {
         baseURL = '';
@@ -58,8 +77,6 @@ describe('createEmbeddingProvider', () => {
     delete process.env.GEMINI_API_KEY;
     delete process.env.OPENAI_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
-    delete process.env.EDGEONE_API_KEY;
-    delete process.env.MAKERS_MODELS_KEY;
     delete process.env.OPENAI_EMBEDDING_MODEL;
     delete process.env.GEMINI_EMBEDDING_MODEL;
     openAIError = null;
@@ -68,11 +85,32 @@ describe('createEmbeddingProvider', () => {
   });
 
   afterEach(() => {
+    dedicatedNames.forEach((name, i) => { if (dedicatedValues[i] === undefined) delete process.env[name]; else process.env[name] = dedicatedValues[i]; });
     if (originalEmbeddingInterval === undefined) delete process.env.EMBEDDING_REQUEST_INTERVAL_MS;
     else process.env.EMBEDDING_REQUEST_INTERVAL_MS = originalEmbeddingInterval;
     if (originalEmbeddingProvider === undefined) delete process.env.EMBEDDING_PROVIDER;
     else process.env.EMBEDDING_PROVIDER = originalEmbeddingProvider;
     mock.restore();
+  });
+
+  it('uses dedicated embedding credentials and endpoint instead of chat settings', async () => {
+    const names = ['EMBEDDING_API_KEY', 'EMBEDDING_API_BASE', 'EMBEDDING_MODEL', 'OPENAI_API_BASE'] as const;
+    const saved = names.map((name) => process.env[name]);
+    try {
+      process.env.EMBEDDING_PROVIDER = 'openai';
+      process.env.EMBEDDING_API_KEY = 'embedding-only';
+      process.env.EMBEDDING_API_BASE = 'https://embedding.example/v1';
+      process.env.EMBEDDING_MODEL = 'embed-test';
+      process.env.OPENAI_API_BASE = 'https://chat.example/v1';
+      const provider = await createEmbeddingProvider();
+      await provider.embed('example');
+      expect(openAIConfig).toMatchObject({ apiKey: 'embedding-only', baseURL: 'https://embedding.example/v1' });
+    } finally {
+      names.forEach((name, index) => {
+        if (saved[index] === undefined) delete process.env[name];
+        else process.env[name] = saved[index];
+      });
+    }
   });
 
   it('sends a Gemini chunk batch in one provider request', async () => {
@@ -88,7 +126,7 @@ describe('createEmbeddingProvider', () => {
     const previous = process.env.OPENAI_API_BASE;
     try {
       process.env.EMBEDDING_PROVIDER = 'openai';
-      process.env.AI_PROVIDER = 'edgeone';
+      process.env.AI_PROVIDER = 'anthropic';
       process.env.OPENAI_API_KEY = 'unit-featherless-key';
       process.env.OPENAI_API_BASE = 'https://api.featherless.ai/v1';
       const provider = await createEmbeddingProvider();
@@ -167,21 +205,6 @@ describe('createEmbeddingProvider', () => {
     expect(batch).toHaveLength(2);
 
     delete process.env.OPENAI_API_BASE;
-  });
-
-  it('requires a Gemini or OpenAI fallback for EdgeOne embeddings', async () => {
-    process.env.AI_PROVIDER = 'edgeone';
-    process.env.EDGEONE_API_KEY = 'sk-eo-test';
-
-    await expect(createEmbeddingProvider()).rejects.toMatchObject({
-      status: 400,
-      code: 'EMBEDDING_PROVIDER_UNAVAILABLE',
-    });
-
-    process.env.OPENAI_API_KEY = 'sk-edgeone-fallback';
-    const provider = await createEmbeddingProvider();
-    expect(provider.providerName).toBe('openai');
-    expect((await provider.embed('hello')).tokenCount).toBe(2);
   });
 
   it('uses gemini embeddings and batch path', async () => {

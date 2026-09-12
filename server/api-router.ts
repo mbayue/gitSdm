@@ -1,3 +1,4 @@
+import { chatOverrides, readChatOverrides } from './ai/chat-config';
 import { getOctokit } from './github/client';
 import type { RequestContext } from './utils/context';
 import { fetchTrending } from './services/trending';
@@ -30,7 +31,7 @@ export async function handleApiRequest(req: Request, remoteAddress?: string): Pr
     query[k] = v;
   });
 
-  const userKey = req.headers.get('x-gemini-api-key') || undefined;
+  const userKey = req.headers.get('x-ai-api-key') || req.headers.get('x-gemini-api-key') || undefined;
   const gitHubToken = req.headers.get('x-github-token') || undefined;
 
   const ctx: RequestContext = {
@@ -52,7 +53,8 @@ export async function handleApiRequest(req: Request, remoteAddress?: string): Pr
       throw new AppError(429, 'Server is busy. Please try again shortly.', 'RATE_LIMIT_EXCEEDED', true);
     if (expensive) await limitClient(req.headers, remoteAddress);
     release = expensive ? admitRequest() : undefined;
-    if (release === null) throw new AppError(429, 'Server is busy. Please try again shortly.', 'RATE_LIMIT_EXCEEDED', true);
+    if (release === null)
+      throw new AppError(429, 'Server is busy. Please try again shortly.', 'RATE_LIMIT_EXCEEDED', true);
     if (expensive) await reserveUsage('api-minute', 1, configuredLimit('API_REQUESTS_PER_MINUTE', 600), 60000);
     req = await limitRequestBody(req);
     // ── Global System Utilities ─────────────────────────────────────
@@ -74,21 +76,29 @@ export async function handleApiRequest(req: Request, remoteAddress?: string): Pr
     if (repoResponse) return addSecurityHeaders(repoResponse);
 
     // ── AI Summary & Analysis Routes ────────────────────────────────
-    const aiResponse = await handleAiRoutes(pathname, req, userKey, gitHubToken, ctx);
+    const aiResponse = await chatOverrides.run(readChatOverrides(req.headers, userKey), () =>
+      handleAiRoutes(pathname, req, userKey, gitHubToken, ctx),
+    );
     if (aiResponse) return addSecurityHeaders(aiResponse);
 
     // ── Semantic Search & Ingest Routes ─────────────────────────────
-    const searchResponse = await handleSearchRoutes(pathname, req, query, userKey, ctx, start);
+    const searchResponse = await chatOverrides.run(
+      pathname === '/api/search/ask' ? readChatOverrides(req.headers, userKey) : {},
+      () => handleSearchRoutes(pathname, req, query, userKey, ctx, start),
+    );
     if (searchResponse) return addSecurityHeaders(searchResponse);
 
     return null;
   } catch (error) {
     const payload = toErrorPayload(error);
     logError(pathname, error, { durationMs: Date.now() - start });
-    return addSecurityHeaders(Response.json(payload, {
-      status: payload.status,
-      headers: payload.status === 429 ? { 'Retry-After': String(payload.context?.retryAfterSeconds ?? 60) } : undefined,
-    }));
+    return addSecurityHeaders(
+      Response.json(payload, {
+        status: payload.status,
+        headers:
+          payload.status === 429 ? { 'Retry-After': String(payload.context?.retryAfterSeconds ?? 60) } : undefined,
+      }),
+    );
   } finally {
     release?.();
     releaseConnection?.();

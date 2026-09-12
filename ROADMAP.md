@@ -12,7 +12,7 @@
 - **Dependency Health Report** — Core health panel, version freshness checker (npm), license compliance audits, and real-time visual highlight alerts (amber borders/warning badges) on the force-directed canvas.
 - **Code Churn & Hotspot Overlays** — Visual overlay for 90-day commit frequency, author ownership risk (3+ distinct authors), and LRU-cached churn service.
 - **Complexity Score per Module** — Graph-derived complexity metrics (LOC, import count, export count) with Color/Size by Complexity modes.
-- **Unified Multi-Provider AI** — Support for Gemini, OpenAI, Anthropic, EdgeOne Makers, and an offline Mock provider.
+- **Unified Multi-Provider AI** — Support for Gemini, OpenAI, Anthropic, and an offline Mock provider.
 - **Personalized Onboarding Paths** — AI-generated custom reading tours. User pastes a repo URL + describes their goal, and the system returns a guided walkthrough ("start with these 5 files, in this order") with graph node highlights. Implemented as `LearningPathTab`.
 - **Commit & Tag Snapshot Diffing** — Extended Compare Branch to accept commit SHAs and tags as comparison targets. Includes Branches/Tags/SHA sub-tabs in the picker UI, `/api/repo/tags` endpoint, and full graph overlay for any ref type.
 

@@ -33,7 +33,7 @@ bun install
 cp .env.example .env
 ```
 
-Make sure to add your `GITHUB_TOKEN` and any AI provider API keys (`GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `EDGEONE_API_KEY`) to the `.env` file for full feature support during development. Offline development works out-of-the-box with `AI_PROVIDER=mock`.
+Make sure to add your `GITHUB_TOKEN` and any AI provider API keys (`GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) to the `.env` file for full feature support during development. Offline development works out-of-the-box with `AI_PROVIDER=mock`.
 
 ---
 

@@ -75,13 +75,11 @@ export function LearningPathTab({ analysis }: { analysis: RepoAnalysis }) {
 
   if (lp.isError) {
     return (
-      <div className="p-4">
         <AIErrorCard
           title="Failed to build learning path"
           message={lp.error instanceof Error ? lp.error.message : String(lp.error)}
           onRetry={handleRefresh}
         />
-      </div>
     );
   }
 

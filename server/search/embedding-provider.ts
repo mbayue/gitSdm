@@ -1,3 +1,4 @@
+import { embeddingConfig } from './embedding-config';
 import { protectEmbeddings } from './embedding-controls';
 import type { EmbeddingProvider, EmbeddingResult } from './types';
 import { EMBEDDING_DIMENSIONS } from './constants';
@@ -11,17 +12,10 @@ let cachedProvider: EmbeddingProvider | null = null;
 let cachedProviderKey: string | null = null;
 
 export async function createEmbeddingProvider(): Promise<EmbeddingProvider> {
-  const envProvider = (process.env.EMBEDDING_PROVIDER ?? process.env.AI_PROVIDER ?? 'mock').toLowerCase();
+  const envProvider = embeddingConfig().provider;
   const cacheKey =
     embeddingIdentity() +
-    hashToken(
-      JSON.stringify([
-        process.env.OPENAI_API_KEY,
-        process.env.GEMINI_API_KEY,
-        process.env.EDGEONE_API_KEY,
-        process.env.MAKERS_MODELS_KEY,
-      ]),
-    );
+    hashToken(JSON.stringify([process.env.EMBEDDING_API_KEY, process.env.OPENAI_API_KEY, process.env.GEMINI_API_KEY]));
 
   if (cachedProvider && cachedProviderKey === cacheKey) {
     return cachedProvider;
@@ -31,25 +25,16 @@ export async function createEmbeddingProvider(): Promise<EmbeddingProvider> {
 
   if (envProvider === 'openai') {
     provider = createOpenAIEmbeddingProvider();
-  } else if (envProvider === 'edgeone') {
-    provider = await createEdgeOneEmbeddingFallback();
   } else if (envProvider === 'gemini') {
     provider = await createGeminiEmbeddingProvider();
-  } else if (envProvider === 'anthropic') {
-    // Anthropic has no native embedding API – prefer Gemini, then try OpenAI
-    if (process.env.GEMINI_API_KEY) {
-      provider = await createGeminiEmbeddingProvider();
-    } else if (process.env.OPENAI_API_KEY) {
-      provider = createOpenAIEmbeddingProvider();
-    } else {
-      throw new AppError(
-        400,
-        'Anthropic does not support embeddings. Configure OPENAI_API_KEY or GEMINI_API_KEY as fallback.',
-        'EMBEDDING_PROVIDER_UNAVAILABLE',
-      );
-    }
-  } else {
+  } else if (envProvider === 'mock') {
     provider = createMockEmbeddingProvider();
+  } else {
+    throw new AppError(
+      400,
+      'Unsupported embedding provider. Configure openai, gemini, or mock.',
+      'EMBEDDING_PROVIDER_UNAVAILABLE',
+    );
   }
 
   provider = provider.providerName === 'mock' ? provider : protectEmbeddings(provider);
@@ -137,7 +122,7 @@ function createOpenAICompatibleEmbeddingProvider(config: OpenAICompatibleConfig)
 }
 
 function createOpenAIEmbeddingProvider(): EmbeddingProvider {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = embeddingConfig().apiKey;
   if (!apiKey) {
     throw new AppError(401, 'OPENAI_API_KEY is required for OpenAI embeddings.', 'MISSING_API_KEY');
   }
@@ -145,18 +130,9 @@ function createOpenAIEmbeddingProvider(): EmbeddingProvider {
   return createOpenAICompatibleEmbeddingProvider({
     providerName: 'openai',
     apiKey,
-    model: process.env.OPENAI_EMBEDDING_MODEL ?? 'openrouter/openai/text-embedding-3-large',
+    model: embeddingConfig().model,
+    baseURL: embeddingConfig().baseURL,
   });
-}
-
-async function createEdgeOneEmbeddingFallback(): Promise<EmbeddingProvider> {
-  if (process.env.GEMINI_API_KEY) return createGeminiEmbeddingProvider();
-  if (process.env.OPENAI_API_KEY) return createOpenAIEmbeddingProvider();
-  throw new AppError(
-    400,
-    'EdgeOne does not provide embeddings. Configure GEMINI_API_KEY or OPENAI_API_KEY for semantic search.',
-    'EMBEDDING_PROVIDER_UNAVAILABLE',
-  );
 }
 
 async function openAIEmbed(
@@ -169,7 +145,7 @@ async function openAIEmbed(
   const { default: OpenAI } = await import('openai');
   const client = new OpenAI({
     apiKey,
-    baseURL: baseURL ?? process.env.OPENAI_API_BASE,
+    baseURL,
     timeout: 30000,
     maxRetries: 0,
   });
@@ -198,7 +174,7 @@ async function openAIEmbedBatch(
   const { default: OpenAI } = await import('openai');
   const client = new OpenAI({
     apiKey,
-    baseURL: baseURL ?? process.env.OPENAI_API_BASE,
+    baseURL,
     timeout: 30000,
     maxRetries: 0,
   });
@@ -226,7 +202,7 @@ async function openAIEmbedBatch(
 // ── Gemini Provider ────────────────────────────────────────────────────
 
 async function createGeminiEmbeddingProvider(): Promise<EmbeddingProvider> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = embeddingConfig().apiKey;
   if (!apiKey) {
     throw new AppError(401, 'GEMINI_API_KEY is required for Gemini embeddings.', 'MISSING_API_KEY');
   }
@@ -236,7 +212,7 @@ async function createGeminiEmbeddingProvider(): Promise<EmbeddingProvider> {
     apiKey,
     httpOptions: { timeout: 30000, retryOptions: { attempts: 1 } },
   });
-  const model = process.env.GEMINI_EMBEDDING_MODEL ?? 'gemini-embedding-001';
+  const model = embeddingConfig().model;
   const maxTokens = 2048;
 
   return {

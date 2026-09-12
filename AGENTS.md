@@ -20,7 +20,7 @@
 | Graph Viz      | react-force-graph-2d, d3-force, d3-hierarchy                                                    |
 | Diagrams       | Mermaid 11, html-to-image, jsPDF                                                                |
 | Backend        | Express (dev + prod server), Zod validation                                                     |
-| AI Providers   | Gemini, OpenAI, Anthropic, EdgeOne Makers, Mock — unified via `createProvider()`               |
+| AI Providers   | Gemini, OpenAI, Anthropic, Mock — unified via `createProvider()`               |
 | GitHub API     | Octokit REST v21                                                                                |
 | Search         | In-memory vector store with chunking + embedding + QA engine                                    |
 | Security       | dompurify (sanitization)                                                                        |
@@ -40,7 +40,7 @@ gitSdm/
 ├── server/              # Backend services & router
 │   ├── ai/              # AI provider abstraction + task handlers
 │   │   ├── prompts.ts           # Shared AI prompt templates
-│   │   ├── provider.ts/test.ts  # AI provider (Gemini/OpenAI/Anthropic/EdgeOne/Mock)
+│   │   ├── provider.ts/test.ts  # AI provider (Gemini/OpenAI/Anthropic/Mock)
 │   │   ├── service.ts/test.ts   # AI service orchestration
 │   │   └── tasks/               # Individual AI tasks (diagram, explain, onboarding, playground, refactor)
 │   ├── cache/           # LRU caching layer (lru.ts/test.ts)
@@ -108,7 +108,7 @@ gitSdm/
 All AI interactions go through `server/ai/provider.ts`. Do NOT call SDKs directly in task code.
 
 ```text
-Task handler → summarizer / task → createProvider(type) → { Gemini | OpenAI | Anthropic | EdgeOne | Mock }
+Task handler → summarizer / task → createProvider(type) → { Gemini | OpenAI | Anthropic | Mock }
 ```
 
 - Uses `createProvider(overrideKey?)` → returns `AIProvider` with `.complete(messages, options?)`
@@ -133,7 +133,7 @@ Manual pathname-matching pattern in `server/router/`. Route files export `handle
 
 ### API Client (Frontend)
 
-`src/lib/apiClient.ts` — Typed fetch wrapper via `apiFetch<T>(url, options?)`. Authentication tokens stored in `localStorage` (`gitsdm_gemini_api_key`, `gitsdm_github_pat`) and sent as `X-Gemini-API-Key` / `X-GitHub-Token` headers.
+`src/lib/apiClient.ts` — Typed fetch wrapper via `apiFetch<T>(url, options?)`. Authentication tokens stored in `localStorage` (`gitsdm_gemini_api_key`, `gitsdm_github_pat`) and sent as `X-AI-API-Key` (with `X-Gemini-API-Key` fallback) / `X-GitHub-Token` headers.
 
 ### Toast Notification Pattern
 
@@ -225,22 +225,18 @@ bun run lint         # ESLint check
 | Variable                 | Default                                    | Description                            |
 | ------------------------ | ------------------------------------------ | -------------------------------------- |
 | `GITHUB_TOKEN`           | —                                          | GitHub PAT for API rate limits         |
-| `AI_PROVIDER`            | `mock`                                     | Provider: gemini, openai, anthropic, edgeone, mock |
+| `AI_PROVIDER`            | `mock`                                     | Provider: gemini, openai, anthropic, mock |
 | `GEMINI_API_KEY`         | —                                          | Gemini API key                         |
 | `OPENAI_API_KEY`         | —                                          | OpenAI API key                         |
 | `ANTHROPIC_API_KEY`      | —                                          | Anthropic API key                      |
-| `EDGEONE_API_KEY`        | —                                          | EdgeOne Makers Models API key (alias: `MAKERS_MODELS_KEY`) |
 | `OPENAI_API_BASE`        | OpenAI default                             | Custom API base URL                    |
 | `ANTHROPIC_API_BASE`     | Anthropic default                          | Custom API base URL                    |
-| `EDGEONE_API_BASE`       | `https://ai-gateway.edgeone.link/v1`       | EdgeOne API base URL                   |
 | `OPENAI_EMBEDDING_MODEL` | `openrouter/openai/text-embedding-3-large` | Embedding model                        |
-| `EDGEONE_EMBEDDING_MODEL`| `openrouter/openai/text-embedding-3-large` | Embedding model                        |
 | `EMBEDDING_DIMENSIONS`   | `3072`                                     | Vector dimension count                 |
 | `GEMINI_MODEL`           | `gemini-2.5-flash`                         | Gemini model override                  |
 | `GEMINI_API_VERSION`     | `v1alpha`                                  | Gemini API version                     |
 | `OPENAI_MODEL`           | `gpt-4o-mini`                              | OpenAI model override                  |
 | `ANTHROPIC_MODEL`        | `claude-3-5-haiku-latest`                  | Anthropic model override               |
-| `EDGEONE_MODEL`          | `@makers/deepseek-v4-flash`                | EdgeOne model override                 |
 | `GEMINI_EMBEDDING_MODEL` | `gemini-embedding-001`                     | Gemini embedding model override        |
 | `TOKEN_CACHE_HASH_SECRET`| —                                          | Cache key hashing secret (production)  |
 | `HOST`                   | `0.0.0.0`                                  | Production server bind                 |

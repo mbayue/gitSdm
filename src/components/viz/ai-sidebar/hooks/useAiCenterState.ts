@@ -1,25 +1,22 @@
+import {
+  explanationCache,
+  runExplanation,
+  healthCache,
+  refactorCache,
+  roastCache,
+  readmeEnhanceCache,
+  getToolKey,
+} from '@/features/ai/tool-cache';
 import { useEffect, useState, useRef, useMemo } from 'react';
+import { useChatConfigRevision } from '@/stores/chatConfigStore';
 import { useVizStore } from '@/stores/vizStore';
 import {
   useHealth, useRefactor, useRoast, useReadmeEnhance
 } from '@/features/ai/useAiTasks';
 import { aiExplain, aiExplainLif } from '@/lib/apiClient';
-import type {
-  AIHealthResponse,
-  AIReadmeEnhanceResponse,
-  AIRefactorResponse,
-  AIRoastResponse,
-  RepoAnalysis,
-} from '@/types';
+import type { RepoAnalysis } from '@/types';
 
-// Persistent layout states & caches across tab remounts
-export const explanationCache = new Map<string, string>();
-export const pendingExplanationRequests = new Map<string, Promise<string>>();
-export const pendingToolRequests = new Set<string>();
-export const healthCache = new Map<string, AIHealthResponse>();
-export const refactorCache = new Map<string, AIRefactorResponse>();
-export const roastCache = new Map<string, AIRoastResponse>();
-export const readmeEnhanceCache = new Map<string, AIReadmeEnhanceResponse>();
+export { explanationCache };
 
 let persistedEli5Mode = false;
 let persistedActivePlayground: 'roast' | 'readme' = 'roast';
@@ -27,6 +24,7 @@ let persistedAiSubTab: 'explain' | 'health' | 'playground' = 'explain';
 let persistedHealthSubMode: 'audit' | 'risks' = 'audit';
 
 export function useAiCenterState(analysis: RepoAnalysis) {
+  const { revision } = useChatConfigRevision();
   const {
     sidebarTab,
     selectedNodeId,
@@ -37,7 +35,7 @@ export function useAiCenterState(analysis: RepoAnalysis) {
   const [activePlayground, setActivePlaygroundState] = useState<'roast' | 'readme'>(persistedActivePlayground);
   const [aiSubTab, setAiSubTabState] = useState<'explain' | 'health' | 'playground'>(persistedAiSubTab);
   const [healthSubMode, setHealthSubModeState] = useState<'audit' | 'risks'>(persistedHealthSubMode);
-  const [cachedExplanation, setCachedExplanation] = useState<string | null>(null);
+  const [cachedExplanation, setCachedExplanation] = useState<{ key: string; value: string } | null>(null);
   const [loadingExplanationKey, setLoadingExplanationKey] = useState<string | null>(null);
   const [readmeCopied, setReadmeCopied] = useState(false);
   const lastExplanationKeyRef = useRef<string | null>(null);
@@ -57,26 +55,22 @@ export function useAiCenterState(analysis: RepoAnalysis) {
     setHealthSubModeState(mode);
   };
 
+  const [explanationErrors, setExplanationErrors] = useState<Record<string, string | null>>({});
+  const [explanationRetry, setExplanationRetry] = useState(0);
   const health = useHealth();
   const refactor = useRefactor();
   const roast = useRoast();
   const readmeEnhance = useReadmeEnhance();
 
-  const currentExplanationKey = `${analysis.meta.owner}/${analysis.meta.repo}/${selectedNodeId ?? 'repo'}/${eli5Mode ? 'eli5' : 'normal'}/${selectedBranch ?? 'default'}`;
-  const currentExplanation = explanationCache.get(currentExplanationKey) ?? cachedExplanation;
+  const currentExplanationKey = `${revision}/${analysis.meta.owner}/${analysis.meta.repo}/${selectedNodeId ?? 'repo'}/${eli5Mode ? 'eli5' : 'normal'}/${selectedBranch ?? 'default'}`;
+  const currentExplanation = explanationCache.get(currentExplanationKey) ?? (cachedExplanation?.key === currentExplanationKey ? cachedExplanation.value : null);
   const isExplainLoading = !currentExplanation && loadingExplanationKey === currentExplanationKey;
 
   const { owner, repo } = analysis.meta;
-  const branchKey = selectedBranch ?? 'default';
-  const healthKey = `health:${owner}/${repo}/${branchKey}`;
-  const refactorKey = `refactor:${owner}/${repo}/${branchKey}`;
-  const roastKey = `roast:${owner}/${repo}/${branchKey}`;
-  const readmeEnhanceKey = `readme-enhance:${owner}/${repo}/${branchKey}`;
-
-  const healthData = health.data ?? healthCache.get(healthKey);
-  const refactorData = refactor.data ?? refactorCache.get(refactorKey);
-  const roastData = roast.data ?? roastCache.get(roastKey);
-  const readmeEnhanceData = readmeEnhance.data ?? readmeEnhanceCache.get(readmeEnhanceKey);
+  const healthData = health.data ?? healthCache.get(getToolKey('health', owner, repo, revision, selectedBranch));
+  const refactorData = refactor.data ?? refactorCache.get(getToolKey('refactor', owner, repo, revision, selectedBranch));
+  const roastData = roast.data ?? roastCache.get(getToolKey('roast', owner, repo, revision, selectedBranch));
+  const readmeEnhanceData = readmeEnhance.data ?? readmeEnhanceCache.get(getToolKey('readme-enhance', owner, repo, revision, selectedBranch));
 
   const nodeById = useMemo(
     () => new Map(analysis.graph.nodes.map((n) => [n.id, n])),
@@ -95,7 +89,7 @@ export function useAiCenterState(analysis: RepoAnalysis) {
 
     if (lastExplanationKeyRef.current !== currentKey) {
       const cached = explanationCache.get(currentKey);
-      setCachedExplanation(cached ?? null);
+      setCachedExplanation(cached ? { key: currentKey, value: cached } : null);
       if (cached) {
         lastExplanationKeyRef.current = currentKey;
         return;
@@ -106,9 +100,8 @@ export function useAiCenterState(analysis: RepoAnalysis) {
 
       const loadExplanation = async () => {
         try {
-          let request = pendingExplanationRequests.get(currentKey);
-          if (!request) {
-            request = (!selectedNodeId && eli5Mode
+          const explanation = await runExplanation(currentKey, () =>
+            (!selectedNodeId && eli5Mode
               ? aiExplainLif(owner, repo)
               : aiExplain({
                   owner,
@@ -118,62 +111,45 @@ export function useAiCenterState(analysis: RepoAnalysis) {
                   branch: selectedBranch || undefined,
                   eli5: eli5Mode,
                 })
-            ).then((data) => data.explanation);
-            pendingExplanationRequests.set(currentKey, request);
-          }
+            ).then((data) => data.explanation)
+          );
 
-          const explanation = await request;
-          explanationCache.set(currentKey, explanation);
-          setCachedExplanation(explanation);
+          setCachedExplanation({ key: currentKey, value: explanation });
+          setExplanationErrors((errors) => ({ ...errors, [currentKey]: null }));
+        } catch {
+          setExplanationErrors((errors) => ({ ...errors, [currentKey]: 'AI explanation failed. Please try again.' }));
         } finally {
-          pendingExplanationRequests.delete(currentKey);
           setLoadingExplanationKey((key) => key === currentKey ? null : key);
         }
       };
 
       void loadExplanation();
     }
-  }, [sidebarTab, aiSubTab, owner, repo, selectedNodeId, eli5Mode, selectedBranch, currentExplanationKey]);
+  }, [sidebarTab, aiSubTab, owner, repo, selectedNodeId, eli5Mode, selectedBranch, currentExplanationKey, explanationRetry]);
 
   // Trigger selected health module only
   useEffect(() => {
     if (sidebarTab !== 'ai' || aiSubTab !== 'health') return;
 
-    if (healthSubMode === 'audit' && !healthData && !health.isPending && !pendingToolRequests.has(healthKey)) {
-      pendingToolRequests.add(healthKey);
-      health.mutate({ owner, repo, branch: selectedBranch || undefined }, {
-        onSuccess: (data) => healthCache.set(healthKey, data),
-        onSettled: () => pendingToolRequests.delete(healthKey),
-      });
+    if (healthSubMode === 'audit' && !healthData && !health.isPending && !health.isError) {
+      health.mutate({ owner, repo, branch: selectedBranch || undefined });
     }
 
-    if (healthSubMode === 'risks' && !refactorData && !refactor.isPending && !pendingToolRequests.has(refactorKey)) {
-      pendingToolRequests.add(refactorKey);
-      refactor.mutate({ owner, repo, branch: selectedBranch || undefined }, {
-        onSuccess: (data) => refactorCache.set(refactorKey, data),
-        onSettled: () => pendingToolRequests.delete(refactorKey),
-      });
+    if (healthSubMode === 'risks' && !refactorData && !refactor.isPending && !refactor.isError) {
+      refactor.mutate({ owner, repo, branch: selectedBranch || undefined });
     }
-  }, [sidebarTab, aiSubTab, healthSubMode, owner, repo, selectedBranch, health, refactor, healthKey, refactorKey, healthData, refactorData]);
+  }, [sidebarTab, aiSubTab, healthSubMode, owner, repo, selectedBranch, health, refactor, healthData, refactorData]);
 
   // Trigger playground modules
   useEffect(() => {
     if (sidebarTab === 'ai' && aiSubTab === 'playground') {
-      if (activePlayground === 'roast' && !roastData && !roast.isPending && !pendingToolRequests.has(roastKey)) {
-        pendingToolRequests.add(roastKey);
-        roast.mutate({ owner, repo, branch: selectedBranch || undefined }, {
-          onSuccess: (data) => roastCache.set(roastKey, data),
-          onSettled: () => pendingToolRequests.delete(roastKey),
-        });
-      } else if (activePlayground === 'readme' && !readmeEnhanceData && !readmeEnhance.isPending && !pendingToolRequests.has(readmeEnhanceKey)) {
-        pendingToolRequests.add(readmeEnhanceKey);
-        readmeEnhance.mutate({ owner, repo, branch: selectedBranch || undefined }, {
-          onSuccess: (data) => readmeEnhanceCache.set(readmeEnhanceKey, data),
-          onSettled: () => pendingToolRequests.delete(readmeEnhanceKey),
-        });
+      if (activePlayground === 'roast' && !roastData && !roast.isPending && !roast.isError) {
+        roast.mutate({ owner, repo, branch: selectedBranch || undefined });
+      } else if (activePlayground === 'readme' && !readmeEnhanceData && !readmeEnhance.isPending && !readmeEnhance.isError) {
+        readmeEnhance.mutate({ owner, repo, branch: selectedBranch || undefined });
       }
     }
-  }, [sidebarTab, aiSubTab, activePlayground, owner, repo, selectedBranch, roast, readmeEnhance, roastKey, readmeEnhanceKey, roastData, readmeEnhanceData]);
+  }, [sidebarTab, aiSubTab, activePlayground, owner, repo, selectedBranch, roast, readmeEnhance, roastData, readmeEnhanceData]);
 
   // Resolve headers dynamically for IntelligenceCard
   const cardTitle = aiSubTab === 'health' 
@@ -188,12 +164,24 @@ export function useAiCenterState(analysis: RepoAnalysis) {
     ? (activePlayground === 'roast' ? 'Project Roaster' : 'Documentation Enhancer')
     : (selectedNode ? selectedNode.data.label : 'Architectural Overview');
 
-  const cardLoading = 
-    (aiSubTab === 'explain' && isExplainLoading) ||
-    (aiSubTab === 'health' && healthSubMode === 'audit' && health.isPending && !healthData) ||
-    (aiSubTab === 'health' && healthSubMode === 'risks' && refactor.isPending && !refactorData) ||
-    (aiSubTab === 'playground' && activePlayground === 'roast' && roast.isPending && !roastData) ||
-    (aiSubTab === 'playground' && activePlayground === 'readme' && readmeEnhance.isPending && !readmeEnhanceData);
+  const activeMutation = aiSubTab === 'health'
+    ? (healthSubMode === 'audit' ? health : refactor)
+    : aiSubTab === 'playground' ? (activePlayground === 'roast' ? roast : readmeEnhance) : null;
+  const activeData = aiSubTab === 'health'
+    ? (healthSubMode === 'audit' ? healthData : refactorData)
+    : aiSubTab === 'playground' ? (activePlayground === 'roast' ? roastData : readmeEnhanceData) : null;
+  const cardLoading = aiSubTab === 'explain' ? isExplainLoading : Boolean(activeMutation?.isPending && !activeData);
+
+  const cardError = aiSubTab === 'explain'
+    ? explanationErrors[currentExplanationKey] ?? null
+    : activeMutation?.isError ? 'AI request failed. Check your settings and try again.' : null;
+  const retryCard = () => {
+    if (aiSubTab === 'explain') {
+      lastExplanationKeyRef.current = '';
+      setExplanationErrors((errors) => ({ ...errors, [currentExplanationKey]: null }));
+      setExplanationRetry(value => value + 1);
+    } else activeMutation?.reset();
+  };
 
   const toggleEli5Mode = () => {
     const nextEli5Mode = !eli5Mode;
@@ -217,6 +205,8 @@ export function useAiCenterState(analysis: RepoAnalysis) {
     cardTitle,
     cardSubtitle,
     cardLoading,
+    cardError,
+    retryCard,
     readmeCopied,
     setReadmeCopied,
     healthData,
@@ -228,10 +218,5 @@ export function useAiCenterState(analysis: RepoAnalysis) {
     refactor,
     roast,
     readmeEnhance,
-    healthKey,
-    refactorKey,
-    roastKey,
-    readmeEnhanceKey,
-    pendingToolRequests,
   };
 }

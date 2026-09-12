@@ -24,7 +24,20 @@ export interface IndexScope {
 function getApiKeyHeader(): Record<string, string> {
   try {
     const key = localStorage.getItem('gitsdm_gemini_api_key');
-    return key ? { 'X-Gemini-API-Key': key } : {};
+    if (!key) return {};
+    const headers: Record<string, string> = {
+      'X-AI-API-Key': key,
+      'X-Gemini-API-Key': key,
+    };
+    for (const [storage, header] of [
+      ['gitsdm_ai_provider', 'X-AI-Provider'],
+      ['gitsdm_ai_model', 'X-AI-Model'],
+      ['gitsdm_ai_base_url', 'X-AI-Base-URL'],
+    ]) {
+      const value = localStorage.getItem(storage)?.trim();
+      if (value) headers[header] = value;
+    }
+    return headers;
   } catch {
     return {};
   }
@@ -139,16 +152,11 @@ export function fetchRepoEnrichment<T>(owner: string, repo: string, sha: string,
   return request<T>(`/api/repo/${kind}?${new URLSearchParams({ owner, repo, branch: sha })}`);
 }
 
-export function fetchChurnBatch(
-  owner: string,
-  repo: string,
-  sha: string,
-  continuation: ChurnContinuation,
-) {
-  return request<ChurnResponse>(
-    `/api/repo/churn?${new URLSearchParams({ owner, repo, branch: sha })}`,
-    { method: 'POST', body: JSON.stringify(continuation) },
-  );
+export function fetchChurnBatch(owner: string, repo: string, sha: string, continuation: ChurnContinuation) {
+  return request<ChurnResponse>(`/api/repo/churn?${new URLSearchParams({ owner, repo, branch: sha })}`, {
+    method: 'POST',
+    body: JSON.stringify(continuation),
+  });
 }
 
 export async function fetchRepoBranches(owner: string, repo: string): Promise<{ name: string; protected: boolean }[]> {
