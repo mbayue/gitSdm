@@ -227,7 +227,7 @@ export function AiCenterTab({ analysis }: AiCenterTabProps) {
               <>
                 {refactorData?.suggestions && refactorData.suggestions.length > 0 ? (
                   <div className="space-y-3">
-                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest pl-1 font-mono">Key Refactoring Suggestions & Risks</h4>
+                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest pl-1 font-mono">Key Refactoring Suggestions &amp; Risks</h4>
                     <div className="space-y-2.5">
                       {refactorData.suggestions.map((s, idx) => (
                         <RiskCard

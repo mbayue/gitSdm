@@ -1,3 +1,4 @@
+import { CONTRIBUTOR_TIMELINE_HEIGHT, getContributorTimelineWrapperStyle } from "./timeline-layout";
 import { TooltipHint } from '@/components/ui/tooltip';
 import { useMemo } from 'react';
 import { Users, Calendar, Flame, TrendingUp, GitCommit, ExternalLink, Trophy } from 'lucide-react';
@@ -12,26 +13,6 @@ interface ContributorsViewProps {
 
 const statLabelClass = "block text-xs leading-5 text-muted-foreground font-medium";
 const statValueClass = "text-2xl leading-8 font-bold text-foreground mt-0.5 truncate";
-
-/**
- * Fixed chart height for the commit activity timeline.
- * Responsive-height contract: the wrapper's min-height (see
- * {@link getContributorTimelineWrapperStyle}) must match this value so the
- * recharts `ResponsiveContainer` always has a sized parent (it renders
- * nothing when the parent height is 0). Width stays fluid.
- */
-export const CONTRIBUTOR_TIMELINE_HEIGHT = 280;
-
-/**
- * Wrapper style for the commit activity timeline. Derived from
- * {@link CONTRIBUTOR_TIMELINE_HEIGHT} (inline style — Tailwind cannot
- * interpolate a TS constant into an arbitrary-value class, so a hardcoded class would
- * silently drift from the chart height). Changing the constant changes
- * rendering.
- */
-export function getContributorTimelineWrapperStyle(): { minHeight: number } {
-  return { minHeight: CONTRIBUTOR_TIMELINE_HEIGHT };
-}
 
 export function ContributorsView({ analysis, owner, repo }: ContributorsViewProps) {
   const { contributors, timeline } = analysis;
@@ -140,7 +121,7 @@ export function ContributorsView({ analysis, owner, repo }: ContributorsViewProp
         <div className="rounded-xl border border-border bg-card p-5 flex flex-col h-full overflow-hidden">
           <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-1.5 select-none shrink-0">
             <TrendingUp className="h-4 w-4 text-ui-active-text-green" />
-            Leaderboard & Commit Share
+            Leaderboard &amp; Commit Share
           </h3>
           <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-border space-y-3">
             {sortedContributors.map((c, idx) => {

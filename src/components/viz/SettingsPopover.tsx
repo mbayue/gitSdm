@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, type ReactNode, type RefObjec
 import { Settings, X, Check, Eye, EyeOff, KeyRound, GitBranch } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MotionSettings } from './MotionSettings';
-import { buttonVariants } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button-variants';
 import {
   Tooltip,
   TooltipContent,
@@ -206,7 +206,7 @@ export function SettingsPopover({
               </>
             )}
           </TooltipTrigger>
-          <TooltipContent side="bottom">Settings & Credentials</TooltipContent>
+          <TooltipContent side="bottom">Settings &amp; Credentials</TooltipContent>
         </Tooltip>
       )}
 
@@ -300,7 +300,7 @@ export function SettingsPopover({
                 <span>GitHub PAT</span>
               </div>
               <a
-                href="https://github.com/settings/tokens/new?scopes=repo&description=gitSdm%20Token"
+                href="https://github.com/settings/tokens/new?scopes=repo&amp;description=gitSdm%20Token"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-accent hover:text-accent hover:underline transition-colors"

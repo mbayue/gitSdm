@@ -21,9 +21,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('/mermaid/') || id.includes('\\mermaid\\') || id.endsWith('/mermaid') || id.endsWith('\\mermaid')) {
-            return 'mermaid';
-          }
+          if (/[\\/]node_modules[\\/]highlight\.js[\\/]/.test(id)) return 'syntax-highlighting';
         },
       },
     },

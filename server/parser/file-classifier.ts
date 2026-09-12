@@ -1,3 +1,4 @@
+import type { TreeNode } from '../../src/types';
 import type { FileClass } from '../../src/types';
 
 const CONFIG_PATTERNS = [
@@ -56,7 +57,7 @@ export function classifyFile(path: string): FileClass {
   return 'other';
 }
 
-export function annotateTree(nodes: import('../../src/types').TreeNode[]): import('../../src/types').TreeNode[] {
+export function annotateTree(nodes: TreeNode[]): TreeNode[] {
   return nodes.map((node) => ({
     ...node,
     fileClass: node.type === 'file' ? classifyFile(node.path) : undefined,

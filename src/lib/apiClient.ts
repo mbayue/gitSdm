@@ -1,3 +1,4 @@
+import type { ChurnContinuation, ChurnResponse } from '@/types/churn';
 import type {
   AIExplainRequest,
   AIExplainResponse,
@@ -142,9 +143,9 @@ export function fetchChurnBatch(
   owner: string,
   repo: string,
   sha: string,
-  continuation: import('@/types/churn').ChurnContinuation,
+  continuation: ChurnContinuation,
 ) {
-  return request<import('@/types/churn').ChurnResponse>(
+  return request<ChurnResponse>(
     `/api/repo/churn?${new URLSearchParams({ owner, repo, branch: sha })}`,
     { method: 'POST', body: JSON.stringify(continuation) },
   );

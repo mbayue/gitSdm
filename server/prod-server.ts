@@ -35,7 +35,12 @@ Bun.serve({
       return new Response('Bad Request', { status: 400 });
     }
 
-    const pageFile = decodedPath === '/' ? '/index.html' : decodedPath === '/privacy' || decodedPath === '/privacy/' ? '/privacy.html' : decodedPath;
+    const pageFile =
+      decodedPath === '/'
+        ? '/index.html'
+        : /^\/(privacy|terms)\/?$/.test(decodedPath)
+          ? `/${decodedPath.split('/')[1]}.html`
+          : decodedPath;
     const filePath = safeJoin(distDir, pageFile);
     if (!filePath) return addSecurityHeaders(new Response('Not found', { status: 404 }));
     const file = Bun.file(filePath);
@@ -48,7 +53,9 @@ Bun.serve({
     }
 
     const validRoute = isRepositoryPage(decodedPath);
-    const fallbackRes = new Response(Bun.file(path.join(distDir, validRoute ? 'app.html' : '404.html')), { status: validRoute ? 200 : 404 });
+    const fallbackRes = new Response(Bun.file(path.join(distDir, validRoute ? 'app.html' : '404.html')), {
+      status: validRoute ? 200 : 404,
+    });
     fallbackRes.headers.set('Cache-Control', 'no-cache');
     return addSecurityHeaders(fallbackRes);
   },

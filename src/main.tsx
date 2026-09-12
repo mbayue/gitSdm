@@ -11,11 +11,13 @@ async function start() {
       ? (await import('@/pages/HomePage')).HomePage
       : /^\/privacy\/?$/.test(initialPath)
         ? (await import('@/pages/PrivacyPage')).PrivacyPage
-        : /^\/[^/]+\/[^/]+\/search\/?$/.test(initialPath)
-          ? (await import('@/pages/SearchPage')).SearchPage
-          : /^\/[^/]+\/[^/]+\/?$/.test(initialPath)
-            ? (await import('@/pages/VizPage')).VizPage
-            : (await import('@/pages/NotFoundPage')).NotFoundPage;
+        : /^\/terms\/?$/.test(initialPath)
+          ? (await import('@/pages/TermsPage')).TermsPage
+          : /^\/[^/]+\/[^/]+\/search\/?$/.test(initialPath)
+            ? (await import('@/pages/SearchPage')).SearchPage
+            : /^\/[^/]+\/[^/]+\/?$/.test(initialPath)
+              ? (await import('@/pages/VizPage')).VizPage
+              : (await import('@/pages/NotFoundPage')).NotFoundPage;
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <Providers>

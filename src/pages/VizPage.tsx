@@ -21,7 +21,7 @@ const ArchitectureView = lazy(() =>
     default: m.ArchitectureView,
   })),
 );
-import { ContributorsView } from '@/components/contributors/ContributorsView';
+const ContributorsView = lazy(() => import('@/components/contributors/ContributorsView').then((m) => ({ default: m.ContributorsView })));
 import { ExplorerPanel } from '@/components/explorer/ExplorerPanel';
 import { VizError } from '@/components/viz/VizError';
 import { Info, Loader2 } from 'lucide-react';
@@ -243,7 +243,11 @@ export function VizPage() {
                     <ArchitectureView analysis={data} owner={owner} repo={repo} />
                   </Suspense>
                 )}
-                {activeView === 'contributors' && <ContributorsView analysis={data} owner={owner} repo={repo} />}
+                {activeView === 'contributors' && (
+                  <Suspense fallback={<div role="status" className="p-6 text-muted-foreground">Loading contributors…</div>}>
+                    <ContributorsView analysis={data} owner={owner} repo={repo} />
+                  </Suspense>
+                )}
                 {activeView === 'commits' && (
                   <FullCommitHistoryView
                     timeline={data.timeline}

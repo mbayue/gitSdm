@@ -147,7 +147,7 @@ export function VizError({ error, message }: VizErrorProps) {
             <p className="text-xs text-muted-foreground leading-relaxed mb-3">
               Add a{' '}
               <a
-                href="https://github.com/settings/tokens/new?scopes=repo&description=gitSdm%20Token"
+                href="https://github.com/settings/tokens/new?scopes=repo&amp;description=gitSdm%20Token"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-ui-active-text-green hover:underline font-medium inline-flex items-center gap-0.5"

@@ -141,7 +141,7 @@ export function SearchPage() {
       <main className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col overflow-y-auto px-5 py-8 sm:px-8 sm:py-12">
         <div className="mb-8 shrink-0">
           <p className="eyebrow mb-4">
-            <Search className="h-3.5 w-3.5 text-accent" /> Search & discover
+            <Search className="h-3.5 w-3.5 text-accent" /> Search &amp; discover
           </p>
           <h1 className="text-3xl font-medium tracking-tight sm:text-4xl">Find the idea behind the code.</h1>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">

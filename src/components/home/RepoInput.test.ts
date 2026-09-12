@@ -4,7 +4,7 @@ import {
   resolveOpenRepository,
   resolvePresetNavigation,
   resolveRepoNavigation,
-} from './RepoInput';
+} from './repo-navigation';
 
 // Locks the intended preset-click behavior: presets navigate immediately to
 // `/owner/repo` (they don't just fill the input). These pure helpers drive

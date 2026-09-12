@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { getAnalysisRelations } from './AnalysisTab';
+import { getAnalysisRelations } from './analysis-relations';
 import type { GraphData } from '@/types';
 
 const graph: GraphData = {
