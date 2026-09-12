@@ -4,7 +4,7 @@
 
 ## Project Identity
 
-**gitSdm** (Git Software Dependency Map) — v3.0.2. Interactive repository dependency visualization tool: map file dependencies, AI-powered codebase insights, semantic search, commit timelines, architecture diagrams, and dependency health. Single-page app with an embedded Express backend + Vercel serverless functions.
+**gitSdm** (Git Software Dependency Map) — v3.5.0. Interactive repository dependency visualization tool: map file dependencies, AI-powered codebase insights, semantic search, commit timelines, architecture diagrams, and dependency health. Single-page app with an embedded Express backend + Vercel serverless functions.
 
 ---
 
@@ -86,12 +86,12 @@ gitSdm/
 │   │   ├── graph/       # Graph canvas (ForceGraphCanvas, GraphCanvas, ToolbarDropdowns), widgets, force engine
 │   │   │   ├── canvas/  # Canvas layout engine, hooks, helpers (filters), widgets (DropdownPanel, LegendPanel)
 │   │   │   └── force/   # Force constants, color palettes, blastRadius, buildForceGraphData
-│   │   ├── ai/          # AI task frontend hooks (useAiTasks)
+│   │   ├── ai/          # AI task frontend hooks & task cache (useAiTasks, tool-cache)
 │   │   └── search/      # Semantic search UI: SearchBar, SearchResults, QAAnswerView, IndexingStatusPanel
-│   ├── hooks/           # Shared hooks (useAnalyzeRepo, useCodeInspectorState, useMobile, useRepoBranches, useRepoTags, useWorkspaceShortcuts)
-│   ├── lib/             # Shared utilities: apiClient, clipboard, utils, file-context (+ test files)
-│   ├── stores/          # Zustand stores (vizStore — canonical global store)
-│   ├── pages/           # Route pages (VizPage, HomePage, SearchPage, NotFoundPage)
+│   ├── hooks/           # Shared hooks (useAnalyzeRepo, useCodeInspectorState, useMobile, useRepoBranches, useRepoTags, useWorkspaceShortcuts, useMotionPreference)
+│   ├── lib/             # Shared utilities: apiClient, clipboard, utils, file-context, motion-preference, page-metadata (+ test files)
+│   ├── stores/          # Zustand stores (vizStore, motionStore, chatConfigStore)
+│   ├── pages/           # Route pages (HomePage, VizPage, SearchPage, TermsPage, PrivacyPage, NotFoundPage)
 │   ├── types/           # TypeScript type definitions (api, domain, github, index)
 │   ├── styles/          # Tailwind CSS global styles (globals.css, interface.css)
 │   └── main.tsx         # App entry point
@@ -252,6 +252,16 @@ bun run lint         # ESLint check
 - Zero eval / injection vectors
 - Zero hardcoded secrets
 - 250+ LOC ceiling approached only by generated shadcn components
+
+## Versioning Policy
+
+Version numbers increment progressively based on commit scope and change size:
+
+- **Major (`+1.x.x`)**: Major milestone or large-scale overhaul (100+ files).
+- **Minor (`x.+1.x`)**: Feature additions and substantial enhancements (`feat`).
+- **Patch (`x.x.+1`)**: Bug fixes, security hardening, and maintenance (`fix`, `chore`).
+
+Track progressive increments across commit batches rather than collapsing multiple feature commits into a single minor bump.
 
 ## CI Requirements
 

@@ -96,6 +96,19 @@ bunx graphify update .
 
 ---
 
+
+---
+
+## Versioning Policy
+
+Version numbers are incremented progressively based on commit scope and change size:
+
+- **Major (`+1.x.x`)**: Major milestone or large-scale architectural overhaul (100+ files).
+- **Minor (`x.+1.x`)**: Feature additions and substantial enhancements (`feat`).
+- **Patch (`x.x.+1`)**: Bug fixes, security hardening, and targeted maintenance (`fix`, `chore`).
+
+When updating versions, count commits since the previous version and advance progressively per feature/fix commit rather than collapsing multiple feature commits into a single minor bump.
+
 ## Pull Request Guidelines
 
 1. **Create a Branch**:

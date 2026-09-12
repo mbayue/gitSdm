@@ -5,7 +5,25 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and this project adheres to progressive [Semantic Versioning](https://semver.org/spec/v2.0.0.html) based on commit scope and size:
+
+- **Major (`+1.x.x`)**: Major architectural rewrite or large-scale overhaul (100+ files).
+- **Minor (`x.+1.x`)**: Feature additions and substantial enhancements (`feat`).
+- **Patch (`x.x.+1`)**: Bug fixes, security hardening, and maintenance (`fix`, `chore`).
+
+## [3.5.0] - 2026-09-12
+
+### Added
+
+- **Custom OpenAI-Compatible Endpoints**: Support for user-defined OpenAI-compatible base URLs and model overrides in Settings.
+- **SSRF Protection for Custom Endpoints**: Blocks private, loopback, and link-local IP addresses with pinned DNS resolution.
+- **Independent Embedding Configuration**: Decouples `EMBEDDING_PROVIDER`, `EMBEDDING_API_KEY`, `EMBEDDING_API_BASE`, and `EMBEDDING_MODEL` from chat settings.
+- **Task Lifecycle Resilience**: Unified in-memory promise caching in `src/features/ai/tool-cache.ts` ensuring in-flight requests survive tab remounts and branch switches.
+
+### Changed
+
+- **Unified AI Providers**: Streamlined provider interface across Gemini, OpenAI, Anthropic, and Mock. Consolidated EdgeOne into standard OpenAI-compatible configuration.
+- **Client Cache Synchronization**: Settings updates increment a chat configuration revision that invalidates stale cached responses and refreshes active tools.
 
 ## [3.0.2] - 2026-09-08
 

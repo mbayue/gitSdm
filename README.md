@@ -82,6 +82,32 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 | **OpenAI**         | `openai`      | Set `OPENAI_API_KEY` (model: `gpt-4o-mini`).                |
 | **Anthropic**      | `anthropic`   | Set `ANTHROPIC_API_KEY` (model: `claude-3-5-haiku-latest`). |
 
+### Independent embedding configuration
+
+Set `EMBEDDING_PROVIDER=openai`, `gemini`, or `mock` explicitly to keep semantic
+search independent of `AI_PROVIDER`. Set `EMBEDDING_API_KEY`, `EMBEDDING_MODEL`,
+and (for OpenAI-compatible services) `EMBEDDING_API_BASE` independently of chat.
+Gemini uses its SDK endpoint. Keep `EMBEDDING_DIMENSIONS` matched to the model.
+
+Legacy OpenAI/Gemini key and embedding-model settings remain fallbacks. Without
+`EMBEDDING_PROVIDER`, legacy selection still follows `AI_PROVIDER`. Configure all
+embedding settings explicitly before changing chat credentials or endpoints.
+Changing embedding model or endpoint invalidates existing search index identities.
+
+### Browser chat settings
+
+Settings accepts an AI API key, an explicit chat provider, an optional model,
+and an optional OpenAI-compatible base URL. Save applies the fields together;
+Clear removes the saved key and chat overrides. These settings apply to AI tasks
+and Ask AI, not semantic indexing or embedding generation. Existing saved keys
+remain supported.
+
+Custom URLs require the user's own key and a public HTTPS endpoint. Local and private
+network addresses are blocked, DNS addresses are checked and pinned for the connection,
+and redirects are not followed. No server allowlist configuration is needed.
+Requests use per-request configuration and cache identities include provider, model,
+endpoint, and hashed credentials.
+
 ---
 
 ## Tech Stack
@@ -122,29 +148,3 @@ bun run test:e2e     # Run Playwright end-to-end tests (mock mode)
 ## License
 
 MIT. See [LICENSE](LICENSE).
-
-### Independent embedding configuration
-
-Set `EMBEDDING_PROVIDER=openai`, `gemini`, or `mock` explicitly to keep semantic
-search independent of `AI_PROVIDER`. Set `EMBEDDING_API_KEY`, `EMBEDDING_MODEL`,
-and (for OpenAI-compatible services) `EMBEDDING_API_BASE` independently of chat.
-Gemini uses its SDK endpoint. Keep `EMBEDDING_DIMENSIONS` matched to the model.
-
-Legacy OpenAI/Gemini key and embedding-model settings remain fallbacks. Without
-`EMBEDDING_PROVIDER`, legacy selection still follows `AI_PROVIDER`. Configure all
-embedding settings explicitly before changing chat credentials or endpoints.
-Changing embedding model or endpoint invalidates existing search index identities.
-
-### Browser chat settings
-
-Settings accepts an AI API key, an explicit chat provider, an optional model,
-and an optional OpenAI-compatible base URL. Save applies the fields together;
-Clear removes the saved key and chat overrides. These settings apply to AI tasks
-and Ask AI, not semantic indexing or embedding generation. Existing saved keys
-remain supported.
-
-Custom URLs require the user's own key and a public HTTPS endpoint. Local and private
-network addresses are blocked, DNS addresses are checked and pinned for the connection,
-and redirects are not followed. No server allowlist configuration is needed.
-Requests use per-request configuration and cache identities include provider, model,
-endpoint, and hashed credentials.
