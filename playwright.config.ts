@@ -15,6 +15,11 @@ export default defineConfig({
     port: 3000,
     timeout: 60000,
     reuseExistingServer: !process.env.CI,
-    env: { AI_PROVIDER: 'mock' },
+    env: {
+      AI_PROVIDER: 'mock',
+      EMBEDDING_PROVIDER: 'mock',
+      API_REQUESTS_PER_MINUTE: '10000',
+      API_REQUESTS_PER_IP_PER_MINUTE: '10000',
+    },
   },
 });

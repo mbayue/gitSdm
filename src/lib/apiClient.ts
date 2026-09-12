@@ -15,6 +15,11 @@ import type {
   IndexingStatus,
 } from '@/types';
 
+export interface IndexScope {
+  includePaths: string[];
+  excludePaths: string[];
+}
+
 function getApiKeyHeader(): Record<string, string> {
   try {
     const key = localStorage.getItem('gitsdm_gemini_api_key');
@@ -78,7 +83,7 @@ async function parseBody(res: Response): Promise<unknown> {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   try {
-    const isAiRoute = path.startsWith('/api/ai');
+    const isAiRoute = path.startsWith('/api/ai') || path === '/api/search/ask';
     const res = await fetch(path, {
       ...options,
       headers: {
@@ -244,28 +249,65 @@ export async function semanticSearch(
   owner: string,
   repo: string,
   branch?: string,
+  scope?: IndexScope,
 ): Promise<SearchResponse> {
   return request<SearchResponse>('/api/search', {
     method: 'POST',
-    body: JSON.stringify({ query, owner, repo, branch }),
+    body: JSON.stringify({ query, owner, repo, branch, ...scope }),
   });
 }
 
-export async function semanticAsk(question: string, owner: string, repo: string, branch?: string): Promise<QAResponse> {
+export async function semanticAsk(
+  question: string,
+  owner: string,
+  repo: string,
+  branch?: string,
+  scope?: IndexScope,
+): Promise<QAResponse> {
   return request<QAResponse>('/api/search/ask', {
     method: 'POST',
-    body: JSON.stringify({ question, owner, repo, branch }),
+    body: JSON.stringify({ question, owner, repo, branch, ...scope }),
   });
 }
 
-export async function triggerIndexing(owner: string, repo: string, branch?: string): Promise<IndexingStatus> {
+export async function triggerIndexing(
+  owner: string,
+  repo: string,
+  branch?: string,
+  scope?: IndexScope,
+  buildId?: string,
+): Promise<IndexingStatus> {
   return request<IndexingStatus>('/api/search/index', {
     method: 'POST',
-    body: JSON.stringify({ owner, repo, branch }),
+    body: JSON.stringify({ owner, repo, branch, ...scope, buildId }),
   });
 }
 
-export async function fetchIndexingStatus(owner: string, repo: string, branch?: string): Promise<IndexingStatus> {
-  const params = new URLSearchParams({ owner, repo, ...(branch ? { branch } : {}) });
+export async function cancelIndexing(
+  owner: string,
+  repo: string,
+  branch?: string,
+  scope?: IndexScope,
+  buildId?: string,
+): Promise<IndexingStatus> {
+  return request<IndexingStatus>('/api/search/cancel', {
+    method: 'POST',
+    body: JSON.stringify({ owner, repo, branch, ...scope, buildId }),
+  });
+}
+
+export async function fetchIndexingStatus(
+  owner: string,
+  repo: string,
+  branch?: string,
+  scope?: IndexScope,
+): Promise<IndexingStatus> {
+  const params = new URLSearchParams({
+    owner,
+    repo,
+    ...(branch ? { branch } : {}),
+    ...(scope?.includePaths.length ? { includePaths: scope.includePaths.join(',') } : {}),
+    ...(scope?.excludePaths.length ? { excludePaths: scope.excludePaths.join(',') } : {}),
+  });
   return request<IndexingStatus>(`/api/search/status?${params}`);
 }

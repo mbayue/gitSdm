@@ -4,6 +4,10 @@ import type { SearchResultCard, QAAnswer, IndexingStatus } from '@/types';
 export type SearchMode = 'search' | 'ask';
 
 interface SearchState {
+  indexBuildId?: string;
+  indexOperation: number;
+  indexAction: 'index' | 'cancel' | null;
+  resultCoverage: import('../../../server/search/coverage').SearchCoverage | undefined;
   revision: number;
   mode: SearchMode;
   query: string;
@@ -46,6 +50,9 @@ function saveRecentQueries(queries: string[]): void {
 }
 
 export const useSearchStore = create<SearchState>((set, get) => ({
+  indexOperation: 0,
+  indexAction: null,
+  resultCoverage: undefined,
   revision: 0,
   mode: 'search',
   query: '',
@@ -76,9 +83,12 @@ export const useSearchStore = create<SearchState>((set, get) => ({
   reset: () =>
     set({
       revision: get().revision + 1,
+      indexAction: null,
+      indexBuildId: undefined,
       mode: 'search',
       query: '',
       results: [],
+      resultCoverage: undefined,
       answer: null,
       isLoading: false,
       error: null,

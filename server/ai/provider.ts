@@ -1,3 +1,4 @@
+import { protectAI } from './provider-controls';
 import { createMockProvider } from './mock-provider';
 
 export interface Message {
@@ -6,7 +7,7 @@ export interface Message {
 }
 
 export interface AIProvider {
-  complete(messages: Message[], options?: { json?: boolean }): Promise<string>;
+  complete(messages: Message[], options?: { json?: boolean; signal?: AbortSignal }): Promise<string>;
 }
 
 function detectProviderType(key: string): 'gemini' | 'openai' | 'anthropic' | 'edgeone' {
@@ -90,34 +91,38 @@ async function createGeminiProvider(overrideKey?: string): Promise<AIProvider> {
     throw new Error('GEMINI_API_KEY is required when using Gemini provider');
   }
 
-  const ai = new GoogleGenAI({ apiKey, apiVersion });
+  const ai = new GoogleGenAI({ apiKey, apiVersion, httpOptions: { timeout: 30000, retryOptions: { attempts: 1 } } });
 
-  return {
-    async complete(messages, options) {
-      const systemMessage = messages.find((m) => m.role === 'system');
-      const systemInstruction = systemMessage?.content;
+  return protectAI(
+    {
+      async complete(messages, options) {
+        const systemMessage = messages.find((m) => m.role === 'system');
+        const systemInstruction = systemMessage?.content;
 
-      const contents = messages
-        .filter((m) => m.role !== 'system')
-        .map((m) => ({
-          role: (m.role === 'assistant' ? 'model' : 'user') as 'model' | 'user',
-          parts: [{ text: m.content }],
-        }));
+        const contents = messages
+          .filter((m) => m.role !== 'system')
+          .map((m) => ({
+            role: (m.role === 'assistant' ? 'model' : 'user') as 'model' | 'user',
+            parts: [{ text: m.content }],
+          }));
 
-      const response = await ai.models.generateContent({
-        model,
-        contents,
-        config: {
-          maxOutputTokens: 4096,
-          temperature: 0.2,
-          systemInstruction,
-          responseMimeType: options?.json ? 'application/json' : undefined,
-        },
-      });
+        const response = await ai.models.generateContent({
+          model,
+          contents,
+          config: {
+            abortSignal: options?.signal,
+            maxOutputTokens: 4096,
+            temperature: 0.2,
+            systemInstruction,
+            responseMimeType: options?.json ? 'application/json' : undefined,
+          },
+        });
 
-      return response.text ?? '';
+        return response.text ?? '';
+      },
     },
-  };
+    !overrideKey,
+  );
 }
 
 async function createOpenAIProvider(overrideKey?: string): Promise<AIProvider> {
@@ -126,24 +131,30 @@ async function createOpenAIProvider(overrideKey?: string): Promise<AIProvider> {
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY is required when using OpenAI provider');
   }
-  const client = new OpenAI({ apiKey });
+  const client = new OpenAI({ apiKey, timeout: 30000, maxRetries: 0 });
   if (process.env.OPENAI_API_BASE) {
     client.baseURL = process.env.OPENAI_API_BASE;
   }
   const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
 
-  return {
-    async complete(messages, options) {
-      const response = await client.chat.completions.create({
-        model,
-        messages: messages.map((m) => ({ role: m.role, content: m.content })),
-        max_tokens: 4096,
-        temperature: 0.2,
-        response_format: options?.json ? { type: 'json_object' } : undefined,
-      });
-      return response.choices[0]?.message?.content ?? '';
+  return protectAI(
+    {
+      async complete(messages, options) {
+        const response = await client.chat.completions.create(
+          {
+            model,
+            messages: messages.map((m) => ({ role: m.role, content: m.content })),
+            max_tokens: 4096,
+            temperature: 0.2,
+            response_format: options?.json ? { type: 'json_object' } : undefined,
+          },
+          { signal: options?.signal },
+        );
+        return response.choices[0]?.message?.content ?? '';
+      },
     },
-  };
+    !overrideKey,
+  );
 }
 
 async function createEdgeOneProvider(overrideKey?: string): Promise<AIProvider> {
@@ -155,20 +166,26 @@ async function createEdgeOneProvider(overrideKey?: string): Promise<AIProvider> 
   }
   const baseURL = process.env.EDGEONE_API_BASE ?? 'https://ai-gateway.edgeone.link/v1';
   const model = process.env.EDGEONE_MODEL ?? '@makers/deepseek-v4-flash';
-  const client = new OpenAI({ apiKey, baseURL });
+  const client = new OpenAI({ apiKey, baseURL, timeout: 30000, maxRetries: 0 });
 
-  return {
-    async complete(messages, options) {
-      const response = await client.chat.completions.create({
-        model,
-        messages: messages.map((m) => ({ role: m.role, content: m.content })),
-        max_tokens: 4096,
-        temperature: 0.2,
-        response_format: options?.json ? { type: 'json_object' } : undefined,
-      });
-      return response.choices[0]?.message?.content ?? '';
+  return protectAI(
+    {
+      async complete(messages, options) {
+        const response = await client.chat.completions.create(
+          {
+            model,
+            messages: messages.map((m) => ({ role: m.role, content: m.content })),
+            max_tokens: 4096,
+            temperature: 0.2,
+            response_format: options?.json ? { type: 'json_object' } : undefined,
+          },
+          { signal: options?.signal },
+        );
+        return response.choices[0]?.message?.content ?? '';
+      },
     },
-  };
+    !overrideKey,
+  );
 }
 
 async function createAnthropicProvider(overrideKey?: string): Promise<AIProvider> {
@@ -177,33 +194,38 @@ async function createAnthropicProvider(overrideKey?: string): Promise<AIProvider
   if (!apiKey) {
     throw new Error('ANTHROPIC_API_KEY is required when using Anthropic provider');
   }
-  const client = new Anthropic({ apiKey });
+  const client = new Anthropic({ apiKey, timeout: 30000, maxRetries: 0 });
   if (process.env.ANTHROPIC_API_BASE) {
     client.baseURL = process.env.ANTHROPIC_API_BASE;
   }
   const model = process.env.ANTHROPIC_MODEL ?? 'claude-3-5-haiku-latest';
 
-  return {
-    async complete(messages) {
-      const system = messages.find((m) => m.role === 'system')?.content ?? '';
-      const userMessages = messages.filter((m) => m.role !== 'system');
+  return protectAI(
+    {
+      async complete(messages, options) {
+        const system = messages.find((m) => m.role === 'system')?.content ?? '';
+        const userMessages = messages.filter((m) => m.role !== 'system');
 
-      const response = await client.messages.create({
-        model,
-        max_tokens: 4096,
-        system,
-        messages: userMessages.map((m) => ({
-          role: m.role === 'assistant' ? 'assistant' : 'user',
-          content: m.content,
-        })),
-      });
+        const response = await client.messages.create(
+          {
+            model,
+            max_tokens: 4096,
+            system,
+            messages: userMessages.map((m) => ({
+              role: m.role === 'assistant' ? 'assistant' : 'user',
+              content: m.content,
+            })),
+          },
+          { signal: options?.signal },
+        );
 
-      const block = response.content[0];
-      return block?.type === 'text' ? block.text : '';
+        const block = response.content[0];
+        return block?.type === 'text' ? block.text : '';
+      },
     },
-  };
+    !overrideKey,
+  );
 }
-
 
 let providerInstance: AIProvider | null = null;
 let providerInstanceKey: string | null = null;
@@ -215,11 +237,16 @@ export async function getAIProvider(overrideKey?: string): Promise<AIProvider> {
   }
   // Cache by the resolved provider type so changing AI_PROVIDER invalidates the cache.
   // Mirror createProvider()'s auto-detection order (edgeone keys take precedence).
-  const currentKey = process.env.AI_PROVIDER
-    || ((process.env.EDGEONE_API_KEY?.trim() || process.env.MAKERS_MODELS_KEY?.trim()) ? 'edgeone'
-      : process.env.GEMINI_API_KEY?.trim() ? 'gemini'
-        : process.env.OPENAI_API_KEY?.trim() ? 'openai'
-          : process.env.ANTHROPIC_API_KEY?.trim() ? 'anthropic'
+  const currentKey =
+    process.env.AI_PROVIDER ||
+    (process.env.EDGEONE_API_KEY?.trim() || process.env.MAKERS_MODELS_KEY?.trim()
+      ? 'edgeone'
+      : process.env.GEMINI_API_KEY?.trim()
+        ? 'gemini'
+        : process.env.OPENAI_API_KEY?.trim()
+          ? 'openai'
+          : process.env.ANTHROPIC_API_KEY?.trim()
+            ? 'anthropic'
             : 'mock');
   if (!providerInstance || providerInstanceKey !== currentKey) {
     providerInstance = await createProvider();

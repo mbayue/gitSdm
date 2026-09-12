@@ -3,21 +3,32 @@ import { useEffect } from 'react';
 import { fetchIndexingStatus } from '@/lib/apiClient';
 import { useSearchStore } from './searchStore';
 import type { IndexingStatus } from '@/types';
+import type { IndexScope } from '@/lib/apiClient';
 
-export function useIndexingStatus(owner: string, repo: string, enabled = true, branch?: string) {
-  const { setIndexingStatus, indexingStatus } = useSearchStore();
+export function useIndexingStatus(owner: string, repo: string, enabled = true, branch?: string, scope?: IndexScope) {
+  const { setIndexingStatus, indexingStatus, indexOperation, indexAction } = useSearchStore();
 
-  const query = useQuery<IndexingStatus>({
-    queryKey: ['indexingStatus', owner, repo, branch],
-    queryFn: () => fetchIndexingStatus(owner, repo, branch),
-    enabled: enabled && !!owner && !!repo,
+  const query = useQuery<{ status: IndexingStatus; operation: number }>({
+    queryKey: ['indexingStatus', owner, repo, branch, scope, indexOperation],
+    queryFn: async () => ({ status: await fetchIndexingStatus(owner, repo, branch, scope), operation: indexOperation }),
+    enabled:
+      enabled &&
+      !!owner &&
+      !!repo &&
+      indexAction !== 'cancel' &&
+      (indexingStatus.state !== 'paused' || indexAction === 'index'),
     refetchInterval: indexingStatus.state === 'indexing' ? 3000 : false,
     retry: false,
     staleTime: 0,
   });
   // React Query exposes only the current repository's result; old requests cannot update the store.
   useEffect(() => {
-    if (query.data) setIndexingStatus(query.data);
+    const state = useSearchStore.getState();
+    if (!query.data || query.data.operation !== state.indexOperation || state.indexAction === 'cancel') return;
+    // A long indexing POST owns its final result. Polls may report progress, never undo the optimistic start.
+    if (state.indexAction === 'index' && query.data.status.state !== 'indexing') return;
+    setIndexingStatus(query.data.status);
+    if (query.data.status.buildId) useSearchStore.setState({ indexBuildId: query.data.status.buildId });
   }, [query.data, query.dataUpdatedAt, setIndexingStatus]);
   return query;
 }

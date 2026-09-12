@@ -25,6 +25,7 @@ export async function handleNodeRequest(nodeReq: IncomingMessage, nodeRes: Serve
   const url = `${protocol}://${host}${nodeReq.url}`;
 
   let body: BodyInit | undefined;
+  const bodyDeadline = setTimeout(() => nodeReq.destroy(new Error('Request body timed out')), 15000);
   try {
     checkBodySize(Number(nodeReq.headers['content-length'] ?? 0));
     const requestWithBody = nodeReq as IncomingMessage & { body?: unknown };
@@ -50,6 +51,8 @@ export async function handleNodeRequest(nodeReq: IncomingMessage, nodeRes: Serve
     response.headers.forEach((value, key) => nodeRes.setHeader(key, value));
     nodeRes.end(await response.text());
     return true;
+  } finally {
+    clearTimeout(bodyDeadline);
   }
 
   const webReq = new Request(url, {
@@ -58,7 +61,7 @@ export async function handleNodeRequest(nodeReq: IncomingMessage, nodeRes: Serve
     body,
   });
 
-  const webRes = await handleApiRequest(webReq);
+  const webRes = await handleApiRequest(webReq, nodeReq.socket.remoteAddress);
   if (!webRes) {
     return false;
   }

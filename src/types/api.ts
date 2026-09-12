@@ -88,6 +88,7 @@ export interface QAAnswer {
 }
 
 export interface SearchResponse {
+  coverage?: import('../../server/search/coverage').SearchCoverage;
   results: {
     chunk: {
       filePath: string;
@@ -106,13 +107,10 @@ export interface SearchResponse {
 }
 
 export interface QAResponse {
+  coverage?: import('../../server/search/coverage').SearchCoverage;
   answer: string;
   citations: { filePath: string; startLine: number; endLine: number }[];
   cached: boolean;
 }
 
-export type IndexingStatus =
-  | { state: 'idle' }
-  | { state: 'indexing'; progress: number; filesProcessed: number; totalFiles: number }
-  | { state: 'complete'; chunkCount: number; timestamp: number }
-  | { state: 'failed'; error: string; failedFiles: number };
+export type IndexingStatus = import('../../server/search/types').IndexingStatus;

@@ -7,24 +7,29 @@ export function checkBodySize(bytes: number): void {
 }
 
 /** Bound the stream before JSON parsing, including requests without Content-Length. */
-export async function limitRequestBody(req: Request): Promise<Request> {
+export async function limitRequestBody(req: Request, timeoutMs = 15000): Promise<Request> {
   checkBodySize(Number(req.headers.get('content-length') ?? 0));
   if (!req.body) return req;
   const reader = req.body.getReader();
   const chunks: Uint8Array[] = [];
   let size = 0;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => reject(new AppError(408, 'Request body timed out.', 'REQUEST_TIMEOUT', true)), timeoutMs);
+  });
   try {
     while (true) {
-      const { done, value } = await reader.read();
+      const { done, value } = await Promise.race([reader.read(), deadline]);
       if (done) break;
       size += value.byteLength;
       checkBodySize(size);
       chunks.push(value);
     }
   } catch (error) {
-    await reader.cancel().catch(() => undefined);
+    void reader.cancel().catch(() => undefined);
     throw error;
   } finally {
+    clearTimeout(timer);
     reader.releaseLock();
   }
   const body = new Uint8Array(size);

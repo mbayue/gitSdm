@@ -1,5 +1,15 @@
 import { test, expect } from 'bun:test';
-import { searchIndexKey } from './index-identity';
+import { searchIndexKey, searchIndexIdentity } from './index-identity';
+
+test('snapshot families retain credential and path isolation', () => {
+  const key = (sha: string, token = 'one', paths: string[] = []) =>
+    searchIndexKey('org', 'repo', sha, { gitHubToken: token }, paths);
+  expect(searchIndexIdentity(key('first')).snapshotSha).toBe('first');
+  expect(searchIndexIdentity(key('first')).family).toBe(searchIndexIdentity(key('second')).family);
+  expect(searchIndexIdentity(key('first')).family).not.toBe(searchIndexIdentity(key('first', 'other')).family);
+  expect(searchIndexIdentity(key('first')).family).not.toBe(searchIndexIdentity(key('first', 'one', ['src'])).family);
+  expect(() => searchIndexIdentity('invalid')).toThrow();
+});
 
 test('index identity isolates credentials, snapshots and embedding models without exposing tokens', () => {
   const key = searchIndexKey('Org', 'Repo', 'sha', { gitHubToken: 'private-token' });
@@ -14,5 +24,18 @@ test('index identity isolates credentials, snapshots and embedding models withou
   } finally {
     if (original === undefined) delete process.env.OPENAI_EMBEDDING_MODEL;
     else process.env.OPENAI_EMBEDDING_MODEL = original;
+  }
+});
+
+test('Featherless model changes invalidate existing search indexes', () => {
+  const previous = process.env.OPENAI_EMBEDDING_MODEL;
+  try {
+    process.env.OPENAI_EMBEDDING_MODEL = 'Qwen/Qwen3-Embedding-8B';
+    const key = searchIndexKey('org', 'repo', 'sha');
+    process.env.OPENAI_EMBEDDING_MODEL = 'different-model';
+    expect(searchIndexKey('org', 'repo', 'sha')).not.toBe(key);
+  } finally {
+    if (previous === undefined) delete process.env.OPENAI_EMBEDDING_MODEL;
+    else process.env.OPENAI_EMBEDDING_MODEL = previous;
   }
 });

@@ -1,3 +1,4 @@
+import { protectEmbeddings } from './embedding-controls';
 import type { EmbeddingProvider, EmbeddingResult } from './types';
 import { EMBEDDING_DIMENSIONS } from './constants';
 import { AppError } from '../utils/errors';
@@ -10,7 +11,7 @@ let cachedProvider: EmbeddingProvider | null = null;
 let cachedProviderKey: string | null = null;
 
 export async function createEmbeddingProvider(): Promise<EmbeddingProvider> {
-  const envProvider = (process.env.AI_PROVIDER ?? 'mock').toLowerCase();
+  const envProvider = (process.env.EMBEDDING_PROVIDER ?? process.env.AI_PROVIDER ?? 'mock').toLowerCase();
   const cacheKey =
     embeddingIdentity() +
     hashToken(
@@ -31,7 +32,7 @@ export async function createEmbeddingProvider(): Promise<EmbeddingProvider> {
   if (envProvider === 'openai') {
     provider = createOpenAIEmbeddingProvider();
   } else if (envProvider === 'edgeone') {
-    provider = createEdgeOneEmbeddingProvider();
+    provider = await createEdgeOneEmbeddingFallback();
   } else if (envProvider === 'gemini') {
     provider = await createGeminiEmbeddingProvider();
   } else if (envProvider === 'anthropic') {
@@ -40,12 +41,10 @@ export async function createEmbeddingProvider(): Promise<EmbeddingProvider> {
       provider = await createGeminiEmbeddingProvider();
     } else if (process.env.OPENAI_API_KEY) {
       provider = createOpenAIEmbeddingProvider();
-    } else if (process.env.EDGEONE_API_KEY || process.env.MAKERS_MODELS_KEY) {
-      provider = createEdgeOneEmbeddingProvider();
     } else {
       throw new AppError(
         400,
-        'Anthropic does not support embeddings. Configure OPENAI_API_KEY, EDGEONE_API_KEY, MAKERS_MODELS_KEY, or GEMINI_API_KEY as fallback.',
+        'Anthropic does not support embeddings. Configure OPENAI_API_KEY or GEMINI_API_KEY as fallback.',
         'EMBEDDING_PROVIDER_UNAVAILABLE',
       );
     }
@@ -53,6 +52,7 @@ export async function createEmbeddingProvider(): Promise<EmbeddingProvider> {
     provider = createMockEmbeddingProvider();
   }
 
+  provider = provider.providerName === 'mock' ? provider : protectEmbeddings(provider);
   cachedProvider = provider;
   cachedProviderKey = cacheKey;
   return provider;
@@ -119,16 +119,19 @@ function createOpenAICompatibleEmbeddingProvider(config: OpenAICompatibleConfig)
     maxTokens,
     providerName,
 
-    async embed(text: string): Promise<EmbeddingResult> {
+    async embed(text: string, signal?: AbortSignal): Promise<EmbeddingResult> {
       const truncated = truncateText(text, maxTokens);
-      const vector = await openAIEmbed(apiKey, model, truncated, baseURL);
+      const vector = await openAIEmbed(apiKey, model, truncated, baseURL, signal);
       return { vector, tokenCount: estimateTokens(truncated) };
     },
 
-    async embedBatch(texts: string[]): Promise<EmbeddingResult[]> {
+    async embedBatch(texts: string[], signal?: AbortSignal): Promise<EmbeddingResult[]> {
       const truncated = texts.map((t) => truncateText(t, maxTokens));
-      const vectors = await openAIEmbedBatch(apiKey, model, truncated, baseURL);
-      return vectors.map((v, i) => ({ vector: v, tokenCount: estimateTokens(truncated[i]) }));
+      const vectors = await openAIEmbedBatch(apiKey, model, truncated, baseURL, signal);
+      return vectors.map((v, i) => ({
+        vector: v,
+        tokenCount: estimateTokens(truncated[i]),
+      }));
     },
   };
 }
@@ -146,38 +149,39 @@ function createOpenAIEmbeddingProvider(): EmbeddingProvider {
   });
 }
 
-function createEdgeOneEmbeddingProvider(): EmbeddingProvider {
-  // ponytail: EdgeOne Makers Models embedding endpoint is OpenAI-compatible
-  const apiKey = process.env.EDGEONE_API_KEY?.trim() || process.env.MAKERS_MODELS_KEY?.trim();
-  if (!apiKey) {
-    throw new AppError(
-      401,
-      'EDGEONE_API_KEY or MAKERS_MODELS_KEY is required for EdgeOne embeddings.',
-      'MISSING_API_KEY',
-    );
-  }
-
-  return createOpenAICompatibleEmbeddingProvider({
-    providerName: 'edgeone',
-    apiKey,
-    baseURL: process.env.EDGEONE_API_BASE ?? 'https://ai-gateway.edgeone.link/v1',
-    model:
-      process.env.EDGEONE_EMBEDDING_MODEL ??
-      process.env.OPENAI_EMBEDDING_MODEL ??
-      'openrouter/openai/text-embedding-3-large',
-  });
+async function createEdgeOneEmbeddingFallback(): Promise<EmbeddingProvider> {
+  if (process.env.GEMINI_API_KEY) return createGeminiEmbeddingProvider();
+  if (process.env.OPENAI_API_KEY) return createOpenAIEmbeddingProvider();
+  throw new AppError(
+    400,
+    'EdgeOne does not provide embeddings. Configure GEMINI_API_KEY or OPENAI_API_KEY for semantic search.',
+    'EMBEDDING_PROVIDER_UNAVAILABLE',
+  );
 }
 
-async function openAIEmbed(apiKey: string, model: string, text: string, baseURL?: string): Promise<Float32Array> {
+async function openAIEmbed(
+  apiKey: string,
+  model: string,
+  text: string,
+  baseURL?: string,
+  signal?: AbortSignal,
+): Promise<Float32Array> {
   const { default: OpenAI } = await import('openai');
-  const client = new OpenAI({ apiKey, baseURL: baseURL ?? process.env.OPENAI_API_BASE });
+  const client = new OpenAI({
+    apiKey,
+    baseURL: baseURL ?? process.env.OPENAI_API_BASE,
+    timeout: 30000,
+    maxRetries: 0,
+  });
 
-  const response = await withRetry(() =>
-    client.embeddings.create({
+  const response = await client.embeddings.create(
+    {
       model,
       dimensions: EMBEDDING_DIMENSIONS,
       input: text,
-    }),
+      encoding_format: 'float',
+    },
+    { signal },
   );
 
   return normalizeVector(new Float32Array(response.data[0].embedding));
@@ -188,21 +192,29 @@ async function openAIEmbedBatch(
   model: string,
   texts: string[],
   baseURL?: string,
+  signal?: AbortSignal,
 ): Promise<Float32Array[]> {
   if (texts.length === 0) return [];
   const { default: OpenAI } = await import('openai');
-  const client = new OpenAI({ apiKey, baseURL: baseURL ?? process.env.OPENAI_API_BASE });
+  const client = new OpenAI({
+    apiKey,
+    baseURL: baseURL ?? process.env.OPENAI_API_BASE,
+    timeout: 30000,
+    maxRetries: 0,
+  });
 
   // OpenAI supports batch – send in chunks of 100
   const results: Float32Array[] = [];
   for (let i = 0; i < texts.length; i += 100) {
     const batch = texts.slice(i, i + 100);
-    const response = await withRetry(() =>
-      client.embeddings.create({
+    const response = await client.embeddings.create(
+      {
         model,
         dimensions: EMBEDDING_DIMENSIONS,
         input: batch,
-      }),
+        encoding_format: 'float',
+      },
+      { signal },
     );
     for (const item of response.data) {
       results.push(normalizeVector(new Float32Array(item.embedding)));
@@ -220,7 +232,10 @@ async function createGeminiEmbeddingProvider(): Promise<EmbeddingProvider> {
   }
 
   const { GoogleGenAI } = await import('@google/genai');
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({
+    apiKey,
+    httpOptions: { timeout: 30000, retryOptions: { attempts: 1 } },
+  });
   const model = process.env.GEMINI_EMBEDDING_MODEL ?? 'gemini-embedding-001';
   const maxTokens = 2048;
 
@@ -229,15 +244,16 @@ async function createGeminiEmbeddingProvider(): Promise<EmbeddingProvider> {
     maxTokens,
     providerName: 'gemini',
 
-    async embed(text: string): Promise<EmbeddingResult> {
+    async embed(text: string, signal?: AbortSignal): Promise<EmbeddingResult> {
       const truncated = truncateText(text, maxTokens);
-      const response = await withRetry(() =>
-        ai.models.embedContent({
-          model,
-          contents: truncated,
-          config: { outputDimensionality: EMBEDDING_DIMENSIONS },
-        }),
-      );
+      const response = await ai.models.embedContent({
+        model,
+        contents: truncated,
+        config: {
+          outputDimensionality: EMBEDDING_DIMENSIONS,
+          abortSignal: signal,
+        },
+      });
       const embedding = response.embeddings?.[0]?.values;
       if (!embedding) throw new AppError(503, 'Gemini returned no embedding.', 'EMBEDDING_FAILURE', true);
       return {
@@ -246,30 +262,34 @@ async function createGeminiEmbeddingProvider(): Promise<EmbeddingProvider> {
       };
     },
 
-    async embedBatch(texts: string[]): Promise<EmbeddingResult[]> {
-      const concurrency = 5;
+    async embedBatch(texts: string[], signal?: AbortSignal): Promise<EmbeddingResult[]> {
+      // Gemini accepts up to 100 contents per request; avoid one request per chunk.
+      const batchSize = 100;
       const results: EmbeddingResult[] = [];
-      for (let i = 0; i < texts.length; i += concurrency) {
-        const chunk = texts.slice(i, i + concurrency);
-        const chunkResults = await Promise.all(
-          chunk.map(async (text) => {
-            const truncated = truncateText(text, maxTokens);
-            const response = await withRetry(() =>
-              ai.models.embedContent({
-                model,
-                contents: truncated,
-                config: { outputDimensionality: EMBEDDING_DIMENSIONS },
-              }),
-            );
-            const embedding = response.embeddings?.[0]?.values;
-            if (!embedding) throw new AppError(503, 'Gemini returned no embedding.', 'EMBEDDING_FAILURE', true);
-            return {
-              vector: normalizeVector(new Float32Array(embedding)),
-              tokenCount: estimateTokens(truncated),
-            };
-          }),
-        );
-        results.push(...chunkResults);
+      for (let i = 0; i < texts.length; i += batchSize) {
+        const truncated = texts.slice(i, i + batchSize).map((text) => truncateText(text, maxTokens));
+        const response = await ai.models.embedContent({
+          model,
+          contents: truncated,
+          config: {
+            outputDimensionality: EMBEDDING_DIMENSIONS,
+            abortSignal: signal,
+          },
+        });
+        const embeddings = response.embeddings;
+        if (!embeddings || embeddings.length !== truncated.length) {
+          throw new AppError(503, 'Gemini returned an incomplete embedding batch.', 'EMBEDDING_FAILURE', true);
+        }
+        for (let j = 0; j < embeddings.length; j++) {
+          const embedding = embeddings[j].values;
+          if (!embedding) {
+            throw new AppError(503, 'Gemini returned no embedding.', 'EMBEDDING_FAILURE', true);
+          }
+          results.push({
+            vector: normalizeVector(new Float32Array(embedding)),
+            tokenCount: estimateTokens(truncated[j]),
+          });
+        }
       }
       return results;
     },
@@ -296,23 +316,4 @@ function truncateText(text: string, maxTokens: number): string {
   const approxChars = maxTokens * 4;
   if (text.length <= approxChars) return text;
   return text.slice(0, approxChars);
-}
-
-/** Exponential backoff retry for rate limits and transient errors. */
-async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
-  let lastError: unknown;
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (err) {
-      lastError = err;
-      const msg = err instanceof Error ? err.message : String(err);
-      const isRateLimit = msg.includes('429') || msg.toLowerCase().includes('rate limit');
-      const isTimeout = msg.toLowerCase().includes('timeout');
-      if (!isRateLimit && !isTimeout) throw err;
-      const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
-      await new Promise((r) => setTimeout(r, delay));
-    }
-  }
-  throw lastError;
 }

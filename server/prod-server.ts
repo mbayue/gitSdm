@@ -14,12 +14,12 @@ resetOctokit();
 Bun.serve({
   port,
   hostname: host,
-  async fetch(req: Request): Promise<Response> {
+  async fetch(req: Request, server): Promise<Response> {
     const url = new URL(req.url);
     const pathname = url.pathname;
 
     if (pathname.startsWith('/api/')) {
-      const response = await handleApiRequest(req);
+      const response = await handleApiRequest(req, server.requestIP(req)?.address);
       if (response) return response;
       return new Response(JSON.stringify({ error: 'Not found' }), {
         status: 404,

@@ -7,8 +7,19 @@ export function useSemanticSearch() {
   const { setResults, setIsLoading, setError, addRecentQuery } = useSearchStore();
 
   return useMutation({
-    mutationFn: ({ query, owner, repo, branch }: { query: string; owner: string; repo: string; branch?: string }) =>
-      semanticSearch(query, owner, repo, branch),
+    mutationFn: ({
+      query,
+      owner,
+      repo,
+      branch,
+      scope,
+    }: {
+      query: string;
+      owner: string;
+      repo: string;
+      branch?: string;
+      scope: import('@/lib/apiClient').IndexScope;
+    }) => semanticSearch(query, owner, repo, branch, scope),
     onMutate: () => {
       setIsLoading(true);
       setError(null);
@@ -25,6 +36,7 @@ export function useSemanticSearch() {
         score: r.score,
       }));
       setResults(cards);
+      useSearchStore.setState({ resultCoverage: data.coverage });
       addRecentQuery(data.query);
       setIsLoading(false);
     },

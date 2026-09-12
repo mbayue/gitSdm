@@ -1,11 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
 import { createEmbeddingProvider } from './embedding-provider';
 
+const realSetTimeout = globalThis.setTimeout;
+const originalEmbeddingProvider = process.env.EMBEDDING_PROVIDER;
+const originalEmbeddingInterval = process.env.EMBEDDING_REQUEST_INTERVAL_MS;
+
 let openAIError: Error | null = null;
 let geminiFailures = 0;
+let geminiRequests = 0;
+let openAIConfig: { apiKey: string; baseURL?: string } | undefined;
 
 describe('createEmbeddingProvider', () => {
   beforeEach(() => {
+    process.env.EMBEDDING_REQUEST_INTERVAL_MS = '0';
+    delete process.env.EMBEDDING_PROVIDER;
     mock.module('openai', () => {
       class OpenAI {
         baseURL = '';
@@ -18,7 +26,9 @@ describe('createEmbeddingProvider', () => {
           }),
         };
 
-        constructor(_config: { apiKey: string }) {}
+        constructor(config: { apiKey: string; baseURL?: string }) {
+          openAIConfig = config;
+        }
       }
 
       return { default: OpenAI };
@@ -27,13 +37,15 @@ describe('createEmbeddingProvider', () => {
     mock.module('@google/genai', () => ({
       GoogleGenAI: class {
         models = {
-          embedContent: mock(async ({ contents }: { contents: string }) => {
+          embedContent: mock(async ({ contents }: { contents: string | string[] }) => {
+            geminiRequests++;
             if (geminiFailures > 0) {
               geminiFailures--;
               throw new Error('timeout');
             }
+            const texts = Array.isArray(contents) ? contents : [contents];
             return {
-              embeddings: contents === 'missing' ? [] : [{ values: [0, 3, 4] }],
+              embeddings: texts.includes('missing') ? [] : texts.map(() => ({ values: [0, 3, 4] })),
             };
           }),
         };
@@ -52,10 +64,46 @@ describe('createEmbeddingProvider', () => {
     delete process.env.GEMINI_EMBEDDING_MODEL;
     openAIError = null;
     geminiFailures = 0;
+    geminiRequests = 0;
   });
 
   afterEach(() => {
+    if (originalEmbeddingInterval === undefined) delete process.env.EMBEDDING_REQUEST_INTERVAL_MS;
+    else process.env.EMBEDDING_REQUEST_INTERVAL_MS = originalEmbeddingInterval;
+    if (originalEmbeddingProvider === undefined) delete process.env.EMBEDDING_PROVIDER;
+    else process.env.EMBEDDING_PROVIDER = originalEmbeddingProvider;
     mock.restore();
+  });
+
+  it('sends a Gemini chunk batch in one provider request', async () => {
+    process.env.AI_PROVIDER = 'gemini';
+    process.env.GEMINI_API_KEY = 'gemini-batch-regression';
+    const provider = await createEmbeddingProvider();
+    const results = await provider.embedBatch(Array.from({ length: 32 }, (_, i) => `chunk ${i}`));
+    expect(results).toHaveLength(32);
+    expect(geminiRequests).toBe(1);
+  });
+
+  it('uses Featherless credentials and endpoint independently of the AI provider', async () => {
+    const previous = process.env.OPENAI_API_BASE;
+    try {
+      process.env.EMBEDDING_PROVIDER = 'openai';
+      process.env.AI_PROVIDER = 'edgeone';
+      process.env.OPENAI_API_KEY = 'unit-featherless-key';
+      process.env.OPENAI_API_BASE = 'https://api.featherless.ai/v1';
+      const provider = await createEmbeddingProvider();
+      expect(provider.providerName).toBe('openai');
+      await provider.embedBatch(['search']);
+      expect(openAIConfig).toEqual(
+        expect.objectContaining({
+          apiKey: 'unit-featherless-key',
+          baseURL: 'https://api.featherless.ai/v1',
+        }),
+      );
+    } finally {
+      if (previous === undefined) delete process.env.OPENAI_API_BASE;
+      else process.env.OPENAI_API_BASE = previous;
+    }
   });
 
   it('creates deterministic mock embeddings and caches provider', async () => {
@@ -121,26 +169,19 @@ describe('createEmbeddingProvider', () => {
     delete process.env.OPENAI_API_BASE;
   });
 
-  it('uses edgeone embeddings', async () => {
+  it('requires a Gemini or OpenAI fallback for EdgeOne embeddings', async () => {
     process.env.AI_PROVIDER = 'edgeone';
     process.env.EDGEONE_API_KEY = 'sk-eo-test';
 
+    await expect(createEmbeddingProvider()).rejects.toMatchObject({
+      status: 400,
+      code: 'EMBEDDING_PROVIDER_UNAVAILABLE',
+    });
+
+    process.env.OPENAI_API_KEY = 'sk-edgeone-fallback';
     const provider = await createEmbeddingProvider();
-    expect(provider.providerName).toBe('edgeone');
-    expect(provider.maxTokens).toBe(8191);
-
-    const one = await provider.embed('hello');
-    expect(one.tokenCount).toBe(2);
-    delete process.env.EDGEONE_API_KEY;
-    const batch = await provider.embedBatch(['a', 'b']);
-    expect(batch).toHaveLength(2);
-
-    delete process.env.AI_PROVIDER;
-    delete process.env.EDGEONE_API_KEY;
-    delete process.env.MAKERS_MODELS_KEY;
-    process.env.AI_PROVIDER = 'edgeone';
-    await expect(createEmbeddingProvider()).rejects.toThrow('EDGEONE_API_KEY or MAKERS_MODELS_KEY is required for EdgeOne embeddings.');
-
+    expect(provider.providerName).toBe('openai');
+    expect((await provider.embed('hello')).tokenCount).toBe(2);
   });
 
   it('uses gemini embeddings and batch path', async () => {
@@ -199,7 +240,8 @@ describe('createEmbeddingProvider', () => {
     geminiFailures = 1;
 
     const provider = await createEmbeddingProvider();
-    spyOn(globalThis, 'setTimeout').mockImplementation(((callback: () => void) => {
+    spyOn(globalThis, 'setTimeout').mockImplementation(((callback: () => void, delay = 0) => {
+      if (delay >= 10000) return realSetTimeout(callback, delay);
       callback();
       return 0;
     }) as typeof setTimeout);
@@ -224,7 +266,8 @@ describe('createEmbeddingProvider', () => {
     geminiFailures = 3;
 
     const provider = await createEmbeddingProvider();
-    spyOn(globalThis, 'setTimeout').mockImplementation(((callback: () => void) => {
+    spyOn(globalThis, 'setTimeout').mockImplementation(((callback: () => void, delay = 0) => {
+      if (delay >= 10000) return realSetTimeout(callback, delay);
       callback();
       return 0;
     }) as typeof setTimeout);

@@ -1,4 +1,5 @@
 import type { RequestContext } from '../utils/context';
+import type { SearchCoverage } from './coverage';
 
 // ── Embedding ──────────────────────────────────────────────────────────
 
@@ -8,8 +9,8 @@ export interface EmbeddingResult {
 }
 
 export interface EmbeddingProvider {
-  embed(text: string): Promise<EmbeddingResult>;
-  embedBatch(texts: string[]): Promise<EmbeddingResult[]>;
+  embed(text: string, signal?: AbortSignal): Promise<EmbeddingResult>;
+  embedBatch(texts: string[], signal?: AbortSignal): Promise<EmbeddingResult[]>;
   readonly dimensions: number;
   readonly maxTokens: number;
   readonly providerName: string;
@@ -57,9 +58,11 @@ export interface IndexingOptions {
   branch?: string;
   commitSha: string;
   previousSha?: string; // for incremental re-indexing
+  includePaths?: string[];
+  excludePaths?: string[];
 }
 
-export type IndexingStatus =
+export type IndexingStatus = (
   | { state: 'idle' }
   | {
       state: 'indexing';
@@ -68,12 +71,23 @@ export type IndexingStatus =
       totalFiles: number;
     }
   | { state: 'complete'; chunkCount: number; timestamp: number }
-  | { state: 'failed'; error: string; failedFiles: number };
+  | {
+      state: 'paused';
+      error: string;
+      reason: string;
+      retryAt?: number;
+      filesProcessed: number;
+      totalFiles: number;
+      progress: number;
+    }
+  | { state: 'failed'; error: string; failedFiles: number }
+) & { coverage?: SearchCoverage; snapshotSha?: string; buildId?: string };
 
 export interface IndexingPipeline {
   startIndexing(options: IndexingOptions, ctx: RequestContext): Promise<void>;
   getStatus(repoKey: string): IndexingStatus;
   cancelIndexing(repoKey: string): void;
+  available(repoKey: string): { store: VectorStore; key: string; coverage: SearchCoverage } | undefined;
 }
 
 // ── Search Engine ──────────────────────────────────────────────────────
@@ -86,9 +100,12 @@ export interface SearchOptions {
   commitSha: string;
   topK?: number; // default 10
   minScore?: number; // default 0.3
+  includePaths?: string[];
+  excludePaths?: string[];
 }
 
 export interface SearchResponse {
+  coverage?: SearchCoverage;
   results: SearchResult[];
   query: string;
   cached: boolean;
@@ -107,6 +124,8 @@ export interface QAOptions {
   repo: string;
   commitSha: string;
   apiKey?: string; // user override key
+  includePaths?: string[];
+  excludePaths?: string[];
 }
 
 export interface Citation {
@@ -116,6 +135,7 @@ export interface Citation {
 }
 
 export interface QAResponse {
+  coverage?: SearchCoverage;
   answer: string; // markdown-formatted
   citations: Citation[];
   cached: boolean;

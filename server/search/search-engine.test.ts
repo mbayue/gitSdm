@@ -1,5 +1,5 @@
 import { searchIndexKey } from './index-identity';
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { cache, clearAllCaches, hashContext } from '../cache/lru';
 import { createSearchEngine, getSearchEngine } from './search-engine';
 import { getVectorStore } from './vector-store';
@@ -53,10 +53,16 @@ describe('createSearchEngine — input validation', () => {
 });
 
 describe('createSearchEngine — success/cache paths', () => {
+  const originalEmbeddingProvider = process.env.EMBEDDING_PROVIDER;
+  afterEach(() => {
+    if (originalEmbeddingProvider === undefined) delete process.env.EMBEDDING_PROVIDER;
+    else process.env.EMBEDDING_PROVIDER = originalEmbeddingProvider;
+  });
   beforeEach(() => {
     clearAllCaches();
     getVectorStore().removeByRepo(repoKey());
     process.env.AI_PROVIDER = 'mock';
+    process.env.EMBEDDING_PROVIDER = 'mock';
     delete process.env.OPENAI_API_KEY;
     delete process.env.GEMINI_API_KEY;
   });

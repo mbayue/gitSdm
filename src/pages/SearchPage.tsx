@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search } from 'lucide-react';
 import { useSearchStore } from '@/features/search/searchStore';
@@ -7,11 +7,20 @@ import { SearchBar } from '@/features/search/SearchBar';
 import { ModeToggle } from '@/features/search/ModeToggle';
 import { SearchResults } from '@/features/search/SearchResults';
 import { QAAnswerView } from '@/features/search/QAAnswerView';
-import { IndexingStatusPanel } from '@/features/search/IndexingStatusPanel';
+import { SearchIndexControls } from '@/features/search/SearchIndexControls';
 import { useSemanticSearch } from '@/features/search/useSemanticSearch';
 import { useSemanticAsk } from '@/features/search/useSemanticAsk';
 import { useTriggerIndexing } from '@/features/search/useTriggerIndexing';
 import { useIndexingStatus } from '@/features/search/useIndexingStatus';
+import { coverageMessage } from '../../server/search/coverage';
+import { SearchEmptyState } from '@/features/search/SearchEmptyState';
+
+function parsePaths(value: string): string[] {
+  return value
+    .split(',')
+    .map((path) => path.trim())
+    .filter(Boolean);
+}
 
 export function SearchPage() {
   const { owner = '', repo = '' } = useParams();
@@ -21,19 +30,49 @@ export function SearchPage() {
   const askMutation = useSemanticAsk();
   const indexMutation = useTriggerIndexing();
   const branch = useVizStore((state) => state.selectedBranch) ?? undefined;
-  useIndexingStatus(owner, repo, true, branch);
+  const [includeInput, setIncludeInput] = useState('');
+  const [excludeInput, setExcludeInput] = useState('');
+  const indexScope = useMemo(
+    () => ({
+      includePaths: parsePaths(includeInput),
+      excludePaths: parsePaths(excludeInput),
+    }),
+    [includeInput, excludeInput],
+  );
+  const runningSha =
+    indexingStatus.state === 'paused' || indexingStatus.state === 'indexing' ? indexingStatus.snapshotSha : undefined;
+  useIndexingStatus(owner, repo, true, runningSha ?? branch, indexScope);
+  useEffect(() => {
+    useSearchStore.getState().reset();
+  }, [includeInput, excludeInput]);
 
   // Clear previous results on entry and when the repository snapshot changes.
   useEffect(() => {
     useSearchStore.getState().reset();
+    setIncludeInput('');
+    setExcludeInput('');
   }, [owner, repo, branch]);
 
   const handleSubmit = useCallback(
     (query: string) => {
-      if (mode === 'search') searchMutation.mutate({ query, owner, repo, branch });
-      else askMutation.mutate({ question: query, owner, repo, branch });
+      if (mode === 'search')
+        searchMutation.mutate({
+          query,
+          owner,
+          repo,
+          branch: runningSha ?? branch,
+          scope: indexScope,
+        });
+      else
+        askMutation.mutate({
+          question: query,
+          owner,
+          repo,
+          branch: runningSha ?? branch,
+          scope: indexScope,
+        });
     },
-    [mode, owner, repo, branch, searchMutation, askMutation],
+    [mode, owner, repo, branch, runningSha, indexScope, searchMutation, askMutation],
   );
 
   const prevModeRef = useRef(mode);
@@ -48,8 +87,12 @@ export function SearchPage() {
   }, [mode, handleSubmit]);
 
   const handleIndex = useCallback(() => {
-    indexMutation.mutate({ owner, repo, branch });
-  }, [owner, repo, branch, indexMutation]);
+    if (useSearchStore.getState().indexAction) return;
+    const state = useSearchStore.getState();
+    const buildId =
+      state.indexingStatus.state === 'paused' ? (state.indexBuildId ?? crypto.randomUUID()) : crypto.randomUUID();
+    indexMutation.mutate({ owner, repo, branch: runningSha ?? branch, scope: indexScope, buildId });
+  }, [owner, repo, branch, runningSha, indexScope, indexMutation]);
 
   const handleSelectFile = useCallback(
     (filePath: string, _startLine: number, action: 'open' | 'inspect' = 'open') => {
@@ -70,7 +113,8 @@ export function SearchPage() {
   );
 
   const isIndexed = indexingStatus.state === 'complete';
-  const isSearchDisabled = !isIndexed;
+  const isSearchDisabled = !isIndexed && !indexingStatus.coverage;
+  const responseCoverage = useSearchStore((state) => state.resultCoverage);
   const hasResults = mode === 'search' ? results.length > 0 : answer !== null;
   const showEmptyHero = !hasResults && !isLoading;
 
@@ -105,9 +149,17 @@ export function SearchPage() {
           </p>
         </div>
         {/* Indexing status banner */}
-        <div className="mb-4 shrink-0">
-          <IndexingStatusPanel onRetry={handleIndex} />
-        </div>
+        <SearchIndexControls
+          owner={owner}
+          repo={repo}
+          branch={runningSha ?? branch}
+          scope={indexScope}
+          includeInput={includeInput}
+          excludeInput={excludeInput}
+          onIncludeChange={setIncludeInput}
+          onExcludeChange={setExcludeInput}
+          onIndex={handleIndex}
+        />
 
         {/* Compact controls area */}
         <div className="flex flex-col gap-4">
@@ -128,7 +180,7 @@ export function SearchPage() {
               <span className="text-[11px] text-muted-foreground transition-colors duration-200">
                 {mode === 'search'
                   ? 'Find code snippets by semantic similarity.'
-                  : 'Ask a repository question with source citations.'}
+                  : 'Answers cover indexed files only, with source citations.'}
               </span>
             </div>
 
@@ -140,60 +192,7 @@ export function SearchPage() {
 
           {/* Empty State Content */}
           {showEmptyHero && isIndexed && (
-            <div className="mt-8 space-y-6">
-              <div>
-                <h3 className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">
-                  Search Examples
-                </h3>
-                <div className="flex flex-col sm:flex-row flex-wrap gap-2">
-                  {[
-                    'How are API errors handled?',
-                    'Where is GitHub data fetched?',
-                    'How is the dependency graph generated?',
-                  ].map((example) => (
-                    <button
-                      key={example}
-                      onClick={() => {
-                        useSearchStore.getState().setQuery(example);
-                        handleSubmit(example);
-                      }}
-                      className="px-3 py-1.5 text-xs text-foreground bg-card border border-border rounded-md hover:border-ring/50 hover:bg-secondary transition-all text-left"
-                    >
-                      {example}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <h3 className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">
-                    Recent Queries
-                  </h3>
-                  <div className="text-[11px] text-muted-foreground italic p-3 border border-border rounded-md bg-background flex items-center justify-center h-[76px]">
-                    No recent queries yet.
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">
-                    Index Details
-                  </h3>
-                  <div className="text-[11px] text-foreground p-3 border border-border rounded-md bg-card h-[76px] flex flex-col justify-center space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Status</span>
-                      <span className="flex items-center gap-1.5 text-ui-active-text-green font-medium">
-                        <span className="h-1.5 w-1.5 rounded-full bg-ui-active-text-green shadow-[0_0_8px_rgba(230,237,243,0.4)]" />
-                        Ready
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Chunks Indexed</span>
-                      <span className="font-mono text-xs">{indexingStatus.chunkCount}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <SearchEmptyState chunkCount={indexingStatus.chunkCount} onSubmit={handleSubmit} />
           )}
 
           {/* Error */}
@@ -207,9 +206,12 @@ export function SearchPage() {
           )}
 
           {/* No results message */}
+          {responseCoverage && <p className="text-xs text-muted-foreground">{coverageMessage(responseCoverage)}</p>}
           {!isLoading && !error && mode === 'search' && results.length === 0 && searchMutation.isSuccess && (
             <div className="py-8 text-sm text-muted-foreground flex justify-center">
-              No matching code found. Try broader terms or switch to Ask mode.
+              {responseCoverage?.kind === 'partial'
+                ? 'No matches in indexed files yet.'
+                : 'No matching code found. Try broader terms or switch to Ask mode.'}
             </div>
           )}
 

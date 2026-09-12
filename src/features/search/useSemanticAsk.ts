@@ -11,12 +11,14 @@ export function useSemanticAsk() {
       owner,
       repo,
       branch,
+      scope,
     }: {
       question: string;
       owner: string;
       repo: string;
       branch?: string;
-    }) => semanticAsk(question, owner, repo, branch),
+      scope: import('@/lib/apiClient').IndexScope;
+    }) => semanticAsk(question, owner, repo, branch, scope),
     onMutate: (vars) => {
       setIsLoading(true);
       setError(null);
@@ -27,6 +29,7 @@ export function useSemanticAsk() {
       if (context?.revision !== useSearchStore.getState().revision) return;
       const qa = { answer: data.answer, citations: data.citations };
       setAnswer(qa);
+      useSearchStore.setState({ resultCoverage: data.coverage });
       setIsLoading(false);
     },
     onError: (err: Error, _variables, context) => {

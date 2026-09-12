@@ -1,6 +1,19 @@
 import { expect, test } from 'bun:test';
 import { createAdmissionLimit, limitRequestBody, MAX_BODY_BYTES } from './request-limits';
 
+test('a stalled body is cancelled at its deadline', async () => {
+  let cancelled = false;
+  const body = new ReadableStream<Uint8Array>({
+    cancel() {
+      cancelled = true;
+    },
+  });
+  await expect(
+    limitRequestBody(new Request('http://localhost/api', { method: 'POST', body }), 10),
+  ).rejects.toMatchObject({ status: 408 });
+  expect(cancelled).toBe(true);
+});
+
 test('admission rejects overload, releases once, and resets the time window', () => {
   let time = 0;
   const admit = createAdmissionLimit(1, 2, () => time);

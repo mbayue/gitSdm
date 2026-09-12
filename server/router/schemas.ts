@@ -68,7 +68,30 @@ export const fileQuerySchema = repoQuerySchema.extend({
   path: z.string().min(1).max(500),
 });
 
-export const searchBodySchema = z.object({
+const indexScopeSchema = z.object({
+  includePaths: z
+    .array(
+      z
+        .string()
+        .min(1)
+        .max(200)
+        .regex(/^(?!\/)(?!.*\.\.)(?:[^/*]+\/)*[^/*]+$/),
+    )
+    .max(16)
+    .optional(),
+  excludePaths: z
+    .array(
+      z
+        .string()
+        .min(1)
+        .max(200)
+        .regex(/^(?!\/)(?!.*\.\.)(?:[^/*]+\/)*[^/*]+$/),
+    )
+    .max(16)
+    .optional(),
+});
+
+export const searchBodySchema = indexScopeSchema.extend({
   query: z.string().min(3).max(500),
   owner: z
     .string()
@@ -83,7 +106,7 @@ export const searchBodySchema = z.object({
   branch: z.string().optional(),
 });
 
-export const askBodySchema = z.object({
+export const askBodySchema = indexScopeSchema.extend({
   question: z.string().min(3).max(500),
   owner: z
     .string()
@@ -98,7 +121,8 @@ export const askBodySchema = z.object({
   branch: z.string().optional(),
 });
 
-export const indexBodySchema = z.object({
+export const indexBodySchema = indexScopeSchema.extend({
+  buildId: z.string().uuid().optional(),
   owner: z
     .string()
     .min(1)
