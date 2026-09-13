@@ -28,3 +28,11 @@ test('failed work releases its key for retry', async () => {
   await expect(run('a', async () => { throw new Error('failed'); })).rejects.toThrow('failed');
   expect(await run('a', async () => 'retried')).toBe('retried');
 });
+
+test('max <= 0 does not store entries in cache', async () => {
+  const cache = new Map<string, string>();
+  const run = createCachedTask(cache, 0);
+  const result = await run('key-1', async () => 'data-1');
+  expect(result).toBe('data-1');
+  expect(cache.size).toBe(0);
+});

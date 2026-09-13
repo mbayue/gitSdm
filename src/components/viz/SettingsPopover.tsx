@@ -159,10 +159,29 @@ export function SettingsPopover({
 
   const saveGemini = useCallback(() => {
     const trimmed = geminiValue.trim();
+    const trimmedModel = chatModel.trim();
+    if (trimmedModel && (/\s/.test(trimmedModel) || !/^[\x21-\x7e]{1,200}$/.test(trimmedModel))) {
+      setSettingsError('Model must contain 1–200 characters without spaces.');
+      return;
+    }
+    const trimmedBase = chatBase.trim();
+    if (chatProvider === 'openai' && trimmedBase) {
+      try {
+        const url = new URL(trimmedBase);
+        if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash || trimmedBase.length > 2048) {
+          setSettingsError('Enter a public HTTPS base URL without credentials, query, or fragment.');
+          return;
+        }
+      } catch {
+        setSettingsError('Enter a valid HTTPS base URL.');
+        return;
+      }
+    }
+    setSettingsError(null);
     setStoredKey(GEMINI_KEY, trimmed || null);
     setStoredKey('gitsdm_ai_provider', chatProvider || null);
-    setStoredKey('gitsdm_ai_model', chatModel.trim() || null);
-    setStoredKey('gitsdm_ai_base_url', chatProvider === 'openai' ? chatBase.trim() || null : null);
+    setStoredKey('gitsdm_ai_model', trimmedModel || null);
+    setStoredKey('gitsdm_ai_base_url', chatProvider === 'openai' ? trimmedBase || null : null);
     refreshChatConfig();
     setGeminiSaved(true);
     setTimeout(() => setGeminiSaved(false), 1200);

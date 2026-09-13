@@ -41,9 +41,11 @@ test.describe('Search', () => {
   });
   test('build completion enables search and a missing snapshot offers rebuilding', async ({ page }) => {
     await page.goto('/mock/todo-app/search');
-    const buildBtn = page.getByRole('button', { name: 'Build Index', exact: true });
-    if (await buildBtn.isVisible()) {
-      await buildBtn.click();
+    await expect(page.getByRole('region', { name: 'Indexing status' })).toBeVisible();
+    const isReady = await page.getByText('Index ready', { exact: true }).isVisible();
+    if (!isReady) {
+      await page.getByRole('button', { name: 'Build Index', exact: true }).click();
+      await expect(page.getByText('Index ready', { exact: true })).toBeVisible();
     }
     await expect(page.getByText('Index ready', { exact: true })).toBeVisible();
     await page.route('**/api/search', (route) =>

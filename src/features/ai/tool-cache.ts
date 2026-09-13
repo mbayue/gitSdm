@@ -21,6 +21,7 @@ export function createCachedTask<T>(cache: Map<string, T>, max = 100) {
     const request = Promise.resolve()
       .then(run)
       .then((data) => {
+        if (max <= 0) return data;
         if (cache.has(key)) cache.delete(key);
         else if (cache.size >= max) {
           const oldest = cache.keys().next().value;

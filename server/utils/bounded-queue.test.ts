@@ -54,3 +54,19 @@ test('execution deadline aborts but does not release a still-running operation',
   await expect(queue(async () => {})).rejects.toMatchObject({ status: 429 });
   release();
 });
+
+test('caller signal aborts and removes waiting job immediately', async () => {
+  const queue = createBoundedQueue(1, 4, 10000, 30000);
+  let release = () => {};
+  const held = new Promise<void>((r) => { release = r; });
+  const first = queue(() => held);
+
+  const controller = new AbortController();
+  const second = queue(() => Promise.resolve('second'), controller.signal);
+
+  controller.abort();
+  await expect(second).rejects.toThrow();
+
+  release();
+  await first;
+});

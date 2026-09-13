@@ -42,6 +42,9 @@ export async function fetchPublicChat(input: string | URL | Request, init?: Requ
   headers.host = url.host;
   headers['accept-encoding'] = 'identity';
   const overallSignal = AbortSignal.any([source.signal, AbortSignal.timeout(30000)]);
+  if (overallSignal.aborted) {
+    throw overallSignal.reason || new Error('Request aborted');
+  }
   let lastError: unknown;
   for (let i = 0; i < addresses.length; i++) {
     if (overallSignal.aborted) break;
@@ -92,8 +95,19 @@ export async function fetchPublicChat(input: string | URL | Request, init?: Requ
       });
     } catch (err) {
       lastError = err;
-      if (overallSignal.aborted || i === addresses.length - 1) throw err;
+      const isSizeLimit = err instanceof Error && err.message === 'AI response exceeds size limit';
+      const isRedirect = err instanceof Error && err.message === 'AI endpoint redirects are not supported';
+      const isAppError = err instanceof AppError;
+      const isConnError =
+        err instanceof Error &&
+        'code' in err &&
+        typeof (err as { code?: unknown }).code === 'string' &&
+        ['ECONNREFUSED', 'ENETUNREACH', 'EHOSTUNREACH', 'EADDRNOTAVAIL'].includes((err as { code: string }).code);
+
+      if (overallSignal.aborted || isSizeLimit || isRedirect || isAppError || !isConnError || i === addresses.length - 1) {
+        throw err;
+      }
     }
   }
-  throw lastError;
+  throw lastError || (overallSignal.aborted ? overallSignal.reason : new Error('No reachable AI endpoint address'));
 }

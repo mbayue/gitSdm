@@ -45,11 +45,16 @@ function extractPythonPackageSpec(spec: string): { name: string; version?: strin
 function extractQuotedArrayItems(str: string, openBracketIndex: number): string[] {
   let inDouble = false;
   let inSingle = false;
+  let inComment = false;
   let depth = 0;
   let start = -1;
   let arrayBody = '';
   for (let i = openBracketIndex; i < str.length; i++) {
     const ch = str[i];
+    if (inComment) {
+      if (ch === '\n') inComment = false;
+      continue;
+    }
     if (ch === '\\' && (inDouble || inSingle)) {
       i++;
       continue;
@@ -57,6 +62,10 @@ function extractQuotedArrayItems(str: string, openBracketIndex: number): string[
     if (ch === '"' && !inSingle) inDouble = !inDouble;
     else if (ch === "'" && !inDouble) inSingle = !inSingle;
     else if (!inDouble && !inSingle) {
+      if (ch === '#') {
+        inComment = true;
+        continue;
+      }
       if (ch === '[') {
         if (depth === 0) start = i + 1;
         depth++;
@@ -84,7 +93,7 @@ export function parsePyproject(content: string): Dependency[] {
   };
 
   // 1. PEP 621 dependencies = [ ... ]
-  const depAssignMatches = content.matchAll(/(?:^|\n)\s*dependencies\s*=\s*\[/g);
+  const depAssignMatches = content.matchAll(/(?:^|\n)\s*(?:dependencies|optional-dependencies(?:\.[a-zA-Z0-9_.-]+)?)\s*=\s*\[/g);
   for (const m of depAssignMatches) {
     const items = extractQuotedArrayItems(content, m.index + m[0].lastIndexOf('['));
     for (const item of items) {

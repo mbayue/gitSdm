@@ -116,7 +116,7 @@ export async function fetchRepoChurn(
   const failures = Object.fromEntries(
     remaining.flatMap((path) => (state.failures[path] ? [[path, state.failures[path]]] : [])),
   );
-  const stopped = Object.values(failures).sort((a, b) => b.retryAt - a.retryAt)[0];
+  const stopped = Object.values(failures).sort((a, b) => a.retryAt - b.retryAt)[0];
   const max = Math.max(1, ...entries.map(([, file]) => file.commitCount));
   return {
     files: Object.fromEntries(entries.map(([path, file]) => [path, { ...file, churnScore: file.commitCount / max }])),

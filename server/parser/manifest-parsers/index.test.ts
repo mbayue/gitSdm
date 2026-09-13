@@ -225,6 +225,25 @@ fastapi = ">=0.95.0"
     expect(fastapi?.type).toBe('prod');
   });
 
+  it('handles brackets in comments inside PEP 621 arrays and dotted optional-dependencies keys', () => {
+    const toml = `
+[project]
+name = "pkg-with-comments"
+dependencies = [
+    # comment with [brackets] inside
+    "requests>=2.0",
+    # another comment with [more]
+    "urllib3"
+]
+optional-dependencies.gui = [
+    "PyQt5>=5.0"
+]
+`;
+    const deps = parsePyproject(toml);
+    expect(deps).toHaveLength(3);
+    expect(deps.map((d) => d.name)).toEqual(['requests', 'urllib3', 'PyQt5']);
+  });
+
   it('parses standard PEP 621 dependencies array and Poetry tables in pyproject.toml', () => {
     const pep621 = `
 [project]

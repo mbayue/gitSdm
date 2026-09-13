@@ -66,7 +66,7 @@ export function protectEmbeddings(provider: EmbeddingProvider, reserve = reserve
         }
         throw error;
       }
-    });
+    }, callerSignal);
   };
   return {
     ...provider,

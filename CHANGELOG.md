@@ -11,6 +11,18 @@ and this project adheres to progressive [Semantic Versioning](https://semver.org
 - **Minor (`x.+1.x`)**: Feature additions and substantial enhancements (`feat`).
 - **Patch (`x.x.+1`)**: Bug fixes, security hardening, and maintenance (`fix`, `chore`).
 
+## [3.5.3] - 2026-09-13
+
+### Fixed
+
+- **Simulation & Canvas Stability**: Preserved data identity in `reconcileGraph` for metric-only updates to prevent unintended simulation reheating and reduced-motion overlays.
+- **Queue Abort Observability**: Added caller signal tracking to `createBoundedQueue` so cancelled jobs immediately vacate waiting slots.
+- **Custom Endpoint Hardening**: Restricted custom endpoint retries strictly to pre-transmission connection failures and prevented retries on size-limit or redirect rejections.
+- **Mobile Drawer Exclusivity**: Ensured `setExplorerOpen` and `setAiSidebarOpen` keep drawers mutually exclusive on mobile viewports.
+- **Settings Validation Feedback**: Wired real-time validation and error alert displays for custom models and base URLs in `SettingsPopover`.
+- **Manifest Parser Depth**: Ignored brackets inside comments in TOML arrays and parsed inline dotted-key optional dependency tables in `pip-parser`.
+- **Commit Invalidation**: Reset active mutations when repository commit SHA advances in `useAiCenterState`.
+
 ## [3.5.2] - 2026-09-13
 
 ### Fixed

@@ -17,9 +17,7 @@ test('metadata updates preserve simulation identity and coordinates', () => {
   first.nodes[0].x = 125;
   first.nodes[0].y = 80;
   const next = buildForceGraphData([{ ...node, data: { ...node.data, churnScore: 0.7 } }], [], options);
-  const reconciled = reconcileGraph(first, next);
-  expect(reconciled.nodes[0]).toBe(first.nodes[0]);
-  expect(reconciled).not.toBe(first);
+  expect(reconcileGraph(first, next)).toBe(first);
   expect(first.nodes[0].x).toBe(125);
   expect(first.nodes[0].churnScore).toBe(0.7);
   expect(reconcileGraph(first, { nodes: [], links: [] })).not.toBe(first);

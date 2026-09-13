@@ -25,6 +25,9 @@ export function isValidRepoIdentifier(owner: string, repo: string): boolean {
   return (
     owner.length >= 1 &&
     owner.length <= 39 &&
+    !owner.includes('--') &&
+    !owner.startsWith('-') &&
+    !owner.endsWith('-') &&
     GITHUB_OWNER_RE.test(owner) &&
     repo.length >= 1 &&
     repo.length <= 100 &&

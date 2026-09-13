@@ -40,6 +40,7 @@ export function useAiCenterState(analysis: RepoAnalysis) {
   const [readmeCopied, setReadmeCopied] = useState(false);
   const lastExplanationKeyRef = useRef<string | null>(null);
 
+
   const setActivePlayground = (mode: 'roast' | 'readme') => {
     persistedActivePlayground = mode;
     setActivePlaygroundState(mode);
@@ -67,6 +68,17 @@ export function useAiCenterState(analysis: RepoAnalysis) {
   const isExplainLoading = !currentExplanation && loadingExplanationKey === currentExplanationKey;
 
   const { owner, repo, sha } = analysis.meta;
+  const prevShaRef = useRef(sha);
+  useEffect(() => {
+    if (prevShaRef.current !== sha) {
+      prevShaRef.current = sha;
+      health.reset();
+      refactor.reset();
+      roast.reset();
+      readmeEnhance.reset();
+    }
+  }, [sha, health, refactor, roast, readmeEnhance]);
+
   const healthData = health.data ?? healthCache.get(getToolKey('health', owner, repo, revision, selectedBranch, sha));
   const refactorData = refactor.data ?? refactorCache.get(getToolKey('refactor', owner, repo, revision, selectedBranch, sha));
   const roastData = roast.data ?? roastCache.get(getToolKey('roast', owner, repo, revision, selectedBranch, sha));
@@ -152,14 +164,14 @@ export function useAiCenterState(analysis: RepoAnalysis) {
   }, [sidebarTab, aiSubTab, activePlayground, owner, repo, selectedBranch, roast, readmeEnhance, roastData, readmeEnhanceData, sha]);
 
   // Resolve headers dynamically for IntelligenceCard
-  const cardTitle = aiSubTab === 'health' 
+  const cardTitle = aiSubTab === 'health'
     ? 'Diagnostics'
     : aiSubTab === 'playground'
     ? 'Playground'
     : 'Intelligence';
 
-  const cardSubtitle = aiSubTab === 'health' 
-    ? (healthSubMode === 'audit' ? 'System Health Audit' : 'Critical Risk Analysis') 
+  const cardSubtitle = aiSubTab === 'health'
+    ? (healthSubMode === 'audit' ? 'System Health Audit' : 'Critical Risk Analysis')
     : aiSubTab === 'playground'
     ? (activePlayground === 'roast' ? 'Project Roaster' : 'Documentation Enhancer')
     : (selectedNode ? selectedNode.data.label : 'Architectural Overview');
