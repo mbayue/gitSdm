@@ -11,6 +11,12 @@ and this project adheres to progressive [Semantic Versioning](https://semver.org
 - **Minor (`x.+1.x`)**: Feature additions and substantial enhancements (`feat`).
 - **Patch (`x.x.+1`)**: Bug fixes, security hardening, and maintenance (`fix`, `chore`).
 
+## [3.5.4] - 2026-09-13
+
+### Fixed
+
+- **Active Queue Job Abort Observability**: Attached active abort listener to `callerSignal` during execution in `createBoundedQueue`, ensuring caller cancellation immediately aborts running work and rejects promptly without waiting for the timeout deadline.
+
 ## [3.5.3] - 2026-09-13
 
 ### Fixed

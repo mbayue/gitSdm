@@ -15,10 +15,10 @@ export function createBoundedQueue(concurrency = 2, maxWaiting = 8, waitMs = 100
         return;
       }
       let waitTimer: ReturnType<typeof setTimeout> | undefined;
-      let onAbort: (() => void) | undefined;
+      let onWaitAbort: (() => void) | undefined;
       const cleanupWait = () => {
         clearTimeout(waitTimer);
-        if (onAbort && callerSignal) callerSignal.removeEventListener('abort', onAbort);
+        if (onWaitAbort && callerSignal) callerSignal.removeEventListener('abort', onWaitAbort);
       };
       const start = () => {
         cleanupWait();
@@ -28,39 +28,63 @@ export function createBoundedQueue(concurrency = 2, maxWaiting = 8, waitMs = 100
           return;
         }
         active++;
+        let settled = false;
         const controller = new AbortController();
+
         const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
           controller.abort();
           reject(new AppError(504, 'Provider request timed out.', 'PROVIDER_TIMEOUT', true));
         }, runMs);
+
+        const onActiveAbort = () => {
+          if (settled) return;
+          settled = true;
+          controller.abort(callerSignal?.reason);
+          reject(callerSignal?.reason || new AppError(504, 'Provider request timed out.', 'PROVIDER_TIMEOUT', true));
+        };
+        if (callerSignal) {
+          callerSignal.addEventListener('abort', onActiveAbort, { once: true });
+        }
+
         Promise.resolve()
           .then(() => work(controller.signal))
           .then(
             (val) => {
               clearTimeout(timer);
+              if (callerSignal) callerSignal.removeEventListener('abort', onActiveAbort);
               active--;
               waiting.shift()?.();
-              resolve(val);
+              if (!settled) {
+                settled = true;
+                resolve(val);
+              }
             },
             (err) => {
               clearTimeout(timer);
+              if (callerSignal) callerSignal.removeEventListener('abort', onActiveAbort);
               active--;
               waiting.shift()?.();
-              reject(err);
+              if (!settled) {
+                settled = true;
+                reject(err);
+              }
             },
           );
       };
+
       if (active < concurrency) start();
       else {
         waiting.push(start);
         if (callerSignal) {
-          onAbort = () => {
+          onWaitAbort = () => {
             const index = waiting.indexOf(start);
             if (index >= 0) waiting.splice(index, 1);
             cleanupWait();
             reject(callerSignal.reason || new AppError(504, 'Provider request timed out.', 'PROVIDER_TIMEOUT', true));
           };
-          callerSignal.addEventListener('abort', onAbort, { once: true });
+          callerSignal.addEventListener('abort', onWaitAbort, { once: true });
         }
         waitTimer = setTimeout(() => {
           const index = waiting.indexOf(start);

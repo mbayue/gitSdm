@@ -70,3 +70,34 @@ test('caller signal aborts and removes waiting job immediately', async () => {
   release();
   await first;
 });
+
+test('caller signal aborts running job, aborts work signal, rejects caller immediately, and retains slot until work settles', async () => {
+  const queue = createBoundedQueue(1, 0, 10000, 30000);
+  let releaseWork = () => {};
+  const workHeld = new Promise<void>((r) => { releaseWork = r; });
+  let workSignal: AbortSignal | undefined;
+
+  const controller = new AbortController();
+  const job = queue(async (sig) => {
+    workSignal = sig;
+    await workHeld;
+    return 'done';
+  }, controller.signal);
+
+  await new Promise((r) => setTimeout(r, 5));
+  expect(workSignal).toBeDefined();
+  expect(workSignal?.aborted).toBe(false);
+
+  controller.abort(new Error('caller cancelled'));
+
+  await expect(job).rejects.toThrow('caller cancelled');
+  expect(workSignal?.aborted).toBe(true);
+
+  await expect(queue(async () => 'next')).rejects.toMatchObject({ status: 429 });
+
+  releaseWork();
+  await new Promise((r) => setTimeout(r, 10));
+
+  const nextJob = await queue(async () => 'free');
+  expect(nextJob).toBe('free');
+});
