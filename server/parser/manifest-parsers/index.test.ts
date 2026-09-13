@@ -176,6 +176,34 @@ describe('manifest parsers', () => {
     expect(deps[1].name).toBe('pandas');
   });
 
+  it('parses standard PEP 621 dependencies array and Poetry tables in pyproject.toml', () => {
+    const pep621 = `
+[project]
+name = "cypy"
+dependencies = [
+    "opencv-python",
+    "PyMuPDF",
+    "numpy>=1.20",
+    "Pillow"
+]
+`;
+    const deps1 = parsePyproject(pep621);
+    expect(deps1).toHaveLength(4);
+    expect(deps1.map((d) => d.name)).toEqual(['opencv-python', 'PyMuPDF', 'numpy', 'Pillow']);
+    expect(deps1.find((d) => d.name === 'numpy')?.version).toBe('1.20');
+
+    const poetry = `
+[tool.poetry.dependencies]
+python = "^3.10"
+requests = "^2.28.0"
+pandas = { version = ">=1.3.0" }
+`;
+    const deps2 = parsePyproject(poetry);
+    expect(deps2).toHaveLength(2);
+    expect(deps2.find((d) => d.name === 'requests')?.version).toBe('^2.28.0');
+    expect(deps2.find((d) => d.name === 'pandas')?.version).toBe('>=1.3.0');
+  });
+
   it('parses Cargo.toml dependencies', () => {
     const content = `[dependencies]\ntokio = "1.28.0"\nserde = { version = "1.0", features = ["derive"] }\n`;
     const deps = parseCargoToml(content);

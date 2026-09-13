@@ -11,6 +11,12 @@ and this project adheres to progressive [Semantic Versioning](https://semver.org
 - **Minor (`x.+1.x`)**: Feature additions and substantial enhancements (`feat`).
 - **Patch (`x.x.+1`)**: Bug fixes, security hardening, and maintenance (`fix`, `chore`).
 
+## [3.5.1] - 2026-09-13
+
+### Fixed
+
+- **PEP 621 & Poetry Manifest Parsing**: Added support for standard PEP 621 `dependencies = [...]` arrays and Poetry `[tool.poetry.dependencies]` tables in `pyproject.toml`.
+
 ## [3.5.0] - 2026-09-12
 
 ### Added
