@@ -1,4 +1,5 @@
 import { AppError } from './errors';
+import { isSafeRemoteUrl } from './url-guard';
 
 const local = new Map<string, { used: number; expires: number }>();
 const script = `local n = tonumber(redis.call('GET', KEYS[1]) or '0')
@@ -33,8 +34,10 @@ export async function reserveUsage(
   const shared = process.env.RATE_LIMIT_MODE === 'shared' || !!url || !!token;
   let allowed: boolean;
   if (shared) {
-    if (!url || !token || !url.startsWith('https://'))
+    if (!url || !token)
       throw new AppError(503, 'Shared usage limiter is not configured.', 'LIMITER_UNAVAILABLE', true);
+    if (!url.startsWith('https://') || !isSafeRemoteUrl(url))
+      throw new AppError(503, 'Shared usage limiter URL is not permitted.', 'LIMITER_UNAVAILABLE', true);
     try {
       const response = await dependencies.fetch(url, {
         method: 'POST',

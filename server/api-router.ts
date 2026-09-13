@@ -19,6 +19,40 @@ import { limitClient } from './utils/client-limits';
 const admitRequest = createAdmissionLimit(8, Infinity);
 const admitConnection = createAdmissionLimit(8, Infinity);
 
+// Endpoints registered in server/router/. Admission and usage buckets are only spent on
+// these, so cheap 404s against unknown /api/* paths cannot exhaust the deployment budget.
+export const registeredApiPaths = new Set([
+  '/api/config',
+  '/api/trending',
+  '/api/repo/analyze',
+  '/api/repo/branches',
+  '/api/repo/churn',
+  '/api/repo/contributors',
+  '/api/repo/file',
+  '/api/repo/graph',
+  '/api/repo/health',
+  '/api/repo/tags',
+  '/api/repo/tree',
+  '/api/ai/explain',
+  '/api/ai/explain-lif',
+  '/api/ai/health',
+  '/api/ai/learning-path',
+  '/api/ai/mermaid',
+  '/api/ai/readme-enhance',
+  '/api/ai/refactor',
+  '/api/ai/roast',
+  '/api/search',
+  '/api/search/ask',
+  '/api/search/cancel',
+  '/api/search/index',
+  '/api/search/status',
+]);
+
+/** True only for endpoints registered in server/router/; non-/api paths are handled elsewhere. */
+export function isRegisteredApiPath(pathname: string): boolean {
+  return registeredApiPaths.has(pathname);
+}
+
 export async function handleApiRequest(req: Request, remoteAddress?: string): Promise<Response | null> {
   const start = Date.now();
   const method = req.method;
@@ -32,6 +66,12 @@ export async function handleApiRequest(req: Request, remoteAddress?: string): Pr
   });
 
   const userKey = req.headers.get('x-ai-api-key')?.trim() || req.headers.get('x-gemini-api-key')?.trim() || undefined;
+  // Reject unknown /api/* paths before any admission, client or usage budget is spent.
+  if (pathname.startsWith('/api/') && !isRegisteredApiPath(pathname)) {
+    return addSecurityHeaders(
+      Response.json({ error: 'Not found', code: 'NOT_FOUND', status: 404, retryable: false }, { status: 404 }),
+    );
+  }
   const gitHubToken = req.headers.get('x-github-token') || undefined;
 
   const ctx: RequestContext = {

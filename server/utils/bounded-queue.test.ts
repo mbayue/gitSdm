@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test';
+import { test, expect, spyOn } from 'bun:test';
 import { createBoundedQueue } from './bounded-queue';
 
 test('queue rejects overflow and runs queued work after a slot is released', async () => {
@@ -100,4 +100,18 @@ test('caller signal aborts running job, aborts work signal, rejects caller immed
 
   const nextJob = await queue(async () => 'free');
   expect(nextJob).toBe('free');
+});
+
+test('runMs deadline detaches the caller-abort listener even when work never settles', async () => {
+  const queue = createBoundedQueue(1, 0, 1000, 10);
+  const controller = new AbortController();
+  const addSpy = spyOn(controller.signal, 'addEventListener');
+  const removeSpy = spyOn(controller.signal, 'removeEventListener');
+  const hung = queue(() => new Promise<never>(() => {}), controller.signal);
+  await expect(hung).rejects.toMatchObject({ status: 504 });
+  const registered = addSpy.mock.calls.find(([type]) => type === 'abort')?.[1];
+  expect(registered).toBeTypeOf('function');
+  expect(removeSpy).toHaveBeenCalledWith('abort', registered);
+  removeSpy.mockRestore();
+  addSpy.mockRestore();
 });

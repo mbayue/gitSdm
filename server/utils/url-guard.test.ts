@@ -1,0 +1,63 @@
+import { test, expect } from 'bun:test';
+import { isSafeRemoteUrl } from './url-guard';
+
+test('allows public https and http remotes', () => {
+  expect(isSafeRemoteUrl('https://api.upstash.com/v2')).toBe(true);
+  expect(isSafeRemoteUrl('http://example.com')).toBe(true);
+  expect(isSafeRemoteUrl('https://169.63.10.1')).toBe(true);
+  expect(isSafeRemoteUrl('https://8.8.8.8')).toBe(true);
+  expect(isSafeRemoteUrl('https://100.128.0.1')).toBe(true);
+  expect(isSafeRemoteUrl('https://172.32.1.1')).toBe(true);
+  expect(isSafeRemoteUrl('https://198.51.200.1')).toBe(true);
+  expect(isSafeRemoteUrl('https://203.0.114.1')).toBe(true);
+  expect(isSafeRemoteUrl('https://[2606:4700::1]/v2')).toBe(true);
+});
+
+test('rejects non-http schemes and malformed urls', () => {
+  expect(isSafeRemoteUrl('ftp://example.com')).toBe(false);
+  expect(isSafeRemoteUrl('file:///etc/passwd')).toBe(false);
+  expect(isSafeRemoteUrl('not a url')).toBe(false);
+  expect(isSafeRemoteUrl('')).toBe(false);
+});
+
+test('rejects loopback, private, link-local, and reserved hosts', () => {
+  expect(isSafeRemoteUrl('https://localhost')).toBe(false);
+  expect(isSafeRemoteUrl('https://api.localhost')).toBe(false);
+  expect(isSafeRemoteUrl('https://127.0.0.1')).toBe(false);
+  expect(isSafeRemoteUrl('https://10.1.2.3')).toBe(false);
+  expect(isSafeRemoteUrl('https://172.16.0.9')).toBe(false);
+  expect(isSafeRemoteUrl('https://172.31.255.1')).toBe(false);
+  expect(isSafeRemoteUrl('https://192.168.1.1')).toBe(false);
+  expect(isSafeRemoteUrl('https://169.254.169.254')).toBe(false);
+  expect(isSafeRemoteUrl('https://0.0.0.0')).toBe(false);
+  expect(isSafeRemoteUrl('https://100.100.1.1')).toBe(false);
+  expect(isSafeRemoteUrl('https://224.0.0.1')).toBe(false);
+  expect(isSafeRemoteUrl('https://192.0.2.1')).toBe(false);
+  expect(isSafeRemoteUrl('https://198.51.100.7')).toBe(false);
+  expect(isSafeRemoteUrl('https://203.0.113.7')).toBe(false);
+  expect(isSafeRemoteUrl('https://[::1]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[::]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[::ffff:127.0.0.1]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[::ffff:7f00:1]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[::127.0.0.1]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[::10.0.0.1]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[fc00::1]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[fe80::1]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[fe80::1%25eth0]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[ff02::1]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[2001:db8::1]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://redis.internal')).toBe(false);
+  expect(isSafeRemoteUrl('https://box.local')).toBe(false);
+  expect(isSafeRemoteUrl('https://internal')).toBe(false);
+  expect(isSafeRemoteUrl('https://local')).toBe(false);
+});
+
+test('canonicalization tricks resolve to the checked hostname', () => {
+  expect(isSafeRemoteUrl('https://0x7f.0.0.1')).toBe(false);
+  expect(isSafeRemoteUrl('https://0177.0.0.1')).toBe(false);
+  expect(isSafeRemoteUrl('https://2130706433')).toBe(false);
+  expect(isSafeRemoteUrl('https://user@127.0.0.1/')).toBe(false);
+  expect(isSafeRemoteUrl('https://127.0.0.1./v2')).toBe(false);
+  // Octal tricks are neutralized by the URL parser itself (010.0.0.1 -> 8.0.0.1, public).
+  expect(isSafeRemoteUrl('https://010.0.0.1')).toBe(true);
+});

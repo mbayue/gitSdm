@@ -68,27 +68,18 @@ export const fileQuerySchema = repoQuerySchema.extend({
   path: z.string().min(1).max(500),
 });
 
+// Scope paths are matched literally against repo file paths (see matchesPath in
+// server/search/build-snapshot.ts): repo-relative, no leading slash, no wildcards,
+// no trailing slash, and no `..` path component (`a..b` inside a name is fine).
+const scopePathSchema = z
+  .string()
+  .min(1)
+  .max(200)
+  .regex(/^(?!\/)(?!(?:.*\/)?\.\.(?:\/|$))(?:[^/*]+\/)*[^/*]+$/);
+
 const indexScopeSchema = z.object({
-  includePaths: z
-    .array(
-      z
-        .string()
-        .min(1)
-        .max(200)
-        .regex(/^(?!\/)(?!.*\.\.)(?:[^/*]+\/)*[^/*]+$/),
-    )
-    .max(16)
-    .optional(),
-  excludePaths: z
-    .array(
-      z
-        .string()
-        .min(1)
-        .max(200)
-        .regex(/^(?!\/)(?!.*\.\.)(?:[^/*]+\/)*[^/*]+$/),
-    )
-    .max(16)
-    .optional(),
+  includePaths: z.array(scopePathSchema).max(16).optional(),
+  excludePaths: z.array(scopePathSchema).max(16).optional(),
 });
 
 export const searchBodySchema = indexScopeSchema.extend({

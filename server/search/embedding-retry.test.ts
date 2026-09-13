@@ -35,6 +35,20 @@ test('transient timeout recovers without unnecessary retries', async () => {
   expect(attempts).toBe(2);
 });
 
+test('SDK client timeouts ("Request timed out.") are retried with backoff', async () => {
+  let attempts = 0;
+  const delays: number[] = [];
+  const result = await withEmbeddingRetry(async () => {
+    if (++attempts === 1) throw new Error('Request timed out.');
+    return 'ok';
+  }, async (ms) => {
+    delays.push(ms);
+  });
+  expect(result).toBe('ok');
+  expect(attempts).toBe(2);
+  expect(delays).toEqual([1000]);
+});
+
 test('provider retry-after headers survive rate-limit conversion', async () => {
   const error = Object.assign(new Error('Too Many Requests'), { headers: new Headers({ 'Retry-After': '120' }) });
   expect(embeddingRetryAfter(error)).toBe(120);

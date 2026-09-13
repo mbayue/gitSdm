@@ -201,6 +201,7 @@ export function SettingsPopover({
   const savePat = useCallback(() => {
     const trimmed = patValue.trim();
     setStoredKey(PAT_KEY, trimmed || null);
+    refreshChatConfig();
     setPatSaved(true);
     setTimeout(() => setPatSaved(false), 1200);
   }, [patValue]);
@@ -208,6 +209,7 @@ export function SettingsPopover({
   const clearPat = useCallback(() => {
     setPatValue('');
     setStoredKey(PAT_KEY, null);
+    refreshChatConfig();
     setPatSaved(false);
   }, []);
 

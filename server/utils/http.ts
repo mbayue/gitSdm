@@ -44,12 +44,14 @@ export async function handleNodeRequest(nodeReq: IncomingMessage, nodeRes: Serve
       body = Buffer.concat(chunks);
     }
   } catch (error) {
-    nodeReq.resume();
+    // The request stream is intentionally left unconsumed: draining an oversized body can
+    // tie the connection up indefinitely. Flush the error response first, then tear down.
     const payload = toErrorPayload(error);
     const response = addSecurityHeaders(Response.json(payload, { status: payload.status }));
     nodeRes.statusCode = response.status;
     response.headers.forEach((value, key) => nodeRes.setHeader(key, value));
-    nodeRes.end(await response.text());
+    nodeRes.setHeader('Connection', 'close');
+    nodeRes.end(await response.text(), () => nodeReq.destroy());
     return true;
   } finally {
     clearTimeout(bodyDeadline);

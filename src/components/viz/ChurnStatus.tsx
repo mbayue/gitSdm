@@ -8,7 +8,6 @@ export function ChurnStatus({ owner, repo, sha }: { owner: string; repo: string;
       {query.isError ? 'Failed to load churn history.' : data ? `Churn: ${data.checked} of ${data.total} sampled files checked.` : 'Loading churn history…'}
       {data?.issue &&
         ` ${data.issue === 'access' ? 'Check GitHub access.' : data.issue === 'rate-limit' ? 'Waiting for GitHub rate limit reset.' : 'Some files timed out; remaining files continue loading.'}`}
-      {query.isError && ' Churn request failed.'}
       {(query.isError || data?.issue) && (
         <button type="button" className="ml-2 text-accent underline" onClick={() => void query.refetch()}>
           Retry remaining files

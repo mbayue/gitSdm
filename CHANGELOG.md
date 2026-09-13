@@ -11,6 +11,26 @@ and this project adheres to progressive [Semantic Versioning](https://semver.org
 - **Minor (`x.+1.x`)**: Feature additions and substantial enhancements (`feat`).
 - **Patch (`x.x.+1`)**: Bug fixes, security hardening, and maintenance (`fix`, `chore`).
 
+## [3.5.5] - 2026-09-13
+
+### Security
+
+- **SSRF Guard for Outbound Fetches**: Added `server/utils/url-guard.ts` rejecting non-http(s) schemes and loopback/private/reserved hosts (IPv6 `::/8` and multicast forms, documentation and TEST-NET ranges, bare single-label names) and applied it to the shared rate limiter's Upstash fetch with distinct not-configured/not-permitted errors.
+- **Rate-Limit Budget Protection**: Unknown `/api/*` paths now return 404 before any admission or usage bucket is reserved, so unregistered-path floods can no longer exhaust the deployment-wide budget.
+- **PAT-Scoped AI Caches**: Included `gitsdm_github_pat` in chat config revisions (refreshed on save/clear) and reset AI panel mutations when the commit/revision changes, preventing cache reuse across credential changes.
+
+### Fixed
+
+- **Bounded Queue Listener Leak**: Detached the caller-abort listener when the deadline rejects a never-settling job, ending signal-lifetime listener retention.
+- **413 Body Teardown**: Oversized request bodies now flush the response and destroy the socket instead of draining indefinitely.
+- **Embedding Timeout Classification**: Matched the OpenAI SDK's "Request timed out." message so client timeouts receive backoff retries.
+- **Search Scope Path Validation**: Rejected only whole `..` path components in include/exclude filters, allowing directory names like `a..b.ts`.
+- **Search Scope Reset Guard**: Editing include/exclude fields no longer abandons an active or paused indexing operation; new `search-page-logic` helpers cover payloads, branch resolution, and partial-coverage enablement.
+- **Graph Metadata Refresh**: `reconcileGraph` returns a new graph data wrapper (same node references, coordinates preserved) so churn/complexity overlays update without re-simulation.
+- **Status Query Recovery**: Restored bounded retries for the indexing status query so transient failures don't hide existing indexes.
+- **Reduced Motion Defaults**: OS-level reduced motion is honored before hydration and whenever no explicit choice is stored, while explicit Full/Reduced selections still win.
+- **Churn Error Message**: Collapsed the duplicated churn failure message into one coherent notice.
+
 ## [3.5.4] - 2026-09-13
 
 ### Fixed

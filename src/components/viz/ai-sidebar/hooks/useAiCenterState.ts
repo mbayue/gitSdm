@@ -68,16 +68,18 @@ export function useAiCenterState(analysis: RepoAnalysis) {
   const isExplainLoading = !currentExplanation && loadingExplanationKey === currentExplanationKey;
 
   const { owner, repo, sha } = analysis.meta;
-  const prevShaRef = useRef(sha);
+  // Finished mutations keep their data truthy across config revisions, which
+  // would block a fresh request keyed for the new revision — reset on both changes.
+  const prevMetaRef = useRef(`${sha}/${revision}`);
   useEffect(() => {
-    if (prevShaRef.current !== sha) {
-      prevShaRef.current = sha;
-      health.reset();
-      refactor.reset();
-      roast.reset();
-      readmeEnhance.reset();
-    }
-  }, [sha, health, refactor, roast, readmeEnhance]);
+    const metaKey = `${sha}/${revision}`;
+    if (prevMetaRef.current === metaKey) return;
+    prevMetaRef.current = metaKey;
+    health.reset();
+    refactor.reset();
+    roast.reset();
+    readmeEnhance.reset();
+  }, [sha, revision, health, refactor, roast, readmeEnhance]);
 
   const healthData = health.data ?? healthCache.get(getToolKey('health', owner, repo, revision, selectedBranch, sha));
   const refactorData = refactor.data ?? refactorCache.get(getToolKey('refactor', owner, repo, revision, selectedBranch, sha));

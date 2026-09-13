@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 
-const chatStorageKeys = ['gitsdm_gemini_api_key', 'gitsdm_ai_provider', 'gitsdm_ai_model', 'gitsdm_ai_base_url'];
+const chatStorageKeys = [
+  'gitsdm_gemini_api_key',
+  'gitsdm_github_pat',
+  'gitsdm_ai_provider',
+  'gitsdm_ai_model',
+  'gitsdm_ai_base_url',
+];
 
 function readSettings(): string {
   try {

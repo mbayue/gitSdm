@@ -16,6 +16,13 @@ import { coverageMessage } from '../../server/search/coverage';
 import { SearchEmptyState } from '@/features/search/SearchEmptyState';
 
 import { parsePaths } from '@/features/search/parsePaths';
+import {
+  isSearchEnabled,
+  resolveBuildId,
+  resolveRequestBranch,
+  resolveRunningSha,
+  shouldResetSearchState,
+} from './search-page-logic';
 
 export function SearchPage() {
   const { owner = '', repo = '' } = useParams();
@@ -34,16 +41,22 @@ export function SearchPage() {
     }),
     [includeInput, excludeInput],
   );
-  const runningSha =
-    indexingStatus.state === 'paused' || indexingStatus.state === 'indexing' ? indexingStatus.snapshotSha : undefined;
+  const runningSha = resolveRunningSha(indexingStatus);
   useIndexingStatus(owner, repo, true, runningSha ?? branch, indexScope);
+  // Changing scope invalidates cached results, but must never abandon an active
+  // index operation (its completion would be ignored and a duplicate build could start).
   useEffect(() => {
-    useSearchStore.getState().reset();
+    const state = useSearchStore.getState();
+    if (shouldResetSearchState(state)) state.reset();
   }, [includeInput, excludeInput]);
 
   // Clear previous results on entry and when the repository snapshot changes.
   useEffect(() => {
-    useSearchStore.getState().reset();
+    const state = useSearchStore.getState();
+    // Preserve an active index operation across remounts and branch switches;
+    // only its stale results are cleared while polling keeps tracking the snapshot.
+    if (shouldResetSearchState(state)) state.reset();
+    else state.resetQueryResults();
     setIncludeInput('');
     setExcludeInput('');
   }, [owner, repo, branch]);
@@ -55,7 +68,7 @@ export function SearchPage() {
           query,
           owner,
           repo,
-          branch: runningSha ?? branch,
+          branch: resolveRequestBranch(runningSha, branch),
           scope: indexScope,
         });
       else
@@ -63,7 +76,7 @@ export function SearchPage() {
           question: query,
           owner,
           repo,
-          branch: runningSha ?? branch,
+          branch: resolveRequestBranch(runningSha, branch),
           scope: indexScope,
         });
     },
@@ -82,11 +95,15 @@ export function SearchPage() {
   }, [mode, handleSubmit]);
 
   const handleIndex = useCallback(() => {
-    if (useSearchStore.getState().indexAction) return;
     const state = useSearchStore.getState();
-    const buildId =
-      state.indexingStatus.state === 'paused' ? (state.indexBuildId ?? crypto.randomUUID()) : crypto.randomUUID();
-    indexMutation.mutate({ owner, repo, branch: runningSha ?? branch, scope: indexScope, buildId });
+    if (state.indexAction) return;
+    indexMutation.mutate({
+      owner,
+      repo,
+      branch: resolveRequestBranch(runningSha, branch),
+      scope: indexScope,
+      buildId: resolveBuildId(state.indexingStatus, state.indexBuildId),
+    });
   }, [owner, repo, branch, runningSha, indexScope, indexMutation]);
 
   const handleSelectFile = useCallback(
@@ -108,7 +125,7 @@ export function SearchPage() {
   );
 
   const isIndexed = indexingStatus.state === 'complete';
-  const isSearchDisabled = !isIndexed && !indexingStatus.coverage;
+  const isSearchDisabled = !isSearchEnabled(indexingStatus);
   const responseCoverage = useSearchStore((state) => state.resultCoverage);
   const hasResults = mode === 'search' ? results.length > 0 : answer !== null;
   const showEmptyHero = !hasResults && !isLoading;

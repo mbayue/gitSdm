@@ -18,7 +18,8 @@ export function useIndexingStatus(owner: string, repo: string, enabled = true, b
       indexAction !== 'cancel' &&
       (indexingStatus.state !== 'paused' || indexAction === 'index'),
     refetchInterval: indexingStatus.state === 'indexing' ? 3000 : false,
-    retry: false,
+    // Inherits the global bounded retry (one retry, none for not-found): a
+    // transient status failure must not leave an existing index looking idle.
     staleTime: 0,
   });
   // React Query exposes only the current repository's result; old requests cannot update the store.
