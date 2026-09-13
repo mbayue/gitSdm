@@ -15,5 +15,5 @@ export function reconcileGraph(previous: Data | undefined, next: Data): Data {
   )
     return next;
   next.nodes.forEach((node, i) => Object.assign(previous.nodes[i], node));
-  return previous;
+  return { nodes: previous.nodes, links: previous.links };
 }

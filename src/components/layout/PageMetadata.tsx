@@ -10,7 +10,7 @@ export function PageMetadata({ path }: { path: string }) {
       ['name', 'robots', meta.robots],
       ['property', 'og:title', meta.title],
       ['property', 'og:description', meta.description],
-      ['property', 'og:url', new URL(path, 'https://gsdm.site').href],
+      ['property', 'og:url', meta.canonical ?? new URL('/' + path.replace(/^\/+/g, ''), 'https://gsdm.site').href],
       ['name', 'twitter:title', meta.title],
       ['name', 'twitter:description', meta.description],
     ]) {

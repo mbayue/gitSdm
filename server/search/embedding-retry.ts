@@ -14,7 +14,7 @@ export function embeddingRetryAfter(error: unknown): number {
   if (!value) return 60;
   const seconds = Number(value);
   const delay = Number.isFinite(seconds) ? seconds : (Date.parse(value) - Date.now()) / 1000;
-  return Number.isFinite(delay) && delay > 0 ? Math.ceil(delay) : 60;
+  return Number.isFinite(delay) && delay > 0 ? Math.min(3600, Math.max(1, Math.ceil(delay))) : 60;
 }
 
 export async function withEmbeddingRetry<T>(

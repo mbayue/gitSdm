@@ -26,6 +26,7 @@ interface SearchState {
   setError: (error: string | null) => void;
   setIndexingStatus: (status: IndexingStatus) => void;
   addRecentQuery: (query: string) => void;
+  resetQueryResults: () => void;
   reset: () => void;
 }
 
@@ -79,6 +80,15 @@ export const useSearchStore = create<SearchState>((set, get) => ({
     saveRecentQueries(updated);
     set({ recentQueries: updated });
   },
+
+  resetQueryResults: () =>
+    set({
+      results: [],
+      answer: null,
+      error: null,
+      resultCoverage: undefined,
+      isLoading: false,
+    }),
 
   reset: () =>
     set({

@@ -13,7 +13,8 @@ export interface AIProvider {
   complete(messages: Message[], options?: { json?: boolean; signal?: AbortSignal }): Promise<string>;
 }
 
-export async function createProvider(overrideKey?: string): Promise<AIProvider> {
+export async function createProvider(rawOverrideKey?: string): Promise<AIProvider> {
+  const overrideKey = rawOverrideKey?.trim() || undefined;
   const { provider } = resolveChatConfig(overrideKey);
   switch (provider) {
     case 'openai':
@@ -150,7 +151,8 @@ async function createAnthropicProvider(overrideKey?: string): Promise<AIProvider
 let providerInstance: AIProvider | null = null;
 let providerInstanceKey: string | null = null;
 
-export async function getAIProvider(overrideKey?: string): Promise<AIProvider> {
+export async function getAIProvider(rawOverrideKey?: string): Promise<AIProvider> {
+  const overrideKey = rawOverrideKey?.trim() || undefined;
   // User-provided key: always create a fresh instance (no caching across users)
   if (overrideKey) {
     return createProvider(overrideKey);

@@ -315,8 +315,8 @@ export async function fetchIndexingStatus(
     owner,
     repo,
     ...(branch ? { branch } : {}),
-    ...(scope?.includePaths.length ? { includePaths: scope.includePaths.join(',') } : {}),
-    ...(scope?.excludePaths.length ? { excludePaths: scope.excludePaths.join(',') } : {}),
+    ...(scope?.includePaths.length ? { includePaths: JSON.stringify(scope.includePaths) } : {}),
+    ...(scope?.excludePaths.length ? { excludePaths: JSON.stringify(scope.excludePaths) } : {}),
   });
   return request<IndexingStatus>(`/api/search/status?${params}`);
 }

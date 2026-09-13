@@ -21,7 +21,7 @@ export async function enrichRepository(
     return fetchRepoChurn(input.owner, input.repo, paths, analysis.meta.sha, ctx, 90, continuation);
   }
   const metadata = await fetchNpmDependencyMetadataBatch(
-    analysis.dependencies.filter((dep) => dep.ecosystem === 'npm'),
+    analysis.dependencies.filter((dep) => dep.ecosystem === 'npm').slice(0, 100),
   );
   return buildDependencyHealthReport(analysis.dependencies, analysis.scopedDependencies, metadata);
 }

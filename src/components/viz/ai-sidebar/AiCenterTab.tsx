@@ -93,6 +93,7 @@ function RiskCard({
 }
 
 export function AiCenterTab({ analysis }: AiCenterTabProps) {
+  const sha = analysis.meta.sha;
   const {
     owner,
     repo,
@@ -284,7 +285,7 @@ export function AiCenterTab({ analysis }: AiCenterTabProps) {
                   setAiSubTab('health');
                   setHealthSubMode('audit');
                   if (!healthData && !health.isPending) {
-                    health.mutate({ owner, repo, branch: selectedBranch || undefined });
+                    health.mutate({ owner, repo, branch: selectedBranch || undefined, sha });
                   }
                 }}
               />
@@ -298,7 +299,7 @@ export function AiCenterTab({ analysis }: AiCenterTabProps) {
                   setAiSubTab('health');
                   setHealthSubMode('risks');
                   if (!refactorData && !refactor.isPending) {
-                    refactor.mutate({ owner, repo, branch: selectedBranch || undefined });
+                    refactor.mutate({ owner, repo, branch: selectedBranch || undefined, sha });
                   }
                 }}
               />
@@ -318,7 +319,7 @@ export function AiCenterTab({ analysis }: AiCenterTabProps) {
                 setAiSubTab('playground');
                 setActivePlayground('roast');
                 if (!roastData && !roast.isPending) {
-                  roast.mutate({ owner, repo, branch: selectedBranch || undefined });
+                  roast.mutate({ owner, repo, branch: selectedBranch || undefined, sha });
                 }
               }}
             />
@@ -332,7 +333,7 @@ export function AiCenterTab({ analysis }: AiCenterTabProps) {
                 setAiSubTab('playground');
                 setActivePlayground('readme');
                 if (!readmeEnhanceData && !readmeEnhance.isPending) {
-                  readmeEnhance.mutate({ owner, repo, branch: selectedBranch || undefined });
+                  readmeEnhance.mutate({ owner, repo, branch: selectedBranch || undefined, sha });
                 }
               }}
             />

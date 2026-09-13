@@ -31,7 +31,7 @@ export async function handleApiRequest(req: Request, remoteAddress?: string): Pr
     query[k] = v;
   });
 
-  const userKey = req.headers.get('x-ai-api-key') || req.headers.get('x-gemini-api-key') || undefined;
+  const userKey = req.headers.get('x-ai-api-key')?.trim() || req.headers.get('x-gemini-api-key')?.trim() || undefined;
   const gitHubToken = req.headers.get('x-github-token') || undefined;
 
   const ctx: RequestContext = {

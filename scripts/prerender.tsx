@@ -9,7 +9,11 @@ import { pageMetadata } from '../src/lib/page-metadata';
 
 const shell = await Bun.file('dist/index.html').text();
 if (!shell.includes('<div id="root"></div>')) throw new Error('Prerender root marker missing');
-await Bun.write('dist/app.html', shell.replace(/<link rel="canonical"[^>]*>/, ''));
+const appHtml = shell
+  .replace(/<link rel="canonical"[^>]*>/, '')
+  .replace(/<meta property="og:url"[^>]*>/, '')
+  .replace(/<title>[^<]*<\/title>/, '<title>gitSdm — Repository Explorer</title>');
+await Bun.write('dist/app.html', appHtml);
 for (const [route, file, page] of [
   ['/', 'dist/index.html', <HomePage />],
   ['/privacy', 'dist/privacy.html', <PrivacyPage />],

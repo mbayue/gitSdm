@@ -156,6 +156,8 @@ export async function buildSnapshot(
   return { indexed, totalFiles: files.length };
 }
 function extension(path: string): string {
+  const base = path.split('/').pop()?.toLowerCase();
+  if (base === 'dockerfile') return '.dockerfile';
   const dot = path.lastIndexOf('.');
   return dot < 0 ? '' : path.slice(dot).toLowerCase();
 }

@@ -62,15 +62,15 @@ export function useAiCenterState(analysis: RepoAnalysis) {
   const roast = useRoast();
   const readmeEnhance = useReadmeEnhance();
 
-  const currentExplanationKey = `${revision}/${analysis.meta.owner}/${analysis.meta.repo}/${selectedNodeId ?? 'repo'}/${eli5Mode ? 'eli5' : 'normal'}/${selectedBranch ?? 'default'}`;
+  const currentExplanationKey = `${revision}/${analysis.meta.owner}/${analysis.meta.repo}/${analysis.meta.sha}/${selectedNodeId ?? 'repo'}/${eli5Mode ? 'eli5' : 'normal'}/${selectedBranch ?? 'default'}`;
   const currentExplanation = explanationCache.get(currentExplanationKey) ?? (cachedExplanation?.key === currentExplanationKey ? cachedExplanation.value : null);
   const isExplainLoading = !currentExplanation && loadingExplanationKey === currentExplanationKey;
 
-  const { owner, repo } = analysis.meta;
-  const healthData = health.data ?? healthCache.get(getToolKey('health', owner, repo, revision, selectedBranch));
-  const refactorData = refactor.data ?? refactorCache.get(getToolKey('refactor', owner, repo, revision, selectedBranch));
-  const roastData = roast.data ?? roastCache.get(getToolKey('roast', owner, repo, revision, selectedBranch));
-  const readmeEnhanceData = readmeEnhance.data ?? readmeEnhanceCache.get(getToolKey('readme-enhance', owner, repo, revision, selectedBranch));
+  const { owner, repo, sha } = analysis.meta;
+  const healthData = health.data ?? healthCache.get(getToolKey('health', owner, repo, revision, selectedBranch, sha));
+  const refactorData = refactor.data ?? refactorCache.get(getToolKey('refactor', owner, repo, revision, selectedBranch, sha));
+  const roastData = roast.data ?? roastCache.get(getToolKey('roast', owner, repo, revision, selectedBranch, sha));
+  const readmeEnhanceData = readmeEnhance.data ?? readmeEnhanceCache.get(getToolKey('readme-enhance', owner, repo, revision, selectedBranch, sha));
 
   const nodeById = useMemo(
     () => new Map(analysis.graph.nodes.map((n) => [n.id, n])),
@@ -132,24 +132,24 @@ export function useAiCenterState(analysis: RepoAnalysis) {
     if (sidebarTab !== 'ai' || aiSubTab !== 'health') return;
 
     if (healthSubMode === 'audit' && !healthData && !health.isPending && !health.isError) {
-      health.mutate({ owner, repo, branch: selectedBranch || undefined });
+      health.mutate({ owner, repo, branch: selectedBranch || undefined, sha });
     }
 
     if (healthSubMode === 'risks' && !refactorData && !refactor.isPending && !refactor.isError) {
-      refactor.mutate({ owner, repo, branch: selectedBranch || undefined });
+      refactor.mutate({ owner, repo, branch: selectedBranch || undefined, sha });
     }
-  }, [sidebarTab, aiSubTab, healthSubMode, owner, repo, selectedBranch, health, refactor, healthData, refactorData]);
+  }, [sidebarTab, aiSubTab, healthSubMode, owner, repo, selectedBranch, health, refactor, healthData, refactorData, sha]);
 
   // Trigger playground modules
   useEffect(() => {
     if (sidebarTab === 'ai' && aiSubTab === 'playground') {
       if (activePlayground === 'roast' && !roastData && !roast.isPending && !roast.isError) {
-        roast.mutate({ owner, repo, branch: selectedBranch || undefined });
+        roast.mutate({ owner, repo, branch: selectedBranch || undefined, sha });
       } else if (activePlayground === 'readme' && !readmeEnhanceData && !readmeEnhance.isPending && !readmeEnhance.isError) {
-        readmeEnhance.mutate({ owner, repo, branch: selectedBranch || undefined });
+        readmeEnhance.mutate({ owner, repo, branch: selectedBranch || undefined, sha });
       }
     }
-  }, [sidebarTab, aiSubTab, activePlayground, owner, repo, selectedBranch, roast, readmeEnhance, roastData, readmeEnhanceData]);
+  }, [sidebarTab, aiSubTab, activePlayground, owner, repo, selectedBranch, roast, readmeEnhance, roastData, readmeEnhanceData, sha]);
 
   // Resolve headers dynamically for IntelligenceCard
   const cardTitle = aiSubTab === 'health' 

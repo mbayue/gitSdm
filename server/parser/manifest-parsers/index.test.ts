@@ -176,6 +176,55 @@ describe('manifest parsers', () => {
     expect(deps[1].name).toBe('pandas');
   });
 
+  it('handles environment markers, package extras, optional-dependencies and poetry dev groups', () => {
+    const reqContent = `requests[security]>=2.28.0; python_version >= '3.8'\npytest<8.0 ; sys_platform == 'linux'\n`;
+    const reqDeps = parseRequirementsTxt(reqContent);
+    expect(reqDeps).toHaveLength(2);
+    expect(reqDeps[0]).toEqual({ name: 'requests', version: '2.28.0', type: 'prod', ecosystem: 'python' });
+    expect(reqDeps[1]).toEqual({ name: 'pytest', version: '8.0', type: 'prod', ecosystem: 'python' });
+
+    const pyprojectContent = `
+[project]
+name = "complex-pkg"
+dependencies = [
+    "requests[socks]>=2.0.0; os_name == 'posix'",
+    "urllib3<2"
+]
+
+[project.optional-dependencies]
+gui = [
+    "PyQt5[core]>=5.15.0; sys_platform == 'win32'",
+    "Pillow"
+]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.0"
+black = ">=22.0.0"
+
+[tool.poetry.dependencies]
+fastapi = ">=0.95.0"
+`;
+    const deps = parsePyproject(pyprojectContent);
+    expect(deps).toHaveLength(7);
+    const req = deps.find((d) => d.name === 'requests');
+    expect(req?.version).toBe('2.0.0');
+    expect(req?.type).toBe('prod');
+
+    const pyqt = deps.find((d) => d.name === 'PyQt5');
+    expect(pyqt?.version).toBe('5.15.0');
+    expect(pyqt?.type).toBe('prod');
+
+    const pytest = deps.find((d) => d.name === 'pytest');
+    expect(pytest?.version).toBe('^7.2.0');
+    expect(pytest?.type).toBe('dev');
+
+    const black = deps.find((d) => d.name === 'black');
+    expect(black?.type).toBe('dev');
+
+    const fastapi = deps.find((d) => d.name === 'fastapi');
+    expect(fastapi?.type).toBe('prod');
+  });
+
   it('parses standard PEP 621 dependencies array and Poetry tables in pyproject.toml', () => {
     const pep621 = `
 [project]

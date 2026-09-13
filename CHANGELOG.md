@@ -11,6 +11,16 @@ and this project adheres to progressive [Semantic Versioning](https://semver.org
 - **Minor (`x.+1.x`)**: Feature additions and substantial enhancements (`feat`).
 - **Patch (`x.x.+1`)**: Bug fixes, security hardening, and maintenance (`fix`, `chore`).
 
+## [3.5.2] - 2026-09-13
+
+### Fixed
+
+- **Search & Scope Stability**: Preserved active indexing operations when path filters change, cleared stale coverage on mutation error, and encoded status query path scopes unambiguously.
+- **AI Tool Cache & Resource Bounds**: Included repository commit SHA in tool cache keys and added bounded LRU eviction.
+- **Manifest Parser Improvements**: Handled PEP 508 environment markers, extras brackets, PEP 621 optional dependencies, and Poetry dev groups.
+- **Security & Limits**: Prevented quota bypass from whitespace keys, enabled DNS multi-address sequential fallbacks, clamped `Retry-After` cooldown conversions, and combined caller signals with embedding queues.
+- **UI & Layout Sync**: Kept `workspaceMode` in sync with individual panel toggles, gated health enrichment on comparison branches, validated custom endpoints/models before saving, and provided distinct graph container identities on metadata updates.
+
 ## [3.5.1] - 2026-09-13
 
 ### Fixed

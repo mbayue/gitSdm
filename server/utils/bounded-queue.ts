@@ -21,12 +21,20 @@ export function createBoundedQueue(concurrency = 2, maxWaiting = 8, waitMs = 100
         }, runMs);
         Promise.resolve()
           .then(() => work(controller.signal))
-          .then(resolve, reject)
-          .finally(() => {
-            clearTimeout(timer);
-            active--;
-            waiting.shift()?.();
-          });
+          .then(
+            (val) => {
+              clearTimeout(timer);
+              active--;
+              waiting.shift()?.();
+              resolve(val);
+            },
+            (err) => {
+              clearTimeout(timer);
+              active--;
+              waiting.shift()?.();
+              reject(err);
+            },
+          );
       };
       if (active < concurrency) start();
       else {

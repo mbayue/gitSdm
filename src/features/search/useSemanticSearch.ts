@@ -23,6 +23,7 @@ export function useSemanticSearch() {
     onMutate: () => {
       setIsLoading(true);
       setError(null);
+      useSearchStore.setState({ resultCoverage: undefined });
       return { revision: useSearchStore.getState().revision };
     },
     onSuccess: (data, _variables, context) => {
@@ -43,6 +44,7 @@ export function useSemanticSearch() {
     onError: (err: Error, _variables, context) => {
       if (context?.revision !== useSearchStore.getState().revision) return;
       setError(err.message);
+      useSearchStore.setState({ resultCoverage: undefined });
       if (err instanceof ApiError && err.code === 'INDEX_NOT_FOUND') {
         useSearchStore.getState().setIndexingStatus({ state: 'idle' });
       }

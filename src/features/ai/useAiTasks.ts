@@ -13,16 +13,16 @@ import {
 export function useRefactor() {
   const { revision } = useChatConfigRevision();
   return useMutation({
-    mutationFn: ({ owner, repo, branch }: { owner: string; repo: string; branch?: string }) =>
-      runRefactor(getToolKey('refactor', owner, repo, revision, branch), () => aiRefactor(owner, repo, branch)),
+    mutationFn: ({ owner, repo, branch, sha }: { owner: string; repo: string; branch?: string; sha?: string }) =>
+      runRefactor(getToolKey('refactor', owner, repo, revision, branch, sha), () => aiRefactor(owner, repo, branch)),
   });
 }
 
 export function useHealth() {
   const { revision } = useChatConfigRevision();
   return useMutation({
-    mutationFn: ({ owner, repo, branch }: { owner: string; repo: string; branch?: string }) =>
-      runHealth(getToolKey('health', owner, repo, revision, branch), () => aiHealth(owner, repo, branch)),
+    mutationFn: ({ owner, repo, branch, sha }: { owner: string; repo: string; branch?: string; sha?: string }) =>
+      runHealth(getToolKey('health', owner, repo, revision, branch, sha), () => aiHealth(owner, repo, branch)),
   });
 }
 
@@ -38,16 +38,16 @@ export function useMermaid() {
 export function useRoast() {
   const { revision } = useChatConfigRevision();
   return useMutation({
-    mutationFn: ({ owner, repo, branch }: { owner: string; repo: string; branch?: string }) =>
-      runRoast(getToolKey('roast', owner, repo, revision, branch), () => aiRoast(owner, repo, branch)),
+    mutationFn: ({ owner, repo, branch, sha }: { owner: string; repo: string; branch?: string; sha?: string }) =>
+      runRoast(getToolKey('roast', owner, repo, revision, branch, sha), () => aiRoast(owner, repo, branch)),
   });
 }
 
 export function useReadmeEnhance() {
   const { revision } = useChatConfigRevision();
   return useMutation({
-    mutationFn: ({ owner, repo, branch }: { owner: string; repo: string; branch?: string }) =>
-      runReadmeEnhance(getToolKey('readme-enhance', owner, repo, revision, branch), () => aiReadmeEnhance(owner, repo, branch)),
+    mutationFn: ({ owner, repo, branch, sha }: { owner: string; repo: string; branch?: string; sha?: string }) =>
+      runReadmeEnhance(getToolKey('readme-enhance', owner, repo, revision, branch, sha), () => aiReadmeEnhance(owner, repo, branch)),
   });
 }
 

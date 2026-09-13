@@ -189,5 +189,12 @@ export async function handleSearchRoutes(
 }
 
 function splitPaths(value: string | undefined): string[] {
-  return value ? value.split(',').filter(Boolean) : [];
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
+  } catch {
+    // legacy comma-separated string
+  }
+  return value.split(',').filter(Boolean);
 }

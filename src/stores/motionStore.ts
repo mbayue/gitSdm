@@ -8,7 +8,7 @@ export const useMotionStore = create(
     setPreference: (preference: MotionPreference) => void;
   }>(
     (set) => ({
-      preference: 'full',
+      preference: 'system',
       setPreference: (preference) => set({ preference }),
     }),
     { name: 'gitsdm-motion', partialize: (state) => state },

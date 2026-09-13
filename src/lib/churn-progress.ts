@@ -7,7 +7,7 @@ export function mergeChurn(previous: ChurnResponse | undefined, batch: ChurnResp
   const remaining = batch.remaining.filter((path) => !files[path]);
   const failures = { ...previous?.failures, ...batch.failures };
   for (const path of Object.keys(failures)) if (!remaining.includes(path)) delete failures[path];
-  const issue = Object.values(failures).sort((a, b) => b.retryAt - a.retryAt)[0];
+  const issue = Object.values(failures).sort((a, b) => a.retryAt - b.retryAt)[0];
   return {
     ...batch,
     files,

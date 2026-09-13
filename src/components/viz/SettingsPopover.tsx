@@ -136,6 +136,7 @@ export function SettingsPopover({
   const [chatProvider, setChatProvider] = useState(() => getStoredKey('gitsdm_ai_provider') ?? '');
   const [chatModel, setChatModel] = useState(() => getStoredKey('gitsdm_ai_model') ?? '');
   const [chatBase, setChatBase] = useState(() => getStoredKey('gitsdm_ai_base_url') ?? '');
+  const [settingsError, setSettingsError] = useState<string | null>(null);
 
   // GitHub State
   const [patValue, setPatValue] = useState(() => getStoredKey(PAT_KEY) ?? '');
@@ -327,7 +328,7 @@ export function SettingsPopover({
                 aria-label="Chat model"
                 value={chatModel}
                 maxLength={200}
-                onChange={(e) => setChatModel(e.target.value)}
+                onChange={(e) => { setChatModel(e.target.value); setSettingsError(null); }}
                 placeholder="Server default"
                 className="w-full rounded-md border border-border bg-background p-2 text-foreground"
               />
@@ -339,11 +340,16 @@ export function SettingsPopover({
                   aria-label="Chat base URL"
                   type="url"
                   value={chatBase}
-                  onChange={(e) => setChatBase(e.target.value)}
+                  onChange={(e) => { setChatBase(e.target.value); setSettingsError(null); }}
                   placeholder="https://api.openai.com/v1"
                   className="w-full rounded-md border border-border bg-background p-2 text-foreground"
                 />
               </label>
+            )}
+            {settingsError && (
+              <p role="alert" className="text-xs text-destructive">
+                {settingsError}
+              </p>
             )}
             <p className="text-muted-foreground">
               Use Save beside the API key to apply these chat settings. Use a public HTTPS endpoint with your own API key. Embedding settings stay separate.

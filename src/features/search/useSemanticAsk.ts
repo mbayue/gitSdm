@@ -22,6 +22,7 @@ export function useSemanticAsk() {
     onMutate: (vars) => {
       setIsLoading(true);
       setError(null);
+      useSearchStore.setState({ resultCoverage: undefined });
       addRecentQuery(vars.question);
       return { revision: useSearchStore.getState().revision };
     },
@@ -35,6 +36,7 @@ export function useSemanticAsk() {
     onError: (err: Error, _variables, context) => {
       if (context?.revision !== useSearchStore.getState().revision) return;
       setError(err.message);
+      useSearchStore.setState({ resultCoverage: undefined });
       if (err instanceof ApiError && err.code === 'INDEX_NOT_FOUND') {
         useSearchStore.getState().setIndexingStatus({ state: 'idle' });
       }

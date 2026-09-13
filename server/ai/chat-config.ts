@@ -11,11 +11,12 @@ export const chatOverrides = new AsyncLocalStorage<ChatOverrides>();
 const clean = (value?: string | null) => value?.trim() || undefined;
 
 export function readChatOverrides(headers: Headers, apiKey?: string): ChatOverrides {
+  const cleanKey = clean(apiKey);
   const provider = clean(headers.get('x-ai-provider'));
   const model = clean(headers.get('x-ai-model'));
   const baseURL = clean(headers.get('x-ai-base-url'));
   if (!provider && !model && !baseURL) return {};
-  if (!clean(apiKey)) throw new AppError(400, 'Custom AI settings require your own API key.', 'INVALID_AI_CONFIG');
+  if (!cleanKey) throw new AppError(400, 'Custom AI settings require your own API key.', 'INVALID_AI_CONFIG');
   if (provider && !['openai', 'gemini', 'anthropic'].includes(provider))
     throw new AppError(400, 'Choose a supported AI provider.', 'INVALID_AI_CONFIG');
   if (model && !/^[\x21-\x7e]{1,200}$/.test(model))
@@ -36,11 +37,12 @@ export function readChatOverrides(headers: Headers, apiKey?: string): ChatOverri
   return { provider, model };
 }
 
-export function resolveChatConfig(overrideKey?: string) {
-  const custom = clean(overrideKey) ? chatOverrides.getStore() : undefined;
+export function resolveChatConfig(rawOverrideKey?: string) {
+  const overrideKey = clean(rawOverrideKey);
+  const custom = overrideKey ? chatOverrides.getStore() : undefined;
   const provider =
     custom?.provider ??
-    (clean(overrideKey)
+    (overrideKey
       ? overrideKey!.trim().startsWith('sk-ant-')
         ? 'anthropic'
         : overrideKey!.trim().startsWith('sk-')
@@ -63,7 +65,7 @@ export function resolveChatConfig(overrideKey?: string) {
   };
   return {
     provider,
-    apiKey: clean(overrideKey) ?? clean(process.env[`${prefix}_API_KEY`]),
+    apiKey: overrideKey ?? clean(process.env[`${prefix}_API_KEY`]),
     model: custom?.model ?? clean(process.env[`${prefix}_MODEL`]) ?? defaults[provider],
     baseURL: custom?.baseURL ?? clean(process.env[`${prefix}_API_BASE`]),
     apiVersion: clean(process.env.GEMINI_API_VERSION) ?? 'v1alpha',

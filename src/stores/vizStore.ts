@@ -233,8 +233,16 @@ export const useVizStore = create<VizState>()(
           inspectorOpen: false,
         });
       },
-      setExplorerOpen: (explorerOpen: boolean) => set({ explorerOpen }),
-      setAiSidebarOpen: (aiSidebarOpen: boolean) => set({ aiSidebarOpen }),
+      setExplorerOpen: (explorerOpen: boolean) =>
+        set((s: VizState) => ({
+          explorerOpen,
+          workspaceMode: modeFromPanels(explorerOpen, s.aiSidebarOpen),
+        })),
+      setAiSidebarOpen: (aiSidebarOpen: boolean) =>
+        set((s: VizState) => ({
+          aiSidebarOpen,
+          workspaceMode: modeFromPanels(s.explorerOpen, aiSidebarOpen),
+        })),
       setInspectorOpen: (inspectorOpen: boolean) => set({ inspectorOpen }),
       setFocusedFilePath: (focusedFilePath: string | null) => set({ focusedFilePath }),
       setZoom: (zoom: number) => set({ zoom }),

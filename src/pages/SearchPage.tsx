@@ -15,12 +15,7 @@ import { useIndexingStatus } from '@/features/search/useIndexingStatus';
 import { coverageMessage } from '../../server/search/coverage';
 import { SearchEmptyState } from '@/features/search/SearchEmptyState';
 
-function parsePaths(value: string): string[] {
-  return value
-    .split(',')
-    .map((path) => path.trim())
-    .filter(Boolean);
-}
+import { parsePaths } from '@/features/search/parsePaths';
 
 export function SearchPage() {
   const { owner = '', repo = '' } = useParams();

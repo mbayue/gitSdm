@@ -43,8 +43,8 @@ export async function analyzeRepository(
   const [{ items, truncated, totalFiles }, contributors, timeline, totalCommits] = await Promise.all([
     fetchFlatTree(owner, repo, info.sha, tokenOrCtx),
     fetchContributors(owner, repo, tokenOrCtx),
-    fetchTimeline(owner, repo, branch, tokenOrCtx),
-    fetchTotalCommits(owner, repo, branch, tokenOrCtx),
+    fetchTimeline(owner, repo, info.sha, tokenOrCtx),
+    fetchTotalCommits(owner, repo, info.sha, tokenOrCtx),
   ]);
 
   const tree = annotateTree(buildTreeFromPaths(items));

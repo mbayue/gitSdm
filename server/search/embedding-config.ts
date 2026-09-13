@@ -1,9 +1,10 @@
 /** Explicit embedding settings take precedence; legacy provider settings remain compatible. */
 export function embeddingConfig(env: Record<string, string | undefined> = process.env) {
   const value = (name: string) => env[name]?.trim() || undefined;
-  const requested = (value('EMBEDDING_PROVIDER') ?? value('AI_PROVIDER') ?? 'mock').toLowerCase();
+  const explicit = value('EMBEDDING_PROVIDER')?.toLowerCase();
+  const requested = (explicit ?? value('AI_PROVIDER') ?? 'mock').toLowerCase();
   const provider =
-    requested === 'anthropic'
+    !explicit && requested === 'anthropic'
       ? value('GEMINI_API_KEY')
         ? 'gemini'
         : value('OPENAI_API_KEY')

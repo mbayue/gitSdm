@@ -16,7 +16,7 @@ export function indexRequestKey(
   buildId: string,
   ctx: Pick<RequestContext, 'gitHubToken'>,
 ): string {
-  return `${owner.toLowerCase()}/${repo.toLowerCase()}:${hashToken(ctx.gitHubToken || process.env.GITHUB_TOKEN || 'anonymous')}:${buildId}`;
+  return `${owner.toLowerCase()}/${repo.toLowerCase()}:${hashToken(ctx.gitHubToken || process.env.GITHUB_TOKEN?.trim() || 'anonymous')}:${buildId}`;
 }
 
 /** Include model and endpoint configuration so incompatible embeddings never mix. */
@@ -39,7 +39,7 @@ export function searchIndexKey(
   includePaths: string[] = [],
   excludePaths: string[] = [],
 ): string {
-  const scope = hashToken(ctx?.gitHubToken || process.env.GITHUB_TOKEN || 'anonymous');
+  const scope = hashToken(ctx?.gitHubToken || process.env.GITHUB_TOKEN?.trim() || 'anonymous');
   const paths = JSON.stringify({
     includePaths: [...includePaths].sort(),
     excludePaths: [...excludePaths].sort(),

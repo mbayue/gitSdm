@@ -44,7 +44,7 @@ export function VizPage() {
   const { data, isLoading, error, churnLoading, churnError } = useAnalyzeRepo(owner, repo, selectedBranch);
 
   // Fetch comparison branch analysis
-  const { data: compareData } = useAnalyzeRepo(owner, repo, compareBranch, !!compareBranch);
+  const { data: compareData } = useAnalyzeRepo(owner, repo, compareBranch, !!compareBranch, { enrichHealth: false });
 
   const {
     reset,

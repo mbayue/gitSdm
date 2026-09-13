@@ -41,33 +41,59 @@ export async function fetchPublicChat(input: string | URL | Request, init?: Requ
   const headers = Object.fromEntries(source.headers);
   headers.host = url.host;
   headers['accept-encoding'] = 'identity';
-  return new Promise<Response>((resolve, reject) => {
-    const req = httpsRequest(url, {
-      hostname: addresses[0].address,
-      servername: isIP(hostname) ? undefined : hostname,
-      method: source.method,
-      headers,
-      signal: AbortSignal.any([source.signal, AbortSignal.timeout(30000)]),
-    }, res => {
-      const chunks: Buffer[] = [];
-      let bytes = 0;
-      res.on('data', (chunk: Buffer) => {
-        bytes += chunk.length;
-        if (bytes > 10 * 1024 * 1024) { res.destroy(new Error('AI response exceeds size limit')); return; }
-        chunks.push(chunk);
+  const overallSignal = AbortSignal.any([source.signal, AbortSignal.timeout(30000)]);
+  let lastError: unknown;
+  for (let i = 0; i < addresses.length; i++) {
+    if (overallSignal.aborted) break;
+    try {
+      return await new Promise<Response>((resolve, reject) => {
+        const req = httpsRequest(
+          url,
+          {
+            hostname: addresses[i].address,
+            servername: isIP(hostname) ? undefined : hostname,
+            method: source.method,
+            headers,
+            signal: overallSignal,
+          },
+          (res) => {
+            const chunks: Buffer[] = [];
+            let bytes = 0;
+            res.on('data', (chunk: Buffer) => {
+              bytes += chunk.length;
+              if (bytes > 10 * 1024 * 1024) {
+                res.destroy(new Error('AI response exceeds size limit'));
+                return;
+              }
+              chunks.push(chunk);
+            });
+            res.on('error', reject);
+            res.on('end', () => {
+              const status = res.statusCode ?? 502;
+              if (status >= 300 && status < 400) {
+                reject(new Error('AI endpoint redirects are not supported'));
+                return;
+              }
+              const responseHeaders = new Headers();
+              for (const [name, value] of Object.entries(res.headers)) {
+                if (value !== undefined) responseHeaders.set(name, Array.isArray(value) ? value.join(', ') : value);
+              }
+              resolve(
+                new Response([204, 205, 304].includes(status) ? null : Buffer.concat(chunks), {
+                  status,
+                  headers: responseHeaders,
+                }),
+              );
+            });
+          },
+        );
+        req.on('error', reject);
+        req.end(body);
       });
-      res.on('error', reject);
-      res.on('end', () => {
-        const status = res.statusCode ?? 502;
-        if (status >= 300 && status < 400) { reject(new Error('AI endpoint redirects are not supported')); return; }
-        const responseHeaders = new Headers();
-        for (const [name, value] of Object.entries(res.headers)) {
-          if (value !== undefined) responseHeaders.set(name, Array.isArray(value) ? value.join(', ') : value);
-        }
-        resolve(new Response([204, 205, 304].includes(status) ? null : Buffer.concat(chunks), { status, headers: responseHeaders }));
-      });
-    });
-    req.on('error', reject);
-    req.end(body);
-  });
+    } catch (err) {
+      lastError = err;
+      if (overallSignal.aborted || i === addresses.length - 1) throw err;
+    }
+  }
+  throw lastError;
 }

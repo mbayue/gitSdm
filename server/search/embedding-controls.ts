@@ -40,11 +40,12 @@ async function pace(signal: AbortSignal): Promise<void> {
   if (Date.now() < cooldownUntil) throw rateLimitError();
 }
 export function protectEmbeddings(provider: EmbeddingProvider, reserve = reserveUsage): EmbeddingProvider {
-  const run = <T>(texts: string[], work: (signal: AbortSignal) => Promise<T>) => {
+  const run = <T>(texts: string[], work: (signal: AbortSignal) => Promise<T>, callerSignal?: AbortSignal) => {
     const bytes = texts.reduce((sum, text) => sum + Buffer.byteLength(text), 0);
     if (bytes > 256000 || texts.length > 100)
       return Promise.reject(new AppError(413, 'Embedding batch is too large.', 'PROMPT_TOO_LARGE'));
-    return queue(async (signal) => {
+    return queue(async (queueSignal) => {
+      const signal = callerSignal ? AbortSignal.any([callerSignal, queueSignal]) : queueSignal;
       const attempt = async () => {
         if (Date.now() < cooldownUntil) throw rateLimitError();
         if (signal.aborted) throw new AppError(504, 'Provider request timed out.', 'PROVIDER_TIMEOUT', true);
@@ -69,7 +70,7 @@ export function protectEmbeddings(provider: EmbeddingProvider, reserve = reserve
   };
   return {
     ...provider,
-    embed: (text) => run([text], (signal) => provider.embed(text, signal)),
-    embedBatch: (texts) => run(texts, (signal) => provider.embedBatch(texts, signal)),
+    embed: (text, signal) => run([text], (s) => provider.embed(text, s), signal),
+    embedBatch: (texts, signal) => run(texts, (s) => provider.embedBatch(texts, s), signal),
   };
 }

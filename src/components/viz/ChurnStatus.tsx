@@ -5,7 +5,7 @@ export function ChurnStatus({ owner, repo, sha }: { owner: string; repo: string;
   const data = query.data;
   return (
     <div className="border-b border-border bg-card px-3 py-2 text-xs text-muted-foreground" role="status">
-      {data ? `Churn: ${data.checked} of ${data.total} sampled files checked.` : 'Loading churn history…'}
+      {query.isError ? 'Failed to load churn history.' : data ? `Churn: ${data.checked} of ${data.total} sampled files checked.` : 'Loading churn history…'}
       {data?.issue &&
         ` ${data.issue === 'access' ? 'Check GitHub access.' : data.issue === 'rate-limit' ? 'Waiting for GitHub rate limit reset.' : 'Some files timed out; remaining files continue loading.'}`}
       {query.isError && ' Churn request failed.'}

@@ -6,7 +6,7 @@ import { useMemo } from 'react';
 import { useVizStore } from '@/stores/vizStore';
 import type { RepoAnalysis } from '@/types';
 
-export function useAnalyzeRepo(owner: string, repo: string, branch: string | null = null, enabled = true) {
+export function useAnalyzeRepo(owner: string, repo: string, branch: string | null = null, enabled = true, options?: { enrichHealth?: boolean }) {
   const url = `https://github.com/${owner}/${repo}`;
   const analysis = useQuery<RepoAnalysis>({
     queryKey: ['analyze-repo', owner, repo, branch],
@@ -16,7 +16,7 @@ export function useAnalyzeRepo(owner: string, repo: string, branch: string | nul
   });
   const colorMode = useVizStore((s) => s.colorMode);
   const sha = analysis.data?.meta.sha ?? '';
-  const health = useRepoHealth(owner, repo, sha, enabled && !!analysis.data);
+  const health = useRepoHealth(owner, repo, sha, enabled && !!analysis.data && (options?.enrichHealth ?? true));
   const churn = useRepoChurn(owner, repo, sha, enabled && colorMode === 'churn');
   const data = useMemo(() => {
     if (!analysis.data) return undefined;

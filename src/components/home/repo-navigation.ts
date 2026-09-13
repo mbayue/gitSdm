@@ -18,10 +18,24 @@ export function getPresetUrl(repo: string): string {
  * Returns `null` when the input is not a valid GitHub repo reference.
  * Pure helper so the preset-click → navigate contract is unit-testable.
  */
+const GITHUB_OWNER_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$/;
+const GITHUB_REPO_RE = /^[a-zA-Z0-9-._]+$/;
+
+export function isValidRepoIdentifier(owner: string, repo: string): boolean {
+  return (
+    owner.length >= 1 &&
+    owner.length <= 39 &&
+    GITHUB_OWNER_RE.test(owner) &&
+    repo.length >= 1 &&
+    repo.length <= 100 &&
+    GITHUB_REPO_RE.test(repo)
+  );
+}
+
 export function resolveRepoNavigation(value: string): RepoNavigation | null {
   const trimmed = value.trim();
   const parsed = parseRepoFromUrl(trimmed);
-  if (!parsed) return null;
+  if (!parsed || !isValidRepoIdentifier(parsed.owner, parsed.repo)) return null;
   return {
     owner: parsed.owner,
     repo: parsed.repo,
