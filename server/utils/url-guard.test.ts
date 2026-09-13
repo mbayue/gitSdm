@@ -6,11 +6,14 @@ test('allows public https and http remotes', () => {
   expect(isSafeRemoteUrl('http://example.com')).toBe(true);
   expect(isSafeRemoteUrl('https://169.63.10.1')).toBe(true);
   expect(isSafeRemoteUrl('https://8.8.8.8')).toBe(true);
+  expect(isSafeRemoteUrl('https://192.0.1.5')).toBe(true);
   expect(isSafeRemoteUrl('https://100.128.0.1')).toBe(true);
   expect(isSafeRemoteUrl('https://172.32.1.1')).toBe(true);
   expect(isSafeRemoteUrl('https://198.51.200.1')).toBe(true);
   expect(isSafeRemoteUrl('https://203.0.114.1')).toBe(true);
   expect(isSafeRemoteUrl('https://[2606:4700::1]/v2')).toBe(true);
+  expect(isSafeRemoteUrl('https://[64:ff9b::102:304]/v2')).toBe(true);
+  expect(isSafeRemoteUrl('https://[2002:100:2::]/v2')).toBe(true);
 });
 
 test('rejects non-http schemes and malformed urls', () => {
@@ -35,6 +38,13 @@ test('rejects loopback, private, link-local, and reserved hosts', () => {
   expect(isSafeRemoteUrl('https://192.0.2.1')).toBe(false);
   expect(isSafeRemoteUrl('https://198.51.100.7')).toBe(false);
   expect(isSafeRemoteUrl('https://203.0.113.7')).toBe(false);
+  expect(isSafeRemoteUrl('https://192.0.0.1')).toBe(false);
+  expect(isSafeRemoteUrl('https://[64:ff9b::127.0.0.1]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[64:ff9b::7f00:1]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[2002:7f00:1::]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[64:ff9b::]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[2002::]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[64:ff9b:1::7f00:1]/v2')).toBe(false);
   expect(isSafeRemoteUrl('https://[::1]/v2')).toBe(false);
   expect(isSafeRemoteUrl('https://[::]/v2')).toBe(false);
   expect(isSafeRemoteUrl('https://[::ffff:127.0.0.1]/v2')).toBe(false);

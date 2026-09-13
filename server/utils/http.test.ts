@@ -17,7 +17,7 @@ describe('addSecurityHeaders', () => {
 
 /** Minimal Node req/res contract used by handleNodeRequest's body-reading path. */
 function fakeNode(options: { headers?: Record<string, string>; chunks?: Buffer[] }) {
-  const state = { destroyed: false, resumed: false, status: 0, headers: {} as Record<string, string> };
+  const state = { destroyed: false, status: 0, headers: {} as Record<string, string> };
   const req = {
     method: 'POST',
     url: '/api/search',
@@ -25,9 +25,6 @@ function fakeNode(options: { headers?: Record<string, string>; chunks?: Buffer[]
     socket: {},
     destroy() {
       state.destroyed = true;
-    },
-    resume() {
-      state.resumed = true;
     },
     iterator: options.chunks
       ? async function* () {
@@ -61,7 +58,6 @@ describe('handleNodeRequest body-limit teardown', () => {
     expect(node.state.status).toBe(413);
     expect(node.state.headers['connection']).toBe('close');
     expect(node.state.destroyed).toBe(true);
-    expect(node.state.resumed).toBe(false);
   });
 
   it('responds 413 when a chunked body crosses the limit mid-stream and tears the request down', async () => {
@@ -73,6 +69,5 @@ describe('handleNodeRequest body-limit teardown', () => {
     expect(node.state.status).toBe(413);
     expect(node.state.headers['connection']).toBe('close');
     expect(node.state.destroyed).toBe(true);
-    expect(node.state.resumed).toBe(false);
   });
 });

@@ -1,6 +1,14 @@
 import { readFile } from 'node:fs/promises';
+import { promises as dnsPromises } from 'node:dns';
 import { test, expect, spyOn } from 'bun:test';
 import { handleApiRequest, isRegisteredApiPath, registeredApiPaths } from '../api-router';
+
+// The limiter resolves and re-validates its host before connecting; tests stub DNS so the
+// fake 'limiter.invalid' endpoint resolves to a safe public address.
+const stubLimiterDns = () =>
+  spyOn(dnsPromises, 'lookup').mockImplementation(
+    (async () => [{ address: '93.184.216.34', family: 4 }]) as unknown as typeof dnsPromises.lookup,
+  );
 
 // Dispatch literals extracted from the router sources, so this test fails if a route is
 // added to a router without registering it — or if a registered path loses its dispatch.
@@ -64,9 +72,13 @@ test('shared limiter work is bounded before Redis calls and releases slots after
     return Response.json({ result: 0 });
   });
   const log = spyOn(console, 'error').mockImplementation(() => {});
+  const lookupStub = stubLimiterDns();
   const work: Array<Promise<Response | null>> = [];
   try {
     for (let i = 0; i < 25; i++) work.push(handleApiRequest(new Request('http://localhost/api/search'), '192.0.2.231'));
+    // The limiter resolves and re-validates DNS before connecting, so the admitted
+    // requests reach the gated fetch stub a tick later — flush before asserting.
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
     expect(calls).toBe(8);
     release();
     expect((await Promise.all(work)).every((response) => response?.status === 429)).toBe(true);
@@ -76,6 +88,7 @@ test('shared limiter work is bounded before Redis calls and releases slots after
     release();
     await Promise.allSettled(work);
     fetchStub.mockRestore();
+    lookupStub.mockRestore();
     log.mockRestore();
     names.forEach((name, i) => {
       if (previous[i] === undefined) delete process.env[name];
@@ -111,6 +124,7 @@ test('unregistered /api paths return 404 before spending admission or usage budg
   process.env.UPSTASH_REDIS_REST_URL = 'https://limiter.invalid';
   process.env.UPSTASH_REDIS_REST_TOKEN = 'unit-test';
   const fetchStub = spyOn(globalThis, 'fetch').mockImplementation(async () => Response.json({ result: 1 }));
+  const lookupStub = stubLimiterDns();
   const log = spyOn(console, 'error').mockImplementation(() => {});
   try {
     const unknown = await handleApiRequest(new Request('http://localhost/api/search/xyz'), '192.0.2.232');
@@ -126,6 +140,7 @@ test('unregistered /api paths return 404 before spending admission or usage budg
     expect(fetchStub).toHaveBeenCalled();
   } finally {
     fetchStub.mockRestore();
+    lookupStub.mockRestore();
     log.mockRestore();
     names.forEach((name, i) => {
       if (previous[i] === undefined) delete process.env[name];

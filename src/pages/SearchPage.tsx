@@ -17,8 +17,10 @@ import { SearchEmptyState } from '@/features/search/SearchEmptyState';
 
 import { parsePaths } from '@/features/search/parsePaths';
 import {
+  isOperationActive,
   isSearchEnabled,
   resolveBuildId,
+  resolvePollingScope,
   resolveRequestBranch,
   resolveRunningSha,
   shouldResetSearchState,
@@ -27,7 +29,8 @@ import {
 export function SearchPage() {
   const { owner = '', repo = '' } = useParams();
   const navigate = useNavigate();
-  const { mode, error, isLoading, results, answer, indexingStatus } = useSearchStore();
+  const { mode, error, isLoading, results, answer, indexingStatus, indexAction, indexScope: operationScope } =
+    useSearchStore();
   const searchMutation = useSemanticSearch();
   const askMutation = useSemanticAsk();
   const indexMutation = useTriggerIndexing();
@@ -42,12 +45,20 @@ export function SearchPage() {
     [includeInput, excludeInput],
   );
   const runningSha = resolveRunningSha(indexingStatus);
-  useIndexingStatus(owner, repo, true, runningSha ?? branch, indexScope);
+  // While an operation is active, polls keep targeting the scope it was started with;
+  // edited inputs only apply to requests and new builds after it settles.
+  const pollingScope = resolvePollingScope(
+    isOperationActive(indexAction, indexingStatus),
+    operationScope,
+    indexScope,
+  );
+  useIndexingStatus(owner, repo, true, runningSha ?? branch, pollingScope);
   // Changing scope invalidates cached results, but must never abandon an active
   // index operation (its completion would be ignored and a duplicate build could start).
   useEffect(() => {
     const state = useSearchStore.getState();
     if (shouldResetSearchState(state)) state.reset();
+    else state.resetQueryResults();
   }, [includeInput, excludeInput]);
 
   // Clear previous results on entry and when the repository snapshot changes.

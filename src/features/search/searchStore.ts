@@ -7,6 +7,7 @@ interface SearchState {
   indexBuildId?: string;
   indexOperation: number;
   indexAction: 'index' | 'cancel' | null;
+  indexScope: { includePaths: string[]; excludePaths: string[] } | null;
   resultCoverage: import('../../../server/search/coverage').SearchCoverage | undefined;
   revision: number;
   mode: SearchMode;
@@ -53,6 +54,7 @@ function saveRecentQueries(queries: string[]): void {
 export const useSearchStore = create<SearchState>((set, get) => ({
   indexOperation: 0,
   indexAction: null,
+  indexScope: null,
   resultCoverage: undefined,
   revision: 0,
   mode: 'search',
@@ -95,6 +97,7 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       revision: get().revision + 1,
       indexAction: null,
       indexBuildId: undefined,
+      indexScope: null,
       mode: 'search',
       query: '',
       results: [],

@@ -3,8 +3,10 @@ import { parsePaths } from '@/features/search/parsePaths';
 import { useSearchStore } from '@/features/search/searchStore';
 import type { IndexingStatus } from '@/types';
 import {
+  isOperationActive,
   isSearchEnabled,
   resolveBuildId,
+  resolvePollingScope,
   resolveRequestBranch,
   resolveRunningSha,
   shouldResetSearchState,
@@ -55,6 +57,43 @@ describe('SearchPage logic & state contracts', () => {
     expect(updated.answer).toBeNull();
     expect(updated.resultCoverage).toBeUndefined();
     expect(updated.indexingStatus.state).toBe('idle');
+  });
+
+  it('scope change during an active operation clears results but preserves the operation', () => {
+    useSearchStore.setState({
+      indexingStatus: { state: 'indexing', progress: 20, filesProcessed: 5, totalFiles: 25, snapshotSha: 'abc1234' },
+      indexAction: null,
+      indexOperation: 7,
+      indexBuildId: 'build-7',
+      indexScope: { includePaths: ['server'], excludePaths: [] },
+      results: [{ filePath: 'a.ts', startLine: 1, endLine: 5, snippet: 'code', language: 'ts', score: 0.9 }],
+      resultCoverage: { indexedFiles: 3, totalFiles: 25, percent: 12 },
+    });
+
+    expect(shouldResetSearchState(useSearchStore.getState())).toBe(false);
+    useSearchStore.getState().resetQueryResults();
+
+    const updated = useSearchStore.getState();
+    expect(updated.results).toEqual([]);
+    expect(updated.resultCoverage).toBeUndefined();
+    expect(updated.indexingStatus.state).toBe('indexing');
+    expect(updated.indexOperation).toBe(7);
+    expect(updated.indexBuildId).toBe('build-7');
+    expect(updated.indexScope).toEqual({ includePaths: ['server'], excludePaths: [] });
+  });
+
+  it('polls the operation scope while active and follows the live scope after it settles', () => {
+    const live = { includePaths: ['new'], excludePaths: [] };
+    const captured = { includePaths: ['old'], excludePaths: [] };
+
+    expect(isOperationActive('index', { state: 'idle' })).toBe(true);
+    expect(isOperationActive(null, { state: 'indexing', progress: 1, filesProcessed: 1, totalFiles: 2 })).toBe(true);
+    expect(isOperationActive(null, { state: 'paused', error: 'x', reason: 'rate-limit' })).toBe(true);
+    expect(isOperationActive(null, { state: 'complete', chunkCount: 1, timestamp: 1 })).toBe(false);
+
+    expect(resolvePollingScope(true, captured, live)).toBe(captured);
+    expect(resolvePollingScope(true, null, live)).toBe(live);
+    expect(resolvePollingScope(false, captured, live)).toBe(live);
   });
 
   it('resolves the request branch from the running snapshot before the selected branch', () => {

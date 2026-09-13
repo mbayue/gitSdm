@@ -24,7 +24,8 @@ export function useTriggerIndexing() {
     }) => triggerIndexing(owner, repo, branch, scope, buildId),
     onMutate: async (variables) => {
       const context = beginIndexOperation('index');
-      useSearchStore.setState({ indexBuildId: variables.buildId });
+      // Polling keeps targeting this scope until the operation settles.
+      useSearchStore.setState({ indexBuildId: variables.buildId, indexScope: variables.scope });
       const { previous } = context;
       setIndexingStatus({
         state: 'indexing',

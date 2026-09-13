@@ -35,3 +35,23 @@ export function resolveBuildId(status: IndexingStatus, indexBuildId: string | un
 export function isSearchEnabled(status: IndexingStatus): boolean {
   return status.state === 'complete' || Boolean(status.coverage);
 }
+
+export interface SearchScope {
+  includePaths: string[];
+  excludePaths: string[];
+}
+
+// An operation is active while its mutation is in flight or its status is mid-flight.
+export function isOperationActive(indexAction: 'index' | 'cancel' | null, status: IndexingStatus): boolean {
+  return indexAction !== null || status.state === 'indexing' || status.state === 'paused';
+}
+
+// While an operation is active, polling must target the scope it was started with;
+// edited inputs only apply to requests and new builds after the operation settles.
+export function resolvePollingScope(
+  operationActive: boolean,
+  operationScope: SearchScope | null,
+  liveScope: SearchScope,
+): SearchScope {
+  return operationActive && operationScope ? operationScope : liveScope;
+}

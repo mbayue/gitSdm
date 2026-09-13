@@ -4,7 +4,7 @@
 
 ## Project Identity
 
-**gitSdm** (Git Software Dependency Map) — v3.5.5. Interactive repository dependency visualization tool: map file dependencies, AI-powered codebase insights, semantic search, commit timelines, architecture diagrams, and dependency health. Single-page app with an embedded Express backend + Vercel serverless functions.
+**gitSdm** (Git Software Dependency Map) — v3.5.6. Interactive repository dependency visualization tool: map file dependencies, AI-powered codebase insights, semantic search, commit timelines, architecture diagrams, and dependency health. Single-page app with an embedded Express backend + Vercel serverless functions.
 
 ---
 
@@ -189,7 +189,7 @@ Test runner: **Bun** (`bun test --isolate`).
 
 ### Coverage & Test Counts
 
-- **78 test files, 521 tests passing** (1452 expect calls), 0 failures.
+- **78 test files, 525 tests passing** (1458 expect calls), 0 failures.
 - Run a single test file: `bun test src/components/home/RepoInput.test.ts`
 - Run test coverage: `bun test --coverage`
 

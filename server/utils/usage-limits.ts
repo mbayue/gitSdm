@@ -1,5 +1,15 @@
+import { promises as dnsPromises } from 'node:dns';
 import { AppError } from './errors';
 import { isSafeRemoteUrl } from './url-guard';
+
+const defaultLookup = async (hostname: string): Promise<string[]> =>
+  (await dnsPromises.lookup(hostname, { all: true })).map(({ address }) => address);
+
+export interface UsageLimitDependencies {
+  fetch: typeof fetch;
+  now: () => number;
+  lookup?: (hostname: string) => Promise<string[]>;
+}
 
 const local = new Map<string, { used: number; expires: number }>();
 const script = `local n = tonumber(redis.call('GET', KEYS[1]) or '0')
@@ -23,9 +33,10 @@ export async function reserveUsage(
   amount: number,
   limit: number,
   windowMs: number,
-  dependencies = { fetch, now: Date.now },
+  dependencies: UsageLimitDependencies = { fetch, now: Date.now, lookup: defaultLookup },
 ): Promise<void> {
   const now = dependencies.now();
+  const lookup = dependencies.lookup ?? defaultLookup;
   const bucket = Math.floor(now / windowMs);
   const ttl = windowMs - (now % windowMs);
   const key = `gitsdm:limits:${kind}:${bucket}`;
@@ -38,11 +49,28 @@ export async function reserveUsage(
       throw new AppError(503, 'Shared usage limiter is not configured.', 'LIMITER_UNAVAILABLE', true);
     if (!url.startsWith('https://') || !isSafeRemoteUrl(url))
       throw new AppError(503, 'Shared usage limiter URL is not permitted.', 'LIMITER_UNAVAILABLE', true);
+    // Hostname checks cannot catch DNS rebinding: resolve and re-validate every address
+    // before connecting. A small TOCTOU window between lookup and connect remains.
+    let addresses: string[];
+    try {
+      // WHATWG hostnames keep brackets on IPv6 literals; dns.lookup needs them stripped.
+      addresses = await lookup(new URL(url).hostname.replace(/^\[|\]$/g, ''));
+    } catch {
+      throw new AppError(503, 'Shared usage limiter is unavailable.', 'LIMITER_UNAVAILABLE', true);
+    }
+    if (
+      !addresses.length ||
+      !addresses.every((address) =>
+        isSafeRemoteUrl(address.includes(':') ? `https://[${address}]` : `https://${address}`),
+      )
+    )
+      throw new AppError(503, 'Shared usage limiter address is not permitted.', 'LIMITER_UNAVAILABLE', true);
     try {
       const response = await dependencies.fetch(url, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(['EVAL', script, 1, key, amount, limit, ttl]),
+        redirect: 'error',
         signal: AbortSignal.timeout(3000),
       });
       if (!response.ok) throw new Error('Limiter unavailable');

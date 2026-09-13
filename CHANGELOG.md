@@ -11,6 +11,17 @@ and this project adheres to progressive [Semantic Versioning](https://semver.org
 - **Minor (`x.+1.x`)**: Feature additions and substantial enhancements (`feat`).
 - **Patch (`x.x.+1`)**: Bug fixes, security hardening, and maintenance (`fix`, `chore`).
 
+## [3.5.6] - 2026-09-13
+
+### Security
+
+- **Limiter DNS Resolution Validation**: The shared limiter resolves its hostname and re-validates every resolved address through the SSRF guard before connecting, fails closed on lookup failure or non-public addresses, rejects redirects so the bearer token cannot be forwarded, and supports IPv6-literal limiter URLs.
+- **SSRF Guard Transition Prefixes**: The URL guard decodes embedded IPv4 destinations in NAT64 (`64:ff9b::/96`) and 6to4 (`2002::/16`) addresses and rejects private/loopback destinations, rejects the `64:ff9b:1::/48` local-use variant and `192.0.0.0/24`, and pins the precision with tests.
+
+### Fixed
+
+- **Search Scope Changes During Indexing**: Editing include/exclude filters while an index builds clears stale results and coverage while the operation keeps running, and status polling keeps targeting the build's original scope until it settles.
+
 ## [3.5.5] - 2026-09-13
 
 ### Security
