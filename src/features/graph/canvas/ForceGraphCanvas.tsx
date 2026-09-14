@@ -244,12 +244,14 @@ export function NetworkCanvas({
         colorMode,
         sizeMode,
         theme,
+        metadataSource: graph,
       });
     },
     [
       blastRadiusActive,
       colorMode,
       compareBranch,
+      graph,
       highlightedNodeIds,
       hoveredForceNode,
       forceGraphData.nodes.length,

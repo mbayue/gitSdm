@@ -81,10 +81,18 @@ export function useAiCenterState(analysis: RepoAnalysis) {
     readmeEnhance.reset();
   }, [sha, revision, health, refactor, roast, readmeEnhance]);
 
-  const healthData = health.data ?? healthCache.get(getToolKey('health', owner, repo, revision, selectedBranch, sha));
-  const refactorData = refactor.data ?? refactorCache.get(getToolKey('refactor', owner, repo, revision, selectedBranch, sha));
-  const roastData = roast.data ?? roastCache.get(getToolKey('roast', owner, repo, revision, selectedBranch, sha));
-  const readmeEnhanceData = readmeEnhance.data ?? readmeEnhanceCache.get(getToolKey('readme-enhance', owner, repo, revision, selectedBranch, sha));
+  const healthData =
+    (health.data?.revision === revision ? health.data : undefined) ??
+    healthCache.get(getToolKey('health', owner, repo, revision, selectedBranch, sha));
+  const refactorData =
+    (refactor.data?.revision === revision ? refactor.data : undefined) ??
+    refactorCache.get(getToolKey('refactor', owner, repo, revision, selectedBranch, sha));
+  const roastData =
+    (roast.data?.revision === revision ? roast.data : undefined) ??
+    roastCache.get(getToolKey('roast', owner, repo, revision, selectedBranch, sha));
+  const readmeEnhanceData =
+    (readmeEnhance.data?.revision === revision ? readmeEnhance.data : undefined) ??
+    readmeEnhanceCache.get(getToolKey('readme-enhance', owner, repo, revision, selectedBranch, sha));
 
   const nodeById = useMemo(
     () => new Map(analysis.graph.nodes.map((n) => [n.id, n])),

@@ -11,6 +11,14 @@ and this project adheres to progressive [Semantic Versioning](https://semver.org
 - **Minor (`x.+1.x`)**: Feature additions and substantial enhancements (`feat`).
 - **Patch (`x.x.+1`)**: Bug fixes, security hardening, and maintenance (`fix`, `chore`).
 
+## [3.5.9] - 2026-09-14
+
+### Fixed
+
+- **AI Mutation Revision Invalidation**: Tagged AI task mutations with active configuration revisions and validated revision matches in `useAiCenterState`, preventing stale results from blocking fresh requests on settings updates.
+- **Canvas Redraw on Metadata Updates**: Linked graph metadata updates directly to `drawNodeCanvasObject` in `ForceGraphCanvas`, repainting updated node metrics immediately without reheating simulation physics.
+- **Explicit Timeout Retry Matching**: Replaced ambiguous regex with explicit `/(?:timeout|timed\s*out)/i` in `embedding-retry.ts`.
+
 ## [3.5.8] - 2026-09-14
 
 ### Security

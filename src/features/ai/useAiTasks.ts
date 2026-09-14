@@ -13,16 +13,22 @@ import {
 export function useRefactor() {
   const { revision } = useChatConfigRevision();
   return useMutation({
-    mutationFn: ({ owner, repo, branch, sha }: { owner: string; repo: string; branch?: string; sha?: string }) =>
-      runRefactor(getToolKey('refactor', owner, repo, revision, branch, sha), () => aiRefactor(owner, repo, branch)),
+    mutationKey: ['refactor', revision],
+    mutationFn: async ({ owner, repo, branch, sha }: { owner: string; repo: string; branch?: string; sha?: string }) => ({
+      ...(await runRefactor(getToolKey('refactor', owner, repo, revision, branch, sha), () => aiRefactor(owner, repo, branch))),
+      revision,
+    }),
   });
 }
 
 export function useHealth() {
   const { revision } = useChatConfigRevision();
   return useMutation({
-    mutationFn: ({ owner, repo, branch, sha }: { owner: string; repo: string; branch?: string; sha?: string }) =>
-      runHealth(getToolKey('health', owner, repo, revision, branch, sha), () => aiHealth(owner, repo, branch)),
+    mutationKey: ['health', revision],
+    mutationFn: async ({ owner, repo, branch, sha }: { owner: string; repo: string; branch?: string; sha?: string }) => ({
+      ...(await runHealth(getToolKey('health', owner, repo, revision, branch, sha), () => aiHealth(owner, repo, branch))),
+      revision,
+    }),
   });
 }
 
@@ -38,16 +44,22 @@ export function useMermaid() {
 export function useRoast() {
   const { revision } = useChatConfigRevision();
   return useMutation({
-    mutationFn: ({ owner, repo, branch, sha }: { owner: string; repo: string; branch?: string; sha?: string }) =>
-      runRoast(getToolKey('roast', owner, repo, revision, branch, sha), () => aiRoast(owner, repo, branch)),
+    mutationKey: ['roast', revision],
+    mutationFn: async ({ owner, repo, branch, sha }: { owner: string; repo: string; branch?: string; sha?: string }) => ({
+      ...(await runRoast(getToolKey('roast', owner, repo, revision, branch, sha), () => aiRoast(owner, repo, branch))),
+      revision,
+    }),
   });
 }
 
 export function useReadmeEnhance() {
   const { revision } = useChatConfigRevision();
   return useMutation({
-    mutationFn: ({ owner, repo, branch, sha }: { owner: string; repo: string; branch?: string; sha?: string }) =>
-      runReadmeEnhance(getToolKey('readme-enhance', owner, repo, revision, branch, sha), () => aiReadmeEnhance(owner, repo, branch)),
+    mutationKey: ['readme-enhance', revision],
+    mutationFn: async ({ owner, repo, branch, sha }: { owner: string; repo: string; branch?: string; sha?: string }) => ({
+      ...(await runReadmeEnhance(getToolKey('readme-enhance', owner, repo, revision, branch, sha), () => aiReadmeEnhance(owner, repo, branch))),
+      revision,
+    }),
   });
 }
 

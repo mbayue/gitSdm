@@ -33,7 +33,7 @@ export async function withEmbeddingRetry<T>(
         throw new AppError(429, `Embedding provider rate limit reached. Retry after ${retryAfterSeconds} seconds; indexing a smaller scope may help.`, 'EMBEDDING_RATE_LIMITED', true, { retryAfterSeconds });
       }
       // Covers "timeout" as well as the OpenAI SDK's "Request timed out." client timeout.
-      const timeout = error instanceof Error && /timed?\s*out/i.test(error.message);
+      const timeout = error instanceof Error && /(?:timeout|timed\s*out)/i.test(error.message);
       if (!rateLimited && !timeout) throw error;
       if (attempt === 2) {
         throw error;
