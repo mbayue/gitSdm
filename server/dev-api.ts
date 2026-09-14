@@ -47,7 +47,7 @@ export function apiMiddleware(): Plugin {
           !pathname.startsWith('/assets') &&
           !pathname.includes('.') &&
           pathname !== '/' &&
-          !/^\/(privacy|terms|not-found)\/?$/.test(pathname) &&
+          !/^\/(privacy|terms)\/?$/.test(pathname) &&
           !isRepositoryPage(pathname)
         ) {
           try {
