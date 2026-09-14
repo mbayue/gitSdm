@@ -53,7 +53,7 @@ export function HomeGraphPreview() {
               </div>
             }
           >
-            <GraphCanvas
+            {typeof window === 'undefined' ? <p className="p-6 text-sm text-muted-foreground">Explore files and dependencies in the interactive map when JavaScript is enabled.</p> : <GraphCanvas
               graph={demoGraph}
               readOnly
               hideChrome
@@ -61,7 +61,7 @@ export function HomeGraphPreview() {
               sizeModeOverride="default"
               layoutTypeOverride="tree"
               onVisibleCounts={handleVisibleCounts}
-            />
+            />}
           </Suspense>
           <div className="pointer-events-none absolute bottom-4 left-4 right-4 flex w-fit max-w-[calc(100%-2rem)] items-center gap-2 rounded-md border border-border bg-card/95 px-3 py-2 text-xs text-muted-foreground">
             <Move className="h-3 w-3" /> Drag to explore · Scroll to zoom

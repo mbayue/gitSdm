@@ -6,6 +6,7 @@ import { ensureMermaidConfigured } from '../mermaid-config';
 import { stripMermaidFences } from '../stripMermaidFences';
 import { createRenderSequence, type RenderSequence } from './render-sequence';
 import { useVizStore } from '@/stores/vizStore';
+import { useChatConfigRevision } from '@/stores/chatConfigStore';
 
 export function useArchitectureState(
   analysis: RepoAnalysis,
@@ -13,7 +14,9 @@ export function useArchitectureState(
   repo: string,
   resetView: () => void
 ) {
-  const { mutate: generate, data, isPending, isError, error } = useMermaid();
+  const { revision } = useChatConfigRevision();
+  const { mutate: generate, data: response, isPending, isError, error } = useMermaid();
+  const data = response?.revision === revision ? response : undefined;
   const [svg, setSvg] = useState<string>('');
   const [renderError, setRenderError] = useState<string | null>(null);
   const [mode, setMode] = useState<'code' | 'ai'>('code');
@@ -30,7 +33,7 @@ export function useArchitectureState(
     if (mode === 'ai') {
       generate({ owner, repo });
     }
-  }, [mode, owner, repo, generate]);
+  }, [mode, owner, repo, generate, revision]);
 
   useEffect(() => {
     if (mode === 'code' && !analysis) return;
@@ -93,7 +96,7 @@ export function useArchitectureState(
     isPending,
     isError,
     error,
-    svg,
+    svg: mode === 'ai' && !data ? '' : svg,
     renderError,
     mode,
     setMode,

@@ -1,6 +1,6 @@
 # Architecture
 
-`gitSdm` is a graph-first repository analysis application. It visualizes file dependencies, architecture diagrams, module hierarchies, commit history, and AI-driven codebase insights in a single-page app with an embedded Express backend and Vercel serverless functions.
+`gitSdm` is an interactive repository dependency visualization tool. It maps file dependencies, architecture diagrams, module hierarchies, commit history, and codebase insights in a single-page app with an embedded Express backend and Vercel serverless functions.
 
 ---
 
@@ -22,7 +22,7 @@
 │                                          │                                  │
 │  ┌────────────────────────┐  ┌───────────▼───────────┐  ┌────────────────┐  │
 │  │   AI Provider Layer    │  │  In-Memory Vector DB  │  │   LRU Cache    │  │
-│  │ (Gemini/OAI/Anth/Edge) │  │  (Chunking/Embed/QA)  │  │  (200 items)   │  │
+│  │ (Gemini/OAI/Anth/Mock) │  │  (Chunking/Embed/QA)  │  │  (200 items)   │  │
 │  └────────────────────────┘  └───────────────────────┘  └────────────────┘  │
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        │ (JSON REST API)
@@ -67,18 +67,27 @@
   - Google Gemini (`gemini-2.5-flash`)
   - OpenAI (`gpt-4o-mini`)
   - Anthropic (`claude-3-5-haiku-latest`)
-  - EdgeOne Makers (`@makers/deepseek-v4-flash`)
   - Offline Mock Provider (fixtures for testing and development without API keys)
+- **Custom Endpoints & SSRF Guard (`server/ai/chat-config.ts`, `server/ai/public-chat-fetch.ts`):** Supports user-defined OpenAI-compatible base URLs and model overrides in Settings. Enforces SSRF security by verifying public HTTPS protocols, blocking internal/loopback/link-local IP addresses, and pinning DNS resolution.
+- **Task Lifecycle & Cache Resilience (`src/features/ai/tool-cache.ts`):** In-memory task caching and deduplication ensure in-flight AI requests survive panel remounting and branch switching, while configuration revisions refresh stale cached responses on save.
+- **Independent Embedding Pipeline (`server/search/embedding-config.ts`):** Decouples embedding credentials, models, and endpoints from chat settings to keep semantic search isolated.
 - **AI Tasks (`server/ai/tasks/`):** Dedicated pipelines for architectural summaries, Mermaid flowchart generation, onboarding tours, refactoring risk detection, and dependency health audits.
 
 ### 4. Semantic Search & QA Engine
 
-- **Chunker & Embedding Pipeline (`server/search/`):** Breaks repository files into semantic code chunks, computes embeddings, and indexes them in an in-memory vector store with cosine similarity search.
-- **Natural Language QA:** Synthesizes context-aware answers to user queries referencing specific source lines.
+- **Chunker & Resumable Checkpoints (`server/search/checkpoints.ts`, `server/search/build-snapshot.ts`):** Splits supported repository files into AST/sliding-window code chunks, computes embeddings with rate-limit pacing, and saves intermediate batch checkpoints so interrupted builds resume seamlessly.
+- **In-Memory Vector Store & LRU Eviction (`server/search/vector-store.ts`):** Fast cosine-similarity search store with strict byte budgets, 30-minute index lifetimes, and LRU eviction.
+- **Natural Language QA (`server/search/qa-engine.ts`):** Synthesizes context-aware answers to user queries referencing specific source lines.
 
-### 5. State Management & Data Flow
+### 5. Server Guardrails & Usage Limits
 
-- **Global UI State (`src/stores/vizStore.ts`):** Zustand store persisted to `localStorage` via `zustand/middleware/persist` for filters, layout preferences, and active workspace modes.
+- **SSRF Outbound Guard (`server/utils/url-guard.ts`):** Validates outbound HTTP/HTTPS destinations, expands IPv6 addresses to 8 hextets, checks transition prefixes (NAT64 `64:ff9b::/96`, 6to4 `2002::/16`), and rejects private, loopback, multicast, or documentation addresses.
+- **Admission & Rate Limits (`server/utils/client-limits.ts`, `server/utils/usage-limits.ts`):** Enforces per-IP and deployment-wide request quotas, trusted proxy header chains, and daily server-funded AI/embedding budgets with Upstash Redis or local sliding windows.
+- **Bounded Queues & Request Limits (`server/utils/bounded-queue.ts`, `server/utils/request-limits.ts`):** Caps concurrency and waiting queues with 10s wait and 30s execution timeouts, immediate abort cleanup, and strict 1 MB UTF-8 body limits.
+
+### 6. State Management & Data Flow
+
+- **Global UI State (`src/stores/vizStore.ts`, `src/stores/motionStore.ts`, `src/stores/chatConfigStore.ts`):** Zustand stores for workspace modes, filters, responsive drawers, motion preferences, and chat configuration revisions.
 - **Server State:** TanStack React Query handles server queries with stale-while-revalidate semantics and query keys keyed by `[resource, owner, repo, branch]`.
 
 ---
@@ -89,21 +98,21 @@
 gitSdm/
 ├── api/                    # Vercel serverless entry points (thin wrappers)
 │   ├── ai/                 # AI task endpoint wrappers
-│   ├── repo/               # Repository analysis endpoint wrappers
+│   ├── repo/               # Repository analysis, churn, and health endpoints
 │   └── trending.ts         # Trending repositories endpoint
 ├── server/                 # Backend services & router
-│   ├── ai/                 # AI provider abstraction, prompts, and task handlers
+│   ├── ai/                 # AI provider abstraction, chat config, SSRF protection, prompts & tasks
 │   │   └── tasks/          # Individual AI task logic (diagram, explain, onboarding, playground, refactor)
-│   ├── cache/              # LRU caching layer
+│   ├── cache/              # LRU caching layer & hashed token secrets
 │   ├── config/             # Runtime config & environment validation
 │   ├── github/             # GitHub API client (Octokit) & mock fixtures
 │   ├── graph/              # Graph building, node colors, and layout algorithms
 │   ├── parser/             # Dependency analysis, file classification & manifest parsers
-│   │   └── manifest-parsers/ # npm, pnpm, cargo, pip, go, maven workspace parsers
-│   ├── router/             # Modular request route handlers (repo, AI, search)
-│   ├── search/             # Semantic search, vector store & QA engine
-│   ├── services/           # Application services (analyze-repo, churn, health, trending, npm-registry)
-│   ├── utils/              # HTTP, context, and logging helpers
+│   │   └── manifest-parsers/ # npm, pnpm, cargo, pip (PEP 621/Poetry), go, maven workspace parsers
+│   ├── router/             # Modular request route handlers (repo, AI, search, schemas)
+│   ├── search/             # Semantic search: chunker, embeddings, checkpoints, vector store & QA engine
+│   ├── services/           # Application services (analyze-repo, churn, health, repo-enrichment, trending, npm-registry)
+│   ├── utils/              # HTTP, context, client limits, request limits, SSRF guard, and logging helpers
 │   ├── api-router.ts       # Unified API router
 │   ├── dev-api.ts          # Vite dev server middleware
 │   ├── env.ts              # Environment variable exports
@@ -112,21 +121,22 @@ gitSdm/
 ├── src/                    # Frontend SPA application
 │   ├── app/                # App entry, router setup, and query client providers
 │   ├── components/         # UI components organized by domain
-│   │   ├── contributors/   # Contributor metrics and activity timeline
+│   │   ├── contributors/   # Contributor metrics, activity timeline, and timeline layout
 │   │   ├── explorer/       # File tree and code inspector dock
-│   │   ├── home/           # Landing page (hero, input, preview, trending)
-│   │   ├── layout/         # Top navbar and app layout
+│   │   ├── home/           # Landing page (hero, input, preview, trending, presets, repo navigation)
+│   │   ├── layout/         # Navbar, SiteFooter, InfoPageLayout, and PageMetadata
 │   │   ├── theme/          # ThemeSync appearance controller
 │   │   ├── timeline/       # Commit history and repo timeline views
-│   │   ├── ui/             # shadcn/ui primitives & Base UI components
+│   │   ├── ui/             # shadcn/ui primitives, button-variants & Base UI components
 │   │   └── viz/            # Main visualization workspace
 │   │       ├── ai-sidebar/ # Codebase intelligence tabs & action cards
 │   │       ├── architecture/# Interactive Mermaid diagrams & zoom controls
 │   │       ├── layout/     # Resizable sidebar & panel drawer
 │   │       ├── learning-path/# Guided code walkthroughs
-│   │       └── top-nav/    # Branch/tag switcher, stats & workspace mode controls
+│   │       ├── top-nav/    # Branch/tag switcher, stats & workspace mode controls
+│   │       └── AIErrorCard, ChurnStatus, MotionSettings, SettingsPopover, StagedLoader, VizError
 │   ├── features/           # Feature modules
-│   │   ├── ai/             # AI task mutation hooks (useAiTasks)
+│   │   ├── ai/             # AI task mutation hooks & resilient cache (useAiTasks, tool-cache)
 │   │   ├── graph/          # Force graph & D3 canvas engine, widgets & export
 │   │   │   ├── canvas/     # ForceGraphCanvas, GraphCanvas, and ToolbarDropdowns
 │   │   │   │   ├── force/  # D3 physics, force painter, minimap, and sync
@@ -134,13 +144,15 @@ gitSdm/
 │   │   │   │   ├── hooks/  # Canvas state hooks
 │   │   │   │   └── widgets/# DropdownPanel, LegendPanel, FloatingControls, FilterSummary
 │   │   │   └── force/      # Force graph data models, constants, and blast radius
-│   │   └── search/         # Semantic search interface & indexing status
-│   ├── hooks/              # Shared custom React hooks
-│   ├── lib/                # API client, clipboard, and string helpers
-│   ├── pages/              # Route pages (VizPage, HomePage, SearchPage, NotFoundPage)
-│   ├── stores/             # Zustand global stores (vizStore)
+│   │   └── search/         # Semantic search interface, controls, empty state, recovery & parsePaths
+│   ├── hooks/              # Shared custom React hooks (useAnalyzeRepo, useMotionPreference, useRepoChurn, useRepoHealth)
+│   ├── lib/                # API client, clipboard, motion-preference, page-metadata, churn-progress, and workspace-mode
+│   ├── pages/              # Route pages (HomePage, VizPage, SearchPage, TermsPage, PrivacyPage, NotFoundPage)
+│   ├── stores/             # Zustand global stores (vizStore, motionStore, chatConfigStore)
 │   ├── styles/             # Tailwind CSS 4 global theme
-│   └── types/              # TypeScript domain types and DTOs
+│   └── types/              # TypeScript domain types, DTOs, and churn types
+├── public/                 # Static assets (og-image.png/svg, robots.txt, sitemap.xml)
+├── scripts/                # Build and prerender scripts (prerender.tsx, clean_graphify.py)
 └── e2e/                    # Playwright end-to-end test suite
 ```
 

@@ -1,97 +1,90 @@
-import { Database, AlertCircle, CheckCircle2, RefreshCw, Loader2, Zap } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchStore } from './searchStore';
+import { coverageMessage } from '../../../server/search/coverage';
+import { formatRetryDelay } from './retry-delay';
 
-interface IndexingStatusProps {
-  onRetry?: () => void;
-}
-
-export function IndexingStatusPanel({ onRetry }: IndexingStatusProps) {
-  const { indexingStatus } = useSearchStore();
-
-  if (indexingStatus.state === 'idle') {
-    return (
-      <div className="flex items-center gap-3 rounded-md border border-border bg-card px-4 py-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-background border border-border">
-          <Database className="h-4 w-4 text-muted-foreground" />
-        </div>
-        <div className="flex-1">
-          <p className="text-xs font-semibold text-foreground">Index missing</p>
-          <p className="text-[11px] text-muted-foreground">Build an index to search this repository by meaning</p>
-        </div>
-        {onRetry && (
-          <button
-            onClick={onRetry}
-            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-[11px] font-semibold text-foreground transition-all hover:border-accent hover:bg-accent/10 hover:text-accent"
-          >
-            <Zap className="h-3.5 w-3.5" />
-            Build Index
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  if (indexingStatus.state === 'indexing') {
-    const progress = indexingStatus.progress;
-    const hasFileCount = indexingStatus.totalFiles > 0;
-    return (
-      <div className="space-y-2.5 rounded-md border border-accent/30 bg-accent/5 px-4 py-3">
-        <div className="flex items-center gap-2.5 text-xs text-accent">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span className="font-semibold">
-            {hasFileCount ? 'Indexing...' : 'Scanning repository...'}
-          </span>
-          {hasFileCount && (
-            <span className="ml-auto font-mono text-[10px] tabular-nums text-accent/80">
-              {indexingStatus.filesProcessed}/{indexingStatus.totalFiles} files
-            </span>
-          )}
-        </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-background border border-border">
-          <div
-            className="h-full rounded-full bg-accent transition-all duration-500 ease-out"
-            style={{ width: `${Math.max(progress, 2)}%` }}
+export function IndexingStatusPanel({ onRetry, onCancel }: { onRetry?: () => void; onCancel?: () => void }) {
+  const status = useSearchStore((state) => state.indexingStatus);
+  const action = useSearchStore((state) => state.indexAction);
+  const resumed = useRef<string | null>(null);
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    if (status.state !== 'paused' || !status.retryAt) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [status]);
+  const waiting = status.state === 'paused' && !!status.retryAt && status.retryAt > now;
+  useEffect(() => {
+    if (action || status.state !== 'paused' || !status.retryAt || status.retryAt > now) return;
+    const deadline = `${status.snapshotSha}:${status.retryAt}`;
+    if (resumed.current === deadline) return;
+    resumed.current = deadline;
+    onRetry?.();
+  }, [status, now, onRetry, action]);
+  const working = status.state === 'indexing' || status.state === 'paused';
+  const button =
+    'rounded-md border border-border bg-background px-3 py-1.5 text-xs text-foreground hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed';
+  return (
+    <section
+      aria-label="Indexing status"
+      className="space-y-3 rounded-md border border-border bg-card p-4 text-xs text-foreground"
+    >
+      <p role="status" className="font-semibold">
+        {status.state === 'complete'
+          ? 'Index ready'
+          : status.state === 'indexing'
+            ? 'Indexing repository…'
+            : status.state === 'paused'
+              ? 'Indexing paused'
+              : status.state === 'failed'
+                ? 'Index failed'
+                : 'Build a search index'}
+      </p>
+      {working && (
+        <>
+          <p>
+            {status.filesProcessed} files indexed · {Math.max(0, status.totalFiles - status.filesProcessed)} remaining
+          </p>
+          <progress
+            aria-label="Files indexed"
+            value={status.filesProcessed}
+            max={Math.max(1, status.totalFiles)}
+            className="h-2 w-full accent-accent"
           />
-        </div>
-        <p className="text-[10px] text-muted-foreground">
-          {hasFileCount
-            ? 'Building semantic embeddings...'
-            : 'Preparing files...'}
+        </>
+      )}
+      {status.state === 'complete' && <p>{status.chunkCount} chunks indexed</p>}
+      {(status.state === 'paused' || status.state === 'failed') && (
+        <p className="text-muted-foreground">{status.error}</p>
+      )}
+      {status.state === 'paused' && (
+        <p className="text-muted-foreground">
+          {status.retryAt
+            ? `Retry ${new Date(status.retryAt).toLocaleString()}${waiting ? ` (in ${formatRetryDelay(status.retryAt - now)})` : ' — ready to resume'}`
+            : 'Resume when the service is available.'}
         </p>
-      </div>
-    );
-  }
-
-  if (indexingStatus.state === 'complete') {
-    return (
-      <div className="flex items-center gap-2.5 rounded-md border border-border bg-card px-4 py-3 text-xs">
-        <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
-        <span className="font-semibold text-foreground">Index ready</span>
-        <span className="text-muted-foreground font-mono ml-auto">{indexingStatus.chunkCount} chunks</span>
-      </div>
-    );
-  }
-
-  if (indexingStatus.state === 'failed') {
-    return (
-      <div className="flex items-center gap-3 rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3">
-        <AlertCircle className="h-4 w-4 shrink-0 text-destructive" />
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold text-destructive">Index failed</p>
-          <p className="truncate text-[11px] text-destructive/80">{indexingStatus.error}</p>
-        </div>
-        {onRetry && (
-          <button
-            onClick={onRetry}
-            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-[11px] font-semibold text-destructive transition-all hover:bg-destructive/20"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            Retry
+      )}
+      {status.coverage ? (
+        <p>
+          {working && status.coverage.kind === 'partial'
+            ? 'You can search the files indexed so far.'
+            : coverageMessage(status.coverage)}
+        </p>
+      ) : (
+        working && <p>No searchable files yet. Your indexing progress will appear here.</p>
+      )}
+      <div className="flex gap-2">
+        {status.state !== 'indexing' && status.state !== 'complete' && onRetry && (
+          <button className={button} onClick={onRetry} disabled={waiting || action !== null}>
+            {status.state === 'paused' ? 'Resume' : 'Build Index'}
+          </button>
+        )}
+        {working && onCancel && (
+          <button className={button} onClick={onCancel} disabled={action === 'cancel'}>
+            Cancel
           </button>
         )}
       </div>
-    );
-  }
-
-  return null;
+    </section>
+  );
 }

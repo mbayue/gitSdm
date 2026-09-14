@@ -21,6 +21,7 @@ interface NodePaintProps {
   colorMode?: ColorMode;
   sizeMode?: SizeMode;
   theme?: GraphTheme;
+  metadataSource?: unknown;
 }
 
 /** Map a 0-1 score to a color from the given 5-stop gradient */

@@ -1,3 +1,4 @@
+import { resolveOpenRepository, resolvePresetNavigation, type RepoNavigation } from "./repo-navigation";
 import { useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -6,73 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/Input";
 import { getVisibleRepoPresets } from "@/components/home/repoPresets";
 import { fetchAppConfig } from "@/lib/apiClient";
-import { parseRepoFromUrl, LAST_REPO_KEY } from "@/lib/utils";
+import { LAST_REPO_KEY } from "@/lib/utils";
 
 interface RepoInputProps {
   initialUrl?: string;
-}
-
-export { REPO_PRESETS as PRESETS } from "@/components/home/repoPresets";
-
-export interface RepoNavigation {
-  owner: string;
-  repo: string;
-  route: string;
-  pendingUrl: string;
-}
-
-/** Build the canonical GitHub URL for an `owner/repo` preset slug. */
-export function getPresetUrl(repo: string): string {
-  return `https://github.com/${repo}`;
-}
-
-/**
- * Resolve a raw input (URL or `owner/repo`) to its navigation target.
- * Returns `null` when the input is not a valid GitHub repo reference.
- * Pure helper so the preset-click → navigate contract is unit-testable.
- */
-export function resolveRepoNavigation(value: string): RepoNavigation | null {
-  const trimmed = value.trim();
-  const parsed = parseRepoFromUrl(trimmed);
-  if (!parsed) return null;
-  return {
-    owner: parsed.owner,
-    repo: parsed.repo,
-    route: `/${parsed.owner}/${parsed.repo}`,
-    pendingUrl: trimmed,
-  };
-}
-
-export type OpenRepositoryResult =
-  | { ok: true; nav: RepoNavigation }
-  | { ok: false; error: string };
-
-/**
- * Pure decision logic for opening a repository from raw input.
- * Returns the navigation target or the error message to display —
- * no side effects, so both the submit flow and the preset-click flow
- * (`handlePreset` → `openRepository`) are unit-testable.
- */
-export function resolveOpenRepository(value: string): OpenRepositoryResult {
-  const nav = resolveRepoNavigation(value);
-  if (!nav) {
-    return {
-      ok: false,
-      error: 'Enter a valid GitHub URL or owner/repo (e.g. facebook/react)',
-    };
-  }
-  return { ok: true, nav };
-}
-
-/**
- * Resolve a preset slug (e.g. `facebook/react`) to the navigation that a
- * preset click performs. Preset clicks navigate immediately — they don't
- * just fill the input — so this composes `getPresetUrl` with the same
- * resolution `openRepository` uses, and is covered by interaction-contract
- * tests in `RepoInput.test.ts`.
- */
-export function resolvePresetNavigation(repo: string): OpenRepositoryResult {
-  return resolveOpenRepository(getPresetUrl(repo));
 }
 
 export function RepoInput({ initialUrl = "" }: RepoInputProps) {

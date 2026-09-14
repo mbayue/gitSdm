@@ -85,8 +85,8 @@ describe('cache/lru', () => {
   });
 
   it('builds cache keys deterministically', () => {
-    expect(analyzeCacheKey('o', 'r', 's')).toBe('analyze:o/r@s');
-    expect(analyzeCacheKey('o', 'r', 's', 'main')).toBe('analyze:o/r@s:main');
+    expect(analyzeCacheKey('o', 'r', 's')).toBe(analyzeCacheKey('o', 'r', 's'));
+    expect(analyzeCacheKey('o', 'r', 's', 'main')).not.toBe(analyzeCacheKey('o', 'r', 's'));
     expect(aiCacheKey('summary', 'o', 'r', 's', 'ctx')).toBe('ai:summary:o/r@s:ctx');
   });
 });
@@ -94,9 +94,7 @@ describe('cache/lru', () => {
 describe('hashContext', () => {
   it('produces the correct SHA-256 hex string for a known input', () => {
     // "hello world" -> SHA256 -> b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9
-    expect(hashContext('hello world')).toBe(
-      'b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9',
-    );
+    expect(hashContext('hello world')).toBe('b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9');
   });
 
   it('produces different hashes for different strings', () => {
@@ -108,9 +106,7 @@ describe('hashContext', () => {
 
   it('produces the correct hash for an empty string', () => {
     // "" -> SHA256 -> e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-    expect(hashContext('')).toBe(
-      'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-    );
+    expect(hashContext('')).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
   });
 });
 

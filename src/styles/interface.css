@@ -195,10 +195,23 @@
     padding: 24px;
   }
 }
+[data-reduced-settling] canvas {
+  visibility: hidden;
+}
+html[data-reduced-motion='true'] *,
+html[data-reduced-motion='true'] ::before,
+html[data-reduced-motion='true'] ::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+/* Before React sets data-reduced-motion, honor the OS setting; the :not() in the
+   selector keeps an explicit 'false' (user picked Full) on full animation. */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  ::before,
-  ::after {
+  html:not([data-reduced-motion='false']) *,
+  html:not([data-reduced-motion='false']) ::before,
+  html:not([data-reduced-motion='false']) ::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

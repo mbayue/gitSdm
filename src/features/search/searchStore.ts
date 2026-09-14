@@ -1,9 +1,16 @@
 import { create } from 'zustand';
+import type { IndexScope } from '@/lib/apiClient';
 import type { SearchResultCard, QAAnswer, IndexingStatus } from '@/types';
 
 export type SearchMode = 'search' | 'ask';
 
 interface SearchState {
+  indexBuildId?: string;
+  indexOperation: number;
+  indexAction: 'index' | 'cancel' | null;
+  indexScope: IndexScope | null;
+  resultCoverage: import('../../../server/search/coverage').SearchCoverage | undefined;
+  revision: number;
   mode: SearchMode;
   query: string;
   results: SearchResultCard[];
@@ -12,8 +19,6 @@ interface SearchState {
   error: string | null;
   recentQueries: string[];
   indexingStatus: IndexingStatus;
-  askCache: Map<string, QAAnswer>;
-  searchCache: Map<string, SearchResultCard[]>;
 
   setMode: (mode: SearchMode) => void;
   setQuery: (query: string) => void;
@@ -23,6 +28,7 @@ interface SearchState {
   setError: (error: string | null) => void;
   setIndexingStatus: (status: IndexingStatus) => void;
   addRecentQuery: (query: string) => void;
+  resetQueryResults: () => void;
   reset: () => void;
 }
 
@@ -47,6 +53,11 @@ function saveRecentQueries(queries: string[]): void {
 }
 
 export const useSearchStore = create<SearchState>((set, get) => ({
+  indexOperation: 0,
+  indexAction: null,
+  indexScope: null,
+  resultCoverage: undefined,
+  revision: 0,
   mode: 'search',
   query: '',
   results: [],
@@ -55,8 +66,6 @@ export const useSearchStore = create<SearchState>((set, get) => ({
   error: null,
   recentQueries: loadRecentQueries(),
   indexingStatus: { state: 'idle' },
-  askCache: new Map(),
-  searchCache: new Map(),
 
   setMode: (mode) => set({ mode }),
   setQuery: (query) => set({ query }),
@@ -75,15 +84,28 @@ export const useSearchStore = create<SearchState>((set, get) => ({
     set({ recentQueries: updated });
   },
 
+  resetQueryResults: () =>
+    set({
+      results: [],
+      answer: null,
+      error: null,
+      resultCoverage: undefined,
+      isLoading: false,
+    }),
+
   reset: () =>
     set({
+      revision: get().revision + 1,
+      indexAction: null,
+      indexBuildId: undefined,
+      indexScope: null,
       mode: 'search',
       query: '',
       results: [],
+      resultCoverage: undefined,
       answer: null,
       isLoading: false,
       error: null,
       indexingStatus: { state: 'idle' },
-      // Preserve caches across repo switches — they're keyed by owner/repo
     }),
 }));

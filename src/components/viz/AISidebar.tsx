@@ -1,3 +1,4 @@
+import { useChatConfigRevision } from '@/stores/chatConfigStore';
 import { TooltipHint } from '@/components/ui/tooltip';
 import { useMemo } from 'react';
 import {
@@ -84,6 +85,7 @@ export function AISidebar({
     blastRadiusActive,
   } = useVizStore();
 
+  const { revision } = useChatConfigRevision();
   const nodeById = useMemo(
     () => new Map(analysis.graph.nodes.map((n) => [n.id, n])),
     [analysis.graph.nodes]
@@ -152,7 +154,7 @@ export function AISidebar({
 
           {sidebarTab === 'ai' && (
             <TabsContent value="ai" className="space-y-6 animate-in fade-in duration-150">
-              <AiCenterTab analysis={analysis} />
+              <AiCenterTab key={`${revision}/${analysis.meta.owner}/${analysis.meta.repo}/${selectedBranch}`} analysis={analysis} />
             </TabsContent>
           )}
 

@@ -2,6 +2,7 @@ import type { QAEngine, QAOptions, QAResponse, Citation } from './types';
 import { DEFAULT_MIN_SCORE } from './constants';
 import { getSearchEngine } from './search-engine';
 import { getAIProvider } from '../ai/provider';
+import { coverageMessage } from './coverage';
 
 const QA_TOP_K = 5;
 const NOT_AVAILABLE_MESSAGE =
@@ -15,27 +16,27 @@ export function createQAEngine(): QAEngine {
       const { question, owner, repo, commitSha, apiKey } = options;
 
       // Retrieve top 5 chunks via semantic search
-      let searchResponse;
-      try {
-        searchResponse = await searchEngine.search({
-          query: question,
-          owner,
-          repo,
-          commitSha,
-          topK: QA_TOP_K,
-          minScore: DEFAULT_MIN_SCORE,
-        });
-      } catch {
-        // If search fails (no index, etc.) return not-available
-        return { answer: NOT_AVAILABLE_MESSAGE, citations: [], cached: false };
-      }
+      const searchResponse = await searchEngine.search({
+        query: question,
+        owner,
+        repo,
+        commitSha,
+        gitHubToken: options.gitHubToken,
+        includePaths: options.includePaths,
+        excludePaths: options.excludePaths,
+        topK: QA_TOP_K,
+        minScore: DEFAULT_MIN_SCORE,
+      });
 
-      const relevantResults = searchResponse.results.filter(
-        (r) => r.score >= DEFAULT_MIN_SCORE,
-      );
+      const relevantResults = searchResponse.results.filter((r) => r.score >= DEFAULT_MIN_SCORE);
 
       if (relevantResults.length < 1) {
-        return { answer: NOT_AVAILABLE_MESSAGE, citations: [], cached: searchResponse.cached };
+        return {
+          answer: NOT_AVAILABLE_MESSAGE,
+          citations: [],
+          cached: searchResponse.cached,
+          coverage: searchResponse.coverage,
+        };
       }
 
       // Build context from retrieved chunks
@@ -48,8 +49,17 @@ export function createQAEngine(): QAEngine {
 
       // Generate answer using the configured AI provider
       const aiProvider = await getAIProvider(apiKey);
+      const coverage = searchResponse.coverage;
+      const notice = coverage ? coverageMessage(coverage) : '';
       const answer = await aiProvider.complete([
-        { role: 'system', content: SYSTEM_PROMPT },
+        {
+          role: 'system',
+          content:
+            SYSTEM_PROMPT +
+            '\n' +
+            notice +
+            '\nAnswers cover only indexed files. Never infer repository-wide absence or completeness from the retrieved excerpts.',
+        },
         { role: 'user', content: prompt },
       ]);
 
@@ -61,7 +71,8 @@ export function createQAEngine(): QAEngine {
       }));
 
       return {
-        answer,
+        answer: coverage && coverage.kind !== 'complete' ? notice + '\n\n' + answer : answer,
+        coverage,
         citations,
         cached: searchResponse.cached,
       };

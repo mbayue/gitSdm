@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, mock, beforeEach } from 'bun:test';
 import { analyzeRepository } from './analyze-repo';
+import { enrichRepository } from './repo-enrichment';
 import { clearAllCaches } from '../cache/lru';
 import type { GraphBuildInput } from '../graph/graph-builder';
 import type { RequestContext } from '../utils/context';
@@ -20,40 +21,57 @@ const mockRepoInfo = {
 };
 
 const workspaceFileContents = {
-  'package.json': JSON.stringify({ name: '@repo/root', workspaces: ['packages/*'] }),
-  'packages/a/package.json': JSON.stringify({ name: '@repo/a', dependencies: { '@repo/b': 'workspace:*' } }),
+  'package.json': JSON.stringify({
+    name: '@repo/root',
+    workspaces: ['packages/*'],
+  }),
+  'packages/a/package.json': JSON.stringify({
+    name: '@repo/a',
+    dependencies: { '@repo/b': 'workspace:*' },
+  }),
   'packages/b/package.json': JSON.stringify({ name: '@repo/b' }),
   'src/main.ts': 'export const value = 1',
 };
 
 const plainFileContents = {
-  'package.json': JSON.stringify({ name: 'plain-app', description: 'no workspaces here', dependencies: { react: '^19' } }),
+  'package.json': JSON.stringify({
+    name: 'plain-app',
+    description: 'no workspaces here',
+    dependencies: { react: '^19' },
+  }),
   'src/main.ts': 'export const value = 1',
 };
 
 const excludedWorkspaceFileContents = {
-  'package.json': JSON.stringify({ name: '@repo/root', packageManager: 'yarn@4.0.0', workspaces: ['packages/*', '!packages/excluded'] }),
+  'package.json': JSON.stringify({
+    name: '@repo/root',
+    packageManager: 'yarn@4.0.0',
+    workspaces: ['packages/*', '!packages/excluded'],
+  }),
   'packages/a/package.json': JSON.stringify({ name: '@repo/a' }),
   'packages/excluded/package.json': JSON.stringify({ name: '@repo/excluded' }),
   'src/main.ts': 'export const value = 1',
 };
 
 let activeFileContents: Record<string, string> = workspaceFileContents;
+let denyAccess = false;
 const buildGraphMock = mock((input: GraphBuildInput) => ({
-  nodes: input.workspacePackages?.map((pkg) => ({
-    id: `package:${pkg.rootPath}`,
-    type: 'package' as const,
-    position: { x: 0, y: 0 },
-    data: { label: pkg.name ?? pkg.rootPath },
-  })) ?? [],
-  edges: input.scopedDependencies
-    ?.filter((dep) => dep.name === '@repo/b')
-    .map((dep) => ({
-      id: `e:${dep.manifestPath}->${dep.name}`,
-      source: 'package:packages/a',
-      target: 'package:packages/b',
-      type: 'depends_on' as const,
+  nodes:
+    input.workspacePackages?.map((pkg) => ({
+      id: `package:${pkg.rootPath}`,
+      type: 'package' as const,
+      position: { x: 0, y: 0 },
+      data: { label: pkg.name ?? pkg.rootPath },
     })) ?? [],
+  edges:
+    input.scopedDependencies
+      ?.filter((dep) => dep.name === '@repo/b')
+      .map((dep) => ({
+        id: `e:${dep.manifestPath}->${dep.name}`,
+        source: 'package:packages/a',
+        target: 'package:packages/b',
+        type: 'depends_on' as const,
+      })) ?? [],
   layout: 'dagre' as const,
 }));
 
@@ -61,7 +79,13 @@ const originalFetch = globalThis.fetch;
 const stubOctokit = {
   repos: {
     listCommits: async () => ({
-      data: [{ commit: { author: { name: 'test-user', date: '2026-01-01T00:00:00Z' } } }],
+      data: [
+        {
+          commit: {
+            author: { name: 'test-user', date: '2026-01-01T00:00:00Z' },
+          },
+        },
+      ],
       headers: {},
     }),
   },
@@ -71,17 +95,23 @@ const fetchMock = mock(async (input: RequestInfo | URL) => {
   const packageName = decodeURIComponent(new URL(String(input)).pathname.slice(1));
 
   if (packageName === '@repo/b') {
-    return new Response(JSON.stringify({
-      'dist-tags': { latest: 'workspace:*' },
-      license: 'MIT',
-    }), { status: 200 });
+    return new Response(
+      JSON.stringify({
+        'dist-tags': { latest: 'workspace:*' },
+        license: 'MIT',
+      }),
+      { status: 200 },
+    );
   }
 
   if (packageName === 'react') {
-    return new Response(JSON.stringify({
-      'dist-tags': { latest: '19.1.0' },
-      license: 'MIT',
-    }), { status: 200 });
+    return new Response(
+      JSON.stringify({
+        'dist-tags': { latest: '19.1.0' },
+        license: 'MIT',
+      }),
+      { status: 200 },
+    );
   }
 
   throw new TypeError(`unexpected fetch for ${packageName}`);
@@ -90,9 +120,15 @@ const fetchMock = mock(async (input: RequestInfo | URL) => {
 describe('services/analyze-repo', () => {
   beforeEach(() => {
     mock.module('../github/fetch-tree', () => ({
-      fetchRepoInfo: async () => mockRepoInfo,
+      fetchRepoInfo: async () => {
+        if (denyAccess) throw new Error('Repository access denied');
+        return mockRepoInfo;
+      },
       fetchFlatTree: async () => ({
-        items: Object.keys(activeFileContents).map((path) => ({ path, type: 'file' })),
+        items: Object.keys(activeFileContents).map((path) => ({
+          path,
+          type: 'file',
+        })),
         truncated: false,
       }),
       fetchContributors: async () => [],
@@ -121,6 +157,7 @@ describe('services/analyze-repo', () => {
 
     clearAllCaches();
     activeFileContents = workspaceFileContents;
+    denyAccess = false;
     buildGraphMock.mockClear();
     fetchMock.mockClear();
     globalThis.fetch = fetchMock as typeof fetch;
@@ -135,6 +172,19 @@ describe('services/analyze-repo', () => {
     expect(analyzeRepository('invalid-url')).rejects.toThrow('Invalid GitHub repository URL');
   });
 
+  it('isolates analysis and SHA aliases by credentials and rechecks access on cache hits', async () => {
+    const input = { owner: 'test-owner', repo: 'test-repo', branch: 'main' };
+    const first = { ...mockCtx, gitHubToken: 'first-credential' };
+    const second = { ...mockCtx, gitHubToken: 'second-credential' };
+    const original = await analyzeRepository(input, first);
+    expect(await analyzeRepository({ ...input, branch: 'test-sha' }, first)).toBe(original);
+    expect(buildGraphMock).toHaveBeenCalledTimes(1);
+    await analyzeRepository({ ...input, branch: 'test-sha' }, second);
+    expect(buildGraphMock).toHaveBeenCalledTimes(2);
+    denyAccess = true;
+    await expect(analyzeRepository(input, first)).rejects.toThrow('Repository access denied');
+  });
+
   it('runs the full repository analysis pipeline and caches the result', async () => {
     const analysis = await analyzeRepository('https://github.com/test-owner/test-repo', mockCtx);
     expect(analysis.meta.fullName).toBe('test-owner/test-repo');
@@ -142,22 +192,41 @@ describe('services/analyze-repo', () => {
     expect(analysis.treeTruncated).toBe(false);
     expect(analysis.workspacePackages?.map((pkg) => pkg.rootPath)).toEqual(['', 'packages/a', 'packages/b']);
     expect(analysis.dependencies).toEqual([
-      { name: '@repo/b', version: 'workspace:*', type: 'prod', ecosystem: 'npm' },
+      {
+        name: '@repo/b',
+        version: 'workspace:*',
+        type: 'prod',
+        ecosystem: 'npm',
+      },
     ]);
     expect(analysis.graph.nodes.some((node) => node.id === 'package:packages/a')).toBe(true);
-    expect(analysis.graph.edges.some((edge) => edge.source === 'package:packages/a' && edge.target === 'package:packages/b')).toBe(true);
-    expect(analysis.dependencyHealth).toEqual(expect.objectContaining({
-      summary: expect.objectContaining({ total: 1, current: 1, unsupported: 0 }),
-    }));
-    expect(buildGraphMock).toHaveBeenCalledWith(expect.objectContaining({
-      workspacePackages: expect.arrayContaining([
-        expect.objectContaining({ rootPath: 'packages/a', name: '@repo/a' }),
-        expect.objectContaining({ rootPath: 'packages/b', name: '@repo/b' }),
-      ]),
-      scopedDependencies: expect.arrayContaining([
-        expect.objectContaining({ manifestPath: 'packages/a/package.json', name: '@repo/b' }),
-      ]),
-    }));
+    expect(
+      analysis.graph.edges.some((edge) => edge.source === 'package:packages/a' && edge.target === 'package:packages/b'),
+    ).toBe(true);
+    expect(analysis.dependencyHealth).toBeUndefined();
+    expect(await enrichRepository({ owner: 'test-owner', repo: 'test-repo' }, 'health', mockCtx)).toEqual(
+      expect.objectContaining({
+        summary: expect.objectContaining({
+          total: 1,
+          current: 1,
+          unsupported: 0,
+        }),
+      }),
+    );
+    expect(buildGraphMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspacePackages: expect.arrayContaining([
+          expect.objectContaining({ rootPath: 'packages/a', name: '@repo/a' }),
+          expect.objectContaining({ rootPath: 'packages/b', name: '@repo/b' }),
+        ]),
+        scopedDependencies: expect.arrayContaining([
+          expect.objectContaining({
+            manifestPath: 'packages/a/package.json',
+            name: '@repo/b',
+          }),
+        ]),
+      }),
+    );
     expect(fetchMock).toHaveBeenCalledTimes(0);
 
     // Call again, should return cached
@@ -171,13 +240,15 @@ describe('services/analyze-repo', () => {
 
     const analysis = await analyzeRepository('https://github.com/test-owner/test-repo', mockCtx);
 
-    expect(analysis.dependencies).toEqual([
-      { name: 'react', version: '^19', type: 'prod', ecosystem: 'npm' },
-    ]);
+    expect(analysis.dependencies).toEqual([{ name: 'react', version: '^19', type: 'prod', ecosystem: 'npm' }]);
+    expect(fetchMock).toHaveBeenCalledTimes(0);
+    await enrichRepository({ owner: 'test-owner', repo: 'test-repo' }, 'health', mockCtx);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain('/react');
     expect(analysis.workspacePackages).toEqual([]);
-    expect(analysis.graph.edges.some((edge) => edge.source.startsWith('package:') && edge.target.startsWith('package:'))).toBe(false);
+    expect(
+      analysis.graph.edges.some((edge) => edge.source.startsWith('package:') && edge.target.startsWith('package:')),
+    ).toBe(false);
   });
 
   it('skips registry metadata for non-npm dependencies', async () => {
@@ -189,12 +260,26 @@ describe('services/analyze-repo', () => {
     const analysis = await analyzeRepository('https://github.com/test-owner/test-repo', mockCtx);
 
     expect(fetchMock).toHaveBeenCalledTimes(0);
-    expect(analysis.dependencyHealth).toEqual(expect.objectContaining({
-      summary: expect.objectContaining({ total: 1, unsupported: 1, current: 0, outdated: 0, unknown: 0, errors: 0 }),
-      items: expect.arrayContaining([
-        expect.objectContaining({ ecosystem: 'go', name: 'github.com/gin-gonic/gin', state: 'unsupported' }),
-      ]),
-    }));
+    expect(analysis.dependencyHealth).toBeUndefined();
+    expect(await enrichRepository({ owner: 'test-owner', repo: 'test-repo' }, 'health', mockCtx)).toEqual(
+      expect.objectContaining({
+        summary: expect.objectContaining({
+          total: 1,
+          unsupported: 1,
+          current: 0,
+          outdated: 0,
+          unknown: 0,
+          errors: 0,
+        }),
+        items: expect.arrayContaining([
+          expect.objectContaining({
+            ecosystem: 'go',
+            name: 'github.com/gin-gonic/gin',
+            state: 'unsupported',
+          }),
+        ]),
+      }),
+    );
   });
 
   it('honors negated workspace globs and explicit yarn packageManager', async () => {

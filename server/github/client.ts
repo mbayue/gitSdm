@@ -11,6 +11,7 @@ export function getOctokit(token?: string): Octokit {
     return new Octokit({
       auth: token,
       userAgent: 'gitSdm/1.0',
+      request: { timeout: 15000 },
     });
   }
   if (!octokitInstance) {
@@ -18,6 +19,7 @@ export function getOctokit(token?: string): Octokit {
     octokitInstance = new Octokit({
       auth: envToken || undefined,
       userAgent: 'gitSdm/1.0',
+      request: { timeout: 15000 },
     });
   }
   return octokitInstance;

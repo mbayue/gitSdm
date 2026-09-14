@@ -7,6 +7,13 @@ import { getRepoFileContent } from '../services/get-file';
 import { parseRepoParams } from '../github/parse-url';
 import { logApi } from '../utils/logger';
 import type { RepoAnalysis } from '../../src/types';
+import { enrichRepository } from '../services/repo-enrichment';
+import { z } from 'zod';
+
+const continuationSchema = z.object({
+  completed: z.array(z.string().max(1000)).max(200).optional(),
+  pending: z.array(z.string().max(1000)).max(200).optional(),
+});
 
 export async function handleRepoRoutes(
   pathname: string,
@@ -15,6 +22,15 @@ export async function handleRepoRoutes(
   ctx: RequestContext,
   start: number,
 ): Promise<Response | null> {
+  if (pathname === '/api/repo/churn' || pathname === '/api/repo/health') {
+    const parsed = repoQuerySchema.safeParse(query);
+    if (!parsed.success) throw new AppError(400, 'Invalid repository', 'INVALID_PARAMS');
+    const continuation = continuationSchema.safeParse(req.method === 'POST' ? await req.json().catch(() => null) : {});
+    if (!continuation.success) throw new AppError(400, 'Invalid churn continuation', 'INVALID_PARAMS');
+    return Response.json(
+      await enrichRepository(parsed.data, pathname.endsWith('/churn') ? 'churn' : 'health', ctx, continuation.data),
+    );
+  }
   if (pathname === '/api/repo/analyze') {
     const body = await req.json().catch(() => ({}));
     const parsed = analyzeBodySchema.safeParse(body);
@@ -71,11 +87,14 @@ export async function handleRepoRoutes(
       throw new AppError(400, 'Invalid owner/repo', 'INVALID_PARAMS');
     }
     const analysis: RepoAnalysis = await analyzeRepository(q.data, ctx);
-    return Response.json({
-      tree: analysis.tree,
-      truncated: analysis.treeTruncated,
-      importantFiles: analysis.importantFiles,
-    }, { status: 200 });
+    return Response.json(
+      {
+        tree: analysis.tree,
+        truncated: analysis.treeTruncated,
+        importantFiles: analysis.importantFiles,
+      },
+      { status: 200 },
+    );
   }
 
   if (pathname === '/api/repo/file') {
@@ -83,7 +102,13 @@ export async function handleRepoRoutes(
     if (!q.success) {
       throw new AppError(400, 'Invalid owner, repo, or path', 'INVALID_PARAMS');
     }
-    const file: { content: string } = await getRepoFileContent(q.data.owner, q.data.repo, q.data.path, q.data.branch, ctx);
+    const file: { content: string } = await getRepoFileContent(
+      q.data.owner,
+      q.data.repo,
+      q.data.path,
+      q.data.branch,
+      ctx,
+    );
     return Response.json(file, { status: 200 });
   }
 

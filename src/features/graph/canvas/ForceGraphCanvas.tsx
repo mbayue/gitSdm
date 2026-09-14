@@ -1,4 +1,6 @@
+import { motionDuration } from '@/lib/motion-preference';
 import { useCallback, useRef, useState } from "react";
+import { useMotionPreference } from '@/hooks/useMotionPreference';
 import ForceGraph2D, { type ForceGraphMethods } from "react-force-graph-2d";
 import { Loader2 } from "lucide-react";
 import type { GraphEdge, GraphNode } from "@/types";
@@ -66,6 +68,8 @@ export function NetworkCanvas({
   onVisibleCounts,
 }: NetworkCanvasProps) {
   const [tick, setTick] = useState(0);
+  const reducedMotion = useMotionPreference();
+  const [settledLayout, setSettledLayout] = useState<{ data: unknown; layout: LayoutType; size: SizeMode } | null>(null);
   const theme = useVizStore((s) => s.theme);
 
   const internalForceGraphRef = useRef<
@@ -126,8 +130,8 @@ export function NetworkCanvas({
         ...(typeof window !== 'undefined' && window.innerWidth >= 1024 ? { aiSidebarOpen: true } : {}),
       });
       if (typeof node.x === "number" && typeof node.y === "number") {
-        forceGraphRef.current?.centerAt(node.x, node.y, 300);
-        forceGraphRef.current?.zoom(3.2, 300);
+        forceGraphRef.current?.centerAt(node.x, node.y, motionDuration(300));
+        forceGraphRef.current?.zoom(3.2, motionDuration(300));
       }
     },
     [prevFocusRef, forceGraphRef],
@@ -152,10 +156,11 @@ export function NetworkCanvas({
   ]);
 
   const handleEngineStop = useCallback(() => {
+    setSettledLayout({ data: forceGraphData, layout: layoutType, size: sizeMode });
     handleLayoutStop();
     if (showMinimap) setTick((t) => t + 1);
     forceInitialViewDoneRef.current = true;
-  }, [showMinimap, handleLayoutStop]);
+  }, [showMinimap, handleLayoutStop, forceGraphData, layoutType, sizeMode]);
 
   const handleEngineTick = useCallback(() => {
     if (!showMinimap) return;
@@ -239,12 +244,14 @@ export function NetworkCanvas({
         colorMode,
         sizeMode,
         theme,
+        metadataSource: graph,
       });
     },
     [
       blastRadiusActive,
       colorMode,
       compareBranch,
+      graph,
       highlightedNodeIds,
       hoveredForceNode,
       forceGraphData.nodes.length,
@@ -273,12 +280,19 @@ export function NetworkCanvas({
   // --- Render ---
   const isLoading = !graph || !graph.nodes;
   const isEmpty = graph.nodes.length === 0;
+  const settling = settledLayout?.data !== forceGraphData || settledLayout?.layout !== layoutType || settledLayout?.size !== sizeMode;
 
   return (
     <div
       className="graph-canvas-host h-full w-full relative"
       ref={forceHostRef}
+      data-reduced-settling={reducedMotion && settling && !isEmpty ? '' : undefined}
     >
+      {reducedMotion && settling && !isEmpty && (
+        <p role="status" className="absolute inset-0 z-10 flex items-center justify-center bg-background text-sm text-muted-foreground pointer-events-none">
+          Arranging dependency graph…
+        </p>
+      )}
       {isLoading && (
         <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm select-none">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-ui-active-text-green border-t-transparent" />

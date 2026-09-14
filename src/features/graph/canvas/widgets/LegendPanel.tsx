@@ -232,9 +232,9 @@ function LegendContent({
           </div>
         )}
 
-        {/* Focus & Selection — merged blast radius + interactive states */}
+        {/* Focus &amp; Selection — merged blast radius + interactive states */}
         <div className={sectionClass}>
-          <SectionHeader>Focus & Selection</SectionHeader>
+          <SectionHeader>Focus &amp; Selection</SectionHeader>
           <div className="space-y-1.5">
             {blastRadiusActive ? (
               <>

@@ -1,10 +1,10 @@
+import { chatOverrides, readChatOverrides } from './ai/chat-config';
 import { getOctokit } from './github/client';
 import type { RequestContext } from './utils/context';
 import { fetchTrending } from './services/trending';
 import { logApi, logError } from './utils/logger';
-import { clearAllCaches } from './cache/lru';
 import { getPublicAppConfig } from './config/app-config';
-import { toErrorPayload } from './utils/errors';
+import { AppError, toErrorPayload } from './utils/errors';
 import type { TrendingRepo } from '../src/types';
 
 // Decoupled Router Submodules
@@ -12,10 +12,48 @@ import { handleAiRoutes } from './router/ai-routes';
 import { handleRepoRoutes } from './router/repo-routes';
 import { handleSearchRoutes } from './router/search-routes';
 import { addSecurityHeaders } from './utils/http';
+import { configuredLimit, reserveUsage } from './utils/usage-limits';
+import { createAdmissionLimit, limitRequestBody } from './utils/request-limits';
+import { limitClient } from './utils/client-limits';
 
-export async function handleApiRequest(
-  req: Request,
-): Promise<Response | null> {
+const admitRequest = createAdmissionLimit(8, Infinity);
+const admitConnection = createAdmissionLimit(8, Infinity);
+
+// Endpoints registered in server/router/. Admission and usage buckets are only spent on
+// these, so cheap 404s against unknown /api/* paths cannot exhaust the deployment budget.
+export const registeredApiPaths = new Set([
+  '/api/config',
+  '/api/trending',
+  '/api/repo/analyze',
+  '/api/repo/branches',
+  '/api/repo/churn',
+  '/api/repo/contributors',
+  '/api/repo/file',
+  '/api/repo/graph',
+  '/api/repo/health',
+  '/api/repo/tags',
+  '/api/repo/tree',
+  '/api/ai/explain',
+  '/api/ai/explain-lif',
+  '/api/ai/health',
+  '/api/ai/learning-path',
+  '/api/ai/mermaid',
+  '/api/ai/readme-enhance',
+  '/api/ai/refactor',
+  '/api/ai/roast',
+  '/api/search',
+  '/api/search/ask',
+  '/api/search/cancel',
+  '/api/search/index',
+  '/api/search/status',
+]);
+
+/** True only for endpoints registered in server/router/; non-/api paths are handled elsewhere. */
+export function isRegisteredApiPath(pathname: string): boolean {
+  return registeredApiPaths.has(pathname);
+}
+
+export async function handleApiRequest(req: Request, remoteAddress?: string): Promise<Response | null> {
   const start = Date.now();
   const method = req.method;
   const url = new URL(req.url);
@@ -27,18 +65,45 @@ export async function handleApiRequest(
     query[k] = v;
   });
 
-  const userKey = req.headers.get('x-gemini-api-key') || undefined;
+  const userKey = req.headers.get('x-ai-api-key')?.trim() || req.headers.get('x-gemini-api-key')?.trim() || undefined;
+  // Reject unknown /api/* paths before any admission, client or usage budget is spent.
+  if (pathname.startsWith('/api/') && !isRegisteredApiPath(pathname)) {
+    return addSecurityHeaders(
+      Response.json({ error: 'Not found', code: 'NOT_FOUND', status: 404, retryable: false }, { status: 404 }),
+    );
+  }
   const gitHubToken = req.headers.get('x-github-token') || undefined;
 
   const ctx: RequestContext = {
     octokit: getOctokit(gitHubToken),
+    gitHubToken,
   };
 
+  const expensive =
+    pathname === '/api/trending' ||
+    pathname.startsWith('/api/ai/') ||
+    pathname === '/api/search' ||
+    pathname.startsWith('/api/search/') ||
+    pathname.startsWith('/api/repo/');
+  let release: (() => void) | null | undefined;
+  let releaseConnection: (() => void) | null | undefined;
   try {
+    releaseConnection = expensive ? admitConnection() : undefined;
+    if (releaseConnection === null)
+      throw new AppError(429, 'Server is busy. Please try again shortly.', 'RATE_LIMIT_EXCEEDED', true);
+    if (expensive) await limitClient(req.headers, remoteAddress);
+    release = expensive ? admitRequest() : undefined;
+    if (release === null)
+      throw new AppError(429, 'Server is busy. Please try again shortly.', 'RATE_LIMIT_EXCEEDED', true);
+    if (expensive) await reserveUsage('api-minute', 1, configuredLimit('API_REQUESTS_PER_MINUTE', 600), 60000);
+    req = await limitRequestBody(req);
     // ── Global System Utilities ─────────────────────────────────────
     if (pathname === '/api/trending' && method === 'GET') {
       const repos: TrendingRepo[] = await fetchTrending();
-      logApi('/api/trending', { durationMs: Date.now() - start, count: repos.length });
+      logApi('/api/trending', {
+        durationMs: Date.now() - start,
+        count: repos.length,
+      });
       return addSecurityHeaders(Response.json({ repos }, { status: 200 }));
     }
 
@@ -46,28 +111,36 @@ export async function handleApiRequest(
       return addSecurityHeaders(Response.json(getPublicAppConfig(), { status: 200 }));
     }
 
-    if (pathname === '/api/cache/clear' && method === 'POST') {
-      clearAllCaches();
-      logApi('/api/cache/clear', { durationMs: Date.now() - start });
-      return addSecurityHeaders(Response.json({ cleared: true }, { status: 200 }));
-    }
-
     // ── Repository Routes ───────────────────────────────────────────
     const repoResponse = await handleRepoRoutes(pathname, req, query, ctx, start);
     if (repoResponse) return addSecurityHeaders(repoResponse);
 
     // ── AI Summary & Analysis Routes ────────────────────────────────
-    const aiResponse = await handleAiRoutes(pathname, req, userKey, gitHubToken, ctx);
+    const aiResponse = await chatOverrides.run(readChatOverrides(req.headers, userKey), () =>
+      handleAiRoutes(pathname, req, userKey, gitHubToken, ctx),
+    );
     if (aiResponse) return addSecurityHeaders(aiResponse);
 
     // ── Semantic Search & Ingest Routes ─────────────────────────────
-    const searchResponse = await handleSearchRoutes(pathname, req, query, userKey, ctx, start);
+    const searchResponse = await chatOverrides.run(
+      pathname === '/api/search/ask' ? readChatOverrides(req.headers, userKey) : {},
+      () => handleSearchRoutes(pathname, req, query, userKey, ctx, start),
+    );
     if (searchResponse) return addSecurityHeaders(searchResponse);
 
     return null;
   } catch (error) {
     const payload = toErrorPayload(error);
     logError(pathname, error, { durationMs: Date.now() - start });
-    return addSecurityHeaders(Response.json(payload, { status: payload.status }));
+    return addSecurityHeaders(
+      Response.json(payload, {
+        status: payload.status,
+        headers:
+          payload.status === 429 ? { 'Retry-After': String(payload.context?.retryAfterSeconds ?? 60) } : undefined,
+      }),
+    );
+  } finally {
+    release?.();
+    releaseConnection?.();
   }
 }

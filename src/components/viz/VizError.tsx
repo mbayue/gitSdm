@@ -1,3 +1,4 @@
+import { useMotionPreference } from '@/hooks/useMotionPreference';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -76,6 +77,7 @@ function getErrorMeta(errStr: string, code?: string): {
 }
 
 export function VizError({ error, message }: VizErrorProps) {
+  const reducedMotion = useMotionPreference();
   let errStr = message || 'An unexpected analysis error occurred';
   let errCode = '';
 
@@ -117,7 +119,7 @@ export function VizError({ error, message }: VizErrorProps) {
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        transition={reducedMotion ? { duration: 0, delay: 0 } : { duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         className={`relative w-full max-w-md rounded-2xl border ${meta.borderColor} bg-card p-8 shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop-blur-xl text-center`}
       >
         <div className={`mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary border border-border`}>
@@ -145,7 +147,7 @@ export function VizError({ error, message }: VizErrorProps) {
             <p className="text-xs text-muted-foreground leading-relaxed mb-3">
               Add a{' '}
               <a
-                href="https://github.com/settings/tokens/new?scopes=repo&description=gitSdm%20Token"
+                href="https://github.com/settings/tokens/new?scopes=repo&amp;description=gitSdm%20Token"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-ui-active-text-green hover:underline font-medium inline-flex items-center gap-0.5"

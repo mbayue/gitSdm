@@ -1,15 +1,14 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { TLSSocket } from 'node:tls';
 import { handleApiRequest } from '../api-router';
+import { checkBodySize } from './request-limits';
+import { toErrorPayload } from './errors';
 
 /**
  * Adapter to handle Node-compatible requests (Vite dev server, Vercel)
  * and route them through the Web-standard handleApiRequest.
  */
-export async function handleNodeRequest(
-  nodeReq: IncomingMessage,
-  nodeRes: ServerResponse,
-): Promise<boolean> {
+export async function handleNodeRequest(nodeReq: IncomingMessage, nodeRes: ServerResponse): Promise<boolean> {
   const headers = new Headers();
   for (const [key, value] of Object.entries(nodeReq.headers)) {
     if (value) {
@@ -26,16 +25,36 @@ export async function handleNodeRequest(
   const url = `${protocol}://${host}${nodeReq.url}`;
 
   let body: BodyInit | undefined;
-  const requestWithBody = nodeReq as IncomingMessage & { body?: unknown };
-  if (requestWithBody.body !== undefined) {
-    const parsedBody = requestWithBody.body;
-    body = typeof parsedBody === 'string' ? parsedBody : JSON.stringify(parsedBody);
-  } else if (nodeReq.method !== 'GET' && nodeReq.method !== 'HEAD') {
-    const chunks: Buffer[] = [];
-    for await (const chunk of nodeReq) {
-      chunks.push(chunk as Buffer);
+  const bodyDeadline = setTimeout(() => nodeReq.destroy(new Error('Request body timed out')), 15000);
+  try {
+    checkBodySize(Number(nodeReq.headers['content-length'] ?? 0));
+    const requestWithBody = nodeReq as IncomingMessage & { body?: unknown };
+    if (requestWithBody.body !== undefined) {
+      const parsedBody = requestWithBody.body;
+      body = typeof parsedBody === 'string' ? parsedBody : JSON.stringify(parsedBody);
+      checkBodySize(Buffer.byteLength(body));
+    } else if (nodeReq.method !== 'GET' && nodeReq.method !== 'HEAD') {
+      const chunks: Buffer[] = [];
+      let size = 0;
+      for await (const chunk of nodeReq.iterator({ destroyOnReturn: false })) {
+        size += Buffer.byteLength(chunk);
+        checkBodySize(size);
+        chunks.push(chunk as Buffer);
+      }
+      body = Buffer.concat(chunks);
     }
-    body = Buffer.concat(chunks);
+  } catch (error) {
+    // The request stream is intentionally left unconsumed: draining an oversized body can
+    // tie the connection up indefinitely. Flush the error response first, then tear down.
+    const payload = toErrorPayload(error);
+    const response = addSecurityHeaders(Response.json(payload, { status: payload.status }));
+    nodeRes.statusCode = response.status;
+    response.headers.forEach((value, key) => nodeRes.setHeader(key, value));
+    nodeRes.setHeader('Connection', 'close');
+    nodeRes.end(await response.text(), () => nodeReq.destroy());
+    return true;
+  } finally {
+    clearTimeout(bodyDeadline);
   }
 
   const webReq = new Request(url, {
@@ -44,7 +63,7 @@ export async function handleNodeRequest(
     body,
   });
 
-  const webRes = await handleApiRequest(webReq);
+  const webRes = await handleApiRequest(webReq, nodeReq.socket.remoteAddress);
   if (!webRes) {
     return false;
   }
@@ -64,6 +83,9 @@ export function addSecurityHeaders(response: Response): Response {
   response.headers.set('X-Frame-Options', 'DENY');
   // X-XSS-Protection is deprecated; use CSP instead
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  response.headers.set('Content-Security-Policy', "default-src 'self'; base-uri 'self'; script-src 'self' 'sha256-mhDq8RP/TAuNwiFSk7hwZsZ3tIWH410AupSuJ9xEhZg=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:;");
+  response.headers.set(
+    'Content-Security-Policy',
+    "default-src 'self'; base-uri 'self'; script-src 'self' 'sha256-1HwijBPaKaOtZGvlT2Hw0JpmgDixxpRo6XKpkDG9xvs=' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:;",
+  );
   return response;
 }
