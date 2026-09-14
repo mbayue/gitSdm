@@ -97,7 +97,7 @@ gitSdm/
 │   └── main.tsx         # App entry point
 ├── public/              # Static assets (og-image.png/svg, robots.txt, sitemap.xml)
 ├── scripts/             # Prerender and maintenance scripts (prerender.tsx, clean_graphify.py)
-└── e2e/                 # Playwright end-to-end test specs (offline mock-driven)```
+└── e2e/                 # Playwright end-to-end test specs (offline mock-driven)
 
 ---
 
