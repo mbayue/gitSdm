@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { triggerIndexing } from '@/lib/apiClient';
+import { triggerIndexing, type IndexScope } from '@/lib/apiClient';
 import { useSearchStore } from './searchStore';
 import { recoverIndexingStatus } from './indexing-recovery';
 import { beginIndexOperation, finishIndexOperation } from './index-operations';
@@ -19,7 +19,7 @@ export function useTriggerIndexing() {
       owner: string;
       repo: string;
       branch?: string;
-      scope: import('@/lib/apiClient').IndexScope;
+      scope: IndexScope;
       buildId: string;
     }) => triggerIndexing(owner, repo, branch, scope, buildId),
     onMutate: async (variables) => {

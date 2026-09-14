@@ -42,9 +42,14 @@ test('rejects loopback, private, link-local, and reserved hosts', () => {
   expect(isSafeRemoteUrl('https://[64:ff9b::127.0.0.1]/v2')).toBe(false);
   expect(isSafeRemoteUrl('https://[64:ff9b::7f00:1]/v2')).toBe(false);
   expect(isSafeRemoteUrl('https://[2002:7f00:1::]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[2002::ac10:1]/v2')).toBe(false);
   expect(isSafeRemoteUrl('https://[64:ff9b::]/v2')).toBe(false);
   expect(isSafeRemoteUrl('https://[2002::]/v2')).toBe(false);
+  // Transition-prefix precision pins: NAT64 /96 decodes only the well-known form.
   expect(isSafeRemoteUrl('https://[64:ff9b:1::7f00:1]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[64:ff9b:1::102:304]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[64:ff9b:1::801:8]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[64:ff9b:0:0:0:1:102:304]/v2')).toBe(false);
   expect(isSafeRemoteUrl('https://[::1]/v2')).toBe(false);
   expect(isSafeRemoteUrl('https://[::]/v2')).toBe(false);
   expect(isSafeRemoteUrl('https://[::ffff:127.0.0.1]/v2')).toBe(false);

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { IndexScope } from '@/lib/apiClient';
 import type { SearchResultCard, QAAnswer, IndexingStatus } from '@/types';
 
 export type SearchMode = 'search' | 'ask';
@@ -7,7 +8,7 @@ interface SearchState {
   indexBuildId?: string;
   indexOperation: number;
   indexAction: 'index' | 'cancel' | null;
-  indexScope: { includePaths: string[]; excludePaths: string[] } | null;
+  indexScope: IndexScope | null;
   resultCoverage: import('../../../server/search/coverage').SearchCoverage | undefined;
   revision: number;
   mode: SearchMode;

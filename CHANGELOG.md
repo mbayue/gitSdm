@@ -11,6 +11,18 @@ and this project adheres to progressive [Semantic Versioning](https://semver.org
 - **Minor (`x.+1.x`)**: Feature additions and substantial enhancements (`feat`).
 - **Patch (`x.x.+1`)**: Bug fixes, security hardening, and maintenance (`fix`, `chore`).
 
+## [3.5.7] - 2026-09-13
+
+### Security
+
+- **Full IPv6 Expansion in SSRF Guard**: IPv6 hostnames expand to their complete eight-group form before transition-prefix decoding, so compressed zero runs can no longer shift embedded IPv4 fields (`2002::802:808` no longer decodes as a public host).
+- **Strict Well-Known NAT64 Decoding**: Only `64:ff9b::/96` with zero mid-groups decodes its embedded IPv4; the local-use variant `64:ff9b:1::/48` and all other `64:ff9b::*` forms reject outright.
+- **Bounded Limiter DNS Resolution**: The shared limiter's DNS lookup is bounded by an injectable deadline (default 3s) and fails closed on timeout, so a hung resolver cannot hold admission slots.
+
+### Fixed
+
+- **Unified Search Scope Typing**: Scope polling, the search store, and indexing mutations now share the canonical `IndexScope` contract instead of three structural copies.
+
 ## [3.5.6] - 2026-09-13
 
 ### Security

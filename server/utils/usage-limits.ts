@@ -9,6 +9,7 @@ export interface UsageLimitDependencies {
   fetch: typeof fetch;
   now: () => number;
   lookup?: (hostname: string) => Promise<string[]>;
+  lookupTimeoutMs?: number;
 }
 
 const local = new Map<string, { used: number; expires: number }>();
@@ -37,6 +38,7 @@ export async function reserveUsage(
 ): Promise<void> {
   const now = dependencies.now();
   const lookup = dependencies.lookup ?? defaultLookup;
+  const lookupTimeoutMs = dependencies.lookupTimeoutMs ?? 3000;
   const bucket = Math.floor(now / windowMs);
   const ttl = windowMs - (now % windowMs);
   const key = `gitsdm:limits:${kind}:${bucket}`;
@@ -52,11 +54,22 @@ export async function reserveUsage(
     // Hostname checks cannot catch DNS rebinding: resolve and re-validate every address
     // before connecting. A small TOCTOU window between lookup and connect remains.
     let addresses: string[];
+    let lookupTimer: ReturnType<typeof setTimeout> | undefined;
     try {
       // WHATWG hostnames keep brackets on IPv6 literals; dns.lookup needs them stripped.
-      addresses = await lookup(new URL(url).hostname.replace(/^\[|\]$/g, ''));
+      // dns.promises.lookup has no deadline of its own — bound it so a hung resolver
+      // cannot hold admission slots past the limiter's own request timeout.
+      addresses = await Promise.race([
+        lookup(new URL(url).hostname.replace(/^\[|\]$/g, '')),
+        new Promise<string[]>((_, rejectLookup) => {
+          lookupTimer = setTimeout(() => rejectLookup(new Error('DNS lookup timed out')), lookupTimeoutMs);
+          lookupTimer.unref?.();
+        }),
+      ]);
     } catch {
       throw new AppError(503, 'Shared usage limiter is unavailable.', 'LIMITER_UNAVAILABLE', true);
+    } finally {
+      clearTimeout(lookupTimer);
     }
     if (
       !addresses.length ||

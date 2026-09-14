@@ -14,6 +14,20 @@ function ipv4Forbidden([a, b, c]: number[]): boolean {
   );
 }
 
+/** Expand an IPv6 hostname into its eight 16-bit groups; malformed forms return an empty list. */
+function expandIpv6Groups(host: string): number[] {
+  const sides = host.split('::');
+  if (sides.length > 2) return [];
+  const head = sides[0] ? sides[0].split(':') : [];
+  const tail = sides.length === 2 && sides[1] ? sides[1].split(':') : [];
+  const missing = 8 - head.length - tail.length;
+  if (missing < 0) return [];
+  const pieces = sides.length === 2 ? [...head, ...Array<string>(missing).fill('0'), ...tail] : head;
+  if (pieces.length !== 8) return [];
+  const groups = pieces.map((group) => parseInt(group, 16));
+  return groups.every((group) => Number.isInteger(group)) ? groups : [];
+}
+
 function hostAllowed(host: string): boolean {
   const h = host.toLowerCase().replace(/\.$/, '');
   if (!h) return false;
@@ -28,23 +42,29 @@ function hostAllowed(host: string): boolean {
     // Leading-zero compression only exists in ::/8 — unspecified, loopback, and the
     // IPv4-compatible/mapped forms (::127.0.0.1, ::ffff:127.0.0.1, and their hex forms).
     if (hostWithoutBrackets.startsWith('::')) return false;
-    const groups = hostWithoutBrackets.split(':').filter(Boolean).map((group) => parseInt(group, 16));
+    const groups = expandIpv6Groups(hostWithoutBrackets);
+    if (groups.length !== 8) return false;
     if (groups[0] === 0x64 && groups[1] === 0xff9b) {
-      // 64:ff9b::/96 is the well-known NAT64 prefix and 64:ff9b:1::/48 its local-use
-      // variant — both transition/reserved space. /96 forms embed the IPv4 destination
-      // in their low 32 bits; inputs are WHATWG-canonicalized to hex, so dotted tails
-      // cannot reach this decoder and malformed groups fail closed (decode → reserved).
-      if (groups.length <= 4) {
-        const [hi = 0, lo = 0] = groups.slice(-2);
-        return !ipv4Forbidden([(hi >> 8) & 255, hi & 255, (lo >> 8) & 255, lo & 255]);
-      }
-      return false;
+      // 64:ff9b::/96 (well-known NAT64) embeds the IPv4 destination in groups 6..7 and
+      // requires groups 2..5 to be zero; every other 64:ff9b form — the local-use
+      // variant 64:ff9b:1::/48 included — is reserved transition space → reject.
+      if (groups[2] !== 0 || groups[3] !== 0 || groups[4] !== 0 || groups[5] !== 0) return false;
+      return !ipv4Forbidden([
+        (groups[6] >> 8) & 255,
+        groups[6] & 255,
+        (groups[7] >> 8) & 255,
+        groups[7] & 255,
+      ]);
     }
-    if (/^2002:/.test(hostWithoutBrackets)) {
-      // 6to4 (2002::/16) embeds the IPv4 destination in bits 16..48.
-      const hi = groups[1] ?? 0;
-      const lo = groups[2] ?? 0;
-      return !ipv4Forbidden([(hi >> 8) & 255, hi & 255, (lo >> 8) & 255, lo & 255]);
+    if (groups[0] === 0x2002) {
+      // 6to4 (2002::/16) embeds the IPv4 destination in bits 16..48 (groups 1..2) —
+      // positional reads need the full expansion, not filtered groups.
+      return !ipv4Forbidden([
+        (groups[1] >> 8) & 255,
+        groups[1] & 255,
+        (groups[2] >> 8) & 255,
+        groups[2] & 255,
+      ]);
     }
     if (/^ff/.test(hostWithoutBrackets)) return false; // ff00::/8 multicast
     if (/^f[cd]/.test(hostWithoutBrackets)) return false; // fc00::/7 unique-local

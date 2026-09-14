@@ -52,6 +52,41 @@ test('IPv6-literal limiter URLs resolve without brackets and enforce the budget'
   }
 });
 
+test('shared limiter fails closed when DNS resolution hangs', async () => {
+  const previous = [
+    process.env.RATE_LIMIT_MODE,
+    process.env.UPSTASH_REDIS_REST_URL,
+    process.env.UPSTASH_REDIS_REST_TOKEN,
+  ];
+  process.env.RATE_LIMIT_MODE = 'shared';
+  process.env.UPSTASH_REDIS_REST_URL = 'https://limiter.invalid';
+  process.env.UPSTASH_REDIS_REST_TOKEN = 'unit-only';
+  try {
+    let fetchCalled = false;
+    const fakeFetch = Object.assign(
+      async () => {
+        fetchCalled = true;
+        return Response.json({ result: 1 });
+      },
+      { preconnect: fetch.preconnect },
+    );
+    await expect(
+      reserveUsage('unit-shared', 1, 2, 1000, {
+        fetch: fakeFetch,
+        now: () => 0,
+        lookup: () => new Promise<string[]>(() => {}),
+        lookupTimeoutMs: 10,
+      }),
+    ).rejects.toMatchObject({ status: 503, code: 'LIMITER_UNAVAILABLE' });
+    expect(fetchCalled).toBe(false);
+  } finally {
+    ['RATE_LIMIT_MODE', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'].forEach((key, i) => {
+      if (previous[i] === undefined) delete process.env[key];
+      else process.env[key] = previous[i];
+    });
+  }
+});
+
 test('shared limiter fails closed without contacting the backend when a resolved address is unsafe', async () => {
   const previous = [
     process.env.RATE_LIMIT_MODE,
