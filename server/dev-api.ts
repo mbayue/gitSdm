@@ -34,8 +34,9 @@ export function apiMiddleware(): Plugin {
         }
 
         if (pathname.startsWith('/assets/')) {
-          sendNotFound(res);
+          next();
           return;
+        }
         }
 
         if (
