@@ -11,6 +11,12 @@ and this project adheres to progressive [Semantic Versioning](https://semver.org
 - **Minor (`x.+1.x`)**: Feature additions and substantial enhancements (`feat`).
 - **Patch (`x.x.+1`)**: Bug fixes, security hardening, and maintenance (`fix`, `chore`).
 
+## [3.5.8] - 2026-09-14
+
+### Security
+
+- **Strict IPv6 Compression & Group Validation in SSRF Guard**: Enforces non-zero `::` compression runs (`missing > 0`) and validates each group as 1–4 hexadecimal characters before parsing in `url-guard.ts`, failing closed on malformed zero-run compressions and out-of-range hextets.
+
 ## [3.5.7] - 2026-09-13
 
 ### Security

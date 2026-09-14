@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test';
-import { isSafeRemoteUrl } from './url-guard';
+import { isSafeRemoteUrl, expandIpv6Groups } from './url-guard';
 
 test('allows public https and http remotes', () => {
   expect(isSafeRemoteUrl('https://api.upstash.com/v2')).toBe(true);
@@ -75,4 +75,27 @@ test('canonicalization tricks resolve to the checked hostname', () => {
   expect(isSafeRemoteUrl('https://127.0.0.1./v2')).toBe(false);
   // Octal tricks are neutralized by the URL parser itself (010.0.0.1 -> 8.0.0.1, public).
   expect(isSafeRemoteUrl('https://010.0.0.1')).toBe(true);
+});
+
+test('expandIpv6Groups expands and validates canonical and compressed IPv6 forms', () => {
+  // Rejects compressed forms with zero-length runs (missing <= 0)
+  expect(expandIpv6Groups('1:2:3:4:5:6:7:8::')).toEqual([]);
+  expect(expandIpv6Groups('::1:2:3:4:5:6:7:8')).toEqual([]);
+  expect(expandIpv6Groups('1:2:3:4::5:6:7:8')).toEqual([]);
+  expect(expandIpv6Groups('1:2:3:4::5:6:7:8:9')).toEqual([]);
+
+  // Rejects malformed or out-of-range hex groups
+  expect(expandIpv6Groups('2002:12345::1')).toEqual([]);
+  expect(expandIpv6Groups('2002:12g4::1')).toEqual([]);
+  expect(expandIpv6Groups('2002:-1::1')).toEqual([]);
+  expect(expandIpv6Groups('1:::2')).toEqual([]);
+  expect(expandIpv6Groups('1::2:')).toEqual([]);
+  expect(expandIpv6Groups(':1::2')).toEqual([]);
+
+  // Valid forms
+  expect(expandIpv6Groups('1:2:3:4:5:6:7:8')).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+  expect(expandIpv6Groups('2002::1')).toEqual([0x2002, 0, 0, 0, 0, 0, 0, 1]);
+  expect(expandIpv6Groups('2606:4700::1')).toEqual([0x2606, 0x4700, 0, 0, 0, 0, 0, 1]);
+  expect(expandIpv6Groups('::')).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
+  expect(expandIpv6Groups('::1')).toEqual([0, 0, 0, 0, 0, 0, 0, 1]);
 });

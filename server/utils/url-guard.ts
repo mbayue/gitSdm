@@ -15,17 +15,16 @@ function ipv4Forbidden([a, b, c]: number[]): boolean {
 }
 
 /** Expand an IPv6 hostname into its eight 16-bit groups; malformed forms return an empty list. */
-function expandIpv6Groups(host: string): number[] {
+export function expandIpv6Groups(host: string): number[] {
   const sides = host.split('::');
   if (sides.length > 2) return [];
   const head = sides[0] ? sides[0].split(':') : [];
   const tail = sides.length === 2 && sides[1] ? sides[1].split(':') : [];
   const missing = 8 - head.length - tail.length;
-  if (missing < 0) return [];
+  if (sides.length === 2 ? missing <= 0 : head.length !== 8) return [];
   const pieces = sides.length === 2 ? [...head, ...Array<string>(missing).fill('0'), ...tail] : head;
-  if (pieces.length !== 8) return [];
-  const groups = pieces.map((group) => parseInt(group, 16));
-  return groups.every((group) => Number.isInteger(group)) ? groups : [];
+  if (pieces.length !== 8 || !pieces.every((group) => /^[0-9a-fA-F]{1,4}$/.test(group))) return [];
+  return pieces.map((group) => parseInt(group, 16));
 }
 
 function hostAllowed(host: string): boolean {
