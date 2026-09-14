@@ -37,7 +37,6 @@ export function apiMiddleware(): Plugin {
           next();
           return;
         }
-        }
 
         if (
           req.method === 'GET' &&

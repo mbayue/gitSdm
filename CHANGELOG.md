@@ -74,11 +74,14 @@ Releases on the same date are consolidated under that date's latest version.
 - **Unified AI Providers**: Streamlined provider interface across Gemini, OpenAI, Anthropic, and Mock. Consolidated EdgeOne into standard OpenAI-compatible configuration.
 - **Client Cache Synchronization**: Settings updates increment a chat configuration revision that invalidates stale cached responses and refreshes active tools.
 
+### Fixed
+
+- **Workspace Modes**: Made workspace modes mutually exclusive: Explorer Only opens only the file explorer, Insights Only opens only repository insights, and Focus Mode closes both panels, with desktop and mobile regression tests.
+
 ## [3.0.2] - 2026-09-08
 
 ### Fixed
 
-- **Workspace Modes**: Made workspace modes mutually exclusive: Explorer Only opens only the file explorer, Insights Only opens only repository insights, and Focus Mode closes both panels, with desktop and mobile regression tests.
 - **Cache Endpoint Security**: Eliminated unauthenticated `/api/cache/clear` endpoint.
 - **Mermaid Code Splitting**: Code-split `mermaid` library to dedicated vendor chunk, shrinking `ArchitectureView` from 1.44 MB to 22 KB.
 - **Performance & Asset Caching**: Removed font-gating FOIT blocker in `index.html`, enabled `display=swap`, and added immutable Cache-Control headers for hashed static assets across Bun server, Vercel, and EdgeOne.
