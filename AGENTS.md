@@ -4,7 +4,7 @@
 
 ## Project Identity
 
-**gitSdm** (Git Software Dependency Map) — v3.5.9. Interactive repository dependency visualization tool: map file dependencies, AI-powered codebase insights, semantic search, commit timelines, architecture diagrams, and dependency health. Single-page app with an embedded Express backend + Vercel serverless functions.
+**gitSdm** (Git Software Dependency Map) — v3.5.10. Interactive repository dependency visualization tool: map file dependencies, AI-powered codebase insights, semantic search, commit timelines, architecture diagrams, and dependency health. Single-page app with an embedded Express backend + Vercel serverless functions.
 
 ---
 
@@ -35,15 +35,15 @@
 gitSdm/
 ├── api/                 # Vercel serverless entry points (thin wrappers)
 │   ├── ai/              # AI endpoint wrappers
-│   ├── repo/            # Repo API endpoint wrappers
+│   ├── repo/            # Repo API endpoint wrappers (analyze, files, branches, churn, health)
 │   └── trending.ts      # Trending repos endpoint
 ├── server/              # Backend services & router
-│   ├── ai/              # AI provider abstraction + task handlers
+│   ├── ai/              # AI provider abstraction, chat config, SSRF protection, prompts & tasks
 │   │   ├── prompts.ts           # Shared AI prompt templates
 │   │   ├── provider.ts/test.ts  # AI provider (Gemini/OpenAI/Anthropic/Mock)
 │   │   ├── service.ts/test.ts   # AI service orchestration
 │   │   └── tasks/               # Individual AI tasks (diagram, explain, onboarding, playground, refactor)
-│   ├── cache/           # LRU caching layer (lru.ts/test.ts)
+│   ├── cache/           # LRU caching layer & hashed token secrets
 │   ├── config/          # Env validation & public config (app-config.ts/test.ts)
 │   ├── env.ts           # Environment variable exports
 │   ├── github/          # GitHub API client (Octokit), fetch-tree, mock-data (+ test files)
@@ -53,19 +53,19 @@ gitSdm/
 │   │   ├── dependency-analyzer.ts/test.ts
 │   │   ├── file-classifier.ts/test.ts
 │   │   ├── import-resolver.ts/test.ts
-│   │   └── manifest-parsers/  # docker, go, java, npm, pip, rust + shared registry/types
+│   │   └── manifest-parsers/  # docker, go, java, npm, pip (PEP 621/Poetry), rust + shared registry/types
 │   ├── router/          # Route handlers (ai-routes, repo-routes, search-routes, schemas)
-│   ├── search/          # Semantic search: chunker, embeddings, vector store, QA engine, indexing pipeline
-│   ├── services/        # Business logic (analyze-repo, churn-service, dependency-health, get-file, npm-registry, trending)
-│   ├── utils/           # Errors, context, logger, HTTP helpers
+│   ├── search/          # Semantic search: chunker, embeddings, checkpoints, vector store, QA engine, indexing pipeline
+│   ├── services/        # Business logic (analyze-repo, churn-service, dependency-health, repo-enrichment, get-file, npm-registry, trending)
+│   ├── utils/           # Errors, context, logger, HTTP, limits, SSRF guard, bounded queue
 │   ├── api-router.ts    # Unified API router
-│   ├── dev-api.ts       # Dev server API middleware
+│   ├── dev-api.ts       # Vite dev server middleware
 │   ├── prod-server.ts   # Production Express server
 │   └── vercel-handler.ts # Vercel serverless entry
 ├── src/                 # Frontend SPA
 │   ├── app/             # Router setup (router.tsx), app providers (providers.tsx)
 │   ├── components/      # UI components organized by domain
-│   │   ├── ui/          # shadcn primitives & Base UI wrappers
+│   │   ├── ui/          # shadcn primitives, button-variants & Base UI wrappers
 │   │   ├── viz/         # Main workspace: ai-sidebar/, architecture/, layout/, learning-path/, top-nav/
 │   │   │   ├── ai-sidebar/   # AI center tab, action buttons, intelligence cards, tool cards
 │   │   │   ├── architecture/ # Mermaid diagram generation, pan/zoom, render-sequence guard
@@ -73,31 +73,31 @@ gitSdm/
 │   │   │   ├── learning-path/# Guided code walkthroughs
 │   │   │   ├── top-nav/      # TopNav, BranchSwitcher, HeaderActionMenu, HeaderStats, WorkspaceModeSelector
 │   │   │   ├── AIErrorCard.tsx, AISidebar.tsx, AnalysisTab.tsx, ArchitectureView.tsx
-│   │   │   ├── BottomStatusBar.tsx, DependencyHealthTab.tsx, LearningPathTab.tsx
-│   │   │   ├── OverviewTab.tsx, SettingsPopover.tsx, StagedLoader.tsx, VizError.tsx
+│   │   │   ├── BottomStatusBar.tsx, ChurnStatus.tsx, DependencyHealthTab.tsx, LearningPathTab.tsx
+│   │   │   ├── MotionSettings.tsx, OverviewTab.tsx, SettingsPopover.tsx, StagedLoader.tsx, VizError.tsx
 │   │   ├── explorer/    # File explorer sidebar + code inspector dock
 │   │   ├── timeline/    # Commit history view + repo timeline
-│   │   ├── contributors/# Contributor analytics
-│   │   ├── home/        # Landing page: HeroSection, RepoInput, HomeGraphPreview, Trending, repoPresets
-│   │   ├── layout/      # Navbar
+│   │   ├── contributors/# Contributor analytics & timeline layout
+│   │   ├── home/        # Landing page: HeroSection, RepoInput, HomeGraphPreview, Trending, repoPresets, repo-navigation
+│   │   ├── layout/      # Navbar, SiteFooter, InfoPageLayout, PageMetadata
 │   │   ├── theme/       # ThemeSync
 │   │   └── ErrorBoundary.tsx
 │   ├── features/        # Feature modules
 │   │   ├── graph/       # Graph canvas (ForceGraphCanvas, GraphCanvas, ToolbarDropdowns), widgets, force engine
 │   │   │   ├── canvas/  # Canvas layout engine, hooks, helpers (filters), widgets (DropdownPanel, LegendPanel)
-│   │   │   └── force/   # Force constants, color palettes, blastRadius, buildForceGraphData
+│   │   │   └── force/   # Force constants, color palettes, blastRadius, buildForceGraphData, reconcileGraph
 │   │   ├── ai/          # AI task frontend hooks & task cache (useAiTasks, tool-cache)
-│   │   └── search/      # Semantic search UI: SearchBar, SearchResults, QAAnswerView, IndexingStatusPanel
-│   ├── hooks/           # Shared hooks (useAnalyzeRepo, useCodeInspectorState, useMobile, useRepoBranches, useRepoTags, useWorkspaceShortcuts, useMotionPreference)
-│   ├── lib/             # Shared utilities: apiClient, clipboard, utils, file-context, motion-preference, page-metadata (+ test files)
+│   │   └── search/      # Semantic search UI: SearchBar, SearchResults, SearchIndexControls, SearchEmptyState, QAAnswerView, IndexingStatusPanel
+│   ├── hooks/           # Shared hooks (useAnalyzeRepo, useCodeInspectorState, useMobile, useRepoBranches, useRepoTags, useWorkspaceShortcuts, useMotionPreference, useRepoChurn, useRepoHealth)
+│   ├── lib/             # Shared utilities: apiClient, clipboard, utils, file-context, motion-preference, page-metadata, churn-progress, workspace-mode (+ test files)
 │   ├── stores/          # Zustand stores (vizStore, motionStore, chatConfigStore)
-│   ├── pages/           # Route pages (HomePage, VizPage, SearchPage, TermsPage, PrivacyPage, NotFoundPage)
-│   ├── types/           # TypeScript type definitions (api, domain, github, index)
+│   ├── pages/           # Route pages (HomePage, VizPage, SearchPage, TermsPage, PrivacyPage, NotFoundPage, search-page-logic)
+│   ├── types/           # TypeScript type definitions (api, domain, github, churn, index)
 │   ├── styles/          # Tailwind CSS global styles (globals.css, interface.css)
 │   └── main.tsx         # App entry point
-├── e2e/                 # Playwright end-to-end test specs (offline mock-driven)
-└── public/              # Static assets
-```
+├── public/              # Static assets (og-image.png/svg, robots.txt, sitemap.xml)
+├── scripts/             # Prerender and maintenance scripts (prerender.tsx, clean_graphify.py)
+└── e2e/                 # Playwright end-to-end test specs (offline mock-driven)```
 
 ---
 
@@ -261,7 +261,7 @@ Version numbers increment progressively based on commit scope and change size:
 - **Minor (`x.+1.x`)**: Feature additions and substantial enhancements (`feat`).
 - **Patch (`x.x.+1`)**: Bug fixes, security hardening, and maintenance (`fix`, `chore`).
 
-Track progressive increments across commit batches rather than collapsing multiple feature commits into a single minor bump.
+Track progressive increments across commit batches rather than collapsing multiple feature commits into a single minor bump. Releases on the same date are consolidated in the changelog under that date's latest version.
 
 ## CI Requirements
 

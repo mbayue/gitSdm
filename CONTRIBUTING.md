@@ -107,7 +107,7 @@ Version numbers are incremented progressively based on commit scope and change s
 - **Minor (`x.+1.x`)**: Feature additions and substantial enhancements (`feat`).
 - **Patch (`x.x.+1`)**: Bug fixes, security hardening, and targeted maintenance (`fix`, `chore`).
 
-When updating versions, count commits since the previous version and advance progressively per feature/fix commit rather than collapsing multiple feature commits into a single minor bump.
+When updating versions, count commits since the previous version and advance progressively per feature/fix commit rather than collapsing multiple feature commits into a single minor bump. Releases on the same date are consolidated in the changelog under that date's latest version.
 
 ## Pull Request Guidelines
 

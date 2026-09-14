@@ -1,3 +1,4 @@
+import { isMockRepo } from '../github/mock-data';
 import { chatIdentity } from './chat-config';
 import { getAIProvider } from './provider';
 import { aiCacheKey, cache } from '../cache/lru';
@@ -57,7 +58,7 @@ export async function executeAiTask<T extends NonNullable<unknown>>(
 ): Promise<{ data: T; cached: boolean }> {
   const providerEnv = process.env.AI_PROVIDER?.trim().toLowerCase();
   const hasApiKey = params.apiKey?.trim();
-  const isMock = !hasApiKey && (!providerEnv || providerEnv === 'mock');
+  const isMock = (!hasApiKey && (!providerEnv || providerEnv === 'mock')) || (!hasApiKey && isMockRepo(params.owner));
 
   if (isMock) {
     return { data: params.mockFallback(), cached: false };
