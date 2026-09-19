@@ -1,97 +1,84 @@
 import type { IndexedChunk, SearchResult, VectorStore } from './types';
+import { SEARCH_LIMITS } from './limits';
+import { AppError } from '../utils/errors';
 
-interface RepoIndex {
-  chunks: IndexedChunk[];
-  commitSha: string;
-  createdAt: number;
+export function chunkBytes(chunk: IndexedChunk): number {
+  return chunk.vector.byteLength + 2 * (chunk.id.length + JSON.stringify(chunk.metadata).length) + 256;
 }
 
-export function createVectorStore(): VectorStore {
-  const indices = new Map<string, RepoIndex>();
-
+export function createVectorStore(limits = SEARCH_LIMITS, now = Date.now): VectorStore {
+  const indices = new Map<string, { chunks: IndexedChunk[]; bytes: number; expires: number }>();
+  const prune = () => {
+    for (const [key, index] of indices) if (index.expires <= now()) indices.delete(key);
+  };
+  const get = (key: string) => {
+    prune();
+    const index = indices.get(key);
+    if (index) {
+      indices.delete(key);
+      indices.set(key, index);
+    }
+    return index;
+  };
+  const replaceIndex = (key: string, chunks: IndexedChunk[]) => {
+    const bytes = chunks.reduce((sum, chunk) => sum + chunkBytes(chunk), 0);
+    if (chunks.length > limits.chunks || bytes > limits.indexBytes || bytes > limits.totalBytes)
+      throw new AppError(413, 'Search index exceeds the repository size limit.', 'INDEX_TOO_LARGE');
+    if (chunks.some((chunk) => chunk.metadata.repoKey !== key))
+      throw new AppError(400, 'Index identity mismatch.', 'INVALID_INDEX');
+    prune();
+    // Validate before touching the published index.
+    indices.delete(key);
+    let total = [...indices.values()].reduce((sum, index) => sum + index.bytes, 0);
+    while (indices.size && (total + bytes > limits.totalBytes || indices.size >= limits.indices)) {
+      const oldest = indices.keys().next().value!;
+      total -= indices.get(oldest)!.bytes;
+      indices.delete(oldest);
+    }
+    indices.set(key, { chunks: [...chunks], bytes, expires: now() + limits.ttlMs });
+  };
   return {
-    addChunks(chunks: IndexedChunk[]): void {
-      if (chunks.length === 0) return;
-      const repoKey = chunks[0].metadata.repoKey;
-      const existing = indices.get(repoKey);
-
-      if (existing) {
-        existing.chunks.push(...chunks);
-      } else {
-        indices.set(repoKey, {
-          chunks: [...chunks],
-          commitSha: chunks[0].metadata.commitSha,
-          createdAt: Date.now(),
-        });
-      }
+    replaceIndex,
+    addChunks(chunks) {
+      if (!chunks.length) return;
+      const key = chunks[0].metadata.repoKey;
+      replaceIndex(key, [...(get(key)?.chunks ?? []), ...chunks]);
     },
-
-    removeByRepo(repoKey: string): void {
-      indices.delete(repoKey);
+    removeByRepo(key) {
+      indices.delete(key);
     },
-
-    removeByFile(repoKey: string, filePath: string): void {
-      const index = indices.get(repoKey);
+    removeByFile(key, path) {
+      const index = get(key);
       if (!index) return;
-      index.chunks = index.chunks.filter((c) => c.metadata.filePath !== filePath);
-      if (index.chunks.length === 0) {
-        indices.delete(repoKey);
-      }
+      const chunks = index.chunks.filter((chunk) => chunk.metadata.filePath !== path);
+      if (!chunks.length) indices.delete(key);
+      else replaceIndex(key, chunks);
     },
-
-    search(
-      queryVector: Float32Array,
-      repoKey: string,
-      topK: number,
-      minScore: number,
-    ): SearchResult[] {
-      const index = indices.get(repoKey);
-      if (!index || index.chunks.length === 0) return [];
-
+    search(vector, key, topK, minScore): SearchResult[] {
+      const index = get(key);
+      if (!index) return [];
       const scored: SearchResult[] = [];
-
       for (const chunk of index.chunks) {
-        const score = cosineSimilarity(queryVector, chunk.vector);
-        if (score >= minScore) {
-          scored.push({ chunk: chunk.metadata, score });
-        }
+        const score = cosineSimilarity(vector, chunk.vector);
+        if (score >= minScore) scored.push({ chunk: chunk.metadata, score });
       }
-
-      // Sort descending by score
-      scored.sort((a, b) => b.score - a.score);
-
-      return scored.slice(0, topK);
+      return scored.sort((a, b) => b.score - a.score).slice(0, topK);
     },
-
-    getChunkCount(repoKey: string): number {
-      return indices.get(repoKey)?.chunks.length ?? 0;
+    getChunkCount(key) {
+      return get(key)?.chunks.length ?? 0;
     },
-
-    hasIndex(repoKey: string): boolean {
-      return indices.has(repoKey);
+    hasIndex(key) {
+      return !!get(key);
     },
   };
 }
-
-/** Compute cosine similarity between two unit vectors. */
 function cosineSimilarity(a: Float32Array, b: Float32Array): number {
   if (a.length !== b.length) return 0;
   let dot = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-  }
-  // Vectors are pre-normalized, so dot product = cosine similarity
-  // Clamp to [0, 1] range (negative similarity → 0)
+  for (let i = 0; i < a.length; i++) dot += a[i] * b[i];
   return Math.max(0, Math.min(1, dot));
 }
-
-// ── Singleton ──────────────────────────────────────────────────────────
-
 let globalStore: VectorStore | null = null;
-
 export function getVectorStore(): VectorStore {
-  if (!globalStore) {
-    globalStore = createVectorStore();
-  }
-  return globalStore;
+  return (globalStore ??= createVectorStore());
 }

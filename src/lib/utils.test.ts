@@ -99,6 +99,11 @@ describe('utils', () => {
       expect(parseRepoFromUrl('https://github.com/facebook/react.git')).toEqual({ owner: 'facebook', repo: 'react' });
     });
 
+    it('strips .git before query/hash', () => {
+      expect(parseRepoFromUrl('https://github.com/facebook/react.git?tab=readme-ov-file')).toEqual({ owner: 'facebook', repo: 'react' });
+      expect(parseRepoFromUrl('https://github.com/facebook/react.git#readme')).toEqual({ owner: 'facebook', repo: 'react' });
+    });
+
     it('handles URLs with query parameters', () => {
       expect(parseRepoFromUrl('https://github.com/facebook/react?tab=readme-ov-file')).toEqual({ owner: 'facebook', repo: 'react' });
     });

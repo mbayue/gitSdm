@@ -1,7 +1,7 @@
-import { LayoutPanelLeft, Monitor, ActivitySquare, BookOpen } from 'lucide-react';
+import { LayoutPanelLeft, PanelLeft, PanelRight, Monitor } from 'lucide-react';
 
 export interface WorkspaceMode {
-  id: 'full' | 'focus' | 'analysis' | 'learning';
+  id: 'full' | 'explorer' | 'insights' | 'focus';
   label: string;
   description: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -19,6 +19,22 @@ export const WORKSPACE_MODES: WorkspaceMode[] = [
     bgColor: 'bg-secondary border-border text-foreground',
   },
   {
+    id: 'explorer',
+    label: 'Explorer Only',
+    description: 'Show the file explorer with maximized canvas space',
+    icon: PanelLeft,
+    color: 'text-foreground',
+    bgColor: 'bg-secondary border-border text-foreground',
+  },
+  {
+    id: 'insights',
+    label: 'Insights Only',
+    description: 'Show repository insights without the file tree',
+    icon: PanelRight,
+    color: 'text-foreground',
+    bgColor: 'bg-secondary border-border text-foreground',
+  },
+  {
     id: 'focus',
     label: 'Focus Mode',
     description: 'Minimizes sidebars to focus purely on the canvas',
@@ -26,23 +42,7 @@ export const WORKSPACE_MODES: WorkspaceMode[] = [
     color: 'text-foreground',
     bgColor: 'bg-secondary border-border text-foreground',
   },
-  {
-    id: 'analysis',
-    label: 'Analysis Mode',
-    description: 'Inspect file details and relationships',
-    icon: ActivitySquare,
-    color: 'text-foreground',
-    bgColor: 'bg-secondary border-border text-foreground',
-  },
-  {
-    id: 'learning',
-    label: 'Learning Mode',
-    description: 'Follow a guided reading path through the codebase',
-    icon: BookOpen,
-    color: 'text-foreground',
-    bgColor: 'bg-secondary border-border text-foreground',
-  },
 ];
 
-export const LAYOUT_MODE_IDS = ['full', 'focus', 'analysis', 'learning'] as const;
+export const LAYOUT_MODE_IDS = ['full', 'explorer', 'insights', 'focus'] as const;
 export type WorkspaceModeId = (typeof LAYOUT_MODE_IDS)[number];

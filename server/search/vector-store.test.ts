@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
 import { createVectorStore } from './vector-store';
 import type { IndexedChunk } from './types';
+import { SEARCH_LIMITS } from './limits';
 
 function makeVector(size: number, val: number): Float32Array {
   const v = new Float32Array(size).fill(0);
@@ -9,12 +10,7 @@ function makeVector(size: number, val: number): Float32Array {
   return v.map((x) => x / mag);
 }
 
-function makeChunk(
-  id: string,
-  repoKey: string,
-  filePath: string,
-  vector: Float32Array,
-): IndexedChunk {
+function makeChunk(id: string, repoKey: string, filePath: string, vector: Float32Array): IndexedChunk {
   return {
     id,
     vector,
@@ -32,6 +28,33 @@ function makeChunk(
 }
 
 describe('createVectorStore', () => {
+  it('evicts least recently used indices and expires snapshots', () => {
+    let time = 0;
+    const bounded = createVectorStore({ ...SEARCH_LIMITS, indices: 2, ttlMs: 10 }, () => time);
+    const add = (key: string) => bounded.addChunks([makeChunk(key, key, 'a.ts', new Float32Array([1]))]);
+    add('one');
+    add('two');
+    bounded.hasIndex('one');
+    add('three');
+    expect(bounded.hasIndex('two')).toBe(false);
+    expect(bounded.hasIndex('one')).toBe(true);
+    time = 11;
+    expect(bounded.hasIndex('one')).toBe(false);
+  });
+  it('rejects oversized replacements without destroying the old index', () => {
+    const bounded = createVectorStore({ ...SEARCH_LIMITS, chunks: 1 });
+    const one = makeChunk('one', 'repo', 'a.ts', new Float32Array([1]));
+    bounded.replaceIndex('repo', [one]);
+    expect(() => bounded.replaceIndex('repo', [one, one])).toThrow();
+    expect(bounded.getChunkCount('repo')).toBe(1);
+  });
+  it('enforces the global byte budget', () => {
+    const bounded = createVectorStore({ ...SEARCH_LIMITS, totalBytes: 1000 });
+    bounded.addChunks([makeChunk('one', 'one', 'a.ts', new Float32Array([1]))]);
+    bounded.addChunks([makeChunk('two', 'two', 'a.ts', new Float32Array([1]))]);
+    expect(bounded.hasIndex('one')).toBe(false);
+    expect(bounded.hasIndex('two')).toBe(true);
+  });
   let store: ReturnType<typeof createVectorStore>;
 
   beforeEach(() => {
@@ -83,10 +106,7 @@ describe('createVectorStore', () => {
   describe('removeByFile', () => {
     it('removes only chunks for the specified file', () => {
       const vec = makeVector(4, 1);
-      store.addChunks([
-        makeChunk('c1', 'owner/repo', 'a.ts', vec),
-        makeChunk('c2', 'owner/repo', 'b.ts', vec),
-      ]);
+      store.addChunks([makeChunk('c1', 'owner/repo', 'a.ts', vec), makeChunk('c2', 'owner/repo', 'b.ts', vec)]);
       store.removeByFile('owner/repo', 'a.ts');
       expect(store.getChunkCount('owner/repo')).toBe(1);
     });
@@ -147,9 +167,7 @@ describe('createVectorStore', () => {
       const dim = 4;
       const vec = new Float32Array(dim);
       vec[0] = 1;
-      const chunks = Array.from({ length: 10 }, (_, i) =>
-        makeChunk(`c${i}`, 'owner/repo', `${i}.ts`, vec),
-      );
+      const chunks = Array.from({ length: 10 }, (_, i) => makeChunk(`c${i}`, 'owner/repo', `${i}.ts`, vec));
       store.addChunks(chunks);
       const results = store.search(vec, 'owner/repo', 3, 0);
       expect(results).toHaveLength(3);

@@ -1,3 +1,4 @@
+import type { ChurnContinuation, ChurnResponse } from '@/types/churn';
 import type {
   AIExplainRequest,
   AIExplainResponse,
@@ -15,10 +16,28 @@ import type {
   IndexingStatus,
 } from '@/types';
 
+export interface IndexScope {
+  includePaths: string[];
+  excludePaths: string[];
+}
+
 function getApiKeyHeader(): Record<string, string> {
   try {
     const key = localStorage.getItem('gitsdm_gemini_api_key');
-    return key ? { 'X-Gemini-API-Key': key } : {};
+    if (!key) return {};
+    const headers: Record<string, string> = {
+      'X-AI-API-Key': key,
+      'X-Gemini-API-Key': key,
+    };
+    for (const [storage, header] of [
+      ['gitsdm_ai_provider', 'X-AI-Provider'],
+      ['gitsdm_ai_model', 'X-AI-Model'],
+      ['gitsdm_ai_base_url', 'X-AI-Base-URL'],
+    ]) {
+      const value = localStorage.getItem(storage)?.trim();
+      if (value) headers[header] = value;
+    }
+    return headers;
   } catch {
     return {};
   }
@@ -39,7 +58,16 @@ export class ApiError extends Error {
   public details?: unknown;
   public error?: string;
 
-  constructor(message: string, status: number, data?: { code?: string; details?: unknown; context?: unknown; error?: string }) {
+  constructor(
+    message: string,
+    status: number,
+    data?: {
+      code?: string;
+      details?: unknown;
+      context?: unknown;
+      error?: string;
+    },
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
@@ -69,7 +97,7 @@ async function parseBody(res: Response): Promise<unknown> {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   try {
-    const isAiRoute = path.startsWith('/api/ai');
+    const isAiRoute = path.startsWith('/api/ai') || path === '/api/search/ask';
     const res = await fetch(path, {
       ...options,
       headers: {
@@ -85,26 +113,23 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       data = await parseBody(res);
     } catch (error) {
       if (!res.ok) {
-        throw new ApiError(error instanceof Error ? error.message : `Request failed with status ${res.status}`, res.status);
+        throw new ApiError(
+          error instanceof Error ? error.message : `Request failed with status ${res.status}`,
+          res.status,
+        );
       }
       throw error;
     }
 
     if (!res.ok) {
       const message =
-        typeof data === 'object' &&
-        data !== null &&
-        'message' in data &&
-        typeof data.message === 'string'
+        typeof data === 'object' && data !== null && 'message' in data && typeof data.message === 'string'
           ? data.message
-          : typeof data === 'object' &&
-            data !== null &&
-            'error' in data &&
-            typeof data.error === 'string'
+          : typeof data === 'object' && data !== null && 'error' in data && typeof data.error === 'string'
             ? data.error
             : typeof data === 'string'
-            ? data
-            : `Request failed with status ${res.status}`;
+              ? data
+              : `Request failed with status ${res.status}`;
 
       throw new ApiError(message, res.status, typeof data === 'object' && data !== null ? data : undefined);
     }
@@ -116,7 +141,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   }
 }
 
-
 export async function analyzeRepo(url: string, branch?: string): Promise<RepoAnalysis> {
   return request<RepoAnalysis>('/api/repo/analyze', {
     method: 'POST',
@@ -124,18 +148,23 @@ export async function analyzeRepo(url: string, branch?: string): Promise<RepoAna
   });
 }
 
-export async function fetchRepoBranches(
-  owner: string,
-  repo: string,
-): Promise<{ name: string; protected: boolean }[]> {
+export function fetchRepoEnrichment<T>(owner: string, repo: string, sha: string, kind: 'churn' | 'health'): Promise<T> {
+  return request<T>(`/api/repo/${kind}?${new URLSearchParams({ owner, repo, branch: sha })}`);
+}
+
+export function fetchChurnBatch(owner: string, repo: string, sha: string, continuation: ChurnContinuation) {
+  return request<ChurnResponse>(`/api/repo/churn?${new URLSearchParams({ owner, repo, branch: sha })}`, {
+    method: 'POST',
+    body: JSON.stringify(continuation),
+  });
+}
+
+export async function fetchRepoBranches(owner: string, repo: string): Promise<{ name: string; protected: boolean }[]> {
   const params = new URLSearchParams({ owner, repo });
   return request<{ name: string; protected: boolean }[]>(`/api/repo/branches?${params}`);
 }
 
-export async function fetchRepoTags(
-  owner: string,
-  repo: string,
-): Promise<{ name: string; sha: string }[]> {
+export async function fetchRepoTags(owner: string, repo: string): Promise<{ name: string; sha: string }[]> {
   const params = new URLSearchParams({ owner, repo });
   return request<{ name: string; sha: string }[]>(`/api/repo/tags?${params}`);
 }
@@ -149,9 +178,7 @@ export async function fetchRepoFile(
   const queryObj: Record<string, string> = { owner, repo, path };
   if (branch) queryObj.branch = branch;
   const params = new URLSearchParams(queryObj);
-  return request<{ path: string; content: string; sha: string }>(
-    `/api/repo/file?${params}`,
-  );
+  return request<{ path: string; content: string; sha: string }>(`/api/repo/file?${params}`);
 }
 
 export async function fetchTrending(): Promise<TrendingRepo[]> {
@@ -170,66 +197,42 @@ export async function aiExplain(body: AIExplainRequest & { branch?: string }): P
   });
 }
 
-export async function aiExplainLif(
-  owner: string,
-  repo: string,
-  branch?: string,
-): Promise<AIExplainLifResponse> {
+export async function aiExplainLif(owner: string, repo: string, branch?: string): Promise<AIExplainLifResponse> {
   return request<AIExplainLifResponse>('/api/ai/explain-lif', {
     method: 'POST',
     body: JSON.stringify({ owner, repo, branch }),
   });
 }
 
-export async function aiRefactor(
-  owner: string,
-  repo: string,
-  branch?: string,
-): Promise<AIRefactorResponse> {
+export async function aiRefactor(owner: string, repo: string, branch?: string): Promise<AIRefactorResponse> {
   return request<AIRefactorResponse>('/api/ai/refactor', {
     method: 'POST',
     body: JSON.stringify({ owner, repo, branch }),
   });
 }
 
-export async function aiHealth(
-  owner: string,
-  repo: string,
-  branch?: string,
-): Promise<AIHealthResponse> {
+export async function aiHealth(owner: string, repo: string, branch?: string): Promise<AIHealthResponse> {
   return request<AIHealthResponse>('/api/ai/health', {
     method: 'POST',
     body: JSON.stringify({ owner, repo, branch }),
   });
 }
 
-export async function aiMermaid(
-  owner: string,
-  repo: string,
-  branch?: string,
-): Promise<AIMermaidResponse> {
+export async function aiMermaid(owner: string, repo: string, branch?: string): Promise<AIMermaidResponse> {
   return request<AIMermaidResponse>('/api/ai/mermaid', {
     method: 'POST',
     body: JSON.stringify({ owner, repo, branch }),
   });
 }
 
-export async function aiRoast(
-  owner: string,
-  repo: string,
-  branch?: string,
-): Promise<AIRoastResponse> {
+export async function aiRoast(owner: string, repo: string, branch?: string): Promise<AIRoastResponse> {
   return request<AIRoastResponse>('/api/ai/roast', {
     method: 'POST',
     body: JSON.stringify({ owner, repo, branch }),
   });
 }
 
-export async function aiReadmeEnhance(
-  owner: string,
-  repo: string,
-  branch?: string,
-): Promise<AIReadmeEnhanceResponse> {
+export async function aiReadmeEnhance(owner: string, repo: string, branch?: string): Promise<AIReadmeEnhanceResponse> {
   return request<AIReadmeEnhanceResponse>('/api/ai/readme-enhance', {
     method: 'POST',
     body: JSON.stringify({ owner, repo, branch }),
@@ -255,10 +258,11 @@ export async function semanticSearch(
   owner: string,
   repo: string,
   branch?: string,
+  scope?: IndexScope,
 ): Promise<SearchResponse> {
   return request<SearchResponse>('/api/search', {
     method: 'POST',
-    body: JSON.stringify({ query, owner, repo, branch }),
+    body: JSON.stringify({ query, owner, repo, branch, ...scope }),
   });
 }
 
@@ -267,10 +271,11 @@ export async function semanticAsk(
   owner: string,
   repo: string,
   branch?: string,
+  scope?: IndexScope,
 ): Promise<QAResponse> {
   return request<QAResponse>('/api/search/ask', {
     method: 'POST',
-    body: JSON.stringify({ question, owner, repo, branch }),
+    body: JSON.stringify({ question, owner, repo, branch, ...scope }),
   });
 }
 
@@ -278,18 +283,40 @@ export async function triggerIndexing(
   owner: string,
   repo: string,
   branch?: string,
-): Promise<{ status: string }> {
-  return request<{ status: string }>('/api/search/index', {
+  scope?: IndexScope,
+  buildId?: string,
+): Promise<IndexingStatus> {
+  return request<IndexingStatus>('/api/search/index', {
     method: 'POST',
-    body: JSON.stringify({ owner, repo, branch }),
+    body: JSON.stringify({ owner, repo, branch, ...scope, buildId }),
+  });
+}
+
+export async function cancelIndexing(
+  owner: string,
+  repo: string,
+  branch?: string,
+  scope?: IndexScope,
+  buildId?: string,
+): Promise<IndexingStatus> {
+  return request<IndexingStatus>('/api/search/cancel', {
+    method: 'POST',
+    body: JSON.stringify({ owner, repo, branch, ...scope, buildId }),
   });
 }
 
 export async function fetchIndexingStatus(
   owner: string,
   repo: string,
+  branch?: string,
+  scope?: IndexScope,
 ): Promise<IndexingStatus> {
-  const params = new URLSearchParams({ owner, repo });
+  const params = new URLSearchParams({
+    owner,
+    repo,
+    ...(branch ? { branch } : {}),
+    ...(scope?.includePaths.length ? { includePaths: JSON.stringify(scope.includePaths) } : {}),
+    ...(scope?.excludePaths.length ? { excludePaths: JSON.stringify(scope.excludePaths) } : {}),
+  });
   return request<IndexingStatus>(`/api/search/status?${params}`);
 }
-

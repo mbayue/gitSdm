@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import {
   CONTRIBUTOR_TIMELINE_HEIGHT,
   getContributorTimelineWrapperStyle,
-} from './ContributorsView';
+} from './timeline-layout';
 
 // Responsive-height contract: the commit activity timeline renders inside a
 // sized wrapper and recharts' ResponsiveContainer needs a sized parent (it

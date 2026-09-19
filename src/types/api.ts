@@ -87,7 +87,36 @@ export interface QAAnswer {
   citations: { filePath: string; startLine: number; endLine: number }[];
 }
 
+export interface SearchCoverage {
+  kind: 'complete' | 'previous' | 'partial';
+  commitSha: string;
+  indexedFiles: number;
+  totalFiles: number;
+}
+
+export type IndexingStatus = (
+  | { state: 'idle' }
+  | {
+      state: 'indexing';
+      progress: number;
+      filesProcessed: number;
+      totalFiles: number;
+    }
+  | { state: 'complete'; chunkCount: number; timestamp: number }
+  | {
+      state: 'paused';
+      error: string;
+      reason: string;
+      retryAt?: number;
+      filesProcessed: number;
+      totalFiles: number;
+      progress: number;
+    }
+  | { state: 'failed'; error: string; failedFiles: number }
+) & { coverage?: SearchCoverage; snapshotSha?: string; buildId?: string };
+
 export interface SearchResponse {
+  coverage?: SearchCoverage;
   results: {
     chunk: {
       filePath: string;
@@ -106,13 +135,8 @@ export interface SearchResponse {
 }
 
 export interface QAResponse {
+  coverage?: SearchCoverage;
   answer: string;
   citations: { filePath: string; startLine: number; endLine: number }[];
   cached: boolean;
 }
-
-export type IndexingStatus =
-  | { state: 'idle' }
-  | { state: 'indexing'; progress: number; filesProcessed: number; totalFiles: number }
-  | { state: 'complete'; chunkCount: number; timestamp: number }
-  | { state: 'failed'; error: string; failedFiles: number };

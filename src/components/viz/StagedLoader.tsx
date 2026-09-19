@@ -1,3 +1,4 @@
+import { useMotionPreference } from '@/hooks/useMotionPreference';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Loader2, GitBranch, Brain, Layers, Zap, Map } from 'lucide-react';
@@ -54,6 +55,7 @@ interface StagedLoaderProps {
 }
 
 export function StagedLoader({ owner, repo }: StagedLoaderProps) {
+  const reducedMotion = useMotionPreference();
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
   const [progress, setProgress] = useState(0);
 
@@ -94,7 +96,7 @@ export function StagedLoader({ owner, repo }: StagedLoaderProps) {
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        transition={reducedMotion ? { duration: 0, delay: 0 } : { duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         className="relative w-full max-w-[420px]"
       >
         {/* Glow border */}
@@ -121,7 +123,7 @@ export function StagedLoader({ owner, repo }: StagedLoaderProps) {
                 className="h-full rounded-full bg-gradient-to-r from-ui-active-text-green via-accent to-accent"
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
-                transition={{ ease: 'easeOut' }}
+                transition={reducedMotion ? { duration: 0, delay: 0 } : { ease: 'easeOut' }}
               />
             </div>
           </div>
@@ -133,7 +135,7 @@ export function StagedLoader({ owner, repo }: StagedLoaderProps) {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.25 }}
+              transition={reducedMotion ? { duration: 0, delay: 0 } : { duration: 0.25 }}
               className="mb-5 flex items-center gap-3 rounded-xl border border-ui-active/35 bg-ui-active/10 px-3.5 py-3"
             >
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ui-active/15">
@@ -159,7 +161,7 @@ export function StagedLoader({ owner, repo }: StagedLoaderProps) {
                   key={stage.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.07 }}
+                  transition={reducedMotion ? { duration: 0, delay: 0 } : { delay: i * 0.07 }}
                   className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors ${isActive ? 'bg-secondary' : ''
                     }`}
                 >

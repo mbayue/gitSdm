@@ -44,9 +44,9 @@ export function CapabilityGroups() {
           </h2>
         </div>
         <p>
-          From your first look at a repository
-          <br className="hidden sm:block" /> to your next architectural
-          decision.
+          Explore codebase structure and dependencies
+          <br className="hidden sm:block" /> to make architectural decisions
+          with confidence.
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-2">

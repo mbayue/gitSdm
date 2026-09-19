@@ -246,7 +246,7 @@ export function ArchitectureView({ analysis, owner, repo, compact }: Architectur
             </div>
             <button
               type="button"
-              onClick={() => generate({ owner, repo })}
+              onClick={() => generate()}
               className="flex items-center gap-1.5 rounded-lg bg-card border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-secondary hover:text-foreground transition-all"
             >
               <RefreshCw className="h-3.5 w-3.5" />

@@ -188,7 +188,7 @@ export function HeaderActionMenu({ owner, repo, analysis, meta: propsMeta }: Hea
                   workspaceMode={workspaceMode}
                   onViewChange={(id) => { setActiveView(id as 'graph' | 'architecture' | 'contributors' | 'commits'); closeMenu(); }}
                   onWorkspaceModeChange={(id) => {
-                    setWorkspaceMode(id as 'focus' | 'analysis' | 'learning' | 'full');
+                    setWorkspaceMode(id);
                     closeMenu();
                   }}
                   onClose={closeMenu}

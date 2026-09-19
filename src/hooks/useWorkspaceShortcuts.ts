@@ -2,9 +2,8 @@ import { useEffect } from "react";
 import { useVizStore } from "@/stores/vizStore";
 
 export function useWorkspaceShortcuts() {
-  const { 
-    setExplorerOpen, 
-    setAiSidebarOpen
+  const {
+    closePanelsPreservingMode,
   } = useVizStore();
 
   // Responsive panel management
@@ -14,8 +13,7 @@ export function useWorkspaceShortcuts() {
     const handleResize = () => {
       const isMobile = window.innerWidth < 1024;
       if (isMobile && wasDesktop) {
-        setExplorerOpen(false);
-        setAiSidebarOpen(false);
+        closePanelsPreservingMode();
       } else if (!isMobile && !wasDesktop) {
         const state = useVizStore.getState();
         state.setWorkspaceMode(state.workspaceMode);
@@ -25,13 +23,12 @@ export function useWorkspaceShortcuts() {
 
     // Initial check on mount
     if (window.innerWidth < 1024) {
-      setExplorerOpen(false);
-      setAiSidebarOpen(false);
+      closePanelsPreservingMode();
     }
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [setExplorerOpen, setAiSidebarOpen]);
+  }, [closePanelsPreservingMode]);
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -63,8 +60,7 @@ export function useWorkspaceShortcuts() {
           return;
         }
         if (window.innerWidth < 1024 && (state.explorerOpen || state.aiSidebarOpen)) {
-          state.setExplorerOpen(false);
-          state.setAiSidebarOpen(false);
+          state.closePanelsPreservingMode();
           return;
         }
         state.setSelectedNodeId(null);

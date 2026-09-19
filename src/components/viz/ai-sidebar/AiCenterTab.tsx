@@ -1,3 +1,4 @@
+import { AIErrorCard } from '../AIErrorCard';
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { useVizStore } from '@/stores/vizStore';
@@ -9,13 +10,7 @@ import { Markdownish } from './Markdownish';
 import { ToolCard } from './ToolCard';
 import { IntelligenceCard } from './IntelligenceCard';
 import { ToolSection } from './ToolSection';
-import {
-  useAiCenterState,
-  healthCache,
-  refactorCache,
-  roastCache,
-  readmeEnhanceCache
-} from './hooks/useAiCenterState';
+import { useAiCenterState } from './hooks/useAiCenterState';
 import type { RepoAnalysis, AIRefactorSuggestion } from '@/types';
 
 const firstRow = [
@@ -98,6 +93,7 @@ function RiskCard({
 }
 
 export function AiCenterTab({ analysis }: AiCenterTabProps) {
+  const sha = analysis.meta.sha;
   const {
     owner,
     repo,
@@ -114,6 +110,8 @@ export function AiCenterTab({ analysis }: AiCenterTabProps) {
     cardTitle,
     cardSubtitle,
     cardLoading,
+    cardError,
+    retryCard,
     readmeCopied,
     setReadmeCopied,
     healthData,
@@ -124,17 +122,14 @@ export function AiCenterTab({ analysis }: AiCenterTabProps) {
     refactor,
     roast,
     readmeEnhance,
-    healthKey,
-    refactorKey,
-    roastKey,
-    readmeEnhanceKey,
-    pendingToolRequests,
   } = useAiCenterState(analysis);
 
   return (
     <div className="space-y-5">
       {/* Intelligence Response Card */}
-      <IntelligenceCard
+      {cardError ? (
+        <AIErrorCard title={`Failed to load ${cardSubtitle.toLowerCase()}`} message={cardError} onRetry={retryCard} />
+      ) : <IntelligenceCard
         title={cardTitle}
         subtitle={cardSubtitle}
         badgeLabel={(aiSubTab !== 'health' && aiSubTab !== 'playground') ? "ELI5 MODE" : undefined}
@@ -227,7 +222,7 @@ export function AiCenterTab({ analysis }: AiCenterTabProps) {
               <>
                 {refactorData?.suggestions && refactorData.suggestions.length > 0 ? (
                   <div className="space-y-3">
-                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest pl-1 font-mono">Key Refactoring Suggestions & Risks</h4>
+                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest pl-1 font-mono">Key Refactoring Suggestions &amp; Risks</h4>
                     <div className="space-y-2.5">
                       {refactorData.suggestions.map((s, idx) => (
                         <RiskCard
@@ -263,7 +258,7 @@ export function AiCenterTab({ analysis }: AiCenterTabProps) {
             <span className="text-muted-foreground italic text-xs">Select a node in the graph or use the actions below to generate architectural analysis.</span>
           )
         )}
-      </IntelligenceCard>
+      </IntelligenceCard>}
 
       {/* Action Tool Cards sections */}
       <div className="space-y-5">
@@ -289,12 +284,8 @@ export function AiCenterTab({ analysis }: AiCenterTabProps) {
                 onClick={() => {
                   setAiSubTab('health');
                   setHealthSubMode('audit');
-                  if (!healthData && !health.isPending && !pendingToolRequests.has(healthKey)) {
-                    pendingToolRequests.add(healthKey);
-                    health.mutate({ owner, repo, branch: selectedBranch || undefined }, {
-                      onSuccess: (data) => healthCache.set(healthKey, data),
-                      onSettled: () => pendingToolRequests.delete(healthKey),
-                    });
+                  if (!healthData && !health.isPending) {
+                    health.mutate({ owner, repo, branch: selectedBranch || undefined, sha });
                   }
                 }}
               />
@@ -307,12 +298,8 @@ export function AiCenterTab({ analysis }: AiCenterTabProps) {
                 onClick={() => {
                   setAiSubTab('health');
                   setHealthSubMode('risks');
-                  if (!refactorData && !refactor.isPending && !pendingToolRequests.has(refactorKey)) {
-                    pendingToolRequests.add(refactorKey);
-                    refactor.mutate({ owner, repo, branch: selectedBranch || undefined }, {
-                      onSuccess: (data) => refactorCache.set(refactorKey, data),
-                      onSettled: () => pendingToolRequests.delete(refactorKey),
-                    });
+                  if (!refactorData && !refactor.isPending) {
+                    refactor.mutate({ owner, repo, branch: selectedBranch || undefined, sha });
                   }
                 }}
               />
@@ -331,12 +318,8 @@ export function AiCenterTab({ analysis }: AiCenterTabProps) {
               onClick={() => {
                 setAiSubTab('playground');
                 setActivePlayground('roast');
-                if (!roastData && !roast.isPending && !pendingToolRequests.has(roastKey)) {
-                  pendingToolRequests.add(roastKey);
-                  roast.mutate({ owner, repo, branch: selectedBranch || undefined }, {
-                    onSuccess: (data) => roastCache.set(roastKey, data),
-                    onSettled: () => pendingToolRequests.delete(roastKey),
-                  });
+                if (!roastData && !roast.isPending) {
+                  roast.mutate({ owner, repo, branch: selectedBranch || undefined, sha });
                 }
               }}
             />
@@ -349,12 +332,8 @@ export function AiCenterTab({ analysis }: AiCenterTabProps) {
               onClick={() => {
                 setAiSubTab('playground');
                 setActivePlayground('readme');
-                if (!readmeEnhanceData && !readmeEnhance.isPending && !pendingToolRequests.has(readmeEnhanceKey)) {
-                  pendingToolRequests.add(readmeEnhanceKey);
-                  readmeEnhance.mutate({ owner, repo, branch: selectedBranch || undefined }, {
-                    onSuccess: (data) => readmeEnhanceCache.set(readmeEnhanceKey, data),
-                    onSettled: () => pendingToolRequests.delete(readmeEnhanceKey),
-                  });
+                if (!readmeEnhanceData && !readmeEnhance.isPending) {
+                  readmeEnhance.mutate({ owner, repo, branch: selectedBranch || undefined, sha });
                 }
               }}
             />

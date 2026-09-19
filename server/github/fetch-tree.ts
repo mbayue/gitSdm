@@ -210,7 +210,16 @@ export async function fetchFlatTree(
     const isNoise = (p: string) => {
       const lower = p.toLowerCase();
       // Match explicit noise folders
-      if (lower.includes('docs/') || lower.includes('test/') || lower.includes('tests/') || lower.includes('spec/') || lower.includes('dist/') || lower.includes('build/') || lower.includes('example/')) return true;
+      if (
+        lower.includes('docs/') ||
+        lower.includes('test/') ||
+        lower.includes('tests/') ||
+        lower.includes('spec/') ||
+        lower.includes('dist/') ||
+        lower.includes('build/') ||
+        lower.includes('example/')
+      )
+        return true;
       // Match any hidden folder starting with a dot (e.g., .github, .vscode, .husky)
       if (lower.includes('/.') || lower.startsWith('.')) return true;
       return false;
@@ -218,8 +227,9 @@ export async function fetchFlatTree(
 
     const mapped = allBlobs.map((item) => {
       let priority = 0;
-      if (isManifest(item.path)) priority = -1; // Highest priority: never truncate manifests
-      else if (isNoise(item.path)) priority = 1;  // Lowest priority: noise
+      if (isManifest(item.path))
+        priority = -1; // Highest priority: never truncate manifests
+      else if (isNoise(item.path)) priority = 1; // Lowest priority: noise
       return { item, priority };
     });
 
@@ -331,6 +341,7 @@ export async function fetchFileContents(
   paths: string[],
   ref: string,
   tokenOrCtx?: string | RequestContext,
+  maxBytes?: number,
 ): Promise<Record<string, string>> {
   if (isMockRepo(owner)) {
     return fetchMockFileContents(owner, repo, paths);
@@ -350,10 +361,20 @@ export async function fetchFileContents(
             path,
             ref,
           });
-          if (!Array.isArray(data) && data.type === 'file' && 'content' in data && data.content) {
-            result[path] = Buffer.from(data.content, 'base64').toString('utf-8').slice(0, 50000);
+          if (!Array.isArray(data) && data.type === 'file' && 'content' in data && typeof data.content === 'string') {
+            if (
+              maxBytes !== undefined &&
+              (data.size > maxBytes || data.content.length > Math.ceil(maxBytes * 1.4) + 1024)
+            )
+              throw new Error('File exceeds the indexing byte limit');
+            const decoded = Buffer.from(data.content, 'base64');
+            if (maxBytes !== undefined && decoded.byteLength > maxBytes)
+              throw new Error('File exceeds the indexing byte limit');
+            result[path] =
+              maxBytes === undefined ? decoded.toString('utf-8').slice(0, 50000) : decoded.toString('utf-8');
           }
-        } catch {
+        } catch (error) {
+          if (maxBytes !== undefined) throw error;
           // skip unreadable files
         }
       }),
@@ -479,4 +500,3 @@ export async function fetchTimeline(
     return [];
   }
 }
-

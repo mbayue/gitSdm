@@ -3,9 +3,9 @@ import { handleApiRequest } from './api-router';
 import { resetOctokit } from './github/client';
 import { addSecurityHeaders } from './utils/http';
 import { logInfo } from './utils/logger';
+import { isRepositoryPage } from './utils/page-route';
 
 const distDir = path.resolve(import.meta.dir, '../dist');
-const indexFile = path.join(distDir, 'index.html');
 const port = Number(process.env.PORT ?? 3000);
 const host = process.env.HOST ?? '0.0.0.0';
 
@@ -14,12 +14,12 @@ resetOctokit();
 Bun.serve({
   port,
   hostname: host,
-  async fetch(req: Request): Promise<Response> {
+  async fetch(req: Request, server): Promise<Response> {
     const url = new URL(req.url);
     const pathname = url.pathname;
 
     if (pathname.startsWith('/api/')) {
-      const response = await handleApiRequest(req);
+      const response = await handleApiRequest(req, server.requestIP(req)?.address);
       if (response) return response;
       return new Response(JSON.stringify({ error: 'Not found' }), {
         status: 404,
@@ -35,14 +35,29 @@ Bun.serve({
       return new Response('Bad Request', { status: 400 });
     }
 
-    const filePath = safeJoin(distDir, decodedPath);
+    const pageFile =
+      decodedPath === '/'
+        ? '/index.html'
+        : /^\/(privacy|terms)\/?$/.test(decodedPath)
+          ? `/${decodedPath.split('/')[1]}.html`
+          : decodedPath;
+    const filePath = safeJoin(distDir, pageFile);
+    if (!filePath) return addSecurityHeaders(new Response('Not found', { status: 404 }));
     const file = Bun.file(filePath);
     if (await file.exists()) {
-      return addSecurityHeaders(new Response(file));
+      const res = new Response(file);
+      if (pathname.startsWith('/assets/')) {
+        res.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+      return addSecurityHeaders(res);
     }
 
-    // SPA fallback
-    return addSecurityHeaders(new Response(Bun.file(indexFile)));
+    const validRoute = isRepositoryPage(decodedPath);
+    const fallbackRes = new Response(Bun.file(path.join(distDir, validRoute ? 'app.html' : '404.html')), {
+      status: validRoute ? 200 : 404,
+    });
+    fallbackRes.headers.set('Cache-Control', 'no-cache');
+    return addSecurityHeaders(fallbackRes);
   },
 });
 
@@ -50,7 +65,7 @@ const hasToken = Boolean(process.env.GITHUB_TOKEN?.trim());
 logInfo(`[gitSdm] listening on http://${host}:${port}`);
 logInfo(`[gitSdm] GitHub API: ${hasToken ? 'authenticated' : 'unauthenticated'}`);
 
-function safeJoin(root: string, pathname: string): string {
+function safeJoin(root: string, pathname: string): string | null {
   const normalized = pathname.replace(/^[/\\]+/, '');
   const resolved = path.resolve(root, normalized);
 
@@ -62,5 +77,5 @@ function safeJoin(root: string, pathname: string): string {
     return resolved;
   }
 
-  return indexFile;
+  return null;
 }

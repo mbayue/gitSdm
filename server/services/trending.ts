@@ -10,7 +10,24 @@ const FALLBACK: TrendingRepo[] = [
   { owner: 'rust-lang', repo: 'rust', fullName: 'rust-lang/rust', description: 'Empowering everyone to build reliable software', stars: 98000, language: 'Rust', url: 'https://github.com/rust-lang/rust' },
 ];
 
-export async function fetchTrending(): Promise<TrendingRepo[]> {
+/** One public snapshot and one in-flight lookup per process, including fallback results. */
+export function createTrendingFetcher(load: () => Promise<TrendingRepo[]>, now = Date.now) {
+  let cached: { repos: TrendingRepo[]; expires: number } | undefined;
+  let pending: Promise<TrendingRepo[]> | undefined;
+  return (): Promise<TrendingRepo[]> => {
+    if (cached && cached.expires > now()) return Promise.resolve(cached.repos);
+    if (pending) return pending;
+    pending = Promise.resolve().then(load).then((repos) => {
+      cached = { repos, expires: now() + 300000 };
+      return repos;
+    }).finally(() => { pending = undefined; });
+    return pending;
+  };
+}
+
+export const fetchTrending = createTrendingFetcher(loadTrending);
+
+export async function loadTrending(): Promise<TrendingRepo[]> {
   try {
     const octokit = getOctokit();
     const { data } = await octokit.search.repos({

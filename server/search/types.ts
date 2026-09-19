@@ -1,4 +1,7 @@
 import type { RequestContext } from '../utils/context';
+import type { IndexingStatus, SearchCoverage } from '../../src/types';
+
+export type { IndexingStatus };
 
 // ── Embedding ──────────────────────────────────────────────────────────
 
@@ -8,8 +11,8 @@ export interface EmbeddingResult {
 }
 
 export interface EmbeddingProvider {
-  embed(text: string): Promise<EmbeddingResult>;
-  embedBatch(texts: string[]): Promise<EmbeddingResult[]>;
+  embed(text: string, signal?: AbortSignal): Promise<EmbeddingResult>;
+  embedBatch(texts: string[], signal?: AbortSignal): Promise<EmbeddingResult[]>;
   readonly dimensions: number;
   readonly maxTokens: number;
   readonly providerName: string;
@@ -40,15 +43,11 @@ export interface SearchResult {
 }
 
 export interface VectorStore {
+  replaceIndex(repoKey: string, chunks: IndexedChunk[]): void;
   addChunks(chunks: IndexedChunk[]): void;
   removeByRepo(repoKey: string): void;
   removeByFile(repoKey: string, filePath: string): void;
-  search(
-    queryVector: Float32Array,
-    repoKey: string,
-    topK: number,
-    minScore: number,
-  ): SearchResult[];
+  search(queryVector: Float32Array, repoKey: string, topK: number, minScore: number): SearchResult[];
   getChunkCount(repoKey: string): number;
   hasIndex(repoKey: string): boolean;
 }
@@ -61,37 +60,33 @@ export interface IndexingOptions {
   branch?: string;
   commitSha: string;
   previousSha?: string; // for incremental re-indexing
+  includePaths?: string[];
+  excludePaths?: string[];
 }
-
-export type IndexingStatus =
-  | { state: 'idle' }
-  | {
-      state: 'indexing';
-      progress: number;
-      filesProcessed: number;
-      totalFiles: number;
-    }
-  | { state: 'complete'; chunkCount: number; timestamp: number }
-  | { state: 'failed'; error: string; failedFiles: number };
 
 export interface IndexingPipeline {
   startIndexing(options: IndexingOptions, ctx: RequestContext): Promise<void>;
   getStatus(repoKey: string): IndexingStatus;
   cancelIndexing(repoKey: string): void;
+  available(repoKey: string): { store: VectorStore; key: string; coverage: SearchCoverage } | undefined;
 }
 
 // ── Search Engine ──────────────────────────────────────────────────────
 
 export interface SearchOptions {
+  gitHubToken?: string;
   query: string;
   owner: string;
   repo: string;
   commitSha: string;
   topK?: number; // default 10
   minScore?: number; // default 0.3
+  includePaths?: string[];
+  excludePaths?: string[];
 }
 
 export interface SearchResponse {
+  coverage?: SearchCoverage;
   results: SearchResult[];
   query: string;
   cached: boolean;
@@ -104,11 +99,14 @@ export interface SearchEngine {
 // ── QA Engine ──────────────────────────────────────────────────────────
 
 export interface QAOptions {
+  gitHubToken?: string;
   question: string;
   owner: string;
   repo: string;
   commitSha: string;
   apiKey?: string; // user override key
+  includePaths?: string[];
+  excludePaths?: string[];
 }
 
 export interface Citation {
@@ -118,6 +116,7 @@ export interface Citation {
 }
 
 export interface QAResponse {
+  coverage?: SearchCoverage;
   answer: string; // markdown-formatted
   citations: Citation[];
   cached: boolean;
@@ -139,7 +138,16 @@ export interface Chunk {
 }
 
 export interface Chunker {
-  chunkFile(content: string, filePath: string, language: string): Chunk[];
+  chunkFile(
+    content: string,
+    filePath: string,
+    language: string,
+    budget?: {
+      maxChunks: number;
+      maxBytes: number;
+      bytesPerChunk: number;
+    },
+  ): Chunk[];
 }
 
 export type { RequestContext };

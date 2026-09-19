@@ -17,7 +17,14 @@ export default defineConfig({
   }),
   ],
   build: {
-    chunkSizeWarningLimit: 3000,
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (/[\\/]node_modules[\\/]highlight\.js[\\/]/.test(id)) return 'syntax-highlighting';
+        },
+      },
+    },
   },
   resolve: {
     alias: {

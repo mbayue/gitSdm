@@ -189,6 +189,7 @@ export interface RepoAnalysis {
   dependencies: Dependency[];
   workspacePackages?: WorkspacePackage[];
   dependencyHealth?: DependencyHealthReport;
+  scopedDependencies?: ScopedDependency[];
   graph: GraphData;
   contributors: Contributor[];
   timeline: TimelineWeek[];

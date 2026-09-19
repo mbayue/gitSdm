@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, mock, beforeEach } from 'bun:test';
-import { fetchTrending } from './trending';
+import { createTrendingFetcher, loadTrending } from './trending';
 
 const mockSearchRepos = mock(async () => ({
   data: {
@@ -25,7 +25,7 @@ describe('services/trending', () => {
           repos: mockSearchRepos,
         },
       }),
-      handleOctokitError: (err: any) => {
+      handleOctokitError: (err: unknown) => {
         throw err;
       },
     }));
@@ -37,7 +37,7 @@ describe('services/trending', () => {
   });
 
   it('fetches and maps trending repositories successfully', async () => {
-    const repos = await fetchTrending();
+    const repos = await loadTrending();
     expect(repos).toHaveLength(1);
     expect(repos[0]).toEqual({
       owner: 'test-owner',
@@ -56,7 +56,7 @@ describe('services/trending', () => {
       throw new Error('GitHub API Error');
     });
 
-    const repos = await fetchTrending();
+    const repos = await loadTrending();
     expect(repos.length).toBeGreaterThan(0);
     expect(repos[0].owner).toBe('facebook');
   });
@@ -76,7 +76,7 @@ describe('services/trending', () => {
       handleOctokitError: () => {},
     }));
 
-    const repos = await fetchTrending();
+    const repos = await loadTrending();
     expect(repos.length).toBeGreaterThan(0);
     expect(repos[0].owner).toBe('facebook');
 
@@ -87,9 +87,22 @@ describe('services/trending', () => {
           repos: mockSearchRepos,
         },
       }),
-      handleOctokitError: (err: any) => {
+      handleOctokitError: (err: unknown) => {
         throw err;
       },
     }));
+  });
+
+  it('coalesces concurrent lookups and serves the cached snapshot', async () => {
+    let calls = 0;
+    const fetcher = createTrendingFetcher(async () => {
+      calls++;
+      return [];
+    });
+
+    await Promise.all([fetcher(), fetcher()]);
+    await fetcher();
+
+    expect(calls).toBe(1);
   });
 });

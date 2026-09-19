@@ -1,3 +1,4 @@
+import { useMotionPreference } from '@/hooks/useMotionPreference';
 import { useState, useRef, useEffect } from 'react';
 import { useVizStore } from '@/stores/vizStore';
 import { useRepoBranches } from '@/hooks/useRepoBranches';
@@ -22,6 +23,7 @@ interface BranchSwitcherProps {
 }
 
 export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherProps) {
+  const reducedMotion = useMotionPreference();
   const {
     selectedBranch,
     setSelectedBranch,
@@ -195,7 +197,7 @@ export function BranchSwitcher({ owner, repo, defaultBranch }: BranchSwitcherPro
             initial={{ opacity: 0, y: 8, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.97 }}
-            transition={{ duration: 0.12, ease: 'easeOut' }}
+            transition={reducedMotion ? { duration: 0, delay: 0 } : { duration: 0.12, ease: 'easeOut' }}
             className="fixed left-2 right-2 top-14 z-[100] max-h-[calc(100dvh-4rem)] rounded-md border border-border bg-card p-1.5 shadow-2xl sm:absolute sm:left-0 sm:right-auto sm:top-auto sm:mt-2 sm:w-[min(18rem,calc(100vw-1rem))]"
           >
             <CompareControls

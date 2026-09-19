@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { searchIndexKey } from './index-identity';
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { cache, clearAllCaches, hashContext } from '../cache/lru';
 import { createSearchEngine, getSearchEngine } from './search-engine';
 import { getVectorStore } from './vector-store';
 import type { IndexedChunk, SearchEngine, SearchResponse } from './types';
 
-const repoKey = 'owner/repo';
+const repoKey = () => searchIndexKey('owner', 'repo', 'sha');
 
 function chunk(id: string, vector: Float32Array): IndexedChunk {
   return {
@@ -17,7 +18,7 @@ function chunk(id: string, vector: Float32Array): IndexedChunk {
       chunkIndex: 0,
       language: 'typescript',
       content: `content ${id}`,
-      repoKey,
+      repoKey: repoKey(),
       commitSha: 'sha',
     },
   };
@@ -27,16 +28,16 @@ describe('createSearchEngine — input validation', () => {
   const engine: SearchEngine = createSearchEngine();
 
   it('rejects query shorter than 3 chars', async () => {
-    await expect(
-      engine.search({ query: 'ab', owner: 'o', repo: 'r', commitSha: 'sha' }),
-    ).rejects.toMatchObject({ status: 400 });
+    await expect(engine.search({ query: 'ab', owner: 'o', repo: 'r', commitSha: 'sha' })).rejects.toMatchObject({
+      status: 400,
+    });
   });
 
   it('rejects query longer than 500 chars', async () => {
     const longQuery = 'x'.repeat(501);
-    await expect(
-      engine.search({ query: longQuery, owner: 'o', repo: 'r', commitSha: 'sha' }),
-    ).rejects.toMatchObject({ status: 400 });
+    await expect(engine.search({ query: longQuery, owner: 'o', repo: 'r', commitSha: 'sha' })).rejects.toMatchObject({
+      status: 400,
+    });
   });
 
   it('rejects when no index exists for repo', async () => {
@@ -52,19 +53,22 @@ describe('createSearchEngine — input validation', () => {
 });
 
 describe('createSearchEngine — success/cache paths', () => {
+  const originalEmbeddingProvider = process.env.EMBEDDING_PROVIDER;
+  afterEach(() => {
+    if (originalEmbeddingProvider === undefined) delete process.env.EMBEDDING_PROVIDER;
+    else process.env.EMBEDDING_PROVIDER = originalEmbeddingProvider;
+  });
   beforeEach(() => {
     clearAllCaches();
-    getVectorStore().removeByRepo(repoKey);
+    getVectorStore().removeByRepo(repoKey());
     process.env.AI_PROVIDER = 'mock';
+    process.env.EMBEDDING_PROVIDER = 'mock';
     delete process.env.OPENAI_API_KEY;
     delete process.env.GEMINI_API_KEY;
   });
 
   it('searches indexed chunks and caches response', async () => {
-    getVectorStore().addChunks([
-      chunk('a', new Float32Array([1, 0, 0])),
-      chunk('b', new Float32Array([0, 1, 0])),
-    ]);
+    getVectorStore().addChunks([chunk('a', new Float32Array([1, 0, 0])), chunk('b', new Float32Array([0, 1, 0]))]);
 
     const engine = createSearchEngine();
     const first = await engine.search({
@@ -105,7 +109,7 @@ describe('createSearchEngine — success/cache paths', () => {
       query: 'cached query',
       cached: false,
     };
-    cache.set(`search:owner/repo@sha:${hashContext('cached query')}`, cached);
+    cache.set(`search:${repoKey()}:${hashContext('cached query')}:10:0.3`, cached);
 
     const result = await createSearchEngine().search({
       query: 'cached query',
@@ -124,7 +128,9 @@ describe('createSearchEngine — success/cache paths', () => {
     // Mock createEmbeddingProvider to return a provider that throws on embed
     mock.module('./embedding-provider', () => ({
       createEmbeddingProvider: async () => ({
-        embed: async () => { throw new Error('embedding service down'); },
+        embed: async () => {
+          throw new Error('embedding service down');
+        },
         embedBatch: async () => [],
         tokenCount: (text: string) => text.split(/\s+/).length,
       }),
@@ -139,7 +145,7 @@ describe('createSearchEngine — success/cache paths', () => {
         query: 'some failing query',
         owner: 'owner',
         repo: 'repo',
-        commitSha: 'sha2',
+        commitSha: 'sha',
       }),
     ).rejects.toMatchObject({ status: 503 });
 

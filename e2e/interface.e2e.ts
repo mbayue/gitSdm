@@ -6,7 +6,7 @@ test('settings closes with Escape and restores its accessible trigger', async ({
   const trigger = page.getByRole('button', { name: 'Settings and credentials', exact: true });
   await trigger.click();
   const dialog = page.getByRole('dialog', { name: 'Settings and credentials' });
-  const key = dialog.getByLabel('Google AI key', { exact: true });
+  const key = dialog.getByLabel('AI API key', { exact: true });
   await expect(key).toBeFocused();
   await key.press('Escape');
   await expect(dialog).toHaveCount(0);
@@ -23,18 +23,27 @@ test('learning Explain responds to Enter and synchronizes the inspected file', a
   await expect(page.getByRole('region', { name: 'File inspector' })).toContainText('src/App.tsx');
 });
 
-test('workspace modes hide both sidebars in focus and open learning on mobile', async ({ page }) => {
+test('workspace modes show only the selected sidebar', async ({ page }) => {
   await page.setViewportSize({ width: 1256, height: 912 });
   await page.goto('/mock/todo-app');
   await page.getByRole('button', { name: 'Full Workspace', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Focus Mode Minimizes sidebars to focus purely on the canvas', exact: true }).click();
+  await page.getByRole('menuitem', { name: /Explorer Only/ }).click();
+  await expect(page.getByRole('button', { name: 'Collapse file explorer', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open repository insights', exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Explorer Only', exact: true }).click();
+  await page.getByRole('menuitem', { name: /Insights Only/ }).click();
+  await expect(page.getByRole('button', { name: 'Open file explorer', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Collapse repository insights', exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Insights Only', exact: true }).click();
+  await page.getByRole('menuitem', { name: /Focus Mode/ }).click();
   await expect(page.getByRole('button', { name: 'Open file explorer', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Open repository insights', exact: true })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole('button', { name: 'Open menu', exact: true }).click();
-  await page.getByRole('button', { name: 'Learning Mode', exact: true }).click();
-  await expect(page.getByRole('tab', { name: 'Learning', exact: true })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Learning', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('button', { name: 'Insights Only', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Collapse repository insights', exact: true })).toBeVisible();
 });
 
 test('layout changes fit the graph after focusing a file', async ({ page }) => {
@@ -175,3 +184,19 @@ test('panel resizing preserves the graph and inspector context follows related f
   await expect(inspector).toContainText('src/context/TodoContext.tsx');
   await expect(page.getByRole('tabpanel', { name: 'Details' }).getByRole('heading', { name: 'TodoContext.tsx', exact: true })).toBeVisible();
 });
+
+ test('health audit stops after an API error and retries only on request', async ({ page }) => {
+  let calls = 0;
+  await page.route('**/api/ai/**', route => {
+    if (route.request().url().includes('/health')) calls++;
+    return route.fulfill({ status: 500, json: { error: 'Internal Server Error' } });
+  });
+  await page.goto('/mock/todo-app');
+  await page.getByRole('tab', { name: 'AI tools', exact: true }).click();
+  await page.getByRole('button', { name: /Health Audit/ }).click();
+  await expect(page.getByText('AI request failed. Check your settings and try again.', { exact: true })).toBeVisible();
+  await page.waitForTimeout(1000);
+  expect(calls).toBe(1);
+  await page.getByRole('button', { name: 'Retry Request', exact: true }).click();
+  await expect.poll(() => calls).toBe(2);
+ });

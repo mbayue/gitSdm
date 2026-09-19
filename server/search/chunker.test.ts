@@ -7,6 +7,24 @@ const MAX_CHUNK_CHARS = MAX_CHUNK_TOKENS * 4;
 describe('createChunker', () => {
   const chunker = createChunker();
 
+  it('does not duplicate nested blocks', () => {
+    const content = 'function f(){\n'.repeat(1000) + '}\n'.repeat(1000);
+    const chunks = chunker.chunkFile(content, 'nested.ts', 'typescript');
+    expect(chunks.length).toBeLessThan(20);
+    expect(chunks.reduce((sum, chunk) => sum + chunk.content.length, 0)).toBeLessThanOrEqual(content.length);
+  });
+
+  it('stops emitting when count or byte budgets are exhausted', () => {
+    const content = Array.from({ length: 1000 }, (_, i) => `function f${i}() { return ${i}; }`).join('\n');
+    for (const budget of [
+      { maxChunks: 2, maxBytes: 100000, bytesPerChunk: 100 },
+      { maxChunks: 1000, maxBytes: 100, bytesPerChunk: 100 },
+    ]) {
+      expect(() => chunker.chunkFile(content, 'many.ts', 'typescript', budget)).toThrow('search chunk or memory limit');
+      expect(() => chunker.chunkFile(content, 'many.txt', 'text', budget)).toThrow('search chunk or memory limit');
+    }
+  });
+
   describe('chunkFile', () => {
     it('returns empty array for empty content', () => {
       expect(chunker.chunkFile('', 'src/a.ts', 'typescript')).toEqual([]);
@@ -98,7 +116,9 @@ describe('createChunker', () => {
     });
 
     it('sub-splits oversized AST blocks', () => {
-      const content = `function huge() {\n${Array(4).fill('  ' + 'x'.repeat(MAX_CHUNK_CHARS)).join('\n')}\n}`;
+      const content = `function huge() {\n${Array(4)
+        .fill('  ' + 'x'.repeat(MAX_CHUNK_CHARS))
+        .join('\n')}\n}`;
       const chunks = chunker.chunkFile(content, 'huge.ts', 'typescript');
       expect(chunks.length).toBeGreaterThan(1);
     });
@@ -141,7 +161,9 @@ describe('createChunker', () => {
 
     it('splits large content across multiple chunks', () => {
       const line = 'x'.repeat(100);
-      const content = Array(Math.ceil((MAX_CHUNK_CHARS / 100) * 3)).fill(line).join('\n');
+      const content = Array(Math.ceil((MAX_CHUNK_CHARS / 100) * 3))
+        .fill(line)
+        .join('\n');
       const chunks = chunker.chunkFile(content, 'big.go', 'go');
       expect(chunks.length).toBeGreaterThanOrEqual(2);
     });

@@ -1,8 +1,11 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import type { Plugin } from 'vite';
 import { handleNodeRequest } from './utils/http';
 import { logInfo } from './utils/logger';
 import { loadServerEnv } from './env';
 import { resetOctokit } from './github/client';
+import { isRepositoryPage } from './utils/page-route';
 
 export function apiMiddleware(): Plugin {
   return {
@@ -22,15 +25,44 @@ export function apiMiddleware(): Plugin {
         const url = req.url ?? '';
         const pathname = url.split('?')[0];
 
-        if (!pathname.startsWith('/api/')) {
+        if (pathname.startsWith('/api/')) {
+          const handled = await handleNodeRequest(req, res);
+          if (!handled) {
+            sendNotFound(res);
+          }
+          return;
+        }
+
+        if (pathname.startsWith('/assets/')) {
           next();
           return;
         }
 
-        const handled = await handleNodeRequest(req, res);
-        if (!handled) {
-          sendNotFound(res);
+        if (
+          req.method === 'GET' &&
+          req.headers.accept?.includes('text/html') &&
+          !pathname.startsWith('/@') &&
+          !pathname.startsWith('/src') &&
+          !pathname.startsWith('/node_modules') &&
+          !pathname.startsWith('/assets') &&
+          !pathname.includes('.') &&
+          pathname !== '/' &&
+          !/^\/(privacy|terms)\/?$/.test(pathname) &&
+          !isRepositoryPage(pathname)
+        ) {
+          try {
+            const template = fs.readFileSync(path.resolve('index.html'), 'utf8');
+            const html = await server.transformIndexHtml(url, template);
+            res.statusCode = 404;
+            res.setHeader('Content-Type', 'text/html');
+            res.end(html);
+            return;
+          } catch {
+            // fallback to default pipeline if transform fails
+          }
         }
+
+        next();
       });
     },
   };

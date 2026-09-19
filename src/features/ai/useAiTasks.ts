@@ -1,3 +1,5 @@
+import { runHealth, runMermaid, runRefactor, runRoast, runReadmeEnhance, getToolKey } from './tool-cache';
+import { useChatConfigRevision } from '@/stores/chatConfigStore';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   aiRefactor,
@@ -9,47 +11,68 @@ import {
 } from '@/lib/apiClient';
 
 export function useRefactor() {
+  const { revision } = useChatConfigRevision();
   return useMutation({
-    mutationFn: ({ owner, repo, branch }: { owner: string; repo: string; branch?: string }) =>
-      aiRefactor(owner, repo, branch),
+    mutationKey: ['refactor', revision],
+    mutationFn: async ({ owner, repo, branch, sha }: { owner: string; repo: string; branch?: string; sha?: string }) => ({
+      ...(await runRefactor(getToolKey('refactor', owner, repo, revision, branch, sha), () => aiRefactor(owner, repo, branch))),
+      revision,
+    }),
   });
 }
 
 export function useHealth() {
+  const { revision } = useChatConfigRevision();
   return useMutation({
-    mutationFn: ({ owner, repo, branch }: { owner: string; repo: string; branch?: string }) =>
-      aiHealth(owner, repo, branch),
+    mutationKey: ['health', revision],
+    mutationFn: async ({ owner, repo, branch, sha }: { owner: string; repo: string; branch?: string; sha?: string }) => ({
+      ...(await runHealth(getToolKey('health', owner, repo, revision, branch, sha), () => aiHealth(owner, repo, branch))),
+      revision,
+    }),
   });
 }
 
 export function useMermaid() {
+  const { revision } = useChatConfigRevision();
   return useMutation({
-    mutationFn: ({ owner, repo }: { owner: string; repo: string }) =>
-      aiMermaid(owner, repo),
+    mutationKey: ['mermaid', revision],
+    mutationFn: async ({ owner, repo, branch, sha }: { owner: string; repo: string; branch?: string; sha?: string }) => ({
+      ...(await runMermaid(getToolKey('mermaid', owner, repo, revision, branch, sha), () => aiMermaid(owner, repo, sha || branch))),
+      revision,
+      sha,
+      branch,
+    }),
   });
 }
 
 export function useRoast() {
+  const { revision } = useChatConfigRevision();
   return useMutation({
-    mutationFn: ({ owner, repo, branch }: { owner: string; repo: string; branch?: string }) =>
-      aiRoast(owner, repo, branch),
+    mutationKey: ['roast', revision],
+    mutationFn: async ({ owner, repo, branch, sha }: { owner: string; repo: string; branch?: string; sha?: string }) => ({
+      ...(await runRoast(getToolKey('roast', owner, repo, revision, branch, sha), () => aiRoast(owner, repo, branch))),
+      revision,
+    }),
   });
 }
 
 export function useReadmeEnhance() {
+  const { revision } = useChatConfigRevision();
   return useMutation({
-    mutationFn: ({ owner, repo, branch }: { owner: string; repo: string; branch?: string }) =>
-      aiReadmeEnhance(owner, repo, branch),
+    mutationKey: ['readme-enhance', revision],
+    mutationFn: async ({ owner, repo, branch, sha }: { owner: string; repo: string; branch?: string; sha?: string }) => ({
+      ...(await runReadmeEnhance(getToolKey('readme-enhance', owner, repo, revision, branch, sha), () => aiReadmeEnhance(owner, repo, branch))),
+      revision,
+    }),
   });
 }
 
 export function useLearningPath(owner: string, repo: string, branch: string | null = null, enabled = true, goal?: string) {
+  const { revision } = useChatConfigRevision();
   return useQuery({
-    queryKey: ['learningPath', owner, repo, branch, goal],
+    queryKey: ['learningPath', owner, repo, branch, goal, revision],
     queryFn: () => aiLearningPath(owner, repo, branch || undefined, goal),
     enabled: enabled && !!owner && !!repo,
     staleTime: 1000 * 60 * 30,
   });
 }
-
-

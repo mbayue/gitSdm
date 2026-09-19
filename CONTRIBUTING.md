@@ -33,7 +33,7 @@ bun install
 cp .env.example .env
 ```
 
-Make sure to add your `GITHUB_TOKEN` and any AI provider API keys (`GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `EDGEONE_API_KEY`) to the `.env` file for full feature support during development. Offline development works out-of-the-box with `AI_PROVIDER=mock`.
+Make sure to add your `GITHUB_TOKEN` and any AI provider API keys (`GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) to the `.env` file for full feature support during development. Offline development works out-of-the-box with `AI_PROVIDER=mock`.
 
 ---
 
@@ -95,6 +95,19 @@ bunx graphify update .
 ```
 
 ---
+
+
+---
+
+## Versioning Policy
+
+Version numbers are incremented progressively based on commit scope and change size:
+
+- **Major (`+1.x.x`)**: Major milestone or large-scale architectural overhaul (100+ files).
+- **Minor (`x.+1.x`)**: Feature additions and substantial enhancements (`feat`).
+- **Patch (`x.x.+1`)**: Bug fixes, security hardening, and targeted maintenance (`fix`, `chore`).
+
+When updating versions, count commits since the previous version and advance progressively per feature/fix commit rather than collapsing multiple feature commits into a single minor bump. Releases on the same date are consolidated in the changelog under that date's latest version.
 
 ## Pull Request Guidelines
 
