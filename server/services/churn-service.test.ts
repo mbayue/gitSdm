@@ -134,8 +134,7 @@ test('explicit continuation resumes after losing server cache', async () => {
   expect(calls).toBe(10);
 });
 
-test('failed first batch does not prevent checking later files', async () => {
-  clearAllCaches();
+test('failed first batch does not prevent checking later files', async () => {  clearAllCaches();
   let calls = 0;
   const octokit = new Octokit({
     request: {
@@ -153,4 +152,69 @@ test('failed first batch does not prevent checking later files', async () => {
   });
   expect(second.checked).toBe(3);
   expect(second.files['7.ts']).toBeDefined();
+});
+
+test('stale continuation from another credential is refetched, not trusted', async () => {
+  clearAllCaches();
+  const octokit = new Octokit({
+    request: { fetch: async () => Response.json([]) },
+  });
+  const paths = ['a.ts', 'b.ts', 'c.ts'];
+  const first = await fetchRepoChurn('owner', 'rescope', paths, 'sha', {
+    octokit,
+    gitHubToken: 'token-a',
+  });
+  expect(first.complete).toBe(true);
+  expect(first.scope).toBeDefined();
+  clearAllCaches();
+  let calls = 0;
+  const counting = new Octokit({
+    request: {
+      fetch: async () => {
+        calls++;
+        return Response.json([]);
+      },
+    },
+  });
+  const second = await fetchRepoChurn('owner', 'rescope', paths, 'sha', {
+    octokit: counting,
+    gitHubToken: 'token-b',
+  }, 90, { completed: Object.keys(first.files), scope: first.scope });
+  expect(calls).toBe(3);
+  expect(second.complete).toBe(true);
+  expect(Object.keys(second.files)).toHaveLength(3);
+});
+
+test('login and git author name count as one contributor', async () => {
+  clearAllCaches();
+  const octokit = new Octokit({
+    request: {
+      fetch: async () =>
+        Response.json([
+          {
+            author: { login: 'octocat' },
+            commit: { author: { name: 'Mona Octocat', date: '2026-01-01T00:00:00Z' } },
+          },
+        ]),
+    },
+  });
+  const result = await fetchRepoChurn('owner', 'authors', ['a.ts'], 'sha', { octokit });
+  expect(result.files['a.ts'].authorCount).toBe(1);
+});
+test('per-file 404 does not halt the batch as a repo-wide access failure', async () => {
+  clearAllCaches();
+  const octokit = new Octokit({
+    request: {
+      fetch: async (input: RequestInfo | URL) =>
+        String(input).includes('path=missing.ts')
+          ? Response.json({ message: 'Not Found' }, { status: 404 })
+          : Response.json([]),
+    },
+    log: { debug() {}, info() {}, warn() {}, error() {} },
+  });
+  const result = await fetchRepoChurn('owner', 'notfound', ['missing.ts', 'b.ts'], 'sha', { octokit });
+  expect(result.issue).toBe('timeout-or-network');
+  expect(result.complete).toBe(false);
+  expect(result.remaining).toEqual(['missing.ts']);
+  expect(result.files['b.ts']).toBeDefined();
 });

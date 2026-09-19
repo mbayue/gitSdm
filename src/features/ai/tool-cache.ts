@@ -1,14 +1,16 @@
 // ponytail: in-memory promise/result cache covers tab switching; upgrade to persistent DB cache if offline AI replay is needed.
-import type { AIHealthResponse, AIRefactorResponse, AIRoastResponse, AIReadmeEnhanceResponse } from '@/types';
+import type { AIHealthResponse, AIMermaidResponse, AIRefactorResponse, AIRoastResponse, AIReadmeEnhanceResponse } from '@/types';
 
 export const explanationCache = new Map<string, string>();
 export const healthCache = new Map<string, AIHealthResponse>();
+export const mermaidCache = new Map<string, AIMermaidResponse>();
 export const refactorCache = new Map<string, AIRefactorResponse>();
 export const roastCache = new Map<string, AIRoastResponse>();
 export const readmeEnhanceCache = new Map<string, AIReadmeEnhanceResponse>();
 
 export function getToolKey(kind: string, owner: string, repo: string, revision: number, branch?: string | null, sha?: string | null) {
-  return `${kind}:${owner}/${repo}/${revision}/${sha || 'head'}:${branch || 'default'}`;
+  // JSON pair encoding keeps "branch literally named default" distinct from "no branch" without a sentinel.
+  return `${kind}:${owner}/${repo}/${revision}/${sha || 'head'}:${JSON.stringify([branch ?? null])}`;
 }
 
 export function createCachedTask<T>(cache: Map<string, T>, max = 100) {
@@ -38,6 +40,7 @@ export function createCachedTask<T>(cache: Map<string, T>, max = 100) {
 
 export const runExplanation = createCachedTask(explanationCache);
 export const runHealth = createCachedTask(healthCache);
+export const runMermaid = createCachedTask(mermaidCache);
 export const runRefactor = createCachedTask(refactorCache);
 export const runRoast = createCachedTask(roastCache);
 export const runReadmeEnhance = createCachedTask(readmeEnhanceCache);

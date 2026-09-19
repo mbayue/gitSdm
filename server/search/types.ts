@@ -1,5 +1,7 @@
 import type { RequestContext } from '../utils/context';
-import type { SearchCoverage } from './coverage';
+import type { IndexingStatus, SearchCoverage } from '../../src/types';
+
+export type { IndexingStatus };
 
 // ── Embedding ──────────────────────────────────────────────────────────
 
@@ -61,27 +63,6 @@ export interface IndexingOptions {
   includePaths?: string[];
   excludePaths?: string[];
 }
-
-export type IndexingStatus = (
-  | { state: 'idle' }
-  | {
-      state: 'indexing';
-      progress: number;
-      filesProcessed: number;
-      totalFiles: number;
-    }
-  | { state: 'complete'; chunkCount: number; timestamp: number }
-  | {
-      state: 'paused';
-      error: string;
-      reason: string;
-      retryAt?: number;
-      filesProcessed: number;
-      totalFiles: number;
-      progress: number;
-    }
-  | { state: 'failed'; error: string; failedFiles: number }
-) & { coverage?: SearchCoverage; snapshotSha?: string; buildId?: string };
 
 export interface IndexingPipeline {
   startIndexing(options: IndexingOptions, ctx: RequestContext): Promise<void>;

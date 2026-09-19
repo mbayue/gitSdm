@@ -23,17 +23,21 @@ export function useTriggerIndexing() {
       buildId: string;
     }) => triggerIndexing(owner, repo, branch, scope, buildId),
     onMutate: async (variables) => {
-      const context = beginIndexOperation('index');
+      const context = beginIndexOperation('index', variables.owner, variables.repo);
       // Polling keeps targeting this scope until the operation settles.
       useSearchStore.setState({ indexBuildId: variables.buildId, indexScope: variables.scope });
       const { previous } = context;
+      // Only a paused build resumes its snapshot; a fresh build (e.g. retry after
+      // a branch advance) must not inherit the old snapshotSha/coverage or polls
+      // keep targeting a stale snapshot.
+      const resuming = previous.state === 'paused';
       setIndexingStatus({
         state: 'indexing',
-        progress: previous.state === 'paused' ? previous.progress : 0,
-        filesProcessed: previous.state === 'paused' ? previous.filesProcessed : 0,
-        totalFiles: previous.state === 'paused' ? previous.totalFiles : 0,
-        snapshotSha: previous.snapshotSha,
-        coverage: previous.coverage,
+        progress: resuming ? previous.progress : 0,
+        filesProcessed: resuming ? previous.filesProcessed : 0,
+        totalFiles: resuming ? previous.totalFiles : 0,
+        snapshotSha: resuming ? previous.snapshotSha : undefined,
+        coverage: resuming ? previous.coverage : undefined,
       });
       await queryClient.cancelQueries({ queryKey: ['indexingStatus', variables.owner, variables.repo] });
       return context;
@@ -43,7 +47,7 @@ export function useTriggerIndexing() {
     },
     onError: async (error, variables, context) => {
       const state = useSearchStore.getState();
-      if (!context || context.operation !== state.indexOperation || context.revision !== state.revision) return;
+      if (!context || context.operation !== state.indexOperation) return;
       await queryClient.cancelQueries({ queryKey: ['indexingStatus', variables.owner, variables.repo] });
       finishIndexOperation(context, recoverIndexingStatus(context.previous, error));
     },

@@ -13,14 +13,37 @@ and this project adheres to progressive [Semantic Versioning](https://semver.org
 
 Releases on the same date are consolidated under that date's latest version.
 
-## [3.5.10] - 2026-09-14
+## [3.5.11] - 2026-09-14
+
+### Follow-up fixes (2026-09-19)
+
+- Pin embedding connections to validated public addresses, with a bounded body limit that accommodates JSON escaping.
+- Avoid replaying shared quota reservations after an ambiguous transport failure.
+- Normalize equivalent mapped IPv6 addresses and count each commit author once.
+- Keep paused indexing attached to its repository and original scope; show safe error messages.
+- Generate and cache AI architecture diagrams against the displayed commit SHA.
 
 ### Security
 
+- **DNS-Pinned Limiter Requests**: The shared usage limiter now connects only to DNS-validated addresses over `node:https` with the original TLS identity (no re-resolution between validation and connect), so a rebinding hostname cannot divert the Redis bearer token to a private address; redirects fail closed and responses are capped at 64 KiB.
+- **Bounded Outbound Request Bodies**: Custom-endpoint chat requests stream through a running-total size check (256 KiB, plus `Content-Length` pre-check) instead of buffering unbounded `arrayBuffer()` calls.
+- **HTTPS-Only Embedding Endpoints**: Configured `OPENAI_API_BASE`/`EMBEDDING_API_BASE` values are rejected before constructing the embedding client when they are not HTTPS.
+- **Client Quota Canonicalization & Secrecy**: IPv4-mapped forwarded addresses canonicalize from their 32-bit payload (hex forms included) so per-IP buckets cannot be evaded, and client scopes derive from a server-secret HMAC instead of unkeyed SHA-256.
+- **Non-Negative Usage Amounts**: `reserveUsage` rejects negative and non-integer amounts before either backend path, closing quota replenishment.
 - **Strict IPv6 Compression & Group Validation in SSRF Guard**: Enforces non-zero `::` compression runs (`missing > 0`) and validates each group as 1–4 hexadecimal characters before parsing in `url-guard.ts`, failing closed on malformed zero-run compressions and out-of-range hextets.
 
 ### Fixed
 
+- **Repository-Scoped Index Operations**: Active indexing operations track owner/repo and reset on repository navigation; query resets bump the mutation revision while preserving the in-flight index build; stale search/ask responses drop on revision, scope, branch, or repo mismatch.
+- **Resumable Index State Preservation**: `INDEX_NOT_FOUND` after scope edits and cross-repository status polls no longer hide `indexing`/`paused` operations; retries preserve snapshot and coverage only when resuming a paused build.
+- **Indexing Error Sanitization**: Untrusted API error messages are stripped of URLs, tokens, and paths (300-char cap) before display, and pipeline logs use secret-safe error payloads; embedding cooldowns arm only on provider 429s.
+- **Credential-Scoped Caches & Churn**: Churn and health query keys carry the credential revision; continuations echo an opaque scope fingerprint and refetch on mismatch; per-file 404s no longer halt whole-batch polling; author counts include both login and commit author names.
+- **Tracked Same-Tab Config Writes**: All credential/AI setting writes route through a helper that refreshes chat config (including `VizError` PAT clears); tool cache keys use presence-safe branch encoding and Mermaid requests share the keyed task cache.
+- **Dependency-Focused Health Path**: Cold `/api/repo/health` requests skip the full analysis pipeline (no contributors, timeline, commits, or graph), and npm metadata is fetched for every dependency with no 100-item truncation.
+- **Responsive Workspace Preservation**: Mobile panel closing and repository switches use a single mode-preserving state update; the Settings popover re-reads stored values on open across desktop/mobile instances.
+- **Parser, Queue & HTTP Fixes**: PEP 621 scans stay within `[project]` (optionals only in `[project.optional-dependencies]`), versionless Poetry path/git/URL tables emit with undefined versions, aborted queue entries skip work, stalled bodies return typed 408s, caller abort signals reach providers, and `.git` suffixes strip before query/hash parsing.
+- **Test Seams Over Module Mocks**: `analyze-repo` and `get-file` suites drive the real pipeline through stub Octokit clients in `RequestContext` instead of `mock.module()` on shared internal modules; admission tests use an injectable pinned-POST seam.
+- **Frontend/Server Type Boundary**: Shared `SearchCoverage`, `IndexingStatus`, `scopeKey`, and `coverageMessage` live in `src/` (types via the barrel, pure helpers via `@/lib`), ending all deep `server/` imports from the frontend; server runtime keeps a documented local mirror where project boundaries forbid sharing.
 - **Dev Server 404 & Asset Parity**: Aligned Vite development middleware with production Express server by serving 404 HTML for unmapped client routes and JSON 404 for missing `/assets/*` paths.
 - **Mock Repository AI Fallback**: Ensured mock repository owners use deterministic offline fixtures in `executeAiTask` when no user API key is configured.
 - **AI Mutation Revision Invalidation**: Tagged AI task mutations with active configuration revisions and validated revision matches in `useAiCenterState`, preventing stale results from blocking fresh requests on settings updates.

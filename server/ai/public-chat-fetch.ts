@@ -23,8 +23,37 @@ export function isPublicAddress(address: string): boolean {
   return global.check(address, 'ipv6') && !special.check(address, 'ipv6');
 }
 
+/** Read a request body enforcing maxBytes while streaming, never materializing beyond the cap. */
+export async function readBoundedBody(body: ReadableStream<Uint8Array> | null, maxBytes: number): Promise<Buffer> {
+  if (!body) return Buffer.alloc(0);
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > maxBytes) {
+      await reader.cancel().catch(() => {});
+      throw new AppError(413, 'AI request body is too large.', 'PROMPT_TOO_LARGE');
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk.buffer, chunk.byteOffset, chunk.byteLength)));
+}
+
 /** Resolve once and connect to the checked address, keeping the original TLS identity. */
 export async function fetchPublicChat(input: string | URL | Request, init?: RequestInit): Promise<Response> {
+  return fetchPublicProvider(input, init, 256 * 1024);
+}
+
+/** A 256 KB embedding input can expand sixfold when JSON escapes control characters. */
+export const EMBEDDING_REQUEST_BODY_LIMIT = 2 * 1024 * 1024;
+export async function fetchPublicEmbeddings(input: string | URL | Request, init?: RequestInit): Promise<Response> {
+  return fetchPublicProvider(input, init, EMBEDDING_REQUEST_BODY_LIMIT);
+}
+
+async function fetchPublicProvider(input: string | URL | Request, init: RequestInit | undefined, maxBodyBytes: number): Promise<Response> {
   const source = new Request(input, init);
   const url = new URL(source.url);
   if (url.protocol !== 'https:' || url.username || url.password)
@@ -37,7 +66,12 @@ export async function fetchPublicChat(input: string | URL | Request, init?: Requ
   ]).finally(() => clearTimeout(timer));
   if (!addresses.length || addresses.some(({ address }) => !isPublicAddress(address)))
     throw new AppError(400, 'Local and private-network AI endpoints are not supported.', 'INVALID_AI_CONFIG');
-  const body = Buffer.from(await source.arrayBuffer());
+  const MAX_BODY_BYTES = maxBodyBytes;
+  const declared = Number(source.headers.get('content-length'));
+  if (Number.isSafeInteger(declared) && declared > MAX_BODY_BYTES)
+    throw new AppError(413, 'AI request body is too large.', 'PROMPT_TOO_LARGE');
+  // Bound while reading: arrayBuffer() would materialize an unbounded body first.
+  const body = await readBoundedBody(source.body, MAX_BODY_BYTES);
   const headers = Object.fromEntries(source.headers);
   headers.host = url.host;
   headers['accept-encoding'] = 'identity';

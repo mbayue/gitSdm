@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { IndexScope } from '@/lib/apiClient';
-import type { SearchResultCard, QAAnswer, IndexingStatus } from '@/types';
+import type { SearchResultCard, QAAnswer, IndexingStatus, SearchCoverage } from '@/types';
 
 export type SearchMode = 'search' | 'ask';
 
@@ -9,7 +9,9 @@ interface SearchState {
   indexOperation: number;
   indexAction: 'index' | 'cancel' | null;
   indexScope: IndexScope | null;
-  resultCoverage: import('../../../server/search/coverage').SearchCoverage | undefined;
+  indexOwner: string | null;
+  indexRepo: string | null;
+  resultCoverage: SearchCoverage | undefined;
   revision: number;
   mode: SearchMode;
   query: string;
@@ -56,6 +58,8 @@ export const useSearchStore = create<SearchState>((set, get) => ({
   indexOperation: 0,
   indexAction: null,
   indexScope: null,
+  indexOwner: null,
+  indexRepo: null,
   resultCoverage: undefined,
   revision: 0,
   mode: 'search',
@@ -91,14 +95,20 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       error: null,
       resultCoverage: undefined,
       isLoading: false,
+      // Invalidate in-flight search/ask responses; the active index operation
+      // is keyed by indexOperation (not revision) so polling keeps tracking it.
+      revision: get().revision + 1,
     }),
 
   reset: () =>
     set({
       revision: get().revision + 1,
+      indexOperation: get().indexOperation + 1,
       indexAction: null,
       indexBuildId: undefined,
       indexScope: null,
+      indexOwner: null,
+      indexRepo: null,
       mode: 'search',
       query: '',
       results: [],

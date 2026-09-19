@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
 import { createEmbeddingProvider } from './embedding-provider';
+import { fetchPublicEmbeddings } from '../ai/public-chat-fetch';
 
 const realSetTimeout = globalThis.setTimeout;
 const originalEmbeddingProvider = process.env.EMBEDDING_PROVIDER;
@@ -10,7 +11,7 @@ const originalEmbeddingInterval = process.env.EMBEDDING_REQUEST_INTERVAL_MS;
 let openAIError: Error | null = null;
 let geminiFailures = 0;
 let geminiRequests = 0;
-let openAIConfig: { apiKey: string; baseURL?: string } | undefined;
+let openAIConfig: { apiKey: string; baseURL?: string; fetch?: typeof fetchPublicEmbeddings } | undefined;
 
 describe('createEmbeddingProvider', () => {
   it('uses the normalized base URL for single and batch embeddings', async () => {
@@ -22,8 +23,10 @@ describe('createEmbeddingProvider', () => {
       const provider = await createEmbeddingProvider();
       await provider.embed('one');
       expect(openAIConfig?.baseURL).toBeUndefined();
+      expect(openAIConfig?.fetch).toBe(fetchPublicEmbeddings);
       await provider.embedBatch(['two']);
       expect(openAIConfig?.baseURL).toBeUndefined();
+      expect(openAIConfig?.fetch).toBe(fetchPublicEmbeddings);
     } finally {
       if (originalBase === undefined) delete process.env.OPENAI_API_BASE;
       else process.env.OPENAI_API_BASE = originalBase;

@@ -31,3 +31,22 @@ test('failed files do not starve unchecked files and rate limits schedule recove
   expect(churnInterval({ ...failed, issue: 'rate-limit' }, 1000)).toBe(1500);
   expect(churnInterval({ ...first, complete: true })).toBe(false);
 });
+test('per-file access failures do not halt polling for the remaining batch', () => {
+  // 'b' failed access but 'c' was never attempted: keep polling instead of halting.
+  expect(churnInterval({ ...first, issue: 'access', remaining: ['b', 'c'], failures: {} }, 1000)).toBe(1500);
+  expect(
+    churnInterval(
+      {
+        ...first,
+        issue: 'access',
+        remaining: ['b'],
+        failures: { b: { issue: 'access', retryAt: 5000 } },
+      },
+      1000,
+    ),
+  ).toBe(false);
+});
+test('merged batches keep the latest credential scope so continuations stay scoped', () => {
+  const result = mergeChurn({ ...first, scope: 'scope-a' }, { ...first, scope: 'scope-b', remaining: [] });
+  expect(result.scope).toBe('scope-b');
+});

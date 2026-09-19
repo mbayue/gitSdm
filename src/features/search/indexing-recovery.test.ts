@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test';
-import { recoverIndexingStatus } from './indexing-recovery';
+import { recoverIndexingStatus, sanitizeIndexingErrorMessage } from './indexing-recovery';
 import type { IndexingStatus } from '@/types';
 import { ApiError } from '@/lib/apiClient';
 
@@ -14,6 +14,12 @@ const paused: IndexingStatus = {
   error: 'Provider limit',
   coverage: { kind: 'partial', commitSha: 'original', indexedFiles: 32, totalFiles: 40 },
 };
+
+test('unknown credentials and provider response fragments never reach the banner', () => {
+  for (const message of ['Invalid key: AIza' + 'x'.repeat(35), 'Provider response: confidential source code']) {
+    expect(sanitizeIndexingErrorMessage(message)).toBe('Indexing could not finish. Please retry or check your provider settings.');
+  }
+});
 
 test('network failure preserves snapshot, progress and coverage without retrying an expired timer', () => {
   const recovered = recoverIndexingStatus(paused, new ApiError('Network unavailable', 0), 2000);
@@ -38,4 +44,10 @@ test('terminal rejection does not advertise a discarded partial index', () => {
     state: 'failed',
     coverage: undefined,
   });
+});
+test('error messages are sanitized before reaching the status banner', () => {
+  expect(sanitizeIndexingErrorMessage('fetch https://api.example.com/embed?key=abc failed')).not.toContain('https://');
+  expect(sanitizeIndexingErrorMessage('token ghp_abcDEF1234567890 leaked')).not.toContain('ghp_abcDEF1234567890');
+  const recovered = recoverIndexingStatus(paused, Object.assign(new Error('boom https://evil.example/x'), { status: 413 }));
+  expect(recovered.error).not.toContain('https://');
 });

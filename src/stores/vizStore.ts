@@ -87,6 +87,7 @@ interface VizState {
   setWorkspaceMode: (mode: WorkspaceMode) => void;
   setExplorerOpen: (open: boolean) => void;
   setAiSidebarOpen: (open: boolean) => void;
+  closePanelsPreservingMode: () => void;
   setInspectorOpen: (open: boolean) => void;
   setFocusedFilePath: (path: string | null) => void;
   setTheme: (theme: 'dark' | 'light') => void;
@@ -253,6 +254,11 @@ export const useVizStore = create<VizState>()(
             workspaceMode: modeFromPanels(explorerOpen, aiSidebarOpen),
           };
         }),
+      // Responsive close (breakpoint switch, repo change, Escape on mobile) must
+      // not rewrite the saved workspaceMode — a sequential close of both panels
+      // would otherwise collapse full -> focus with no way to restore on return
+      // to desktop. Single state update, mode untouched.
+      closePanelsPreservingMode: () => set({ explorerOpen: false, aiSidebarOpen: false }),
       setInspectorOpen: (inspectorOpen: boolean) => set({ inspectorOpen }),
       setFocusedFilePath: (focusedFilePath: string | null) => set({ focusedFilePath }),
       setZoom: (zoom: number) => set({ zoom }),

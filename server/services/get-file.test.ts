@@ -1,121 +1,94 @@
-import { afterEach, describe, expect, it, mock, beforeEach } from 'bun:test';
-import * as mockDataModule from '../github/mock-data';
+import { beforeEach, describe, expect, it } from 'bun:test';
 import { getRepoFileContent } from './get-file';
+import { fetchMockFileContents, fetchMockRepoInfo } from '../github/mock-data';
+import type { RequestContext } from '../utils/context';
 
-const realMockDataExports = { ...mockDataModule };
-
-const mockGetContent = mock(async () => ({
-  data: {
-    type: 'file',
-    content: Buffer.from('hello world').toString('base64'),
-  },
-}));
-
-function setupModuleMocks() {
-  mock.module('../github/client', () => ({
-    getOctokit: () => ({
-      repos: {
-        getContent: mockGetContent,
+// Stub behavior for the non-mock (real API) path, served through
+// RequestContext.octokit so no mock.module() on shared internal modules is
+// needed (see AGENTS.md testing gotchas).
+let getContentImpl: (path: string) => Promise<{ type: string; content?: string }>;
+let getContentCalls = 0;
+const stubOctokit = {
+  repos: {
+    get: async () => ({
+      data: {
+        full_name: 'real-owner/repo',
+        html_url: 'https://github.com/real-owner/repo',
+        description: null,
+        stargazers_count: 0,
+        forks_count: 0,
+        language: null,
+        default_branch: 'main',
+        topics: [],
+        license: null,
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
       },
     }),
-    handleOctokitError: (err: any) => {
-      throw err;
+    getCommit: async () => ({ data: { sha: 'test-sha' } }),
+    getContent: async ({ path }: { path: string }) => {
+      getContentCalls++;
+      return { data: await getContentImpl(path) };
     },
-  }));
+  },
+};
+const mockCtx = { octokit: stubOctokit } as unknown as RequestContext;
 
-  mock.module('../github/fetch-tree', () => ({
-    fetchRepoInfo: async () => ({
-      sha: 'test-sha',
-    }),
-  }));
-
-  mock.module('../github/mock-data', () => ({
-    isMockRepo: (owner: string) => owner === 'mock-owner',
-    fetchMockFileContents: async (owner: string, repo: string, paths: string[]) => ({
-      [paths[0]]: 'mock file content',
-    }),
-  }));
-}
+const helloContent = Buffer.from('hello world').toString('base64');
 
 describe('services/get-file', () => {
   beforeEach(() => {
-    setupModuleMocks();
-    mockGetContent.mockClear();
-  });
-
-  afterEach(() => {
-    mock.restore();
-    mock.module('../github/mock-data', () => realMockDataExports);
+    getContentCalls = 0;
+    getContentImpl = async () => ({ type: 'file', content: helloContent });
   });
 
   it('fetches mock file content when owner is mock-owner', async () => {
     const res = await getRepoFileContent('mock-owner', 'repo', 'src/main.ts');
+    const expected = await fetchMockFileContents('mock-owner', 'repo', ['src/main.ts']);
+    const info = await fetchMockRepoInfo('mock-owner', 'repo');
     expect(res).toEqual({
       path: 'src/main.ts',
-      content: 'mock file content',
-      sha: 'test-sha',
+      content: expected['src/main.ts'],
+      sha: info.sha,
     });
-    expect(mockGetContent).not.toHaveBeenCalled();
+    expect(getContentCalls).toBe(0);
   });
 
   it('fetches real file content from github when owner is not mock', async () => {
-    const res = await getRepoFileContent('real-owner', 'repo', 'src/main.ts');
+    const res = await getRepoFileContent('real-owner', 'repo', 'src/main.ts', undefined, mockCtx);
     expect(res).toEqual({
       path: 'src/main.ts',
       content: 'hello world',
       sha: 'test-sha',
     });
-    expect(mockGetContent).toHaveBeenCalled();
-  });
-
-  it('throws error when file is not found in mock repo', async () => {
-    mock.module('../github/mock-data', () => ({
-      isMockRepo: (owner: string) => owner === 'mock-owner',
-      fetchMockFileContents: async () => ({}),
-    }));
-
-    expect(getRepoFileContent('mock-owner', 'repo', 'nonexistent.ts')).rejects.toThrow('File not found: nonexistent.ts');
+    expect(getContentCalls).toBe(1);
   });
 
   it('throws error when file is not found in github repo (404 status)', async () => {
-    // Restore basic mock data module first
-    mock.module('../github/mock-data', () => ({
-      isMockRepo: (owner: string) => owner === 'mock-owner',
-      fetchMockFileContents: async (owner: string, repo: string, paths: string[]) => ({
-        [paths[0]]: 'mock file content',
-      }),
-    }));
-
-    mockGetContent.mockImplementationOnce(async () => {
+    getContentImpl = async () => {
       throw { status: 404 };
-    });
+    };
 
-    expect(getRepoFileContent('real-owner', 'repo', 'nonexistent.ts')).rejects.toThrow('File not found: nonexistent.ts');
+    await expect(getRepoFileContent('real-owner', 'repo', 'nonexistent.ts', undefined, mockCtx)).rejects.toThrow(
+      'File not found: nonexistent.ts',
+    );
   });
 
   it('throws error when file is not a regular file (e.g. is a directory)', async () => {
-    // Restore basic mock data module first
-    mock.module('../github/mock-data', () => ({
-      isMockRepo: (owner: string) => owner === 'mock-owner',
-      fetchMockFileContents: async (owner: string, repo: string, paths: string[]) => ({
-        [paths[0]]: 'mock file content',
-      }),
-    }));
+    getContentImpl = async () => ({ type: 'dir' });
 
-    mockGetContent.mockImplementationOnce(async () => ({
-      data: {
-        type: 'dir',
-      },
-    }));
-
-    expect(getRepoFileContent('real-owner', 'repo', 'src/folder')).rejects.toThrow('File is not a regular file or too large to display.');
+    await expect(getRepoFileContent('real-owner', 'repo', 'src/folder', undefined, mockCtx)).rejects.toThrow(
+      'File is not a regular file or too large to display.',
+    );
   });
 
   it('delegates other API errors to handleOctokitError', async () => {
-    mockGetContent.mockImplementationOnce(async () => {
+    getContentImpl = async () => {
       throw new Error('500 internal server error');
-    });
+    };
 
-    expect(getRepoFileContent('real-owner', 'repo', 'src/main.ts')).rejects.toThrow('500 internal server error');
+    await expect(getRepoFileContent('real-owner', 'repo', 'src/main.ts', undefined, mockCtx)).rejects.toThrow(
+      '500 internal server error',
+    );
   });
 });

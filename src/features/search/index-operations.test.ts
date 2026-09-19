@@ -18,3 +18,12 @@ test('navigation invalidates an outstanding operation', () => {
   expect(finishIndexOperation(operation, { state: 'complete', chunkCount: 1, timestamp: 0 })).toBe(false);
   expect(useSearchStore.getState().indexAction).toBeNull();
 });
+
+test('query reset preserves an outstanding index operation', () => {
+  useSearchStore.getState().reset();
+  const operation = beginIndexOperation('index', 'o', 'r');
+  useSearchStore.getState().resetQueryResults();
+  expect(finishIndexOperation(operation, { state: 'complete', chunkCount: 1, timestamp: 0 })).toBe(true);
+  expect(useSearchStore.getState().indexOwner).toBe('o');
+  expect(useSearchStore.getState().indexRepo).toBe('r');
+});

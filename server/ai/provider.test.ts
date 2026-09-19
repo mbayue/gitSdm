@@ -48,6 +48,8 @@ describe('ai provider', () => {
     delete process.env.GEMINI_MODEL;
     delete process.env.OPENAI_MODEL;
     delete process.env.ANTHROPIC_MODEL;
+    delete process.env.OPENAI_API_BASE;
+    delete process.env.ANTHROPIC_API_BASE;
   });
 
   afterEach(() => {
@@ -98,6 +100,21 @@ describe('ai provider', () => {
       { role: 'user', content: 'now' },
     ])).toBe('anthropic-ok');
 
+  });
+
+  it('rejects env-configured non-HTTPS or private provider endpoints', async () => {
+    process.env.AI_PROVIDER = 'openai';
+    process.env.OPENAI_API_KEY = 'sk-env';
+    for (const base of ['http://openai.test', 'https://10.0.0.5', 'https://169.254.169.254']) {
+      process.env.OPENAI_API_BASE = base;
+      await expect(createProvider()).rejects.toMatchObject({ code: 'INVALID_AI_CONFIG' });
+    }
+    process.env.AI_PROVIDER = 'anthropic';
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-env';
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_API_BASE;
+    process.env.ANTHROPIC_API_BASE = 'http://anthropic.test';
+    await expect(createProvider()).rejects.toMatchObject({ code: 'INVALID_AI_CONFIG' });
   });
 
   it('uses override key detection and validates missing env keys', async () => {

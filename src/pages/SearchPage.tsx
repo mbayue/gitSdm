@@ -12,7 +12,7 @@ import { useSemanticSearch } from '@/features/search/useSemanticSearch';
 import { useSemanticAsk } from '@/features/search/useSemanticAsk';
 import { useTriggerIndexing } from '@/features/search/useTriggerIndexing';
 import { useIndexingStatus } from '@/features/search/useIndexingStatus';
-import { coverageMessage } from '../../server/search/coverage';
+import { coverageMessage } from '@/lib/search-coverage';
 import { SearchEmptyState } from '@/features/search/SearchEmptyState';
 
 import { parsePaths } from '@/features/search/parsePaths';
@@ -23,6 +23,7 @@ import {
   resolvePollingScope,
   resolveRequestBranch,
   resolveRunningSha,
+  shouldResetForRepoChange,
   shouldResetSearchState,
 } from './search-page-logic';
 
@@ -64,9 +65,12 @@ export function SearchPage() {
   // Clear previous results on entry and when the repository snapshot changes.
   useEffect(() => {
     const state = useSearchStore.getState();
+    // An operation started for another repo must never survive navigation: its
+    // completion would overwrite the new repository's state.
+    if (shouldResetForRepoChange(owner, repo, state)) state.reset();
     // Preserve an active index operation across remounts and branch switches;
     // only its stale results are cleared while polling keeps tracking the snapshot.
-    if (shouldResetSearchState(state)) state.reset();
+    else if (shouldResetSearchState(state)) state.reset();
     else state.resetQueryResults();
     setIncludeInput('');
     setExcludeInput('');
@@ -107,15 +111,15 @@ export function SearchPage() {
 
   const handleIndex = useCallback(() => {
     const state = useSearchStore.getState();
-    if (state.indexAction) return;
+    if (state.indexAction || shouldResetForRepoChange(owner, repo, state)) return;
     indexMutation.mutate({
       owner,
       repo,
-      branch: resolveRequestBranch(runningSha, branch),
-      scope: indexScope,
+      branch: resolveRequestBranch(resolveRunningSha(state.indexingStatus), branch),
+      scope: state.indexingStatus.state === 'paused' ? state.indexScope ?? indexScope : indexScope,
       buildId: resolveBuildId(state.indexingStatus, state.indexBuildId),
     });
-  }, [owner, repo, branch, runningSha, indexScope, indexMutation]);
+  }, [owner, repo, branch, indexScope, indexMutation]);
 
   const handleSelectFile = useCallback(
     (filePath: string, _startLine: number, action: 'open' | 'inspect' = 'open') => {

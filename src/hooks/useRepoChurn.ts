@@ -1,12 +1,16 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchChurnBatch } from '@/lib/apiClient';
 import { mergeChurn, pendingChurn, churnInterval } from '@/lib/churn-progress';
+import { useChatConfigRevision } from '@/stores/chatConfigStore';
 
 import type { ChurnResponse } from '@/types/churn';
 
 export function useRepoChurn(owner: string, repo: string, sha: string, enabled: boolean) {
   const client = useQueryClient();
-  const queryKey = ['repo-churn', owner, repo, sha];
+  // Credential revision scopes cached churn to the PAT that fetched it, so a
+  // PAT change discards prior-credential results instead of marking them done.
+  const { revision } = useChatConfigRevision();
+  const queryKey = ['repo-churn', owner, repo, sha, revision];
   return useQuery({
     queryKey,
     queryFn: async () => {
@@ -18,6 +22,7 @@ export function useRepoChurn(owner: string, repo: string, sha: string, enabled: 
         await fetchChurnBatch(owner, repo, sha, {
           completed: Object.keys(previous?.files ?? {}),
           pending,
+          scope: previous?.scope,
         }),
       );
     },

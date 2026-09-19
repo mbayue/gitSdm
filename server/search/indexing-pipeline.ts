@@ -2,7 +2,7 @@ import type { IndexingStatus, IndexingPipeline } from './types';
 import { buildSnapshot, indexingDependencies as defaults } from './build-snapshot';
 import { createCheckpoints } from './checkpoints';
 import { createIndexAvailability } from './index-availability';
-import { AppError } from '../utils/errors';
+import { AppError, toErrorPayload } from '../utils/errors';
 import { logError } from '../utils/logger';
 import { searchIndexKey, searchIndexIdentity } from './index-identity';
 import { SEARCH_LIMITS } from './limits';
@@ -100,7 +100,9 @@ export function createIndexingPipeline(deps = defaults, limits = SEARCH_LIMITS, 
         }
         checkpoints.remove(key);
         save(key, { state: 'failed', error: failure.message, failedFiles: 0 });
-        logError('/api/search/index', error, { repo: owner + '/' + repo });
+        // Log the sanitized AppError payload, not the raw provider/network
+        // error — logError serializes error.message/stack verbatim (URLs, keys, fragments).
+        logError('/api/search/index', toErrorPayload(failure), { repo: owner + '/' + repo });
         throw failure;
       } finally {
         active.delete(key);

@@ -8,9 +8,14 @@ import type { IndexScope } from '@/lib/apiClient';
 export function useIndexingStatus(owner: string, repo: string, enabled = true, branch?: string, scope?: IndexScope) {
   const { setIndexingStatus, indexingStatus, indexOperation, indexAction } = useSearchStore();
 
-  const query = useQuery<{ status: IndexingStatus; operation: number }>({
+  const query = useQuery<{ status: IndexingStatus; operation: number; owner: string; repo: string }>({
     queryKey: ['indexingStatus', owner, repo, branch, scope, indexOperation],
-    queryFn: async () => ({ status: await fetchIndexingStatus(owner, repo, branch, scope), operation: indexOperation }),
+    queryFn: async () => ({
+      status: await fetchIndexingStatus(owner, repo, branch, scope),
+      operation: indexOperation,
+      owner,
+      repo,
+    }),
     enabled:
       enabled &&
       !!owner &&
@@ -26,10 +31,16 @@ export function useIndexingStatus(owner: string, repo: string, enabled = true, b
   useEffect(() => {
     const state = useSearchStore.getState();
     if (!query.data || query.data.operation !== state.indexOperation || state.indexAction === 'cancel') return;
-    // A long indexing POST owns its final result. Polls may report progress, never undo the optimistic start.
-    if (state.indexAction === 'index' && query.data.status.state !== 'indexing') return;
+    // The global operation number is shared across repos: only accept a status
+    // that targets this repo, and that matches the repo owning an active op.
+    if (query.data.owner !== owner || query.data.repo !== repo) return;
+    if (state.indexOwner !== null && (state.indexOwner !== owner || state.indexRepo !== repo)) return;
+    if (state.indexAction === 'index') {
+      // A long indexing POST owns its final result. Polls may report progress, never undo the optimistic start.
+      if (query.data.status.state !== 'indexing') return;
+    }
     setIndexingStatus(query.data.status);
-    if (query.data.status.buildId) useSearchStore.setState({ indexBuildId: query.data.status.buildId });
-  }, [query.data, query.dataUpdatedAt, setIndexingStatus]);
+    useSearchStore.setState({ indexOwner: owner, indexRepo: repo, indexBuildId: query.data.status.buildId });
+  }, [query.data, query.dataUpdatedAt, setIndexingStatus, owner, repo]);
   return query;
 }

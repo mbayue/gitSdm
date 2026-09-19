@@ -1,4 +1,4 @@
-import { refreshChatConfig } from '@/stores/chatConfigStore';
+import { refreshChatConfig, writeChatConfigItem } from '@/stores/chatConfigStore';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu';
 import { useState, useRef, useEffect, useCallback, type ReactNode, type RefObject } from 'react';
 import { Settings, X, Check, Eye, EyeOff, KeyRound, GitBranch, ChevronDown } from 'lucide-react';
@@ -20,12 +20,7 @@ function getStoredKey(key: string): string | null {
 }
 
 function setStoredKey(key: string, val: string | null) {
-  try {
-    if (val) localStorage.setItem(key, val);
-    else localStorage.removeItem(key);
-  } catch {
-    /* ignore */
-  }
+  writeChatConfigItem(key, val);
 }
 
 interface SettingsPopoverProps {
@@ -137,6 +132,19 @@ export function SettingsPopover({
   const [chatModel, setChatModel] = useState(() => getStoredKey('gitsdm_ai_model') ?? '');
   const [chatBase, setChatBase] = useState(() => getStoredKey('gitsdm_ai_base_url') ?? '');
   const [settingsError, setSettingsError] = useState<string | null>(null);
+
+  // Desktop + mobile instances both mount: a save in one leaves the other
+  // stale, so a breakpoint switch would overwrite with old values. Re-read
+  // stored keys every time the popover opens.
+  useEffect(() => {
+    if (!open) return;
+    setGeminiValue(getStoredKey(GEMINI_KEY) ?? '');
+    setChatProvider(getStoredKey('gitsdm_ai_provider') ?? '');
+    setChatModel(getStoredKey('gitsdm_ai_model') ?? '');
+    setChatBase(getStoredKey('gitsdm_ai_base_url') ?? '');
+    setPatValue(getStoredKey(PAT_KEY) ?? '');
+    setSettingsError(null);
+  }, [open]);
 
   // GitHub State
   const [patValue, setPatValue] = useState(() => getStoredKey(PAT_KEY) ?? '');

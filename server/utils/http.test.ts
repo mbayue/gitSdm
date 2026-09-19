@@ -16,8 +16,8 @@ describe('addSecurityHeaders', () => {
 });
 
 /** Minimal Node req/res contract used by handleNodeRequest's body-reading path. */
-function fakeNode(options: { headers?: Record<string, string>; chunks?: Buffer[] }) {
-  const state = { destroyed: false, status: 0, headers: {} as Record<string, string> };
+function fakeNode(options: { headers?: Record<string, string>; chunks?: Buffer[]; hang?: boolean }) {
+  const state = { destroyed: false, status: 0, headers: {} as Record<string, string>, body: '', order: [] as string[] };
   const req = {
     method: 'POST',
     url: '/api/search',
@@ -25,12 +25,18 @@ function fakeNode(options: { headers?: Record<string, string>; chunks?: Buffer[]
     socket: {},
     destroy() {
       state.destroyed = true;
+      state.order.push('destroy');
     },
-    iterator: options.chunks
+    iterator: options.hang
       ? async function* () {
-          for (const chunk of options.chunks!) yield chunk;
+          await new Promise(() => {});
+          yield Buffer.alloc(0);
         }
-      : undefined,
+      : options.chunks
+        ? async function* () {
+            for (const chunk of options.chunks!) yield chunk;
+          }
+        : undefined,
   } as unknown as IncomingMessage;
   const res = {
     get statusCode() {
@@ -42,7 +48,9 @@ function fakeNode(options: { headers?: Record<string, string>; chunks?: Buffer[]
     setHeader(key: string, value: string) {
       state.headers[key.toLowerCase()] = value;
     },
-    end(_chunk?: unknown, cb?: () => void) {
+    end(chunk?: unknown, cb?: () => void) {
+      if (typeof chunk === 'string') state.body = chunk;
+      state.order.push('end');
       cb?.();
     },
   } as unknown as ServerResponse;
@@ -69,5 +77,17 @@ describe('handleNodeRequest body-limit teardown', () => {
     expect(node.state.status).toBe(413);
     expect(node.state.headers['connection']).toBe('close');
     expect(node.state.destroyed).toBe(true);
+  });
+
+  it('responds typed 408 when the body stalls, keeping the connection open for the error write', async () => {
+    const node = fakeNode({ hang: true });
+    const handled = await handleNodeRequest(node.req, node.res, 50);
+
+    expect(handled).toBe(true);
+    expect(node.state.status).toBe(408);
+    expect(JSON.parse(node.state.body)).toMatchObject({ status: 408, code: 'REQUEST_TIMEOUT' });
+    expect(node.state.headers['connection']).toBe('close');
+    // Destroy happens only in the end callback (after flush), never before the write.
+    expect(node.state.order).toEqual(['end', 'destroy']);
   });
 });

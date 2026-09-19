@@ -1,15 +1,90 @@
 import { promises as dnsPromises } from 'node:dns';
+import { request as httpsRequest } from 'node:https';
+import { isIP } from 'node:net';
 import { AppError } from './errors';
 import { isSafeRemoteUrl } from './url-guard';
 
 const defaultLookup = async (hostname: string): Promise<string[]> =>
   (await dnsPromises.lookup(hostname, { all: true })).map(({ address }) => address);
 
+export interface PinnedPostArgs {
+  url: string;
+  token: string;
+  payload: string;
+  addresses: string[];
+  timeoutMs: number;
+}
+
 export interface UsageLimitDependencies {
   fetch: typeof fetch;
   now: () => number;
   lookup?: (hostname: string) => Promise<string[]>;
   lookupTimeoutMs?: number;
+  /** Pinned POST seam: defaults to connecting only to validated addresses (no re-resolve). */
+  postJson?: (args: PinnedPostArgs) => Promise<unknown>;
+}
+
+/** Module-level override for integration tests that go through handleApiRequest (which builds its own dependencies). Production defaults to the pinned implementation. */
+export const usageLimitTestHooks: { postJson?: (args: PinnedPostArgs) => Promise<unknown> } = {};
+
+/** POST JSON to a validated address with the original TLS identity — never re-resolves DNS. */
+async function postPinnedJson({ url, token, payload, addresses, timeoutMs }: PinnedPostArgs): Promise<unknown> {
+  const target = new URL(url);
+  const hostname = target.hostname.replace(/^\[|\]$/g, '');
+  const sni = isIP(hostname) ? undefined : hostname;
+  const path = `${target.pathname}${target.search}`;
+  // Never replay a reservation: a lost response may follow a successful charge.
+  const address = addresses[0];
+  if (!address) throw new Error('No reachable limiter address');
+      const text = await new Promise<string>((resolve, reject) => {
+        const req = httpsRequest(
+          {
+            hostname: address,
+            servername: sni,
+            port: Number(target.port) || 443,
+            path,
+            method: 'POST',
+            headers: {
+              host: target.host,
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+              'Content-Length': Buffer.byteLength(payload),
+              'accept-encoding': 'identity',
+            },
+            signal: AbortSignal.timeout(timeoutMs),
+          },
+          (res) => {
+            const status = res.statusCode ?? 503;
+            if (status >= 300 && status < 400) {
+              res.resume();
+              reject(new Error('Limiter redirects are not supported'));
+              return;
+            }
+            const chunks: Buffer[] = [];
+            let bytes = 0;
+            res.on('data', (chunk: Buffer) => {
+              bytes += chunk.length;
+              if (bytes > 64 * 1024) {
+                res.destroy(new Error('Limiter response exceeds size limit'));
+                return;
+              }
+              chunks.push(chunk);
+            });
+            res.on('error', reject);
+            res.on('end', () => {
+              if (status < 200 || status >= 300) {
+                reject(new Error('Limiter unavailable'));
+                return;
+              }
+              resolve(Buffer.concat(chunks).toString('utf8'));
+            });
+          },
+        );
+        req.on('error', reject);
+        req.end(payload);
+      });
+      return JSON.parse(text) as unknown;
+
 }
 
 const local = new Map<string, { used: number; expires: number }>();
@@ -36,6 +111,9 @@ export async function reserveUsage(
   windowMs: number,
   dependencies: UsageLimitDependencies = { fetch, now: Date.now, lookup: defaultLookup },
 ): Promise<void> {
+  // ponytail: negative amounts would replenish quota via INCRBY/entry.used — fail closed.
+  if (!Number.isSafeInteger(amount) || amount < 0)
+    throw new AppError(400, 'Usage amount must be a non-negative integer.', 'INVALID_USAGE_AMOUNT');
   const now = dependencies.now();
   const lookup = dependencies.lookup ?? defaultLookup;
   const lookupTimeoutMs = dependencies.lookupTimeoutMs ?? 3000;
@@ -51,8 +129,9 @@ export async function reserveUsage(
       throw new AppError(503, 'Shared usage limiter is not configured.', 'LIMITER_UNAVAILABLE', true);
     if (!url.startsWith('https://') || !isSafeRemoteUrl(url))
       throw new AppError(503, 'Shared usage limiter URL is not permitted.', 'LIMITER_UNAVAILABLE', true);
-    // Hostname checks cannot catch DNS rebinding: resolve and re-validate every address
-    // before connecting. A small TOCTOU window between lookup and connect remains.
+    // Hostname checks cannot catch DNS rebinding: resolve and re-validate every address,
+    // then connect only to a validated address with the original TLS identity (no re-resolve,
+    // so the bearer cannot leak to a re-bound private address).
     let addresses: string[];
     let lookupTimer: ReturnType<typeof setTimeout> | undefined;
     try {
@@ -79,15 +158,14 @@ export async function reserveUsage(
     )
       throw new AppError(503, 'Shared usage limiter address is not permitted.', 'LIMITER_UNAVAILABLE', true);
     try {
-      const response = await dependencies.fetch(url, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(['EVAL', script, 1, key, amount, limit, ttl]),
-        redirect: 'error',
-        signal: AbortSignal.timeout(3000),
+      const postJson = dependencies.postJson ?? usageLimitTestHooks.postJson ?? postPinnedJson;
+      const result: unknown = await postJson({
+        url,
+        token,
+        payload: JSON.stringify(['EVAL', script, 1, key, amount, limit, ttl]),
+        addresses,
+        timeoutMs: 3000,
       });
-      if (!response.ok) throw new Error('Limiter unavailable');
-      const result: unknown = await response.json();
       if (
         !result ||
         typeof result !== 'object' ||

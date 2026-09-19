@@ -102,6 +102,21 @@ test('caller signal aborts running job, aborts work signal, rejects caller immed
   expect(nextJob).toBe('free');
 });
 
+test('abort right after queue() never invokes work and releases the slot', async () => {
+  const queue = createBoundedQueue(1, 0, 1000, 30000);
+  const controller = new AbortController();
+  let ran = false;
+  const job = queue(async () => {
+    ran = true;
+    return 'x';
+  }, controller.signal);
+  controller.abort(new Error('too late'));
+  await expect(job).rejects.toThrow('too late');
+  await new Promise((r) => setTimeout(r, 10));
+  expect(ran).toBe(false);
+  expect(await queue(async () => 'free')).toBe('free');
+});
+
 test('runMs deadline detaches the caller-abort listener even when work never settles', async () => {
   const queue = createBoundedQueue(1, 0, 1000, 10);
   const controller = new AbortController();

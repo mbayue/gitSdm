@@ -92,13 +92,19 @@ export function parsePyproject(content: string): Dependency[] {
     deps.push({ name, version, type, ecosystem: 'python' });
   };
 
-  // 1. PEP 621 dependencies = [ ... ]
-  const depAssignMatches = content.matchAll(/(?:^|\n)\s*(?:dependencies|optional-dependencies(?:\.[a-zA-Z0-9_.-]+)?)\s*=\s*\[/g);
-  for (const m of depAssignMatches) {
-    const items = extractQuotedArrayItems(content, m.index + m[0].lastIndexOf('['));
-    for (const item of items) {
-      const parsed = extractPythonPackageSpec(item);
-      if (parsed) add(parsed.name, parsed.version, 'prod');
+  // 1. PEP 621 `[project] dependencies = [ ... ]` — only when the assignment sits
+  // inside the [project] table (a [tool.*] or [project.optional-*] table with its
+  // own `dependencies = [` must not leak in as production dependencies).
+  const projectMatch = content.match(/\[project\]([\s\S]*?)(?=\n\s*\[|$)/);
+  if (projectMatch) {
+    const section = projectMatch[1];
+    const depAssignMatches = section.matchAll(/(?:^|\n)\s*(?:dependencies|optional-dependencies(?:\.[a-zA-Z0-9_.-]+)?)\s*=\s*\[/g);
+    for (const m of depAssignMatches) {
+      const items = extractQuotedArrayItems(section, m.index + m[0].lastIndexOf('['));
+      for (const item of items) {
+        const parsed = extractPythonPackageSpec(item);
+        if (parsed) add(parsed.name, parsed.version, 'prod');
+      }
     }
   }
 
@@ -128,8 +134,9 @@ export function parsePyproject(content: string): Dependency[] {
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith('#')) continue;
-      const kv = trimmed.match(/^([a-zA-Z0-9_.-]+)\s*=\s*(?:"([^"]+)"|'([^']+)'|\{.*?version\s*=\s*["']([^"']+)["'].*?\})/);
+      const kv = trimmed.match(/^([a-zA-Z0-9_.-]+)\s*=\s*(?:"([^"]+)"|'([^']+)'|\{.*?version\s*=\s*["']([^"']+)["'].*?\}|\{[^}]*\})/);
       if (kv) {
+        // Key-only match keeps path/git/url inline tables (no version field) instead of dropping them.
         add(kv[1], kv[2] || kv[3] || kv[4], depType);
         continue;
       }

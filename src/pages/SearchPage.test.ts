@@ -9,8 +9,10 @@ import {
   resolvePollingScope,
   resolveRequestBranch,
   resolveRunningSha,
+  shouldResetForRepoChange,
   shouldResetSearchState,
 } from './search-page-logic';
+import { scopeKey } from '@/lib/scope-key';
 
 const snapshot = (
   indexAction: 'index' | 'cancel' | null,
@@ -164,6 +166,7 @@ describe('SearchPage logic & state contracts', () => {
 
   it('full reset clears active indexing and increments revision', () => {
     const prevRev = useSearchStore.getState().revision;
+    const prevOp = useSearchStore.getState().indexOperation;
     useSearchStore.setState({
       indexingStatus: { state: 'paused', reason: 'rate-limit' },
       indexBuildId: 'build-123',
@@ -175,5 +178,41 @@ describe('SearchPage logic & state contracts', () => {
     expect(updated.indexingStatus.state).toBe('idle');
     expect(updated.indexBuildId).toBeUndefined();
     expect(updated.revision).toBe(prevRev + 1);
+    expect(updated.indexOperation).toBe(prevOp + 1);
+  });
+
+  it('resetQueryResults invalidates in-flight queries while preserving the index operation', () => {
+    useSearchStore.setState({ indexOperation: 9, indexAction: 'index' });
+    const prevRev = useSearchStore.getState().revision;
+    const prevOp = useSearchStore.getState().indexOperation;
+
+    useSearchStore.getState().resetQueryResults();
+
+    const updated = useSearchStore.getState();
+    expect(updated.revision).toBe(prevRev + 1);
+    expect(updated.indexOperation).toBe(prevOp);
+    expect(updated.indexAction).toBe('index');
+  });
+
+  it('abandons an operation started for another repo on navigation', () => {
+    expect(
+      shouldResetForRepoChange('o', 'b', { indexOwner: 'o', indexRepo: 'a', indexAction: 'index' }),
+    ).toBe(true);
+    expect(
+      shouldResetForRepoChange('o', 'a', { indexOwner: 'o', indexRepo: 'a', indexAction: 'index' }),
+    ).toBe(false);
+    expect(shouldResetForRepoChange('o', 'a', { indexOwner: null, indexRepo: null, indexAction: 'index' })).toBe(
+      false,
+    );
+    expect(shouldResetForRepoChange('o', 'b', { indexOwner: 'o', indexRepo: 'a', indexAction: null })).toBe(true);
+  });
+
+  it('scopeKey is order-insensitive and distinguishes different scopes', () => {
+    expect(scopeKey({ includePaths: ['b', 'a'], excludePaths: [] })).toBe(
+      scopeKey({ includePaths: ['a', 'b'], excludePaths: [] }),
+    );
+    expect(scopeKey({ includePaths: ['a'], excludePaths: [] })).not.toBe(
+      scopeKey({ includePaths: ['a'], excludePaths: ['a'] }),
+    );
   });
 });

@@ -1,9 +1,8 @@
 import { test, expect } from 'bun:test';
 import { isSafeRemoteUrl, expandIpv6Groups } from './url-guard';
 
-test('allows public https and http remotes', () => {
+test('allows public https remotes', () => {
   expect(isSafeRemoteUrl('https://api.upstash.com/v2')).toBe(true);
-  expect(isSafeRemoteUrl('http://example.com')).toBe(true);
   expect(isSafeRemoteUrl('https://169.63.10.1')).toBe(true);
   expect(isSafeRemoteUrl('https://8.8.8.8')).toBe(true);
   expect(isSafeRemoteUrl('https://192.0.1.5')).toBe(true);
@@ -21,6 +20,11 @@ test('rejects non-http schemes and malformed urls', () => {
   expect(isSafeRemoteUrl('file:///etc/passwd')).toBe(false);
   expect(isSafeRemoteUrl('not a url')).toBe(false);
   expect(isSafeRemoteUrl('')).toBe(false);
+});
+
+test('rejects plaintext http so credentials never cross the network without TLS', () => {
+  expect(isSafeRemoteUrl('http://example.com')).toBe(false);
+  expect(isSafeRemoteUrl('http://8.8.8.8')).toBe(false);
 });
 
 test('rejects loopback, private, link-local, and reserved hosts', () => {
@@ -65,6 +69,13 @@ test('rejects loopback, private, link-local, and reserved hosts', () => {
   expect(isSafeRemoteUrl('https://box.local')).toBe(false);
   expect(isSafeRemoteUrl('https://internal')).toBe(false);
   expect(isSafeRemoteUrl('https://local')).toBe(false);
+});
+
+test('rejects deprecated site-local IPv6 range', () => {
+  expect(isSafeRemoteUrl('https://[fec0::1]/v2')).toBe(false);
+  expect(isSafeRemoteUrl('https://[feff::1]/v2')).toBe(false);
+  // fe80::/10 link-local stays rejected; fe90::/10 and later fec-range forms too
+  expect(isSafeRemoteUrl('https://[fe90::1]/v2')).toBe(false);
 });
 
 test('canonicalization tricks resolve to the checked hostname', () => {

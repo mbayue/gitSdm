@@ -67,7 +67,9 @@ function hostAllowed(host: string): boolean {
     }
     if (/^ff/.test(hostWithoutBrackets)) return false; // ff00::/8 multicast
     if (/^f[cd]/.test(hostWithoutBrackets)) return false; // fc00::/7 unique-local
-    if (/^fe[89ab]/.test(hostWithoutBrackets)) return false; // fe80::/10 link-local
+    // fec0::/10 site-local (deprecated, still private): top 10 bits 1111111011
+    if ((groups[0] & 0xffc0) === 0xfec0) return false;
+    if ((groups[0] & 0xffc0) === 0xfe80) return false; // fe80::/10 link-local
     if (hostWithoutBrackets.startsWith('2001:db8')) return false; // documentation
     return true;
   }
@@ -78,11 +80,13 @@ function hostAllowed(host: string): boolean {
 // ponytail: hostname-only matching cannot catch DNS rebinding (a public name resolving to a
 // private IP). Ceiling named; upgrade path is an async dns.lookup re-validation of the resolved
 // addresses before the fetch.
-/** Trust-boundary guard for server-side outbound fetches: only http(s), and never loopback/private/reserved hosts. */
+/** Trust-boundary guard for server-side outbound fetches: only public HTTPS, never loopback/private/reserved hosts. */
 export function isSafeRemoteUrl(rawUrl: string): boolean {
   try {
     const url = new URL(rawUrl);
-    return (url.protocol === 'https:' || url.protocol === 'http:') && hostAllowed(url.hostname);
+    // ponytail: http is rejected here — API keys must never cross the network without
+    // TLS. Local test servers needing plaintext must bypass this guard explicitly.
+    return url.protocol === 'https:' && hostAllowed(url.hostname);
   } catch {
     return false;
   }

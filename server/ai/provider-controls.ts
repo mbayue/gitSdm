@@ -9,11 +9,12 @@ export function protectAI(provider: AIProvider, serverFunded: boolean): AIProvid
     complete(messages, options) {
       if (messages.reduce((sum, message) => sum + message.content.length, 0) > 64000)
         return Promise.reject(new AppError(413, 'AI prompt is too large.', 'PROMPT_TOO_LARGE'));
+      // Forward the caller signal so request aborts reach the provider instead of hanging a queue slot.
       return queue(async (signal) => {
         if (serverFunded) await reserveUsage('ai-daily', 1, configuredLimit('SERVER_AI_DAILY_CALLS', 500), 86400000);
         if (signal.aborted) throw new AppError(504, 'Provider request timed out.', 'PROVIDER_TIMEOUT', true);
         return provider.complete(messages, { ...options, signal });
-      });
+      }, options?.signal);
     },
   };
 }

@@ -1,9 +1,4 @@
-export interface SearchCoverage {
-  kind: 'complete' | 'previous' | 'partial';
-  commitSha: string;
-  indexedFiles: number;
-  totalFiles: number;
-}
+import type { SearchCoverage } from '@/types/api';
 
 export function coverageMessage(coverage: SearchCoverage): string {
   if (coverage.kind === 'previous')

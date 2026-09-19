@@ -19,7 +19,7 @@ interface SearchIndexControlsProps {
 export function SearchIndexControls(props: SearchIndexControlsProps) {
   const queryClient = useQueryClient();
   const handleCancel = async () => {
-    const context = beginIndexOperation('cancel');
+    const context = beginIndexOperation('cancel', props.owner, props.repo);
     const buildId = useSearchStore.getState().indexBuildId;
     try {
       await queryClient.cancelQueries({ queryKey: ['indexingStatus', props.owner, props.repo] });

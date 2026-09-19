@@ -43,3 +43,20 @@ test('existing OpenAI settings remain supported', () => {
     }),
   ).toEqual({ provider: 'openai', apiKey: 'key', baseURL: 'https://legacy.example/v1', model: 'legacy-model' });
 });
+
+test('non-HTTPS or private embedding endpoints fail closed before the key is used', () => {
+  for (const base of ['http://embeddings.example/v1', 'https://10.0.0.5/v1', 'https://169.254.169.254/v1']) {
+    for (const env of [
+      { AI_PROVIDER: 'openai', OPENAI_API_KEY: 'key', OPENAI_API_BASE: base },
+      { EMBEDDING_PROVIDER: 'openai', EMBEDDING_API_KEY: 'key', EMBEDDING_API_BASE: base },
+    ]) {
+      let error: unknown;
+      try {
+        embeddingConfig(env);
+      } catch (err) {
+        error = err;
+      }
+      expect(error).toMatchObject({ code: 'EMBEDDING_PROVIDER_UNAVAILABLE' });
+    }
+  }
+});

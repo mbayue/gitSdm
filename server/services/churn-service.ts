@@ -24,6 +24,10 @@ export async function fetchRepoChurn(
   continuation: ChurnContinuation = {},
 ): Promise<ChurnResponse> {
   const paths = [...new Set(inputPaths)].slice(0, 200);
+  const token = typeof tokenOrCtx === 'string' ? tokenOrCtx : tokenOrCtx?.gitHubToken;
+  const scope = createHash('sha256')
+    .update(token || process.env.GITHUB_TOKEN || 'anonymous')
+    .digest('hex');
   if (isMockRepo(owner))
     return {
       files: await fetchMockChurn(paths),
@@ -32,23 +36,26 @@ export async function fetchRepoChurn(
       complete: true,
       remaining: [],
       failures: {},
+      scope,
     };
-  const token = typeof tokenOrCtx === 'string' ? tokenOrCtx : tokenOrCtx?.gitHubToken;
-  const scope = createHash('sha256')
-    .update(token || process.env.GITHUB_TOKEN || 'anonymous')
-    .digest('hex');
   const since = new Date();
   since.setUTCHours(0, 0, 0, 0);
   since.setUTCDate(since.getUTCDate() - days);
   const key = `${churnCacheKey(owner, repo, branch, days)}:incremental:${since.toISOString()}:${scope}`;
   const state = cache.get<Stored>(key) ?? { files: {}, failures: {} };
   cache.set(key, state);
-  const completed = new Set((continuation.completed ?? []).filter((path) => paths.includes(path)));
-  const order = [...new Set([...(continuation.pending ?? []).filter((path) => paths.includes(path)), ...paths])];
+  // Credential-scoped continuation: client progress is only trusted when it echoes
+  // this credential's scope. After a token change the cache is empty AND stale
+  // completed paths are discarded, so the batch refetches instead of reporting
+  // complete with no data. Older clients omit scope and keep legacy behavior.
+  const cont: ChurnContinuation =
+    continuation.scope === undefined || continuation.scope === scope ? continuation : {};
+  const completed = new Set((cont.completed ?? []).filter((path) => paths.includes(path)));
+  const order = [...new Set([...(cont.pending ?? []).filter((path) => paths.includes(path)), ...paths])];
   const pending = order
     .filter(
       (path) =>
-        (!continuation.pending || continuation.pending.includes(path)) &&
+        (!cont.pending || cont.pending.includes(path)) &&
         !completed.has(path) &&
         !state.files[path] &&
         !(state.failures[path]?.retryAt > Date.now()),
@@ -72,7 +79,12 @@ export async function fetchRepoChurn(
             request: { signal: AbortSignal.timeout(5000) },
           });
           const lastPage = /[?&]page=(\d+)>;\s*rel="last"/.exec(headers.link ?? '')?.[1];
-          const authors = new Set(data.map((c) => c.author?.login ?? c.commit.author?.name).filter(Boolean));
+          // Login and git author name describe the same contributor.
+          const authors = new Set<string>();
+          for (const commit of data) {
+            const identity = commit.author?.login ?? commit.commit.author?.name;
+            if (identity) authors.add(identity);
+          }
           state.files[path] = {
             commitCount: lastPage ? Number(lastPage) * 100 : data.length,
             authorCount: authors.size,
@@ -89,11 +101,9 @@ export async function fetchRepoChurn(
           const limited =
             err.status === 429 ||
             (err.status === 403 && (headers['x-ratelimit-remaining'] === '0' || !!headers['retry-after']));
-          const issue = limited
-            ? 'rate-limit'
-            : err.status === 401 || err.status === 403 || err.status === 404
-              ? 'access'
-              : 'timeout-or-network';
+          // 404 is per-file (renamed/missing path), not repo-wide — only
+          // 401/403 halt the whole batch in churnInterval(); keep polling the rest.
+          const issue = limited ? 'rate-limit' : err.status === 401 || err.status === 403 ? 'access' : 'timeout-or-network';
           const seconds = Number(headers['retry-after']);
           const reset = Number(headers['x-ratelimit-reset']) * 1000;
           const retryAt = limited
@@ -127,5 +137,6 @@ export async function fetchRepoChurn(
     failures,
     issue: stopped?.issue,
     retryAt: stopped?.retryAt,
+    scope,
   };
 }

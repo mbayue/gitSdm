@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { promises as dnsPromises } from 'node:dns';
 import { test, expect, spyOn } from 'bun:test';
 import { handleApiRequest, isRegisteredApiPath, registeredApiPaths } from '../api-router';
+import { usageLimitTestHooks } from '../utils/usage-limits';
 
 // The limiter resolves and re-validates its host before connecting; tests stub DNS so the
 // fake 'limiter.invalid' endpoint resolves to a safe public address.
@@ -66,18 +67,18 @@ test('shared limiter work is bounded before Redis calls and releases slots after
   const gate = new Promise<void>((resolve) => {
     release = resolve;
   });
-  const fetchStub = spyOn(globalThis, 'fetch').mockImplementation(async () => {
+  usageLimitTestHooks.postJson = async () => {
     calls++;
     await gate;
-    return Response.json({ result: 0 });
-  });
+    return { result: 0 };
+  };
   const log = spyOn(console, 'error').mockImplementation(() => {});
   const lookupStub = stubLimiterDns();
   const work: Array<Promise<Response | null>> = [];
   try {
     for (let i = 0; i < 25; i++) work.push(handleApiRequest(new Request('http://localhost/api/search'), '192.0.2.231'));
     // The limiter resolves and re-validates DNS before connecting, so the admitted
-    // requests reach the gated fetch stub a tick later — flush before asserting.
+    // requests reach the gated pinned POST a tick later — flush before asserting.
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
     expect(calls).toBe(8);
     release();
@@ -87,7 +88,7 @@ test('shared limiter work is bounded before Redis calls and releases slots after
   } finally {
     release();
     await Promise.allSettled(work);
-    fetchStub.mockRestore();
+    usageLimitTestHooks.postJson = undefined;
     lookupStub.mockRestore();
     log.mockRestore();
     names.forEach((name, i) => {
@@ -123,6 +124,11 @@ test('unregistered /api paths return 404 before spending admission or usage budg
   process.env.RATE_LIMIT_MODE = 'shared';
   process.env.UPSTASH_REDIS_REST_URL = 'https://limiter.invalid';
   process.env.UPSTASH_REDIS_REST_TOKEN = 'unit-test';
+  let pinnedCalls = 0;
+  usageLimitTestHooks.postJson = async () => {
+    pinnedCalls++;
+    return { result: 1 };
+  };
   const fetchStub = spyOn(globalThis, 'fetch').mockImplementation(async () => Response.json({ result: 1 }));
   const lookupStub = stubLimiterDns();
   const log = spyOn(console, 'error').mockImplementation(() => {});
@@ -130,6 +136,7 @@ test('unregistered /api paths return 404 before spending admission or usage budg
     const unknown = await handleApiRequest(new Request('http://localhost/api/search/xyz'), '192.0.2.232');
     expect(unknown?.status).toBe(404);
     expect(await unknown?.json()).toMatchObject({ code: 'NOT_FOUND' });
+    expect(pinnedCalls).toBe(0);
     expect(fetchStub).not.toHaveBeenCalled();
     // Control: a registered path still reaches the shared limiter.
     const known = await handleApiRequest(
@@ -137,8 +144,9 @@ test('unregistered /api paths return 404 before spending admission or usage budg
       '192.0.2.232',
     );
     expect(known?.status).toBe(400);
-    expect(fetchStub).toHaveBeenCalled();
+    expect(pinnedCalls).toBeGreaterThan(0);
   } finally {
+    usageLimitTestHooks.postJson = undefined;
     fetchStub.mockRestore();
     lookupStub.mockRestore();
     log.mockRestore();

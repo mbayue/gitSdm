@@ -14,9 +14,14 @@ export interface ChurnResponse {
   retryAt?: number;
   remaining: string[];
   failures: Record<string, { issue: NonNullable<ChurnResponse['issue']>; retryAt: number }>;
+  /** Opaque credential-scope fingerprint echoed back in the next continuation.
+   *  Lets the server reject stale progress after a credential change. Never a secret. */
+  scope?: string;
 }
 
 export interface ChurnContinuation {
   completed?: string[];
   pending?: string[];
+  /** Scope echoed from a prior ChurnResponse; omitted by older clients (trusted for back-compat). */
+  scope?: string;
 }

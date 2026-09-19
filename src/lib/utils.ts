@@ -14,12 +14,15 @@ export function formatStars(n: number): string {
 }
 
 export function parseRepoFromUrl(url: string): { owner: string; repo: string } | null {
-  const trimmed = url.trim().replace(/\/$/, '').replace(/\.git$/, '');
-  const sshMatch = trimmed.match(/^git@github\.com:([^/]+)\/([^/?#]+)$/i);
+  const trimmed = url.trim().replace(/\/$/, '');
+  // Strip a trailing .git before query/hash splitting so `repo.git?x=1` resolves to `repo`.
+  const withoutGitSuffix = trimmed.replace(/\.git(?=[?#]|$)/i, '');
+  const sshMatch = withoutGitSuffix.match(/^git@github\.com:([^/]+)\/([^/?#]+)$/i);
   if (sshMatch) return { owner: sshMatch[1], repo: sshMatch[2] };
 
-  const shorthandMatch = trimmed.match(/^([A-Za-z0-9-]+)\/([A-Za-z0-9._-]+)$/);
-  if (shorthandMatch) return { owner: shorthandMatch[1], repo: shorthandMatch[2] };
+  const shorthandMatch = withoutGitSuffix.match(/^([A-Za-z0-9-]+)\/([A-Za-z0-9._-]+)$/);
+  if (shorthandMatch && !withoutGitSuffix.includes('?') && !withoutGitSuffix.includes('#'))
+    return { owner: shorthandMatch[1], repo: shorthandMatch[2] };
 
   try {
     let urlToParse = trimmed;
@@ -35,7 +38,8 @@ export function parseRepoFromUrl(url: string): { owner: string; repo: string } |
 
     const parts = urlObj.pathname.split('/').filter(Boolean);
     if (parts.length >= 2) {
-      return { owner: parts[0], repo: parts[1] };
+      // Same .git strip covers https URLs with query/hash (`repo.git?x=1`).
+      return { owner: parts[0], repo: parts[1].replace(/\.git$/i, '') };
     }
     return null;
   } catch {

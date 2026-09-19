@@ -1,12 +1,23 @@
 import type { QAEngine, QAOptions, QAResponse, Citation } from './types';
+import type { SearchCoverage } from '../../src/types';
 import { DEFAULT_MIN_SCORE } from './constants';
 import { getSearchEngine } from './search-engine';
 import { getAIProvider } from '../ai/provider';
-import { coverageMessage } from './coverage';
 
 const QA_TOP_K = 5;
 const NOT_AVAILABLE_MESSAGE =
   'I could not find relevant information in the indexed codebase to answer this question. Try indexing the repository first or rephrasing your question.';
+
+// Local copy of the coverage notice formatter: runtime code cannot be shared
+// across the server/frontend boundary (only src/types is in both tsconfigs),
+// so this intentionally mirrors coverageMessage in src/lib/search-coverage.ts.
+function coverageMessage(coverage: SearchCoverage): string {
+  if (coverage.kind === 'previous')
+    return `Showing results from the previous index (${coverage.commitSha.slice(0, 7)}).`;
+  if (coverage.kind === 'partial')
+    return `Partial results — ${coverage.indexedFiles} of ${coverage.totalFiles} files indexed.`;
+  return 'Showing results from the complete index.';
+}
 
 export function createQAEngine(): QAEngine {
   const searchEngine = getSearchEngine();

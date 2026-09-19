@@ -2,13 +2,17 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { TLSSocket } from 'node:tls';
 import { handleApiRequest } from '../api-router';
 import { checkBodySize } from './request-limits';
-import { toErrorPayload } from './errors';
+import { AppError, toErrorPayload } from './errors';
 
 /**
  * Adapter to handle Node-compatible requests (Vite dev server, Vercel)
  * and route them through the Web-standard handleApiRequest.
  */
-export async function handleNodeRequest(nodeReq: IncomingMessage, nodeRes: ServerResponse): Promise<boolean> {
+export async function handleNodeRequest(
+  nodeReq: IncomingMessage,
+  nodeRes: ServerResponse,
+  bodyTimeoutMs = 15000,
+): Promise<boolean> {
   const headers = new Headers();
   for (const [key, value] of Object.entries(nodeReq.headers)) {
     if (value) {
@@ -25,7 +29,15 @@ export async function handleNodeRequest(nodeReq: IncomingMessage, nodeRes: Serve
   const url = `${protocol}://${host}${nodeReq.url}`;
 
   let body: BodyInit | undefined;
-  const bodyDeadline = setTimeout(() => nodeReq.destroy(new Error('Request body timed out')), 15000);
+  // A stalled body must abort the read without destroying the connection: the
+  // race below rejects with a typed 408 while the socket stays open for the
+  // error write (closed after flush in the catch block). Destroying the
+  // request up front would surface a plain Error -> generic 500 instead.
+  const requestTimeoutError = () => new AppError(408, 'Request body timed out.', 'REQUEST_TIMEOUT', true);
+  let bodyTimer: ReturnType<typeof setTimeout> | undefined;
+  const bodyDeadline = new Promise<never>((_resolve, reject) => {
+    bodyTimer = setTimeout(() => reject(requestTimeoutError()), bodyTimeoutMs);
+  });
   try {
     checkBodySize(Number(nodeReq.headers['content-length'] ?? 0));
     const requestWithBody = nodeReq as IncomingMessage & { body?: unknown };
@@ -36,11 +48,17 @@ export async function handleNodeRequest(nodeReq: IncomingMessage, nodeRes: Serve
     } else if (nodeReq.method !== 'GET' && nodeReq.method !== 'HEAD') {
       const chunks: Buffer[] = [];
       let size = 0;
-      for await (const chunk of nodeReq.iterator({ destroyOnReturn: false })) {
-        size += Buffer.byteLength(chunk);
-        checkBodySize(size);
-        chunks.push(chunk as Buffer);
-      }
+      const reader = (async () => {
+        for await (const chunk of nodeReq.iterator({ destroyOnReturn: false })) {
+          size += Buffer.byteLength(chunk);
+          checkBodySize(size);
+          chunks.push(chunk as Buffer);
+        }
+      })();
+      // Swallow the abandoned reader's late settlement; teardown happens in
+      // the catch block after the error response is flushed.
+      void reader.catch(() => undefined);
+      await Promise.race([reader, bodyDeadline]);
       body = Buffer.concat(chunks);
     }
   } catch (error) {
@@ -54,7 +72,7 @@ export async function handleNodeRequest(nodeReq: IncomingMessage, nodeRes: Serve
     nodeRes.end(await response.text(), () => nodeReq.destroy());
     return true;
   } finally {
-    clearTimeout(bodyDeadline);
+    clearTimeout(bodyTimer);
   }
 
   const webReq = new Request(url, {

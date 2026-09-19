@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { AlertCircle, Lock, Wifi, ArrowLeft, RefreshCw, GitBranch, Check, Eye, EyeOff } from 'lucide-react';
 import { GlowButton } from '@/components/ui/GlowButton';
+import { writeChatConfigItem } from '@/stores/chatConfigStore';
 
 const LS_KEY = 'gitsdm_github_pat';
 
@@ -16,10 +17,7 @@ function getStoredPat(): string | null {
 }
 
 function setStoredPat(token: string | null) {
-  try {
-    if (token) localStorage.setItem(LS_KEY, token);
-    else localStorage.removeItem(LS_KEY);
-  } catch { /* ignore */ }
+  writeChatConfigItem(LS_KEY, token);
 }
 
 

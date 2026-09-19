@@ -1,4 +1,4 @@
-import { runHealth, runRefactor, runRoast, runReadmeEnhance, getToolKey } from './tool-cache';
+import { runHealth, runMermaid, runRefactor, runRoast, runReadmeEnhance, getToolKey } from './tool-cache';
 import { useChatConfigRevision } from '@/stores/chatConfigStore';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
@@ -36,8 +36,12 @@ export function useMermaid() {
   const { revision } = useChatConfigRevision();
   return useMutation({
     mutationKey: ['mermaid', revision],
-    mutationFn: async ({ owner, repo }: { owner: string; repo: string }) =>
-      ({ ...await aiMermaid(owner, repo), revision }),
+    mutationFn: async ({ owner, repo, branch, sha }: { owner: string; repo: string; branch?: string; sha?: string }) => ({
+      ...(await runMermaid(getToolKey('mermaid', owner, repo, revision, branch, sha), () => aiMermaid(owner, repo, sha || branch))),
+      revision,
+      sha,
+      branch,
+    }),
   });
 }
 

@@ -28,6 +28,22 @@ test('server-funded AI is blocked at zero budget, while a user key can still run
   }
 });
 
+test('a pre-aborted caller signal rejects without invoking the provider', async () => {
+  let called = false;
+  const provider = {
+    complete: async () => {
+      called = true;
+      return 'answer';
+    },
+  };
+  const controller = new AbortController();
+  controller.abort(new Error('cancelled'));
+  await expect(
+    protectAI(provider, false).complete([{ role: 'user', content: 'hello' }], { signal: controller.signal }),
+  ).rejects.toThrow('cancelled');
+  expect(called).toBe(false);
+});
+
 test('embedding budget is checked before invoking the provider', async () => {
   const previous = process.env.SERVER_EMBEDDING_DAILY_BYTES;
   process.env.SERVER_EMBEDDING_DAILY_BYTES = '0';

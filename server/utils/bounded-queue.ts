@@ -56,24 +56,33 @@ export function createBoundedQueue(concurrency = 2, maxWaiting = 8, waitMs = 100
           callerSignal.addEventListener('abort', onActiveAbort, { once: true });
         }
 
+        const releaseSlot = () => {
+          clearTimeout(timer);
+          detachCallerAbort();
+          active--;
+          waiting.shift()?.();
+        };
+
         Promise.resolve()
-          .then(() => work(controller.signal))
+          .then(() => {
+            // Abort won the race before work started — release the slot
+            // without invoking side-effecting work.
+            if (settled) {
+              releaseSlot();
+              return new Promise<T>(() => {});
+            }
+            return work(controller.signal);
+          })
           .then(
             (val) => {
-              clearTimeout(timer);
-              detachCallerAbort();
-              active--;
-              waiting.shift()?.();
+              releaseSlot();
               if (!settled) {
                 settled = true;
                 resolve(val);
               }
             },
             (err) => {
-              clearTimeout(timer);
-              detachCallerAbort();
-              active--;
-              waiting.shift()?.();
+              releaseSlot();
               if (!settled) {
                 settled = true;
                 reject(err);

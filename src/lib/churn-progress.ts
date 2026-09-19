@@ -28,7 +28,10 @@ export function pendingChurn(data: ChurnResponse, now = Date.now()): string[] {
 }
 
 export function churnInterval(data: ChurnResponse | undefined, now = Date.now()): number | false {
-  if (!data || data.complete || data.issue === 'access') return false;
+  if (!data || data.complete) return false;
+  // Repo-wide 401/403 halt the whole batch; per-file 404s must not stop polling the rest.
+  if (data.issue === 'access' && data.remaining.every((path) => data.failures[path]?.issue === 'access'))
+    return false;
   if (pendingChurn(data, now).length) return 1500;
   return Math.max(1500, (data.retryAt ?? now) - now);
 }

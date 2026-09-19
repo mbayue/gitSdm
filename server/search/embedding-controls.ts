@@ -10,13 +10,21 @@ let cooldownUntil = 0;
 
 function rateLimitError(): AppError {
   const retryAfterSeconds = Math.max(1, Math.ceil((cooldownUntil - Date.now()) / 1000));
-  return new AppError(
+  const error = new AppError(
     429,
     `Embedding provider is cooling down. Retry after ${retryAfterSeconds} seconds.`,
     'EMBEDDING_RATE_LIMITED',
     true,
     { retryAfterSeconds },
   );
+  // Marker distinguishes locally-raised cooldown errors from provider-originated
+  // 429s so retries preserve the existing deadline instead of extending it.
+  (error.context as Record<string, unknown>).localCooldown = true;
+  return error;
+}
+
+function isLocalCooldownError(error: AppError): boolean {
+  return error.context?.localCooldown === true;
 }
 
 async function pace(signal: AbortSignal): Promise<void> {
@@ -61,8 +69,13 @@ export function protectEmbeddings(provider: EmbeddingProvider, reserve = reserve
         return await withEmbeddingRetry(attempt);
       } catch (error) {
         if (error instanceof AppError && error.code === 'EMBEDDING_RATE_LIMITED') {
-          const seconds = Number(error.context?.retryAfterSeconds) || 60;
-          cooldownUntil = Math.max(cooldownUntil, Date.now() + seconds * 1000);
+          // Only a provider-originated 429 may arm/extend the cooldown; a
+          // locally-raised cooldown error must preserve the existing deadline,
+          // otherwise repeated retries plus ceil rounding cause indefinite outage.
+          if (!isLocalCooldownError(error)) {
+            const seconds = Number(error.context?.retryAfterSeconds) || 60;
+            cooldownUntil = Math.max(cooldownUntil, Date.now() + seconds * 1000);
+          }
         }
         throw error;
       }

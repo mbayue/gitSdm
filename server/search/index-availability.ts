@@ -1,4 +1,4 @@
-import type { SearchCoverage } from './coverage';
+import type { SearchCoverage } from '../../src/types';
 import type { VectorStore } from './types';
 import { createVectorStore } from './vector-store';
 import { createCheckpoints } from './checkpoints';

@@ -97,7 +97,8 @@ export function VizPage() {
 
     const closeMobileSidebars = () => {
       const state = useVizStore.getState();
-      state.setWorkspaceMode(state.workspaceMode);
+      if (media.matches) state.closePanelsPreservingMode();
+      else state.setWorkspaceMode(state.workspaceMode);
     };
 
     closeMobileSidebars();
@@ -142,8 +143,7 @@ export function VizPage() {
       reset();
       setActiveRepoKey(key);
       if (window.matchMedia('(max-width: 1023px)').matches) {
-        setExplorerOpen(false);
-        setAiSidebarOpen(false);
+        useVizStore.getState().closePanelsPreservingMode();
       }
     }
   }, [owner, repo, activeRepoKey, reset, setActiveRepoKey, setExplorerOpen, setAiSidebarOpen]);

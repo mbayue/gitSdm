@@ -1,3 +1,4 @@
+import { fetchPublicEmbeddings } from '../ai/public-chat-fetch';
 import { embeddingConfig } from './embedding-config';
 import { protectEmbeddings } from './embedding-controls';
 import type { EmbeddingProvider, EmbeddingResult } from './types';
@@ -146,6 +147,7 @@ async function openAIEmbed(
   const client = new OpenAI({
     apiKey,
     baseURL,
+    fetch: fetchPublicEmbeddings,
     timeout: 30000,
     maxRetries: 0,
   });
@@ -175,6 +177,7 @@ async function openAIEmbedBatch(
   const client = new OpenAI({
     apiKey,
     baseURL,
+    fetch: fetchPublicEmbeddings,
     timeout: 30000,
     maxRetries: 0,
   });

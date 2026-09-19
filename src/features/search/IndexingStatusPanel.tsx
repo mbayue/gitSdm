@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchStore } from './searchStore';
-import { coverageMessage } from '../../../server/search/coverage';
+import { coverageMessage } from '@/lib/search-coverage';
 import { formatRetryDelay } from './retry-delay';
 
 export function IndexingStatusPanel({ onRetry, onCancel }: { onRetry?: () => void; onCancel?: () => void }) {

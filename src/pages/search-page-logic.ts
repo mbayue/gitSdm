@@ -51,3 +51,15 @@ export function resolvePollingScope(
 ): IndexScope {
   return operationActive && operationScope ? operationScope : liveScope;
 }
+
+// An in-flight index operation belongs to the repo it was started for; navigating
+// to another repo must abandon it instead of letting its completion overwrite the
+// new repository's state.
+export function shouldResetForRepoChange(
+  owner: string,
+  repo: string,
+  state: { indexOwner: string | null; indexRepo: string | null; indexAction: 'index' | 'cancel' | null },
+): boolean {
+  if (state.indexOwner === null && state.indexRepo === null) return false;
+  return state.indexOwner !== owner || state.indexRepo !== repo;
+}

@@ -27,6 +27,19 @@ export function refreshChatConfig() {
   useChatConfigRevision.setState((state) => ({ revision: state.revision + 1 }));
 }
 
+// Tracked writer for credential/AI settings. The 'storage' event only fires in
+// OTHER tabs, so same-tab writers must go through here to notify subscribers
+// (credential-scoped query keys, AI task caches) without a reload.
+export function writeChatConfigItem(key: string, value: string | null) {
+  try {
+    if (value) localStorage.setItem(key, value);
+    else localStorage.removeItem(key);
+  } catch {
+    /* ignore */
+  }
+  refreshChatConfig();
+}
+
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (event) => {
     if (event.key === null || chatStorageKeys.includes(event.key)) refreshChatConfig();

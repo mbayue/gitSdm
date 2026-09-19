@@ -13,6 +13,7 @@ import { z } from 'zod';
 const continuationSchema = z.object({
   completed: z.array(z.string().max(1000)).max(200).optional(),
   pending: z.array(z.string().max(1000)).max(200).optional(),
+  scope: z.string().max(128).optional(),
 });
 
 export async function handleRepoRoutes(

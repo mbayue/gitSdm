@@ -4,7 +4,7 @@
 
 ## Project Identity
 
-**gitSdm** (Git Software Dependency Map) — v3.5.10. Interactive repository dependency visualization tool: map file dependencies, AI-powered codebase insights, semantic search, commit timelines, architecture diagrams, and dependency health. Single-page app with an embedded Express backend + Vercel serverless functions.
+**gitSdm** (Git Software Dependency Map) — v3.5.11. Interactive repository dependency visualization tool: map file dependencies, AI-powered codebase insights, semantic search, commit timelines, architecture diagrams, and dependency health. Single-page app with an embedded Express backend + Vercel serverless functions.
 
 ---
 
@@ -268,3 +268,17 @@ Track progressive increments across commit batches rather than collapsing multip
 - `.github/workflows/ci.yml`: Pinned Bun 1.3.14 (`setup-bun`), `permissions: contents: read`.
 - All installs use `nick-invision/retry@v3` with `bun install --frozen-lockfile`.
 - Jobs: `lint` -> `typecheck` -> `test` -> `build` (with 2.5 MB gzipped-JS bundle gate) -> `e2e` (`AI_PROVIDER=mock`).
+
+## Agent skills
+
+### Issue tracker
+
+Issues live as local markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five canonical triage roles. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout (`CONTEXT.md` + `docs/adr/`). See `docs/agents/domain.md`.

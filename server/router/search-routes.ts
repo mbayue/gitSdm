@@ -86,8 +86,13 @@ export async function handleSearchRoutes(
       hashContext(JSON.stringify([parsed.data.branch, parsed.data.includePaths, parsed.data.excludePaths])),
       ctx,
     );
-    if (pathname === '/api/search/cancel' && indexRequests.cancelPending(legacyKey))
-      return Response.json({ state: 'idle' });
+    if (pathname === '/api/search/cancel' && !requestKey) {
+      // Legacy builds carry no buildId: cancelPending misses once the registry
+      // entry settles, so remove the registration and fall through to the
+      // pipeline cancel below instead of leaking it.
+      if (indexRequests.cancelPending(legacyKey)) return Response.json({ state: 'idle' });
+      indexRequests.cancel(legacyKey);
+    }
     const registration =
       pathname === '/api/search/index' ? indexRequests.begin(requestKey ?? legacyKey, parsed.data.buildId) : undefined;
     let resumable = false;

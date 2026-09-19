@@ -2,6 +2,8 @@ import { fetchPublicChat } from './public-chat-fetch';
 import { chatOverrides } from './chat-config';
 import { resolveChatConfig, chatIdentity } from './chat-config';
 import { protectAI } from './provider-controls';
+import { isSafeRemoteUrl } from '../utils/url-guard';
+import { AppError } from '../utils/errors';
 import { createMockProvider } from './mock-provider';
 
 export interface Message {
@@ -72,19 +74,29 @@ async function createGeminiProvider(overrideKey?: string): Promise<AIProvider> {
   );
 }
 
+function assertPublicHttpsBaseURL(baseURL: string | undefined): asserts baseURL is string | undefined {
+  // ponytail: env-configured bases skip readChatOverrides() validation, so enforce the
+  // same public-HTTPS rule here before any SDK sends the key there.
+  if (baseURL && !isSafeRemoteUrl(baseURL))
+    throw new AppError(400, 'AI endpoint must be a public HTTPS URL.', 'INVALID_AI_CONFIG');
+}
+
 async function createOpenAIProvider(overrideKey?: string): Promise<AIProvider> {
   const { default: OpenAI } = await import('openai');
   const { apiKey, model, baseURL } = resolveChatConfig(overrideKey);
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY is required when using OpenAI provider');
   }
+  assertPublicHttpsBaseURL(baseURL);
   const client = new OpenAI({
     apiKey,
     timeout: 30000,
     maxRetries: 0,
     fetch: overrideKey && chatOverrides.getStore()?.baseURL
       ? fetchPublicChat
-      : (input, init) => fetch(input, { ...init, redirect: 'error' }),
+      : baseURL
+        ? fetchPublicChat
+        : (input, init) => fetch(input, { ...init, redirect: 'error' }),
   });
   if (baseURL) {
     client.baseURL = baseURL;
@@ -116,7 +128,8 @@ async function createAnthropicProvider(overrideKey?: string): Promise<AIProvider
   if (!apiKey) {
     throw new Error('ANTHROPIC_API_KEY is required when using Anthropic provider');
   }
-  const client = new Anthropic({ apiKey, timeout: 30000, maxRetries: 0 });
+  assertPublicHttpsBaseURL(baseURL);
+  const client = new Anthropic({ apiKey, timeout: 30000, maxRetries: 0, fetch: baseURL ? fetchPublicChat : undefined });
   if (baseURL) {
     client.baseURL = baseURL;
   }

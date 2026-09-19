@@ -25,7 +25,7 @@ class MemoryStorage {
 }
 Object.defineProperty(globalThis, 'localStorage', { value: new MemoryStorage(), configurable: true, writable: true });
 
-const { refreshChatConfig, useChatConfigRevision } = await import('./chatConfigStore');
+const { refreshChatConfig, useChatConfigRevision, writeChatConfigItem } = await import('./chatConfigStore');
 
 const revision = () => useChatConfigRevision.getState().revision;
 
@@ -55,5 +55,19 @@ describe('chatConfigStore revision inputs', () => {
     localStorage.setItem('gitsdm_ai_model', 'test-model');
     refreshChatConfig();
     expect(revision()).toBe(before + 1);
+  });
+
+  it('bumps the revision through the tracked same-tab writer, but not when the value is unchanged', () => {
+    const before = revision();
+
+    writeChatConfigItem('gitsdm_github_pat', 'ghp_same_tab_token');
+    expect(revision()).toBe(before + 1);
+
+    writeChatConfigItem('gitsdm_github_pat', 'ghp_same_tab_token');
+    expect(revision()).toBe(before + 1);
+
+    writeChatConfigItem('gitsdm_github_pat', null);
+    expect(revision()).toBe(before + 2);
+    expect(localStorage.getItem('gitsdm_github_pat')).toBeNull();
   });
 });

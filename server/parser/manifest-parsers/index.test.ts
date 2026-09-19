@@ -167,6 +167,31 @@ describe('manifest parsers', () => {
     expect(deps[2].name).toBe('numpy');
   });
 
+  it('ignores dependencies arrays outside [project] and keeps versionless poetry inline tables', () => {
+    const toml = `
+[project]
+name = "pkg"
+dependencies = ["requests>=2.0"]
+
+[tool.black]
+dependencies = ["should-not-appear>=1.0"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+local-pkg = { path = "../local-pkg" }
+git-pkg = { git = "https://github.com/o/p.git" }
+url-pkg = { url = "https://example.com/p.tar.gz" }
+`;
+    const deps = parsePyproject(toml);
+    const names = deps.map((d) => d.name);
+    expect(names).toContain('requests');
+    expect(names).not.toContain('should-not-appear');
+    for (const name of ['local-pkg', 'git-pkg', 'url-pkg']) {
+      expect(names).toContain(name);
+      expect(deps.find((d) => d.name === name)?.version).toBeUndefined();
+    }
+  });
+
   it('parses pyproject.toml dependencies', () => {
     const content = `[project.dependencies]\n"django>=4.0"\n"pandas"\n`;
     const deps = parsePyproject(content);
